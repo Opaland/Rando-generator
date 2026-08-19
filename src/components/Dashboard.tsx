@@ -4,6 +4,9 @@ import type { Network } from '../core/types.ts'
 import { displayName, formatKm, formatPct } from '../lib/format.ts'
 import { useCountUp } from '../lib/useCountUp.ts'
 import { COMPLETION_PCT, isCompleted } from '../core/milestones.ts'
+import { buildSummary, summaryFilename } from '../core/summary.ts'
+import { summaryCardBlob } from '../lib/summaryCard.ts'
+import { downloadBlob } from '../lib/download.ts'
 import { ProgressBalise } from './ProgressBalise.tsx'
 import styles from './Dashboard.module.css'
 
@@ -39,6 +42,26 @@ export function Dashboard() {
     () => (matching?.results ?? []).filter((r) => isCompleted(r.pct)).length,
     [matching],
   )
+
+  /**
+   * Fabrique l'image du bilan et la propose au téléchargement. Rien ne part
+   * sur le réseau : le PNG est dessiné et consommé dans l'onglet. L'image ne
+   * contient que des totaux et des noms d'itinéraires publics — pas un seul
+   * point GPS.
+   */
+  const partager = async () => {
+    const etat = useAppStore.getState()
+    if (!etat.matching) return
+    const bilan = buildSummary({
+      global: etat.matching.global,
+      results: etat.matching.results,
+      itineraries: etat.itineraries,
+      tracks: etat.tracks,
+      zoneLabel: etat.zoneLabel,
+    })
+    const image = await summaryCardBlob(bilan)
+    if (image) downloadBlob(summaryFilename(new Date().toISOString()), image)
+  }
 
   const top5 = useMemo(() => {
     if (!matching) return []
@@ -81,6 +104,16 @@ export function Dashboard() {
             </p>
           )}
           <ProgressBalise pct={global.pct} label="Progression globale" />
+          <button
+            type="button"
+            className={styles.share}
+            data-testid="share-summary"
+            onClick={() => {
+              void partager()
+            }}
+          >
+            Enregistrer mon bilan en image
+          </button>
         </div>
       )}
 
