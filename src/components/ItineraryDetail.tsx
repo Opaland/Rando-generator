@@ -3,6 +3,13 @@ import { displayName, formatKm, formatPct } from '../lib/format.ts'
 import { POI_LABELS, POI_OVERNIGHT } from '../lib/poiDisplay.ts'
 import { NETWORK_BADGES } from '../lib/networkDisplay.ts'
 import { elevationStats } from '../core/elevation.ts'
+import { itineraryCoords } from '../core/mapdata.ts'
+import {
+  buildGpxDocument,
+  gpxAttributionFor,
+  gpxFilename,
+} from '../core/gpxExport.ts'
+import { downloadTextFile } from '../lib/download.ts'
 import { ElevationChart } from './ElevationChart.tsx'
 import { ProgressBalise } from './ProgressBalise.tsx'
 import styles from './ItineraryDetail.module.css'
@@ -92,6 +99,25 @@ export function ItineraryDetail() {
           {formatKm(done)} parcourus · {formatKm(Math.max(0, total - done))}{' '}
           restants
         </p>
+        <button
+          type="button"
+          className="btn-secondary"
+          data-testid="itinerary-detail-export"
+          onClick={() => {
+            const label = displayName(itin)
+            downloadTextFile(
+              gpxFilename(label),
+              buildGpxDocument({
+                name: label,
+                coords: itineraryCoords(itin),
+                attribution: gpxAttributionFor(itin.network),
+                createdAt: new Date().toISOString(),
+              }),
+            )
+          }}
+        >
+          Exporter en GPX
+        </button>
       </div>
 
       {itin.details && (
