@@ -33,7 +33,7 @@ export function About({ open, onClose }: { open: boolean; onClose: () => void })
           <h2 id="about-title">À propos de Sentiers</h2>
           <button
             type="button"
-            className={styles.close}
+            className="btn-icon-close"
             aria-label="Fermer"
             onClick={onClose}
           >

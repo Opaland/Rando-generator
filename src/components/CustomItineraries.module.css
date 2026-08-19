@@ -16,13 +16,20 @@
   color: var(--gris-vert);
 }
 
-.add {
-  justify-self: start;
-  padding: 7px 12px;
-  border: 1px solid var(--vert-noir);
-  border-radius: 6px;
-  background: var(--vert-noir);
-  color: #fff;
+.importing {
+  margin: 0;
+  padding: 6px 10px;
+  border-left: 4px solid var(--jaune-pr);
+  background: #fdf6e3;
+  font-size: 0.85rem;
+}
+
+.success {
+  margin: 0;
+  padding: 6px 10px;
+  border-left: 4px solid var(--vert-noir);
+  background: var(--gris-vert-clair);
+  font-size: 0.85rem;
 }
 
 .list {
@@ -57,11 +64,11 @@
 
 .row:hover,
 .rowSelected {
-  border-color: var(--vert-noir);
+  border-color: var(--rouge-balisage);
 }
 
 .rowSelected {
-  box-shadow: 0 0 0 1px var(--vert-noir);
+  box-shadow: 0 0 0 1px var(--rouge-balisage);
 }
 
 .name {
@@ -87,14 +94,4 @@
 .km {
   font-size: 0.78rem;
   color: var(--gris-vert);
-}
-
-.delete {
-  border: none;
-  background: none;
-  color: var(--rouge-balisage);
-  text-decoration: underline;
-  padding: 0;
-  font-size: 0.85rem;
-  flex: none;
 }

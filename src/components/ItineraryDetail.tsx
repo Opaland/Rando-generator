@@ -68,7 +68,7 @@ export function ItineraryDetail() {
         </button>
         <button
           type="button"
-          className={styles.close}
+          className="btn-icon-close"
           aria-label="Fermer la fiche détail"
           data-testid="itinerary-detail-close"
           onClick={closeItineraryDetail}

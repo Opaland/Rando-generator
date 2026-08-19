@@ -43,7 +43,7 @@ export function ItineraryCard() {
         <h3 className={styles.name}>{displayName(itin)}</h3>
         <button
           type="button"
-          className={styles.close}
+          className="btn-icon-close"
           aria-label="Fermer la fiche"
           data-testid="itinerary-card-close"
           onClick={() => {

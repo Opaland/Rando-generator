@@ -21,6 +21,7 @@
 
   /* Paliers d'empilement des overlays de carte (du plus bas au plus haut).
      Un seul endroit à consulter avant d'ajouter un nouvel overlay. */
+  --z-overlay-legend: 3; /* MapLegend : légende des couleurs de réseau */
   --z-overlay-guide: 4; /* EmptyState : guide de premier lancement */
   --z-overlay-card: 5; /* ItineraryCard : fiche résumé flottante */
   --z-overlay-detail: 6; /* ItineraryDetail : panneau détail (altimétrie, POI, 3D) */
@@ -79,6 +80,119 @@ a:focus-visible,
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Système de boutons partagé : au lieu de styles ad hoc par composant, trois
+   familles réutilisables — .btn-primary (action principale, remplie),
+   .btn-secondary (action secondaire, contour), .btn-link (action neutre ou
+   destructive, en ligne) — plus .btn-icon-close pour les boutons de
+   fermeture « × ». Cible tactile ≥ 44 px partout (WCAG 2.5.5). */
+.btn-primary,
+.btn-secondary,
+.btn-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.btn-primary {
+  background: var(--rouge-balisage);
+  border-color: var(--rouge-balisage);
+  color: #fff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #a50d26;
+  border-color: #a50d26;
+}
+
+.btn-secondary {
+  background: #fff;
+  border-color: var(--vert-noir);
+  color: var(--vert-noir);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--gris-vert-clair);
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  padding: 0 4px;
+  min-width: 44px;
+  color: var(--rouge-balisage);
+  text-decoration: underline;
+}
+
+.btn-link:hover:not(:disabled) {
+  color: #8e0c22;
+}
+
+.btn-primary:disabled,
+.btn-secondary:disabled,
+.btn-link:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn-icon-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  min-width: 44px;
+  min-height: 44px;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  font-size: 1.4rem;
+  line-height: 1;
+  color: var(--gris-vert);
+}
+
+.btn-icon-close:hover {
+  color: var(--vert-noir);
+  background: var(--gris-vert-clair);
+}
+
+/* Sections repliables du panneau latéral (accordéon sur mobile, cf. .sidebar
+   dans App.module.css). Le <summary> reprend le titre <h2> existant : pas de
+   doublon de texte, juste un chevron indiquant l'état ouvert/fermé. */
+.acc-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.acc-summary::-webkit-details-marker {
+  display: none;
+}
+
+.acc-summary::marker {
+  content: '';
+}
+
+.acc-summary::after {
+  content: '▾';
+  flex: none;
+  font-size: 0.8rem;
+  color: var(--gris-vert);
+  transition: transform 0.15s;
+}
+
+details[open] > .acc-summary::after {
+  transform: rotate(180deg);
 }
 
 /* Balise GR : rectangle blanc sur rouge, signature graphique de l'appli. */

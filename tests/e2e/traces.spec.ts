@@ -31,9 +31,12 @@ test('import multi-fichiers puis suppression : le % est recalculé', async ({
   await expect(list).toContainText('ailleurs.gpx')
   await expect(page.getByTestId('global-pct')).toHaveText('56,8 %')
 
-  // Supprimer la trace qui matche → tout retombe à 0 %.
+  // Supprimer la trace qui matche (confirmation à deux temps) → 0 %.
   await page
     .getByRole('button', { name: 'Supprimer la trace pilat-30m.gpx' })
+    .click()
+  await page
+    .getByRole('button', { name: /Confirmer.*pilat-30m\.gpx/ })
     .click()
   await expect(list).not.toContainText('pilat-30m.gpx')
   await expect(page.getByTestId('global-pct')).toHaveText('0 %')

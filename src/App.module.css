@@ -98,10 +98,13 @@
     width: auto;
     max-width: none;
     border-right: none;
-    max-height: 45vh;
+    /* Chaque section est un accordéon repliable (voir .acc-summary global) :
+       l'utilisateur referme ce qui ne l'intéresse pas plutôt que de subir
+       un défilement interne trop serré. */
+    max-height: 60vh;
   }
 
   .main {
-    min-height: 55vh;
+    min-height: 40vh;
   }
 }

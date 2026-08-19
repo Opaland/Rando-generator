@@ -50,9 +50,12 @@ test('itinéraire perso : import GPX cible, progression, suppression, persistanc
   )
   await expect(page.getByTestId('custom-list')).toContainText('100 %')
 
-  // Suppression.
+  // Suppression (confirmation à deux temps).
   await page
     .getByRole('button', { name: 'Supprimer l’itinéraire boucle-cartoguide' })
+    .click()
+  await page
+    .getByRole('button', { name: /Confirmer.*boucle-cartoguide/ })
     .click()
   await expect(page.getByTestId('custom-list')).toHaveCount(0)
 })

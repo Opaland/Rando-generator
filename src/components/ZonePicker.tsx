@@ -20,10 +20,12 @@ export function ZonePicker() {
   }
 
   return (
-    <section className={styles.section} aria-labelledby="zone-title">
-      <h2 id="zone-title" className={styles.title}>
-        Zone
-      </h2>
+    <details className={styles.section} open>
+      <summary className="acc-summary">
+        <h2 id="zone-title" className={styles.title}>
+          Zone
+        </h2>
+      </summary>
       <div className={styles.zones} role="group" aria-label="Zones prédéfinies">
         {ZONES.map((zone) => (
           <button
@@ -58,6 +60,7 @@ export function ZonePicker() {
           />
           <button
             type="submit"
+            className="btn-primary"
             data-testid="ref-submit"
             disabled={zoneLoading || !refInput.trim()}
           >
@@ -86,7 +89,7 @@ export function ZonePicker() {
             ` · tracés du ${new Date(zoneFetchedAt).toLocaleDateString('fr-FR')}`}
           <button
             type="button"
-            className={styles.refresh}
+            className="btn-link"
             data-testid="zone-refresh"
             onClick={() => {
               if (zoneKey.startsWith('ref:')) {
@@ -100,6 +103,6 @@ export function ZonePicker() {
           </button>
         </p>
       )}
-    </section>
+    </details>
   )
 }

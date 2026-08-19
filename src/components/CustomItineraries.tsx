@@ -1,8 +1,11 @@
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAppStore } from '../store/appStore.ts'
 import { formatKm, formatPct } from '../lib/format.ts'
 import { ProgressBalise } from './ProgressBalise.tsx'
+import { ConfirmDeleteButton } from './ConfirmDeleteButton.tsx'
 import styles from './CustomItineraries.module.css'
+
+const SUCCESS_TIMEOUT_MS = 4000
 
 /**
  * Itinéraires créés par l'utilisateur : un GPX importé comme parcours *à
@@ -16,6 +19,16 @@ export function CustomItineraries() {
   const importCustomGpx = useAppStore((s) => s.importCustomGpx)
   const removeCustomItinerary = useAppStore((s) => s.removeCustomItinerary)
   const inputRef = useRef<HTMLInputElement | null>(null)
+  const [importing, setImporting] = useState(false)
+  const [successMsg, setSuccessMsg] = useState<string | null>(null)
+  const successTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(
+    () => () => {
+      if (successTimer.current) clearTimeout(successTimer.current)
+    },
+    [],
+  )
 
   const resultById = useMemo(
     () =>
@@ -23,11 +36,34 @@ export function CustomItineraries() {
     [customMatching],
   )
 
+  const runImport = async (files: File[]) => {
+    setImporting(true)
+    setSuccessMsg(null)
+    const errorsBefore = useAppStore.getState().importErrors.length
+    await importCustomGpx(files)
+    setImporting(false)
+    const newErrors = useAppStore.getState().importErrors.length - errorsBefore
+    const imported = files.length - newErrors
+    if (imported > 0) {
+      setSuccessMsg(
+        imported === 1
+          ? '1 itinéraire ajouté.'
+          : `${imported} itinéraires ajoutés.`,
+      )
+      if (successTimer.current) clearTimeout(successTimer.current)
+      successTimer.current = setTimeout(() => {
+        setSuccessMsg(null)
+      }, SUCCESS_TIMEOUT_MS)
+    }
+  }
+
   return (
-    <section className={styles.section} aria-labelledby="custom-title">
-      <h2 id="custom-title" className={styles.title}>
-        Mes itinéraires
-      </h2>
+    <details className={styles.section} open>
+      <summary className="acc-summary">
+        <h2 id="custom-title" className={styles.title}>
+          Mes itinéraires
+        </h2>
+      </summary>
       <p className={styles.hint}>
         Importez le GPX d’un parcours <strong>à faire</strong> (cartoguide,
         Visorando, tracé maison…) et suivez votre progression dessus. Rien ne
@@ -35,7 +71,7 @@ export function CustomItineraries() {
       </p>
       <button
         type="button"
-        className={styles.add}
+        className="btn-primary"
         data-testid="custom-browse"
         onClick={() => inputRef.current?.click()}
       >
@@ -51,11 +87,28 @@ export function CustomItineraries() {
         onChange={(event) => {
           const files = event.target.files
           if (files && files.length > 0) {
-            void importCustomGpx(Array.from(files))
+            void runImport(Array.from(files))
           }
           event.target.value = ''
         }}
       />
+
+      {importing && (
+        <p className={styles.importing} role="status" data-testid="custom-importing">
+          Import en cours…
+        </p>
+      )}
+
+      {successMsg && (
+        <p
+          className={styles.success}
+          role="status"
+          aria-live="polite"
+          data-testid="custom-import-success"
+        >
+          {successMsg}
+        </p>
+      )}
 
       {customItineraries.length > 0 && (
         <ul className={styles.list} data-testid="custom-list">
@@ -85,19 +138,15 @@ export function CustomItineraries() {
                     <span className={styles.km}>{formatKm(itin.totalMeters)}</span>
                   </span>
                 </button>
-                <button
-                  type="button"
-                  className={styles.delete}
-                  aria-label={`Supprimer l’itinéraire ${name}`}
-                  onClick={() => void removeCustomItinerary(itin.osmRelationId)}
-                >
-                  Supprimer
-                </button>
+                <ConfirmDeleteButton
+                  label={`Supprimer l’itinéraire ${name}`}
+                  onConfirm={() => void removeCustomItinerary(itin.osmRelationId)}
+                />
               </li>
             )
           })}
         </ul>
       )}
-    </section>
+    </details>
   )
 }

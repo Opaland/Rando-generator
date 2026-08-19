@@ -1,17 +1,33 @@
 .card {
   position: absolute;
-  top: 12px;
-  left: 12px;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: var(--z-overlay-card);
-  width: min(320px, calc(100% - 24px));
   background: var(--blanc-papier);
   border: 1px solid var(--gris-vert-clair);
-  border-left: 5px solid var(--rouge-balisage);
-  border-radius: 8px;
-  box-shadow: 0 3px 14px rgba(30, 43, 35, 0.25);
+  border-top: 5px solid var(--rouge-balisage);
+  box-shadow: 0 -3px 14px rgba(30, 43, 35, 0.25);
   padding: 12px 14px;
   display: grid;
   gap: 8px;
+}
+
+/* Sur mobile, la fiche résumé est une feuille ancrée en bas (elle ne masque
+   pas la carte) ; à partir de 640px, on revient à la petite carte flottante
+   en haut à gauche, plus adaptée à un écran large. */
+@media (min-width: 640px) {
+  .card {
+    left: 12px;
+    right: auto;
+    top: 12px;
+    bottom: auto;
+    width: min(320px, calc(100% - 24px));
+    border-radius: 8px;
+    border-top: none;
+    border-left: 5px solid var(--rouge-balisage);
+    box-shadow: 0 3px 14px rgba(30, 43, 35, 0.25);
+  }
 }
 
 .header {
@@ -53,20 +69,6 @@
 
 .PERSO {
   background: var(--vert-noir);
-}
-
-.close {
-  border: none;
-  background: none;
-  font-size: 1.3rem;
-  line-height: 1;
-  padding: 2px 6px;
-  color: var(--gris-vert);
-  flex: none;
-}
-
-.close:hover {
-  color: var(--vert-noir);
 }
 
 .sub {

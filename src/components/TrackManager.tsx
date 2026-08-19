@@ -1,8 +1,11 @@
-import { useRef, useState, type DragEvent } from 'react'
+import { useEffect, useRef, useState, type DragEvent } from 'react'
 import { polylineLengthMeters } from '../core/sampling.ts'
 import { useAppStore } from '../store/appStore.ts'
 import { formatKm } from '../lib/format.ts'
+import { ConfirmDeleteButton } from './ConfirmDeleteButton.tsx'
 import styles from './TrackManager.module.css'
+
+const SUCCESS_TIMEOUT_MS = 4000
 
 export function TrackManager() {
   const tracks = useAppStore((s) => s.tracks)
@@ -12,6 +15,35 @@ export function TrackManager() {
   const clearImportErrors = useAppStore((s) => s.clearImportErrors)
   const inputRef = useRef<HTMLInputElement | null>(null)
   const [dragOver, setDragOver] = useState(false)
+  const [importing, setImporting] = useState(false)
+  const [successMsg, setSuccessMsg] = useState<string | null>(null)
+  const successTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(
+    () => () => {
+      if (successTimer.current) clearTimeout(successTimer.current)
+    },
+    [],
+  )
+
+  const runImport = async (files: File[]) => {
+    setImporting(true)
+    setSuccessMsg(null)
+    const errorsBefore = useAppStore.getState().importErrors.length
+    await importGpxFiles(files)
+    setImporting(false)
+    const newErrors = useAppStore.getState().importErrors.length - errorsBefore
+    const imported = files.length - newErrors
+    if (imported > 0) {
+      setSuccessMsg(
+        imported === 1 ? '1 trace importée.' : `${imported} traces importées.`,
+      )
+      if (successTimer.current) clearTimeout(successTimer.current)
+      successTimer.current = setTimeout(() => {
+        setSuccessMsg(null)
+      }, SUCCESS_TIMEOUT_MS)
+    }
+  }
 
   const onDrop = (event: DragEvent) => {
     event.preventDefault()
@@ -19,14 +51,16 @@ export function TrackManager() {
     const files = Array.from(event.dataTransfer.files).filter((f) =>
       f.name.toLowerCase().endsWith('.gpx'),
     )
-    if (files.length > 0) void importGpxFiles(files)
+    if (files.length > 0) void runImport(files)
   }
 
   return (
-    <section className={styles.section} aria-labelledby="tracks-title">
-      <h2 id="tracks-title" className={styles.title}>
-        Mes traces GPX
-      </h2>
+    <details className={styles.section} open>
+      <summary className="acc-summary">
+        <h2 id="tracks-title" className={styles.title}>
+          Mes traces GPX
+        </h2>
+      </summary>
 
       <div
         className={dragOver ? styles.dropzoneActive : styles.dropzone}
@@ -44,7 +78,7 @@ export function TrackManager() {
           Glissez vos fichiers GPX ici, ou
           <button
             type="button"
-            className={styles.browse}
+            className="btn-link"
             data-testid="gpx-browse"
             onClick={() => inputRef.current?.click()}
           >
@@ -64,12 +98,29 @@ export function TrackManager() {
           onChange={(event) => {
             const files = event.target.files
             if (files && files.length > 0) {
-              void importGpxFiles(Array.from(files))
+              void runImport(Array.from(files))
             }
             event.target.value = ''
           }}
         />
       </div>
+
+      {importing && (
+        <p className={styles.importing} role="status" data-testid="gpx-importing">
+          Import en cours…
+        </p>
+      )}
+
+      {successMsg && (
+        <p
+          className={styles.success}
+          role="status"
+          aria-live="polite"
+          data-testid="gpx-import-success"
+        >
+          {successMsg}
+        </p>
+      )}
 
       {importErrors.length > 0 && (
         <div className={styles.errors} role="alert" data-testid="gpx-errors">
@@ -104,18 +155,14 @@ export function TrackManager() {
                     ` · D+ ${Math.round(track.elevationGain)} m`}
                 </span>
               </div>
-              <button
-                type="button"
-                className={styles.delete}
-                aria-label={`Supprimer la trace ${track.filename}`}
-                onClick={() => void removeTrack(track.id)}
-              >
-                Supprimer
-              </button>
+              <ConfirmDeleteButton
+                label={`Supprimer la trace ${track.filename}`}
+                onConfirm={() => void removeTrack(track.id)}
+              />
             </li>
           ))}
         </ul>
       )}
-    </section>
+    </details>
   )
 }
