@@ -117,18 +117,18 @@ tests/
 
 ## Déploiement (GitHub Pages)
 
+Le site est en ligne sur <https://opaland.github.io/Rando-generator/>.
+
 Le workflow [`deploy.yml`](.github/workflows/deploy.yml) construit le site et
-publie `dist/` sur la branche **`gh-pages`** à chaque push (branche de dev et
-`main`). L'activation initiale de Pages demande les droits d'administration
-du dépôt — une seule fois, dans l'interface GitHub :
+le publie via GitHub Pages (source « GitHub Actions ») à chaque push. Le
+build utilise une base relative (`base: './'`), il fonctionne donc sous ce
+sous-chemin sans réglage supplémentaire.
 
-> **Settings → Pages → Build and deployment → Source : « Deploy from a
-> branch » → branche `gh-pages`, dossier `/ (root)` → Save.**
-
-Le site est ensuite servi (et mis à jour à chaque push) sur
-<https://opaland.github.io/Rando-generator/>. Le build utilise une base
-relative (`base: './'`), il fonctionne donc sous ce sous-chemin sans réglage
-supplémentaire.
+Note : le job `deploy` ne déclare pas `environment: github-pages` tant que
+le développement se fait hors de `main` — la protection de cet environnement
+n'autorise que la branche par défaut. Une fois le projet mergé sur `main`,
+restaurer le bloc `environment` (commenté dans le workflow) et retirer la
+branche de dev des déclencheurs.
 
 ## Licences
 
