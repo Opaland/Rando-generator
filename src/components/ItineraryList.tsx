@@ -61,10 +61,12 @@ export function ItineraryList() {
   }
 
   return (
-    <section className={styles.section} aria-labelledby="list-title">
-      <h2 id="list-title" className={styles.title}>
-        Itinéraires ({rows.length})
-      </h2>
+    <details className={styles.section} open>
+      <summary className="acc-summary">
+        <h2 id="list-title" className={styles.title}>
+          Itinéraires ({rows.length})
+        </h2>
+      </summary>
 
       <div className={styles.filters}>
         <input
@@ -152,6 +154,6 @@ export function ItineraryList() {
           )
         })}
       </ul>
-    </section>
+    </details>
   )
 }

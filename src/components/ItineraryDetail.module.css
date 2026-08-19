@@ -84,21 +84,6 @@
   color: #fff;
 }
 
-.close {
-  flex: none;
-  border: none;
-  background: none;
-  font-size: 1.4rem;
-  line-height: 1;
-  min-width: 44px;
-  min-height: 44px;
-  color: var(--gris-vert);
-}
-
-.close:hover {
-  color: var(--vert-noir);
-}
-
 .stats {
   display: grid;
   gap: 6px;

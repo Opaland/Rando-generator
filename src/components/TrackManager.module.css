@@ -29,18 +29,26 @@
   margin: 0;
 }
 
-.browse {
-  border: none;
-  background: none;
-  color: var(--rouge-balisage);
-  text-decoration: underline;
-  padding: 0 0 0 4px;
-}
-
 .dropHint {
   margin: 6px 0 0;
   font-size: 0.8rem;
   color: var(--gris-vert);
+}
+
+.importing {
+  margin: 0;
+  padding: 6px 10px;
+  border-left: 4px solid var(--jaune-pr);
+  background: #fdf6e3;
+  font-size: 0.85rem;
+}
+
+.success {
+  margin: 0;
+  padding: 6px 10px;
+  border-left: 4px solid var(--vert-noir);
+  background: var(--gris-vert-clair);
+  font-size: 0.85rem;
 }
 
 .errors {
@@ -102,14 +110,4 @@
 .itemMeta {
   font-size: 0.8rem;
   color: var(--gris-vert);
-}
-
-.delete {
-  border: none;
-  background: none;
-  color: var(--rouge-balisage);
-  text-decoration: underline;
-  padding: 0;
-  font-size: 0.85rem;
-  flex: none;
 }

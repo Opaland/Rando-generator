@@ -31,10 +31,12 @@ export function Settings() {
   }
 
   return (
-    <section className={styles.section} aria-labelledby="settings-title">
-      <h2 id="settings-title" className={styles.title}>
-        Tolérance de matching
-      </h2>
+    <details className={styles.section} open>
+      <summary className="acc-summary">
+        <h2 id="settings-title" className={styles.title}>
+          Précision de suivi GPS
+        </h2>
+      </summary>
       <div className={styles.row}>
         <input
           type="range"
@@ -43,7 +45,7 @@ export function Settings() {
           step={5}
           value={shown}
           data-testid="tolerance-slider"
-          aria-label="Tolérance de matching en mètres"
+          aria-label="Précision de suivi GPS en mètres"
           onChange={(e) => {
             onChange(Number(e.target.value))
           }}
@@ -57,6 +59,6 @@ export function Settings() {
         moins de cette distance — augmentez-la si votre GPS est imprécis,
         réduisez-la pour être plus exigeant.
       </p>
-    </section>
+    </details>
   )
 }

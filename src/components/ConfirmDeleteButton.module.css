@@ -1,0 +1,31 @@
+.delete {
+  border: none;
+  background: none;
+  color: var(--rouge-balisage);
+  text-decoration: underline;
+  padding: 0 4px;
+  min-height: 44px;
+  min-width: 44px;
+  font-size: 0.85rem;
+  flex: none;
+}
+
+.delete:hover {
+  color: #8e0c22;
+}
+
+.confirm {
+  flex: none;
+  border: 1px solid var(--erreur-bord);
+  background: var(--erreur-fond);
+  color: var(--erreur-bord);
+  border-radius: 6px;
+  padding: 0 12px;
+  min-height: 44px;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.confirm:hover {
+  background: #fbd8d8;
+}

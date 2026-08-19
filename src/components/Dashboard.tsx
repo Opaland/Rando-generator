@@ -38,15 +38,17 @@ export function Dashboard() {
   const global = matching?.global
 
   return (
-    <section className={styles.section} aria-labelledby="dashboard-title">
-      <h2 id="dashboard-title" className={styles.title}>
-        Tableau de bord
-        {matchingBusy && (
-          <span className={styles.busy} role="status">
-            calcul…
-          </span>
-        )}
-      </h2>
+    <details className={styles.section} open>
+      <summary className="acc-summary">
+        <h2 id="dashboard-title" className={styles.title}>
+          Tableau de bord
+          {matchingBusy && (
+            <span className={styles.busy} role="status">
+              calcul…
+            </span>
+          )}
+        </h2>
+      </summary>
 
       {global && (
         <div className={styles.global}>
@@ -116,6 +118,6 @@ export function Dashboard() {
           </ol>
         </div>
       )}
-    </section>
+    </details>
   )
 }

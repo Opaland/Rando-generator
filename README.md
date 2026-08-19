@@ -53,9 +53,10 @@ existant via `PW_CHROMIUM_PATH=/chemin/vers/chrome npm run e2e`.
    (cartoguide, Visorando, tracé maison…) — il devient un itinéraire local
    avec sa propre progression, hors statistiques des réseaux OSM.
 4. **Lire sa progression** : carte colorée (gris = non parcouru, couleur du
-   balisage = parcouru), tableau de bord (% global, km faits/restants,
-   répartition GR/GRP/PR, top 5), liste triable/filtrable. Sélectionner un
-   itinéraire dans la liste **zoome dessus** sur la carte.
+   balisage = parcouru — une légende compacte rappelle le code couleur par
+   réseau), tableau de bord (% global, km faits/restants, répartition
+   GR/GRP/PR, top 5), liste triable/filtrable. Sélectionner un itinéraire
+   dans la liste **zoome dessus** sur la carte.
 5. **Fiche détail** : cliquer un tracé sur la carte ouvre un panneau avec son
    **profil altimétrique** (service altimétrique IGN, Etalab 2.0 — D+/D−/
    min/max), les **points d'intérêt** à proximité (sommets, points de vue,
@@ -63,8 +64,13 @@ existant via `PW_CHROMIUM_PATH=/chemin/vers/chrome npm run e2e`.
    caméra inclinée sur le tracé (pas un relief calculé depuis un modèle
    numérique de terrain). Le relief et les POI sont des bonus : indisponibles,
    la fiche reste utilisable.
-6. **Régler la tolérance** (25–100 m) selon la précision de votre GPS ;
-   tout est recalculé.
+6. **Régler la précision de suivi GPS** (tolérance de matching, 25–100 m)
+   selon la précision de votre appareil ; tout est recalculé.
+
+Sur mobile, chaque section du panneau latéral est un accordéon repliable, et
+toute suppression (trace, itinéraire perso) demande une confirmation en deux
+temps — pas de boîte de dialogue native, un simple second clic sur
+« Confirmer ? ».
 
 ## Architecture
 

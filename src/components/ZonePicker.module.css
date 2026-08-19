@@ -63,19 +63,6 @@
   background: #fff;
 }
 
-.refRow button {
-  padding: 7px 12px;
-  border: none;
-  border-radius: 6px;
-  background: var(--vert-noir);
-  color: #fff;
-}
-
-.refRow button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
 .waiting {
   margin: 0;
   padding: 8px 10px;
@@ -100,13 +87,4 @@
   flex-wrap: wrap;
   font-size: 0.85rem;
   color: var(--gris-vert);
-}
-
-.refresh {
-  border: none;
-  background: none;
-  color: var(--rouge-balisage);
-  text-decoration: underline;
-  padding: 0;
-  font-size: 0.85rem;
 }

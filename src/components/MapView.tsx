@@ -24,7 +24,9 @@ import {
 import { bearingDegrees } from '../core/geo.ts'
 import { useAppStore } from '../store/appStore.ts'
 import { POI_COLORS, POI_LABELS } from '../lib/poiDisplay.ts'
+import { NETWORK_COLORS } from '../lib/networkDisplay.ts'
 import type { LonLat, PoiKind, PointOfInterest } from '../core/types.ts'
+import { MapLegend } from './MapLegend.tsx'
 import styles from './MapView.module.css'
 
 const IGN_TILES =
@@ -40,13 +42,13 @@ const NETWORK_COLOR_MATCH: ExpressionSpecification = [
   'match',
   ['get', 'network'],
   'GR',
-  '#c8102e',
+  NETWORK_COLORS.GR,
   'GRP',
-  '#b34a08',
+  NETWORK_COLORS.GRP,
   'PR',
-  '#d9a400',
+  NETWORK_COLORS.PR,
   'PERSO',
-  '#1e2b23',
+  NETWORK_COLORS.PERSO,
   '#5a6b5d',
 ]
 
@@ -433,6 +435,9 @@ export function MapView() {
           indisponible). Les statistiques et les listes restent utilisables ;
           essayez un autre navigateur pour voir la carte.
         </p>
+      )}
+      {!mapError && (itineraries.length > 0 || customItineraries.length > 0) && (
+        <MapLegend />
       )}
     </div>
   )
