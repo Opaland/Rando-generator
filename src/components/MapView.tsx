@@ -176,7 +176,12 @@ function poisToGeoJSON(pois: PointOfInterest[]): FeatureCollection {
     features: pois.map((poi) => ({
       type: 'Feature',
       geometry: { type: 'Point', coordinates: [poi.lon, poi.lat] },
-      properties: { name: poi.name, kind: poi.kind, color: POI_COLORS[poi.kind] },
+      properties: {
+        name: poi.name,
+        kind: poi.kind,
+        capacity: poi.details.capacity,
+        color: POI_COLORS[poi.kind],
+      },
     })),
   }
 }
@@ -286,14 +291,19 @@ export function MapView() {
       event: MapLayerMouseEvent & { features?: MapGeoJSONFeature[] },
     ) => {
       const props = event.features?.[0]?.properties as
-        | { name?: string; kind?: PoiKind }
+        | { name?: string; kind?: PoiKind; capacity?: string | null }
         | undefined
       const kindLabel = props?.kind ? POI_LABELS[props.kind] : 'Point d’intérêt'
+      const capacity = props?.capacity
+        ? ` · ${escapeHtml(props.capacity)} places`
+        : ''
       new Popup({ closeButton: true, offset: 10 })
         .setLngLat(event.lngLat)
         .setHTML(
           `<strong>${escapeHtml(props?.name ?? kindLabel)}</strong>` +
-            (props?.name ? `<br><span>${escapeHtml(kindLabel)}</span>` : ''),
+            (props?.name
+              ? `<br><span>${escapeHtml(kindLabel)}${capacity}</span>`
+              : capacity && `<br><span>${kindLabel}${capacity}</span>`),
         )
         .addTo(map)
     }

@@ -1,6 +1,6 @@
 import { useAppStore } from '../store/appStore.ts'
 import { displayName, formatKm, formatPct } from '../lib/format.ts'
-import { POI_LABELS } from '../lib/poiDisplay.ts'
+import { POI_LABELS, POI_OVERNIGHT } from '../lib/poiDisplay.ts'
 import { NETWORK_BADGES } from '../lib/networkDisplay.ts'
 import { elevationStats } from '../core/elevation.ts'
 import { ElevationChart } from './ElevationChart.tsx'
@@ -43,6 +43,7 @@ export function ItineraryDetail() {
   const done = result?.doneMeters ?? 0
   const total = result?.totalMeters ?? itin.totalMeters
   const stats = elevationProfile ? elevationStats(elevationProfile.elevations) : null
+  const hasSleepingSpot = pois.some((poi) => POI_OVERNIGHT.includes(poi.kind))
 
   return (
     <aside
@@ -173,23 +174,57 @@ export function ItineraryDetail() {
         )}
         {pois.length > 0 && (
           <ul className={styles.poiList} data-testid="detail-poi-list">
-            {pois.map((poi) => (
-              <li key={poi.id}>
-                <button
-                  type="button"
-                  className={styles.poiItem}
-                  onClick={() => {
-                    focusOn([poi.lon, poi.lat])
-                  }}
-                >
-                  <span className={styles.poiKind}>{POI_LABELS[poi.kind]}</span>
-                  <span className={styles.poiName}>
-                    {poi.name ?? POI_LABELS[poi.kind]}
-                  </span>
-                </button>
-              </li>
-            ))}
+            {pois.map((poi) => {
+              const { phone, website, capacity, openingHours, operator, elevation } =
+                poi.details
+              const facts = [
+                capacity && `${capacity} places`,
+                openingHours && `ouvert ${openingHours}`,
+                elevation && `${elevation} m`,
+                operator,
+                phone,
+              ].filter(Boolean)
+              return (
+                <li key={poi.id} className={styles.poiEntry}>
+                  <button
+                    type="button"
+                    className={styles.poiItem}
+                    onClick={() => {
+                      focusOn([poi.lon, poi.lat])
+                    }}
+                  >
+                    <span className={styles.poiKind}>{POI_LABELS[poi.kind]}</span>
+                    <span className={styles.poiName}>
+                      {poi.name ?? POI_LABELS[poi.kind]}
+                    </span>
+                  </button>
+                  {(facts.length > 0 || website) && (
+                    <p className={styles.poiFacts}>
+                      {facts.join(' · ')}
+                      {website && (
+                        <>
+                          {facts.length > 0 && ' · '}
+                          <a href={website} target="_blank" rel="noreferrer">
+                            site
+                          </a>
+                        </>
+                      )}
+                    </p>
+                  )}
+                </li>
+              )
+            })}
           </ul>
+        )}
+
+        {hasSleepingSpot && (
+          <p className={styles.poiCaveat} data-testid="detail-poi-caveat">
+            « Couchage libre » regroupe refuges non gardés, cabanes et
+            appentis : gratuits et sans réservation, mais ni garantis ouverts
+            ni entretenus. Ces informations viennent d’OpenStreetMap et
+            peuvent être incomplètes ou périmées — vérifiez auprès du
+            gestionnaire avant de compter dessus pour une nuit.
+          </p>
         )}
       </section>
     </aside>

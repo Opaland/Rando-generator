@@ -75,8 +75,8 @@ existant via `PW_CHROMIUM_PATH=/chemin/vers/chrome npm run e2e`.
    dans la liste **zoome dessus** sur la carte.
 5. **Fiche détail** : cliquer un tracé sur la carte ouvre un panneau avec son
    **profil altimétrique** (service altimétrique IGN, Etalab 2.0 — D+/D−/
-   min/max), les **points d'intérêt** à proximité (sommets, points de vue,
-   refuges, points d'eau… via Overpass), et une **vue 3D** — une perspective
+   min/max), les **points d'intérêt** à proximité (via Overpass), et une
+   **vue 3D** — une perspective
    caméra inclinée sur le tracé (pas un relief calculé depuis un modèle
    numérique de terrain). Le relief et les POI sont des bonus : indisponibles,
    la fiche reste utilisable.
@@ -100,7 +100,7 @@ src/
 │  ├─ gpx.ts       # parsing GPX (trkpt et rtept, DOMParser injecté)
 │  ├─ network.ts   # classement GR/GRP/PR depuis les tags OSM
 │  ├─ elevation.ts # profil altimétrique (service IGN), D+/D-, comblement de trous
-│  ├─ poi.ts       # points d'intérêt à proximité d'un tracé (Overpass)
+│  ├─ poi.ts       # POI le long d'un tracé (Overpass, bbox découpées)
 │  ├─ boucles.ts   # boucles communales open data (Métropole de Lyon, LO 2.0)
 │  ├─ routing.ts   # graphe des sentiers, accroche d'un clic, Dijkstra
 │  └─ mapdata.ts   # GeoJSON des couches carte (base / parcouru / traces)
@@ -159,6 +159,20 @@ tests/
 - **Altimétrie et POI en meilleur effort** : ces deux appels réseau (service
   IGN, Overpass) ne bloquent jamais l'affichage de la fiche détail ; en cas
   d'échec, message clair et le reste (progression, carte) reste utilisable.
+- **Où dormir : trois catégories, pas une** — le wiki OSM distingue le refuge
+  gardé (`tourism=alpine_hut`, personnel et réservation), le couchage
+  autonome (`wilderness_hut`, `shelter_type=basic_hut|lean_to|rock_shelter`,
+  gratuit et sans gardien) et l'abri météo (`weather_shelter`, explicitement
+  *pas* prévu pour la nuit). Les mélanger enverrait quelqu'un dormir dans un
+  abri de crête ; ils sont donc séparés, et un avertissement rappelle que la
+  donnée OSM peut être périmée. Les abris sans `shelter_type` exploitable
+  (abribus…) sont écartés dès la requête.
+- **POI : `nwr` et boîtes découpées** — en montagne un refuge est souvent
+  cartographié comme le polygone du bâtiment : n'interroger que les nœuds les
+  rendait invisibles. On interroge donc nœuds, ways et relations avec
+  `out center`. Et comme une boîte englobante autour d'un GR de 750 km
+  couvrirait un quart de la France, le tracé est découpé en portions d'au
+  plus ~25 km, chacune avec sa propre boîte.
 - Chaque erreur (Overpass down, GPX corrompu, IndexedDB bloqué, WebGL
   absent, service altimétrique indisponible) a un message en français qui
   dit quoi faire.
