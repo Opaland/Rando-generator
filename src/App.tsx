@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { MapView } from './components/MapView.tsx'
+import { TrackManager } from './components/TrackManager.tsx'
 import { ZonePicker } from './components/ZonePicker.tsx'
 import { useAppStore } from './store/appStore.ts'
 import styles from './App.module.css'
@@ -37,6 +38,7 @@ function App() {
       <div className={styles.layout}>
         <aside className={styles.sidebar} aria-label="Panneau de contrôle">
           <ZonePicker />
+          <TrackManager />
         </aside>
         <main className={styles.main}>
           <MapView />
