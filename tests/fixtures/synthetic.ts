@@ -1,4 +1,5 @@
-import type { LonLat } from '../../src/core/types.ts'
+import type { Itinerary, LonLat, TrailWay } from '../../src/core/types.ts'
+import { polylineLengthMeters } from '../../src/core/sampling.ts'
 
 /** Rayon terrestre utilisé partout dans l'application. */
 export const EARTH_RADIUS = 6_371_000
@@ -33,6 +34,27 @@ export function straightLine(
     coords.push([originLon + metersToDegLon(i * segmentMeters, lat), lat])
   }
   return coords
+}
+
+/** Construit un itinéraire de test à partir de ways bruts. */
+export function makeItinerary(
+  osmRelationId: number,
+  ways: TrailWay[],
+  overrides: Partial<Itinerary> = {},
+): Itinerary {
+  return {
+    osmRelationId,
+    ref: `GR TEST ${osmRelationId}`,
+    name: null,
+    network: 'GR',
+    ways,
+    totalMeters: ways.reduce(
+      (sum, w) => sum + polylineLengthMeters(w.coords),
+      0,
+    ),
+    fetchedAt: '2026-01-01T00:00:00Z',
+    ...overrides,
+  }
 }
 
 /** Décale une polyligne vers le nord d'une distance en mètres. */
