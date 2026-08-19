@@ -69,6 +69,34 @@
   border-left: 4px solid var(--jaune-pr);
   background: #fdf6e3;
   font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.spinner {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--jaune-pr);
+  border-top-color: transparent;
+  animation: zone-spin 0.8s linear infinite;
+}
+
+@keyframes zone-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.waitingText {
+  flex: 1;
+}
+
+.elapsed {
+  color: var(--gris-vert);
+  font-variant-numeric: tabular-nums;
 }
 
 .error {

@@ -37,6 +37,9 @@ import { computeMatching } from './matchingClient.ts'
 export const MIN_TOLERANCE = 25
 export const MAX_TOLERANCE = 100
 
+/** Étape affichée pendant zoneLoading, pour un retour visuel non figé. */
+export type ZoneLoadStage = 'requesting' | 'retrying' | 'processing' | null
+
 export interface AppState {
   // Persistance
   db: SentiersDb | null
@@ -48,6 +51,8 @@ export interface AppState {
   itineraries: Itinerary[]
   zoneFetchedAt: string | null
   zoneLoading: boolean
+  /** Étape en cours pendant zoneLoading, pour un retour visuel non figé. */
+  zoneLoadStage: ZoneLoadStage
   zoneError: string | null
 
   // Traces GPX
@@ -81,6 +86,9 @@ export interface AppState {
   init: () => Promise<void>
   loadZone: (zoneId: string, options?: { force?: boolean }) => Promise<void>
   loadRef: (ref: string, options?: { force?: boolean }) => Promise<void>
+  /** Interrompt le chargement de zone en cours (l'appel réseau peut continuer
+   *  en arrière-plan, mais son résultat n'est plus appliqué à l'UI). */
+  cancelZoneLoad: () => void
   importGpxFiles: (files: Iterable<File>) => Promise<void>
   importCustomGpx: (files: Iterable<File>) => Promise<void>
   removeTrack: (id: string) => Promise<void>
@@ -97,6 +105,7 @@ export interface AppState {
 
 let recomputeSequence = 0
 let detailSequence = 0
+let zoneLoadSequence = 0
 
 export const useAppStore = create<AppState>()((set, get) => {
   async function recompute(): Promise<void> {
@@ -153,7 +162,12 @@ export const useAppStore = create<AppState>()((set, get) => {
     query: string,
     force: boolean,
   ): Promise<void> {
-    set({ zoneLoading: true, zoneError: null })
+    const sequence = ++zoneLoadSequence
+    // Si l'utilisateur a annulé (ou relancé un autre chargement) entre-temps,
+    // ce chargement ne doit plus toucher l'UI — mais on le laisse quand même
+    // se terminer normalement : parsing et cache restent utiles en arrière-plan.
+    const isCurrent = () => sequence === zoneLoadSequence
+    set({ zoneLoading: true, zoneError: null, zoneLoadStage: 'requesting' })
     try {
       const { db } = get()
       let cached
@@ -162,6 +176,7 @@ export const useAppStore = create<AppState>()((set, get) => {
       } catch {
         cached = undefined
       }
+      if (!isCurrent()) return
       const now = new Date().toISOString()
       if (cached && !force && isFresh(cached.fetchedAt, now)) {
         setItineraries(zoneKey, cached.label, cached.itineraries, cached.fetchedAt)
@@ -171,7 +186,15 @@ export const useAppStore = create<AppState>()((set, get) => {
       }
 
       try {
-        const data = await fetchOverpass(query)
+        const data = await fetchOverpass(query, {
+          onAttempt: (mirrorIndex) => {
+            if (isCurrent()) {
+              set({ zoneLoadStage: mirrorIndex === 0 ? 'requesting' : 'retrying' })
+            }
+          },
+        })
+        if (!isCurrent()) return
+        set({ zoneLoadStage: 'processing' })
         const itineraries = parseOverpassResponse(data, now)
         if (db) {
           try {
@@ -181,6 +204,7 @@ export const useAppStore = create<AppState>()((set, get) => {
             // mémoire, le cache sera simplement absent au prochain démarrage.
           }
         }
+        if (!isCurrent()) return
         setItineraries(zoneKey, zoneLabel, itineraries, now)
         if (itineraries.length === 0) {
           set({
@@ -191,6 +215,7 @@ export const useAppStore = create<AppState>()((set, get) => {
         await persistLastZone(zoneKey)
         await recompute()
       } catch (error) {
+        if (!isCurrent()) return
         // Miroirs injoignables : on retombe sur le cache même périmé.
         if (cached) {
           setItineraries(zoneKey, cached.label, cached.itineraries, cached.fetchedAt)
@@ -209,8 +234,11 @@ export const useAppStore = create<AppState>()((set, get) => {
         set({ zoneError: message })
       }
     } finally {
-      // Quoi qu'il arrive, l'interface ne reste jamais bloquée en chargement.
-      if (get().zoneLoading) set({ zoneLoading: false })
+      // Quoi qu'il arrive, l'interface ne reste jamais bloquée en chargement —
+      // sauf si un chargement plus récent (ou une annulation) a pris le relais.
+      if (isCurrent() && get().zoneLoading) {
+        set({ zoneLoading: false, zoneLoadStage: null })
+      }
     }
   }
 
@@ -227,6 +255,7 @@ export const useAppStore = create<AppState>()((set, get) => {
     itineraries: [],
     zoneFetchedAt: null,
     zoneLoading: false,
+    zoneLoadStage: null,
     zoneError: null,
     tracks: [],
     importErrors: [],
@@ -311,6 +340,13 @@ export const useAppStore = create<AppState>()((set, get) => {
         if (db) await db.deleteZone(zoneKey)
       }
       await loadFromOverpass(zoneKey, trimmed, buildRefQuery(trimmed), force)
+    },
+
+    cancelZoneLoad() {
+      // Invalide le chargement en cours : sa promesse continue en arrière-plan
+      // (le cache en profitera si elle aboutit) mais ne touchera plus l'UI.
+      zoneLoadSequence += 1
+      set({ zoneLoading: false, zoneLoadStage: null })
     },
 
     async importGpxFiles(files) {

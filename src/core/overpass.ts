@@ -164,6 +164,9 @@ export interface FetchOverpassOptions {
   fetchFn?: FetchLike
   mirrors?: readonly string[]
   timeoutMs?: number
+  /** Appelé avant chaque tentative de miroir — permet à l'appelant d'afficher
+   *  une progression (« interrogation… » puis « nouvelle tentative… »). */
+  onAttempt?: (mirrorIndex: number, totalMirrors: number) => void
 }
 
 /**
@@ -180,7 +183,8 @@ export async function fetchOverpass(
   const mirrors = options.mirrors ?? OVERPASS_MIRRORS
   const timeoutMs = options.timeoutMs ?? OVERPASS_TIMEOUT_MS
 
-  for (const mirror of mirrors) {
+  for (const [mirrorIndex, mirror] of mirrors.entries()) {
+    options.onAttempt?.(mirrorIndex, mirrors.length)
     try {
       // AbortSignal.timeout peut manquer sur d'anciens navigateurs : dans ce
       // cas on lance la requête sans limite plutôt que d'échouer d'office.

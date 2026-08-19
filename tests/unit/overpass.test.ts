@@ -209,6 +209,17 @@ describe('fetchOverpass', () => {
     }
   })
 
+  it('signale chaque tentative de miroir via onAttempt', async () => {
+    const fetchFn = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError('failed to fetch'))
+      .mockResolvedValueOnce(okResponse())
+    const onAttempt = vi.fn()
+    await fetchOverpass('QUERY', { fetchFn, onAttempt })
+    expect(onAttempt).toHaveBeenNthCalledWith(1, 0, OVERPASS_MIRRORS.length)
+    expect(onAttempt).toHaveBeenNthCalledWith(2, 1, OVERPASS_MIRRORS.length)
+  })
+
   it('envoie la requête en POST avec le corps data=…', async () => {
     const fetchFn = vi.fn().mockResolvedValue(okResponse())
     await fetchOverpass('QUERY', { fetchFn })
