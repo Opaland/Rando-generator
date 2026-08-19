@@ -6,6 +6,11 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   base: './',
+  build: {
+    // maplibre-gl pèse ~900 kB minifié à lui seul : seuil relevé en
+    // connaissance de cause plutôt qu'un warning permanent.
+    chunkSizeWarningLimit: 1200,
+  },
   test: {
     include: ['tests/unit/**/*.test.ts'],
     passWithNoTests: true,

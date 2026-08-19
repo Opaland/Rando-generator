@@ -1,0 +1,35 @@
+.section {
+  display: grid;
+  gap: 8px;
+}
+
+.title {
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gris-vert);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.row input[type='range'] {
+  flex: 1;
+  accent-color: var(--rouge-balisage);
+}
+
+.value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  min-width: 48px;
+  text-align: right;
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--gris-vert);
+}

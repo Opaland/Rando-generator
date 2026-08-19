@@ -29,6 +29,27 @@
   margin: 0;
   font-size: 0.82rem;
   opacity: 0.85;
+  flex: 1;
+}
+
+.aboutLink {
+  border: 1px solid rgba(250, 247, 242, 0.4);
+  background: none;
+  color: var(--blanc-papier);
+  border-radius: 5px;
+  padding: 4px 12px;
+  font-size: 0.85rem;
+}
+
+.aboutLink:hover {
+  background: rgba(250, 247, 242, 0.12);
+}
+
+.footer {
+  font-size: 0.75rem;
+  color: var(--gris-vert);
+  border-top: 1px solid var(--gris-vert-clair);
+  padding-top: 10px;
 }
 
 .dbWarning {
