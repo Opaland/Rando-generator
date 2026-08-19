@@ -1,0 +1,111 @@
+import type { LonLat, Network } from './types.ts'
+
+/**
+ * Export GPX : de quoi charger un itinéraire dans une montre, un GPS ou une
+ * autre application. Générateur pur (aucun accès DOM) pour rester testable ;
+ * le téléchargement lui-même vit dans lib/download.ts.
+ */
+
+/** Attribution inscrite dans le fichier, imposée par la licence de la source. */
+export interface GpxAttribution {
+  author: string
+  license: string
+}
+
+const OSM_ATTRIBUTION: GpxAttribution = {
+  author: 'les contributeurs OpenStreetMap',
+  license: 'https://opendatacommons.org/licenses/odbl/',
+}
+
+const METROPOLE_ATTRIBUTION: GpxAttribution = {
+  author: 'Métropole de Lyon',
+  license: 'https://www.etalab.gouv.fr/licence-ouverte-open-licence',
+}
+
+/**
+ * Attribution à embarquer selon la provenance du tracé. Exporter une donnée
+ * ODbL ou en Licence Ouverte sans mentionner sa source serait une violation
+ * de licence : le fichier la porte donc lui-même, puisqu'il circulera hors
+ * de l'application.
+ */
+export function gpxAttributionFor(network: Network): GpxAttribution | null {
+  switch (network) {
+    case 'GR':
+    case 'GRP':
+    case 'PR':
+      return OSM_ATTRIBUTION
+    case 'LOCAL':
+      return METROPOLE_ATTRIBUTION
+    case 'PERSO':
+      // Tracé de l'utilisateur : rien à attribuer, c'est le sien.
+      return null
+  }
+}
+
+export interface GpxExportOptions {
+  name: string
+  coords: LonLat[]
+  attribution: GpxAttribution | null
+  /** Horodatage ISO — injecté pour garder la fonction pure. */
+  createdAt: string
+}
+
+function escapeXml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;')
+}
+
+/** Construit un document GPX 1.1 à partir d'une polyligne. */
+export function buildGpxDocument(options: GpxExportOptions): string {
+  const { name, coords, attribution, createdAt } = options
+  if (coords.length === 0) {
+    throw new Error('Impossible d’exporter un itinéraire sans aucun point.')
+  }
+
+  const safeName = escapeXml(name.trim() || 'Itinéraire')
+  const points = coords
+    .map(
+      ([lon, lat]) =>
+        `      <trkpt lat="${lat.toFixed(7)}" lon="${lon.toFixed(7)}"></trkpt>`,
+    )
+    .join('\n')
+
+  // L'ordre des éléments de <metadata> est imposé par le schéma GPX 1.1 :
+  // name, desc, author, copyright, link, time…
+  const copyright = attribution
+    ? `    <copyright author="${escapeXml(attribution.author)}">
+      <license>${escapeXml(attribution.license)}</license>
+    </copyright>\n`
+    : ''
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Sentiers" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata>
+    <name>${safeName}</name>
+${copyright}    <time>${escapeXml(createdAt)}</time>
+  </metadata>
+  <trk>
+    <name>${safeName}</name>
+    <trkseg>
+${points}
+    </trkseg>
+  </trk>
+</gpx>
+`
+}
+
+/** Nom de fichier sûr, sans accent ni caractère interdit par les systèmes. */
+export function gpxFilename(name: string): string {
+  const slug = name
+    .normalize('NFD')
+    // Retire les diacritiques (« Crêt » → « Cret »).
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+  return `sentiers-${slug || 'itineraire'}.gpx`
+}

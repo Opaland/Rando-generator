@@ -91,6 +91,7 @@
 .stats {
   display: grid;
   gap: 6px;
+  justify-items: start;
 }
 
 .pct {
