@@ -1,0 +1,25 @@
+:root {
+  /* Palette « balisage » */
+  --rouge-balisage: #c8102e;
+  --jaune-pr: #d9a400;
+  --blanc-papier: #faf7f2;
+  --vert-noir: #1e2b23;
+  --gris-vert: #5a6b5d;
+
+  --font-display: 'Georgia', 'Times New Roman', serif;
+  --font-sans:
+    system-ui, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--blanc-papier);
+  color: var(--vert-noir);
+}
