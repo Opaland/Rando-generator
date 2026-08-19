@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - claude/sentiers-hiking-tracker-h28emt
   workflow_dispatch:
 
 permissions:
@@ -40,12 +39,9 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    # Pas de bloc `environment:` : la protection de l'environnement github-pages
-    # n'autorise que la branche par défaut, or on déploie aussi depuis la
-    # branche de développement. À remettre quand tout partira de main :
-    #   environment:
-    #     name: github-pages
-    #     url: ${{ steps.deployment.outputs.page_url }}
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Déployer sur GitHub Pages
         id: deployment

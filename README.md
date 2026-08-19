@@ -124,11 +124,8 @@ le publie via GitHub Pages (source « GitHub Actions ») à chaque push. Le
 build utilise une base relative (`base: './'`), il fonctionne donc sous ce
 sous-chemin sans réglage supplémentaire.
 
-Note : le job `deploy` ne déclare pas `environment: github-pages` tant que
-le développement se fait hors de `main` — la protection de cet environnement
-n'autorise que la branche par défaut. Une fois le projet mergé sur `main`,
-restaurer le bloc `environment` (commenté dans le workflow) et retirer la
-branche de dev des déclencheurs.
+Le déploiement se déclenche sur chaque push de `main` (ou manuellement via
+« Run workflow ») et passe par l'environnement protégé `github-pages`.
 
 ## Licences
 
