@@ -124,16 +124,35 @@ tests/
 
 1. Chaque way OSM est échantillonné tous les **100 m** (interpolation
    linéaire, report du reliquat entre segments — pas de dérive).
-2. Les points GPX sont indexés dans des cellules de **0,0015°** (~160 m) ;
-   chaque échantillon ne teste que les 9 cellules voisines.
-3. Un échantillon est « fait » si un point GPX est à moins de la tolérance
-   (50 m par défaut, réglable 25–100 m).
-4. Distances par approximation équirectangulaire (R = 6 371 000 m),
+2. La trace GPX est indexée sous forme de **segments** (pas de points) dans
+   des cellules de **0,0015°** (~160 m) ; chaque échantillon ne teste que les
+   9 cellules voisines. Un saut de plus d'**1 km** entre deux relevés est
+   traité comme une coupure, pas comme une marche.
+3. Un échantillon est candidat si la trace passe à moins de la **tolérance**
+   (50 m par défaut, réglable 25–100 m) — distance mesurée **au segment**,
+   pour ne pas pénaliser un appareil qui n'enregistre qu'un point toutes les
+   quelques minutes.
+4. Un passage n'est crédité que s'il couvre **au moins 3 échantillons
+   consécutifs** (~300 m) : couper un sentier perpendiculairement ne le
+   parcourt pas.
+5. Un passage n'est crédité que si **au moins un quart** de ses échantillons
+   sont à moins de **40 % de la tolérance** : une trace qui reste à écart
+   constant sans jamais serrer le sentier décrit une route parallèle, pas une
+   marche dessus.
+6. Distances par approximation équirectangulaire (R = 6 371 000 m),
    suffisante à ces échelles.
-5. Un way partagé entre plusieurs itinéraires compte dans chacun, mais une
+7. Un way partagé entre plusieurs itinéraires compte dans chacun, mais une
    seule fois dans les totaux globaux.
-6. Performance mesurée : 50 000 échantillons × 100 000 points GPX en
+8. Performance mesurée : 50 000 échantillons × 100 000 points GPX en
    ~0,3 s (cible < 2 s) ; le calcul tourne dans un Web Worker.
+
+Les règles 4 et 5 corrigent des faux positifs mesurés : une trace parallèle
+à 30 m créditait auparavant **100 %** d'un sentier jamais foulé. Les
+scénarios adverses sont dans `tests/unit/matchingQuality.test.ts`, avec les
+valeurs d'avant en commentaire. Limite connue : sans horodatage par point
+(le parseur ne le conserve pas), on ne peut pas distinguer une marche d'un
+trajet en voiture le long d'un sentier — un contrôle de vitesse reste à
+faire.
 
 ### Décisions notables
 
@@ -184,9 +203,11 @@ tests/
 
 ## Qualité
 
-- TDD sur `src/core` (couverture imposée ≥ 90 %, mesurée ~99 %) ; fixtures de
-  matching : trace superposée → 100 %, décalée 30 m → 100 % / 70 m → 0 %
-  (TOL = 50), moitié → 50 %, way partagé compté 1× en global.
+- TDD sur `src/core` (couverture imposée ≥ 90 %) ; fixtures de matching :
+  trace superposée → 100 %, décalée 12 m → 100 % / 30 m → 0 % (TOL = 50,
+  chemin parallèle), moitié → 50 %, way partagé compté 1× en global, plus
+  une série de scénarios adverses (traversée perpendiculaire, GPS peu
+  échantillonné, saut, aller-retour).
 - Aucun test ne touche le réseau : Overpass est une fixture enregistrée,
   Playwright intercepte tout le trafic externe.
 - E2E : scénario nominal complet, GPX corrompu, Overpass injoignable, bascule

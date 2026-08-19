@@ -11,8 +11,12 @@ import { mockExternalNetwork, buildGpx } from './helpers.ts'
  * - Sentier des Crêtes (PR) : way partagé (8) + way de ~1112 m (12) → 20
  * - GRP Tour du Pilat : 8 — le GPX ne le couvre pas
  * - global (ways dédupliqués) : 44 échantillons
- * Le GPX est décalé de 30 m au nord du GR 7 : à TOL = 50 m, 25/44 faits
- * (24 du GR 7 + le 1er échantillon du way 300) → 56,8 % ; à TOL = 25 m → 0 %.
+ * Le GPX est décalé de 15 m au nord du GR 7 : à TOL = 50 m, 24/44 faits
+ * (les 24 du GR 7) → 54,5 % ; à TOL = 25 m → 0 %.
+ *
+ * L'unique échantillon du way 300 autrefois crédité ne l'est plus : un
+ * passage isolé ne prouve pas qu'on a parcouru le tronçon (règle de
+ * continuité, cf. src/core/matching.ts).
  */
 test('charge une zone, importe un GPX, recalcule et persiste', async ({
   page,
@@ -34,14 +38,14 @@ test('charge une zone, importe un GPX, recalcule et persiste', async ({
   await page.getByTestId('gpx-input').setInputFiles({
     name: 'sortie-pilat.gpx',
     mimeType: 'application/gpx+xml',
-    buffer: Buffer.from(buildGpx(30), 'utf-8'),
+    buffer: Buffer.from(buildGpx(15), 'utf-8'),
   })
   await expect(page.getByTestId('tracks-list')).toContainText(
     'sortie-pilat.gpx',
   )
 
   // 3. Les % correspondent à la fixture.
-  await expect(page.getByTestId('global-pct')).toHaveText('56,8 %')
+  await expect(page.getByTestId('global-pct')).toHaveText('54,5 %')
   await page
     .getByTestId('itinerary-list')
     .getByRole('button', { name: /GR 7/ })

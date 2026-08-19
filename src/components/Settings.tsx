@@ -55,9 +55,11 @@ export function Settings() {
         </output>
       </div>
       <p className={styles.hint}>
-        Un point du sentier est compté « parcouru » si votre trace GPS passe à
-        moins de cette distance — augmentez-la si votre GPS est imprécis,
-        réduisez-la pour être plus exigeant.
+        Un tronçon est compté « parcouru » si votre trace passe à moins de
+        cette distance — augmentez-la si votre GPS est imprécis, réduisez-la
+        pour être plus exigeant. Un passage isolé, ou une trace qui reste
+        toujours à distance sans jamais serrer le sentier (une route qui le
+        longe, par exemple), n’est jamais compté.
       </p>
     </details>
   )
