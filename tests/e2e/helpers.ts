@@ -38,6 +38,12 @@ export interface OverpassMock {
  * d'appels (pour vérifier que le cache évite les requêtes).
  */
 export async function mockOverpass(page: Page): Promise<OverpassMock> {
+  // Les boucles locales embarquées (public/data) fausseraient les comptages
+  // d'itinéraires des tests : servies vides par défaut. Un test qui veut les
+  // exercer ré-enregistre sa propre route par-dessus (la plus récente gagne).
+  await page.route('**/data/boucles-metropole-lyon.json', (route) =>
+    route.fulfill({ json: { type: 'FeatureCollection', features: [] } }),
+  )
   let calls = 0
   let current: unknown = pilatFixture
   await page.route('**/api/interpreter', (route) => {

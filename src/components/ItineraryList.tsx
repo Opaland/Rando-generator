@@ -2,12 +2,13 @@ import { useMemo, useState } from 'react'
 import { useAppStore } from '../store/appStore.ts'
 import type { Network } from '../core/types.ts'
 import { displayName, formatKm, formatPct } from '../lib/format.ts'
+import { NETWORK_BADGES } from '../lib/networkDisplay.ts'
 import { ProgressBalise } from './ProgressBalise.tsx'
 import styles from './ItineraryList.module.css'
 
 type SortKey = 'pct' | 'name' | 'length'
 
-const NETWORKS: Network[] = ['GR', 'GRP', 'PR']
+const NETWORKS: Network[] = ['GR', 'GRP', 'PR', 'LOCAL']
 
 export function ItineraryList() {
   const itineraries = useAppStore((s) => s.itineraries)
@@ -94,7 +95,7 @@ export function ItineraryList() {
                   toggleNetwork(network)
                 }}
               />
-              {network}
+              {NETWORK_BADGES[network]}
             </label>
           ))}
         </div>
@@ -130,7 +131,7 @@ export function ItineraryList() {
                 }}
               >
                 <span className={`${styles.badge} ${styles[itin.network]}`}>
-                  {itin.network}
+                  {NETWORK_BADGES[itin.network]}
                 </span>
                 <span className={styles.rowMain}>
                   <span className={styles.rowName}>{displayName(itin)}</span>

@@ -67,6 +67,10 @@
   color: var(--vert-noir);
 }
 
+.LOCAL {
+  background: var(--bleu-local);
+}
+
 .PERSO {
   background: var(--vert-noir);
 }

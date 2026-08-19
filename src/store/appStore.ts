@@ -15,6 +15,7 @@ import {
 } from '../core/gpx.ts'
 import { polylineLengthMeters } from '../core/sampling.ts'
 import { itineraryCoords } from '../core/mapdata.ts'
+import { parseBouclesGeoJSON } from '../core/boucles.ts'
 import { fetchElevationProfile, ElevationError } from '../core/elevation.ts'
 import { fetchPois } from '../core/poi.ts'
 import type { MatchResult } from '../core/matching.ts'
@@ -106,6 +107,23 @@ export interface AppState {
 let recomputeSequence = 0
 let detailSequence = 0
 let zoneLoadSequence = 0
+
+/** Zones dont le périmètre couvre la Métropole de Lyon (boucles locales). */
+const ZONES_WITH_LOCAL_BOUCLES = new Set(['rhone', 'trois'])
+
+// Boucles locales open data, embarquées avec le site (© Métropole de Lyon,
+// Licence Ouverte 2.0). Chargées paresseusement et une seule fois ; en cas
+// d'échec, l'app fonctionne exactement comme avant — c'est un bonus.
+let bouclesPromise: Promise<Itinerary[]> | null = null
+function fetchLocalBoucles(): Promise<Itinerary[]> {
+  bouclesPromise ??= fetch(
+    `${import.meta.env.BASE_URL}data/boucles-metropole-lyon.json`,
+  )
+    .then((response) => (response.ok ? response.json() : null))
+    .then((data: unknown) => parseBouclesGeoJSON(data, new Date().toISOString()))
+    .catch(() => [])
+  return bouclesPromise
+}
 
 export const useAppStore = create<AppState>()((set, get) => {
   async function recompute(): Promise<void> {
@@ -247,6 +265,23 @@ export const useAppStore = create<AppState>()((set, get) => {
     if (db) await db.setSetting('lastZoneKey', zoneKey)
   }
 
+  /**
+   * Ajoute les boucles locales open data aux itinéraires de la zone affichée
+   * (fusion en mémoire uniquement — jamais écrites dans le cache Overpass,
+   * qui reste une copie pure d'OSM). Sans effet si la zone a changé entre
+   * temps ou si l'asset est indisponible.
+   */
+  async function mergeLocalBoucles(zoneKey: string): Promise<void> {
+    if (!ZONES_WITH_LOCAL_BOUCLES.has(zoneKey)) return
+    const boucles = await fetchLocalBoucles()
+    if (boucles.length === 0 || get().zoneKey !== zoneKey) return
+    const known = new Set(get().itineraries.map((i) => i.osmRelationId))
+    const fresh = boucles.filter((b) => !known.has(b.osmRelationId))
+    if (fresh.length === 0) return
+    set((state) => ({ itineraries: [...state.itineraries, ...fresh] }))
+    await recompute()
+  }
+
   return {
     db: null,
     dbWarning: null,
@@ -304,7 +339,8 @@ export const useAppStore = create<AppState>()((set, get) => {
       })
 
       // Au démarrage, on restaure la dernière zone depuis le cache uniquement
-      // (jamais d'appel réseau sans action de l'utilisateur).
+      // (jamais d'appel réseau externe sans action de l'utilisateur — les
+      // boucles locales sont un fichier du site, pas un service tiers).
       if (typeof lastZoneKey === 'string') {
         const cached = await db.getZone(lastZoneKey)
         if (cached) {
@@ -317,6 +353,9 @@ export const useAppStore = create<AppState>()((set, get) => {
         }
       }
       await recompute()
+      if (typeof lastZoneKey === 'string') {
+        await mergeLocalBoucles(lastZoneKey)
+      }
     },
 
     async loadZone(zoneId, options = {}) {
@@ -328,6 +367,7 @@ export const useAppStore = create<AppState>()((set, get) => {
         if (db) await db.deleteZone(zoneId)
       }
       await loadFromOverpass(zoneId, zone.label, buildZoneQuery(zoneId), force)
+      await mergeLocalBoucles(zoneId)
     },
 
     async loadRef(ref, options = {}) {

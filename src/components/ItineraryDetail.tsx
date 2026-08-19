@@ -1,6 +1,7 @@
 import { useAppStore } from '../store/appStore.ts'
 import { displayName, formatKm, formatPct } from '../lib/format.ts'
 import { POI_LABELS } from '../lib/poiDisplay.ts'
+import { NETWORK_BADGES } from '../lib/networkDisplay.ts'
 import { elevationStats } from '../core/elevation.ts'
 import { ElevationChart } from './ElevationChart.tsx'
 import { ProgressBalise } from './ProgressBalise.tsx'
@@ -51,7 +52,7 @@ export function ItineraryDetail() {
     >
       <header className={styles.header}>
         <span className={`${styles.badge} ${styles[itin.network]}`}>
-          {itin.network}
+          {NETWORK_BADGES[itin.network]}
         </span>
         <div className={styles.titleBlock}>
           <h3 className={styles.name}>{displayName(itin)}</h3>
@@ -91,6 +92,44 @@ export function ItineraryDetail() {
           restants
         </p>
       </div>
+
+      {itin.details && (
+        <section
+          className={styles.section}
+          aria-labelledby="local-title"
+          data-testid="detail-local-info"
+        >
+          <h4 id="local-title" className={styles.sectionTitle}>
+            Infos pratiques
+          </h4>
+          <p className={styles.localMeta}>
+            {[
+              itin.details.commune && `Départ : ${itin.details.commune}`,
+              itin.details.difficulte && `Difficulté : ${itin.details.difficulte}`,
+              itin.details.temps && `Durée : ${itin.details.temps}`,
+              itin.details.denivele && `D+ annoncé : ${itin.details.denivele}`,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </p>
+          {itin.details.descriptif && (
+            <p className={styles.localDescription}>{itin.details.descriptif}</p>
+          )}
+          {itin.details.lienWeb && (
+            <a
+              className={styles.localLink}
+              href={itin.details.lienWeb}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Fiche complète sur le site du producteur →
+            </a>
+          )}
+          <p className={styles.localSource}>
+            Source : {itin.details.source} (Licence Ouverte 2.0)
+          </p>
+        </section>
+      )}
 
       <section className={styles.section} aria-labelledby="elevation-title">
         <h4 id="elevation-title" className={styles.sectionTitle}>

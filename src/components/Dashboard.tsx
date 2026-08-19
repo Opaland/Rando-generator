@@ -9,6 +9,7 @@ const NETWORK_LABELS: Record<Network, string> = {
   GR: 'GR',
   GRP: 'GR de Pays',
   PR: 'PR',
+  LOCAL: 'Boucles locales',
   // Les itinéraires persos ont leur propre section : jamais affichés ici
   // (leur total reste à 0 dans le matching des réseaux OSM).
   PERSO: 'Mes itinéraires',

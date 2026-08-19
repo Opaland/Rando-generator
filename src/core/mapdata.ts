@@ -40,7 +40,8 @@ const NETWORK_PRIORITY: Record<Network, number> = {
   GR: 0,
   GRP: 1,
   PR: 2,
-  PERSO: 3,
+  LOCAL: 3,
+  PERSO: 4,
 }
 
 function lineFeature<P>(coordinates: LonLat[], properties: P): LineFeature<P> {
