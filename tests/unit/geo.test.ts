@@ -5,6 +5,7 @@ import {
   cellKeyFromIndices,
   cellIndices,
   interpolate,
+  bearingDegrees,
 } from '../../src/core/geo.ts'
 import type { LonLat } from '../../src/core/types.ts'
 
@@ -86,5 +87,21 @@ describe('interpolate', () => {
 
   it('retourne le milieu pour t = 0,5', () => {
     expect(interpolate(a, b, 0.5)).toEqual([4.5, 45.5])
+  })
+})
+
+describe('bearingDegrees', () => {
+  it('vaut ~0 plein nord, ~90 plein est, ~180 plein sud, ~270 plein ouest', () => {
+    const origin: LonLat = [4.5, 45.4]
+    expect(bearingDegrees(origin, [4.5, 45.5])).toBeCloseTo(0, 0)
+    expect(bearingDegrees(origin, [4.6, 45.4])).toBeCloseTo(90, 0)
+    expect(bearingDegrees(origin, [4.5, 45.3])).toBeCloseTo(180, 0)
+    expect(bearingDegrees(origin, [4.4, 45.4])).toBeCloseTo(270, 0)
+  })
+
+  it('reste dans [0, 360)', () => {
+    const b = bearingDegrees([4.6, 45.4], [4.5, 45.4])
+    expect(b).toBeGreaterThanOrEqual(0)
+    expect(b).toBeLessThan(360)
   })
 })

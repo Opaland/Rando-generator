@@ -4,6 +4,7 @@ import { CustomItineraries } from './components/CustomItineraries.tsx'
 import { Dashboard } from './components/Dashboard.tsx'
 import { EmptyState } from './components/EmptyState.tsx'
 import { ItineraryCard } from './components/ItineraryCard.tsx'
+import { ItineraryDetail } from './components/ItineraryDetail.tsx'
 import { ItineraryList } from './components/ItineraryList.tsx'
 import { Settings } from './components/Settings.tsx'
 import { TrackManager } from './components/TrackManager.tsx'
@@ -20,6 +21,7 @@ function App() {
   const dbWarning = useAppStore((s) => s.dbWarning)
   const hasZoneData = useAppStore((s) => s.itineraries.length > 0)
   const hasCustomData = useAppStore((s) => s.customItineraries.length > 0)
+  const hasTracks = useAppStore((s) => s.tracks.length > 0)
   const zoneLoading = useAppStore((s) => s.zoneLoading)
   const [aboutOpen, setAboutOpen] = useState(false)
 
@@ -81,8 +83,11 @@ function App() {
           >
             <MapView />
           </Suspense>
-          {!hasZoneData && !hasCustomData && !zoneLoading && <EmptyState />}
+          {!hasZoneData && !hasCustomData && !hasTracks && !zoneLoading && (
+            <EmptyState />
+          )}
           <ItineraryCard />
+          <ItineraryDetail />
         </main>
       </div>
 

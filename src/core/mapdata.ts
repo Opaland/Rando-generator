@@ -1,5 +1,15 @@
 import type { Itinerary, LonLat, Network, Sample, Track } from './types.ts'
 
+/**
+ * Concatène les coordonnées de tous les ways d'un itinéraire, dans l'ordre
+ * des membres — approximation raisonnable pour un profil altimétrique ou une
+ * boîte englobante (l'ordre des membres d'une relation OSM entretenue suit
+ * généralement le sens de l'itinéraire).
+ */
+export function itineraryCoords(itinerary: Itinerary): LonLat[] {
+  return itinerary.ways.flatMap((way) => way.coords)
+}
+
 /** GeoJSON minimal — évite une dépendance de types externe dans core. */
 export interface LineStringGeometry {
   type: 'LineString'

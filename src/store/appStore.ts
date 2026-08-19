@@ -14,8 +14,17 @@ import {
   trackFingerprint,
 } from '../core/gpx.ts'
 import { polylineLengthMeters } from '../core/sampling.ts'
+import { itineraryCoords } from '../core/mapdata.ts'
+import { fetchElevationProfile, ElevationError } from '../core/elevation.ts'
+import { fetchPois } from '../core/poi.ts'
 import type { MatchResult } from '../core/matching.ts'
-import type { Itinerary, LonLat, Track } from '../core/types.ts'
+import type {
+  ElevationProfile,
+  Itinerary,
+  LonLat,
+  PointOfInterest,
+  Track,
+} from '../core/types.ts'
 import { DEFAULT_TOLERANCE_METERS, STEP_METERS } from '../core/types.ts'
 import {
   openSentiersDb,
@@ -58,6 +67,17 @@ export interface AppState {
   // UI
   selectedItineraryId: number | null
 
+  // Fiche détail (profil altimétrique + points d'intérêt + vue 3D)
+  detailItineraryId: number | null
+  elevationProfile: ElevationProfile | null
+  elevationError: string | null
+  elevationLoading: boolean
+  pois: PointOfInterest[]
+  poisLoading: boolean
+  view3D: boolean
+  /** Coordonnée à centrer sur la carte (POI cliqué) ; consommée une fois par MapView. */
+  focusTarget: LonLat | null
+
   init: () => Promise<void>
   loadZone: (zoneId: string, options?: { force?: boolean }) => Promise<void>
   loadRef: (ref: string, options?: { force?: boolean }) => Promise<void>
@@ -68,9 +88,15 @@ export interface AppState {
   setTolerance: (value: number) => Promise<void>
   selectItinerary: (id: number | null) => void
   clearImportErrors: () => void
+  openItineraryDetail: (id: number) => void
+  closeItineraryDetail: () => void
+  toggleView3D: () => void
+  focusOn: (coords: LonLat) => void
+  clearFocusTarget: () => void
 }
 
 let recomputeSequence = 0
+let detailSequence = 0
 
 export const useAppStore = create<AppState>()((set, get) => {
   async function recompute(): Promise<void> {
@@ -210,6 +236,14 @@ export const useAppStore = create<AppState>()((set, get) => {
     customMatching: null,
     matchingBusy: false,
     selectedItineraryId: null,
+    detailItineraryId: null,
+    elevationProfile: null,
+    elevationError: null,
+    elevationLoading: false,
+    pois: [],
+    poisLoading: false,
+    view3D: false,
+    focusTarget: null,
 
     async init() {
       let db: SentiersDb | null = null
@@ -292,7 +326,7 @@ export const useAppStore = create<AppState>()((set, get) => {
           const parsed = parseGpx(text, new DOMParser())
           if (parsed.points.length === 0) {
             errors.push(
-              `${file.name} : aucun point de trace (trkpt) dans ce fichier.`,
+              `${file.name} : aucun point de trace exploitable dans ce fichier.`,
             )
             continue
           }
@@ -391,6 +425,7 @@ export const useAppStore = create<AppState>()((set, get) => {
     async removeCustomItinerary(id) {
       const { db } = get()
       if (db) await db.deleteCustomItinerary(id)
+      if (get().detailItineraryId === id) get().closeItineraryDetail()
       set((state) => ({
         customItineraries: state.customItineraries.filter(
           (i) => i.osmRelationId !== id,
@@ -410,11 +445,97 @@ export const useAppStore = create<AppState>()((set, get) => {
     },
 
     selectItinerary(id) {
-      set({ selectedItineraryId: id })
+      set((state) => ({
+        selectedItineraryId: id,
+        // Changer la sélection depuis la liste ferme une fiche détail
+        // ouverte pour un AUTRE itinéraire (elle n'a plus de sujet cohérent).
+        ...(state.detailItineraryId !== null && state.detailItineraryId !== id
+          ? {
+              detailItineraryId: null,
+              elevationProfile: null,
+              elevationError: null,
+              elevationLoading: false,
+              pois: [],
+              poisLoading: false,
+              view3D: false,
+            }
+          : {}),
+      }))
     },
 
     clearImportErrors() {
       set({ importErrors: [] })
+    },
+
+    openItineraryDetail(id) {
+      const sequence = ++detailSequence
+      set({
+        detailItineraryId: id,
+        selectedItineraryId: id,
+        view3D: false,
+        elevationProfile: null,
+        elevationError: null,
+        elevationLoading: true,
+        pois: [],
+        poisLoading: true,
+      })
+
+      const { itineraries, customItineraries } = get()
+      const itinerary =
+        itineraries.find((i) => i.osmRelationId === id) ??
+        customItineraries.find((i) => i.osmRelationId === id)
+      const coords = itinerary ? itineraryCoords(itinerary) : []
+      const applies = () =>
+        sequence === detailSequence && get().detailItineraryId === id
+
+      if (coords.length < 2) {
+        set({ elevationLoading: false, poisLoading: false })
+        return
+      }
+
+      void fetchElevationProfile(coords)
+        .then((profile) => {
+          if (applies()) set({ elevationProfile: profile, elevationLoading: false })
+        })
+        .catch((error: unknown) => {
+          if (!applies()) return
+          set({
+            elevationLoading: false,
+            elevationError:
+              error instanceof ElevationError
+                ? error.message
+                : 'Profil altimétrique indisponible.',
+          })
+        })
+
+      void fetchPois(coords).then((pois) => {
+        if (applies()) set({ pois, poisLoading: false })
+      })
+    },
+
+    closeItineraryDetail() {
+      detailSequence += 1
+      set({
+        detailItineraryId: null,
+        elevationProfile: null,
+        elevationError: null,
+        elevationLoading: false,
+        pois: [],
+        poisLoading: false,
+        view3D: false,
+      })
+    },
+
+    toggleView3D() {
+      set((state) => ({ view3D: !state.view3D }))
+    },
+
+    focusOn(coords) {
+      set({ focusTarget: coords })
+    },
+
+    clearFocusTarget() {
+      set({ focusTarget: null })
     },
   }
 })

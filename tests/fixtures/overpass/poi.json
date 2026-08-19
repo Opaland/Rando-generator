@@ -1,0 +1,40 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API (fixture enregistrée pour les tests — données synthétiques au format réel)",
+  "elements": [
+    {
+      "type": "node",
+      "id": 9001,
+      "lat": 45.4,
+      "lon": 4.51,
+      "tags": { "tourism": "viewpoint", "name": "Point de vue sur la vallée" }
+    },
+    {
+      "type": "node",
+      "id": 9002,
+      "lat": 45.41,
+      "lon": 4.52,
+      "tags": { "natural": "peak", "name": "Crêt de la Perdrix", "ele": "1432" }
+    },
+    {
+      "type": "node",
+      "id": 9003,
+      "lat": 45.42,
+      "lon": 4.53,
+      "tags": { "tourism": "alpine_hut", "name": "Refuge du Pilat" }
+    },
+    {
+      "type": "node",
+      "id": 9004,
+      "lat": 45.43,
+      "lon": 4.54,
+      "tags": { "amenity": "drinking_water" }
+    },
+    { "type": "node", "id": 9005, "lat": 45.44, "lon": 4.55, "tags": {} },
+    {
+      "type": "way",
+      "id": 9100,
+      "tags": { "tourism": "viewpoint" }
+    }
+  ]
+}

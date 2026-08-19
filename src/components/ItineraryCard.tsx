@@ -6,13 +6,17 @@ import styles from './ItineraryCard.module.css'
 /** Fiche de l'itinéraire sélectionné, en surimpression de la carte. */
 export function ItineraryCard() {
   const selectedItineraryId = useAppStore((s) => s.selectedItineraryId)
+  const detailItineraryId = useAppStore((s) => s.detailItineraryId)
   const itineraries = useAppStore((s) => s.itineraries)
   const customItineraries = useAppStore((s) => s.customItineraries)
   const matching = useAppStore((s) => s.matching)
   const customMatching = useAppStore((s) => s.customMatching)
   const selectItinerary = useAppStore((s) => s.selectItinerary)
+  const openItineraryDetail = useAppStore((s) => s.openItineraryDetail)
 
-  if (selectedItineraryId === null) return null
+  // La fiche détail (altimétrie, POI, vue 3D) prend le relais : éviter le
+  // doublon d'information avec ce résumé flottant.
+  if (selectedItineraryId === null || detailItineraryId !== null) return null
   const itin =
     itineraries.find((i) => i.osmRelationId === selectedItineraryId) ??
     customItineraries.find((i) => i.osmRelationId === selectedItineraryId)
@@ -62,6 +66,16 @@ export function ItineraryCard() {
         {formatKm(done)} parcourus · {formatKm(Math.max(0, total - done))}{' '}
         restants
       </p>
+      <button
+        type="button"
+        className={styles.detailLink}
+        data-testid="itinerary-card-detail-link"
+        onClick={() => {
+          openItineraryDetail(itin.osmRelationId)
+        }}
+      >
+        Voir le détail (altimétrie, points d’intérêt) →
+      </button>
     </aside>
   )
 }

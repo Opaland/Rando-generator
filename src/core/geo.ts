@@ -35,3 +35,16 @@ export function cellKey(lon: number, lat: number): string {
 export function interpolate(a: LonLat, b: LonLat, t: number): LonLat {
   return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]
 }
+
+/** Cap initial (0–360°, 0 = nord) du grand cercle de a vers b. */
+export function bearingDegrees(a: LonLat, b: LonLat): number {
+  const lat1 = a[1] * DEG_TO_RAD
+  const lat2 = b[1] * DEG_TO_RAD
+  const dLon = (b[0] - a[0]) * DEG_TO_RAD
+  const y = Math.sin(dLon) * Math.cos(lat2)
+  const x =
+    Math.cos(lat1) * Math.sin(lat2) -
+    Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon)
+  const bearing = Math.atan2(y, x) / DEG_TO_RAD
+  return (bearing + 360) % 360
+}

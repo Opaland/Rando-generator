@@ -53,6 +53,31 @@ export interface CompletionResult {
   computedAt: string
 }
 
+/** Catégories de points d'intérêt affichées dans la fiche détail. */
+export type PoiKind =
+  | 'viewpoint'
+  | 'peak'
+  | 'hut'
+  | 'water'
+  | 'picnic'
+  | 'monument'
+
+export interface PointOfInterest {
+  id: number
+  lon: number
+  lat: number
+  kind: PoiKind
+  name: string | null
+}
+
+/** Profil altimétrique d'un tracé : distances cumulées et altitudes alignées. */
+export interface ElevationProfile {
+  /** Distance cumulée depuis le départ, en mètres. */
+  distances: number[]
+  /** Altitude en mètres ; null si la donnée est indisponible à ce point. */
+  elevations: (number | null)[]
+}
+
 /** Pas d'échantillonnage le long des ways, en mètres. */
 export const STEP_METERS = 100
 
