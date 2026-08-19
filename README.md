@@ -70,24 +70,29 @@ existant via `PW_CHROMIUM_PATH=/chemin/vers/chrome npm run e2e`.
    étape accrochée au sentier le plus proche, et le tracé **suit les chemins
    affichés** entre les étapes (plus court chemin, calculé dans le
    navigateur).
-4. **Lire sa progression** : carte colorée (gris = non parcouru, couleur du
+4. **Voir ses sorties** : la section « Mes sorties » totalise le nombre de
+   sorties, les kilomètres et le D+, et trace un histogramme des distances
+   par mois (12 derniers mois). Les mois sans sortie sont conservés à zéro —
+   une interruption est une information. Les traces sans date sont comptées
+   dans les totaux et signalées comme absentes du graphique.
+5. **Lire sa progression** : carte colorée (gris = non parcouru, couleur du
    balisage = parcouru — une légende compacte rappelle le code couleur par
    réseau), tableau de bord (% global, km faits/restants, répartition
    GR/GRP/PR, top 5), liste triable/filtrable. Sélectionner un itinéraire
    dans la liste **zoome dessus** sur la carte.
-5. **Fiche détail** : cliquer un tracé sur la carte ouvre un panneau avec son
+6. **Fiche détail** : cliquer un tracé sur la carte ouvre un panneau avec son
    **profil altimétrique** (service altimétrique IGN, Etalab 2.0 — D+/D−/
    min/max), les **points d'intérêt** à proximité (via Overpass), et une
    **vue 3D** — une perspective
    caméra inclinée sur le tracé (pas un relief calculé depuis un modèle
    numérique de terrain). Le relief et les POI sont des bonus : indisponibles,
    la fiche reste utilisable.
-6. **Se localiser** : le bouton « Ma position » affiche l'appareil sur la
+7. **Se localiser** : le bouton « Ma position » affiche l'appareil sur la
    carte et recentre dessus au premier relevé. La position est lue par le
    navigateur et **reste dans l'onglet** — ni enregistrée, ni transmise. La
    précision annoncée est affichée, et signalée quand elle est trop mauvaise
    pour situer quelqu'un sur un sentier.
-7. **Régler la précision de suivi GPS** (tolérance de matching, 25–100 m)
+8. **Régler la précision de suivi GPS** (tolérance de matching, 25–100 m)
    selon la précision de votre appareil ; tout est recalculé.
 
 ### Hors connexion
@@ -126,6 +131,9 @@ src/
 │  ├─ poi.ts       # POI le long d'un tracé (Overpass, bbox découpées)
 │  ├─ boucles.ts   # boucles communales open data (Métropole de Lyon, LO 2.0)
 │  ├─ routing.ts   # graphe des sentiers, accroche d'un clic, Dijkstra
+│  ├─ history.ts   # sorties par mois, totaux, cumuls
+│  ├─ gpxExport.ts # écriture GPX 1.1 + attribution de licence
+│  ├─ geolocation.ts # messages et seuils de la position GPS
 │  └─ mapdata.ts   # GeoJSON des couches carte (base / parcouru / traces)
 ├─ store/       # Zustand + client du worker de matching
 ├─ db/          # IndexedDB (idb), versionnée, TTL 30 jours

@@ -145,7 +145,10 @@ export async function mockExternalNetwork(
  * GPX synthétique : une ligne à latitude constante, décalée de `offsetNorthMeters`
  * au nord du tracé GR de la fixture Overpass (lat 45.4, lon 4.50 → 4.53).
  */
-export function buildGpx(offsetNorthMeters: number): string {
+export function buildGpx(
+  offsetNorthMeters: number,
+  isoDate = '2024-06-15T08:30:00Z',
+): string {
   const lat = 45.4 + offsetNorthMeters / 111_195
   const points: string[] = []
   for (let lon = 4.5; lon <= 4.5301; lon += 0.0002) {
@@ -153,7 +156,7 @@ export function buildGpx(offsetNorthMeters: number): string {
   }
   return `<?xml version="1.0" encoding="UTF-8"?>
 <gpx version="1.1" creator="e2e" xmlns="http://www.topografix.com/GPX/1/1">
-  <metadata><time>2024-06-15T08:30:00Z</time></metadata>
+  <metadata><time>${isoDate}</time></metadata>
   <trk><trkseg>${points.join('\n')}</trkseg></trk>
 </gpx>`
 }

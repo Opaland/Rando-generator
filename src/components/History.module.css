@@ -1,0 +1,46 @@
+.section {
+  display: grid;
+  gap: 8px;
+}
+
+.title {
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gris-vert);
+}
+
+.totals {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.chart {
+  display: grid;
+  gap: 2px;
+}
+
+.svg {
+  width: 100%;
+  height: 70px;
+  display: block;
+}
+
+.bar {
+  fill: var(--rouge-balisage);
+  opacity: 0.85;
+}
+
+.axis {
+  margin: 0;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: var(--gris-vert);
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--gris-vert);
+}

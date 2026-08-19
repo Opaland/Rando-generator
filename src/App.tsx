@@ -3,6 +3,7 @@ import { About } from './components/About.tsx'
 import { CustomItineraries } from './components/CustomItineraries.tsx'
 import { Dashboard } from './components/Dashboard.tsx'
 import { EmptyState } from './components/EmptyState.tsx'
+import { History } from './components/History.tsx'
 import { ItineraryCard } from './components/ItineraryCard.tsx'
 import { ItineraryDetail } from './components/ItineraryDetail.tsx'
 import { ItineraryList } from './components/ItineraryList.tsx'
@@ -72,6 +73,7 @@ function App() {
           <TrackManager />
           <CustomItineraries />
           <Dashboard />
+          <History />
           <ItineraryList />
           <Settings />
           <footer className={styles.footer}>
