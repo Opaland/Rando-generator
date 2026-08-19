@@ -1,18 +1,43 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { ZONES } from '../core/overpass.ts'
 import { useAppStore } from '../store/appStore.ts'
 import styles from './ZonePicker.module.css'
+
+const STAGE_TEXT: Record<'requesting' | 'retrying' | 'processing', string> = {
+  requesting:
+    'Interrogation d’OpenStreetMap… comptez 30 secondes à 2 minutes selon la charge des serveurs.',
+  retrying:
+    'Premier serveur injoignable, nouvelle tentative sur un second serveur…',
+  processing: 'Réponse reçue, traitement des tracés…',
+}
 
 export function ZonePicker() {
   const zoneKey = useAppStore((s) => s.zoneKey)
   const zoneLabel = useAppStore((s) => s.zoneLabel)
   const zoneLoading = useAppStore((s) => s.zoneLoading)
+  const zoneLoadStage = useAppStore((s) => s.zoneLoadStage)
   const zoneError = useAppStore((s) => s.zoneError)
   const zoneFetchedAt = useAppStore((s) => s.zoneFetchedAt)
   const itineraries = useAppStore((s) => s.itineraries)
   const loadZone = useAppStore((s) => s.loadZone)
   const loadRef = useAppStore((s) => s.loadRef)
+  const cancelZoneLoad = useAppStore((s) => s.cancelZoneLoad)
   const [refInput, setRefInput] = useState('')
+  const [elapsedS, setElapsedS] = useState(0)
+
+  useEffect(() => {
+    if (!zoneLoading) return
+    const start = Date.now()
+    const tick = () => {
+      setElapsedS(Math.round((Date.now() - start) / 1000))
+    }
+    // Affiche 0 s immédiatement plutôt que d'attendre le premier tick.
+    tick()
+    const id = window.setInterval(tick, 1000)
+    return () => {
+      window.clearInterval(id)
+    }
+  }, [zoneLoading])
 
   const onRefSubmit = (event: FormEvent) => {
     event.preventDefault()
@@ -70,10 +95,26 @@ export function ZonePicker() {
       </form>
 
       {zoneLoading && (
-        <p className={styles.waiting} role="status" data-testid="zone-loading">
-          Interrogation d’OpenStreetMap… comptez 30 secondes à 2 minutes selon
-          la charge des serveurs. Merci de patienter.
-        </p>
+        <div className={styles.waiting} role="status" data-testid="zone-loading">
+          <span className={styles.spinner} aria-hidden="true" />
+          <span className={styles.waitingText}>
+            {STAGE_TEXT[zoneLoadStage ?? 'requesting']}
+            {elapsedS > 0 && (
+              <span className={styles.elapsed} data-testid="zone-loading-elapsed">
+                {' '}
+                ({elapsedS} s)
+              </span>
+            )}
+          </span>
+          <button
+            type="button"
+            className="btn-link"
+            data-testid="zone-cancel"
+            onClick={cancelZoneLoad}
+          >
+            Annuler
+          </button>
+        </div>
       )}
 
       {zoneError && (
