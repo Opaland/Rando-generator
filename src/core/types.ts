@@ -1,12 +1,31 @@
 /** Coordonnée [longitude, latitude] — convention GeoJSON. */
 export type LonLat = [number, number]
 
-/** GR/GRP/PR : réseaux OSM ; PERSO : itinéraires créés par l'utilisateur. */
-export type Network = 'GR' | 'GRP' | 'PR' | 'PERSO'
+/**
+ * GR/GRP/PR : réseaux OSM ; LOCAL : boucles balisées issues de l'open data
+ * des collectivités (ex. Métropole de Lyon) — pas des PR® FFRandonnée ;
+ * PERSO : itinéraires créés par l'utilisateur.
+ */
+export type Network = 'GR' | 'GRP' | 'PR' | 'LOCAL' | 'PERSO'
 
 export interface TrailWay {
   osmWayId: number
   coords: LonLat[]
+}
+
+/** Métadonnées éditoriales d'une boucle locale (source open data). */
+export interface LocalDetails {
+  /** Producteur de la donnée, pour l'attribution (ex. « Métropole de Lyon »). */
+  source: string
+  commune: string | null
+  /** ex. « facile », « moyen », « difficile » — vocabulaire du producteur. */
+  difficulte: string | null
+  /** Durée indicative telle que publiée (ex. « 2h40 »). */
+  temps: string | null
+  /** Dénivelé tel que publié (ex. « 140 m »). */
+  denivele: string | null
+  descriptif: string | null
+  lienWeb: string | null
 }
 
 export interface Itinerary {
@@ -21,6 +40,8 @@ export interface Itinerary {
   totalMeters: number
   /** ISO — pour l'invalidation du cache. */
   fetchedAt: string
+  /** Présent uniquement pour les boucles locales open data (network LOCAL). */
+  details?: LocalDetails
 }
 
 /** Échantillon de matching (un point tous les STEP mètres le long d'un way). */

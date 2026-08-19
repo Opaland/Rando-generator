@@ -4,6 +4,9 @@
   --jaune-pr: #d9a400;
   /* Orange foncé : garde un ratio de contraste ≥ 4,5:1 avec du texte blanc. */
   --orange-grp: #b34a08;
+  /* Boucles locales open data (Métropole de Lyon…) : bleu-vert distinct du
+     jaune PR pour ne pas confondre deux sources sur la carte. */
+  --bleu-local: #1d7a8c;
   --blanc-papier: #faf7f2;
   --vert-noir: #1e2b23;
   --gris-vert: #5a6b5d;

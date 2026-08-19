@@ -9,8 +9,10 @@ statistiques : « j'ai parcouru 34 % du GR 7, 61 % des sentiers du Pilat ».
 - **100 % local** : vos GPX ne quittent jamais votre navigateur. Aucun compte,
   aucun backend, aucune télémétrie. La persistance se fait en IndexedDB.
 - **Données ouvertes uniquement** : itinéraires © les contributeurs
-  OpenStreetMap (ODbL) via l'API Overpass ; fond de carte Plan IGN v2
-  (licence ouverte Etalab 2.0) avec repli automatique sur les tuiles OSM.
+  OpenStreetMap (ODbL) via l'API Overpass ; boucles locales de la Métropole
+  de Lyon © Métropole de Lyon (Licence Ouverte 2.0, jeu « Boucles communales
+  de randonnée ») ; fond de carte Plan IGN v2 (licence ouverte Etalab 2.0)
+  avec repli automatique sur les tuiles OSM.
 - Site statique : déployable tel quel sur GitHub Pages, Netlify, etc.
 
 > GR®, GR de Pays® et PR® sont des marques de la FFRandonnée. Cette
@@ -45,7 +47,11 @@ existant via `PW_CHROMIUM_PATH=/chemin/vers/chrome npm run e2e`.
    OSM `route=hiking`, `foot` et `walking` (les boucles locales type
    cartoguides sont souvent taguées `foot`). La requête Overpass peut
    prendre de 30 s à 2 min ; le résultat est mis en cache 30 jours dans le
-   navigateur (bouton « Actualiser les tracés » pour forcer).
+   navigateur (bouton « Actualiser les tracés » pour forcer). Pour les zones
+   couvrant la Métropole de Lyon, les **55 boucles communales** du jeu open
+   data métropolitain (réseau « Boucle », bleu-vert) s'ajoutent
+   automatiquement aux itinéraires OSM — fichier embarqué avec le site
+   (`public/data/`), aucun appel réseau supplémentaire.
 2. **Importer des GPX** (multi-fichiers, drag & drop). Les traces sont listées
    avec nom, date, distance et D+, persistées localement ; un double import
    du même fichier est détecté et refusé.

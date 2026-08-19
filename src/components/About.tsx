@@ -74,6 +74,19 @@ export function About({ open, onClose }: { open: boolean; onClose: () => void })
               , via l’API Overpass.
             </li>
             <li>
+              Les <strong>boucles locales</strong> de la Métropole de Lyon
+              proviennent du jeu de données ouvert «&nbsp;Boucles communales de
+              randonnée&nbsp;» (©&nbsp;
+              <a
+                href="https://data.grandlyon.com/"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Métropole de Lyon
+              </a>
+              , Licence Ouverte 2.0).
+            </li>
+            <li>
               Le fond de carte est le <strong>Plan IGN v2</strong> (© IGN),
               diffusé par la Géoplateforme sous{' '}
               <a

@@ -34,9 +34,9 @@ const IGN_TILES =
 const OSM_TILES = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
 
 const ATTRIBUTION =
-  'Fond © <a href="https://www.ign.fr/">IGN</a> (Plan IGN, licence ouverte Etalab) · Itinéraires © les contributeurs <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> (ODbL)'
+  'Fond © <a href="https://www.ign.fr/">IGN</a> (Plan IGN, licence ouverte Etalab) · Itinéraires © les contributeurs <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> (ODbL) · Boucles locales © <a href="https://data.grandlyon.com/">Métropole de Lyon</a> (Licence Ouverte)'
 const ATTRIBUTION_OSM =
-  'Fond et itinéraires © les contributeurs <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> (ODbL)'
+  'Fond et itinéraires © les contributeurs <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> (ODbL) · Boucles locales © <a href="https://data.grandlyon.com/">Métropole de Lyon</a> (Licence Ouverte)'
 
 const NETWORK_COLOR_MATCH: ExpressionSpecification = [
   'match',
@@ -47,6 +47,8 @@ const NETWORK_COLOR_MATCH: ExpressionSpecification = [
   NETWORK_COLORS.GRP,
   'PR',
   NETWORK_COLORS.PR,
+  'LOCAL',
+  NETWORK_COLORS.LOCAL,
   'PERSO',
   NETWORK_COLORS.PERSO,
   '#5a6b5d',

@@ -1,0 +1,104 @@
+{
+  "type": "FeatureCollection",
+  "name": "boucle_de_randonnee",
+  "crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:EPSG::4326" } },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "gid": 5,
+        "identifiant": "11",
+        "nom": "Les Vallons de la Beffe",
+        "vocation": "Pédestre-Equestre-VTT",
+        "commune_depart": "Dardilly",
+        "insee": "69072",
+        "difficulte": "moyen",
+        "temps": "2h40",
+        "longueur": "10,2 ",
+        "denivele": "140 m",
+        "depart_libelle": "Mairie",
+        "depart_longitude": 4.7535557,
+        "depart_latitude": 45.8060071,
+        "cheminement": "Mairie > Cogny > Les Mouilles > Mairie >",
+        "descriptif": "Cette balade permet de découvrir deux vallons.",
+        "balisage": "Jaune",
+        "lien_web": "https://www.grandlyon.com/sentier/exemple-129",
+        "numerocarte": "Carte Rando nature n°1",
+        "datemaj": "2026-04-20"
+      },
+      "geometry": {
+        "type": "MultiLineString",
+        "coordinates": [
+          [
+            [4.75355, 45.80601],
+            [4.75452, 45.80601],
+            [4.75549, 45.80601]
+          ],
+          [
+            [4.7565, 45.807],
+            [4.7575, 45.807]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "gid": 12,
+        "identifiant": "27",
+        "nom": "Tour du Fort",
+        "vocation": null,
+        "commune_depart": "Sathonay-Village",
+        "insee": "69292",
+        "difficulte": null,
+        "temps": null,
+        "longueur": "11,4 ",
+        "denivele": null,
+        "depart_libelle": null,
+        "depart_longitude": null,
+        "depart_latitude": null,
+        "cheminement": null,
+        "descriptif": null,
+        "balisage": null,
+        "lien_web": null,
+        "numerocarte": null,
+        "datemaj": "2026-04-20"
+      },
+      "geometry": {
+        "type": "MultiLineString",
+        "coordinates": [
+          [
+            [4.877, 45.828],
+            [4.878, 45.828]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "gid": 33,
+        "identifiant": "40",
+        "nom": "Boucle sans tracé exploitable",
+        "datemaj": "2026-04-20"
+      },
+      "geometry": {
+        "type": "MultiLineString",
+        "coordinates": [[[4.9, 45.9]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "gid": 34, "nom": null, "datemaj": "2026-04-20" },
+      "geometry": {
+        "type": "MultiLineString",
+        "coordinates": [
+          [
+            [4.91, 45.91],
+            [4.92, 45.91]
+          ]
+        ]
+      }
+    }
+  ]
+}

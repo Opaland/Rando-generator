@@ -1,5 +1,6 @@
 import { useAppStore } from '../store/appStore.ts'
 import { displayName, formatKm, formatPct } from '../lib/format.ts'
+import { NETWORK_BADGES } from '../lib/networkDisplay.ts'
 import { ProgressBalise } from './ProgressBalise.tsx'
 import styles from './ItineraryCard.module.css'
 
@@ -38,7 +39,7 @@ export function ItineraryCard() {
     >
       <header className={styles.header}>
         <span className={`${styles.badge} ${styles[itin.network]}`}>
-          {itin.network}
+          {NETWORK_BADGES[itin.network]}
         </span>
         <h3 className={styles.name}>{displayName(itin)}</h3>
         <button

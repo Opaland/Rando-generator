@@ -2,7 +2,7 @@ import type { Network } from '../core/types.ts'
 import { NETWORK_COLORS, NETWORK_LABELS } from '../lib/networkDisplay.ts'
 import styles from './MapLegend.module.css'
 
-const NETWORKS: Network[] = ['GR', 'GRP', 'PR', 'PERSO']
+const NETWORKS: Network[] = ['GR', 'GRP', 'PR', 'LOCAL', 'PERSO']
 
 /** Légende compacte : couleur par réseau + distinction parcouru/restant. */
 export function MapLegend() {

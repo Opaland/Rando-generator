@@ -44,6 +44,10 @@
   color: var(--vert-noir);
 }
 
+.LOCAL {
+  background: var(--bleu-local);
+}
+
 .PERSO {
   background: var(--vert-noir);
 }
@@ -127,6 +131,29 @@
 .elevationStats {
   margin: 0;
   font-size: 0.85rem;
+  color: var(--gris-vert);
+}
+
+.localMeta {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--gris-vert);
+}
+
+.localDescription {
+  margin: 0;
+  font-size: 0.88rem;
+}
+
+.localLink {
+  justify-self: start;
+  font-size: 0.85rem;
+  color: var(--rouge-balisage);
+}
+
+.localSource {
+  margin: 0;
+  font-size: 0.75rem;
   color: var(--gris-vert);
 }
 

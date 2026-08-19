@@ -140,6 +140,7 @@ export function computeCompletion(
     GR: emptyStats(),
     GRP: emptyStats(),
     PR: emptyStats(),
+    LOCAL: emptyStats(),
     PERSO: emptyStats(),
   }
 
