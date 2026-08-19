@@ -13,6 +13,7 @@ import {
   GPX_MALFORMED,
   GPX_NOT_GPX,
   GPX_BAD_COORDS,
+  GPX_ROUTE_ONLY,
 } from '../fixtures/gpx.ts'
 
 const parser = new DOMParser()
@@ -65,6 +66,16 @@ describe('parseGpx', () => {
   it('extrait les altitudes (null quand absentes), alignées sur les points', () => {
     const res = parseGpx(GPX_SIMPLE, parser)
     expect(res.elevations).toEqual([1200, null, null])
+  })
+
+  it('lit un parcours <rte><rtept> quand il n’y a pas de <trk> (ex. export Suunto)', () => {
+    const res = parseGpx(GPX_ROUTE_ONLY, parser)
+    expect(res.points).toEqual([
+      [4.68756, 45.505375],
+      [4.687533, 45.505382],
+      [4.686948, 45.505218],
+    ])
+    expect(res.elevations).toEqual([449, 449, 445.8])
   })
 })
 

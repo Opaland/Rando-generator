@@ -48,23 +48,13 @@ export function parseGpx(xmlText: string, parser: XmlParser): ParsedGpx {
     )
   }
 
-  const points: LonLat[] = []
-  const elevations: (number | null)[] = []
-  let firstPointDate: string | null = null
-  const trkpts = doc.getElementsByTagName('trkpt')
-  for (const trkpt of Array.from(trkpts)) {
-    const lat = Number(trkpt.getAttribute('lat'))
-    const lon = Number(trkpt.getAttribute('lon'))
-    if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue
-    points.push([lon, lat])
-    const ele = Number(
-      trkpt.getElementsByTagName('ele')[0]?.textContent.trim() ?? NaN,
-    )
-    elevations.push(Number.isFinite(ele) ? ele : null)
-    if (firstPointDate === null) {
-      const time = trkpt.getElementsByTagName('time')[0]?.textContent.trim()
-      if (time) firstPointDate = time
-    }
+  // Un GPX peut décrire une trace enregistrée (<trk><trkseg><trkpt>) ou un
+  // parcours planifié/exporté (<rte><rtept>) — les deux sont valides côté
+  // schéma GPX 1.1 et partagent la même structure de point. Certains exports
+  // (ex. Suunto app pour un « parcours ») ne produisent que des <rtept>.
+  let { points, elevations, firstPointDate } = extractPoints(doc, 'trkpt')
+  if (points.length === 0) {
+    ;({ points, elevations, firstPointDate } = extractPoints(doc, 'rtept'))
   }
 
   const metadataTime = doc
@@ -73,6 +63,34 @@ export function parseGpx(xmlText: string, parser: XmlParser): ParsedGpx {
     ?.textContent.trim()
 
   return { points, elevations, date: metadataTime ?? firstPointDate }
+}
+
+interface ExtractedPoints {
+  points: LonLat[]
+  elevations: (number | null)[]
+  firstPointDate: string | null
+}
+
+/** Extrait points/altitudes/première date d'horodatage pour un tag donné (trkpt ou rtept). */
+function extractPoints(doc: Document, tagName: 'trkpt' | 'rtept'): ExtractedPoints {
+  const points: LonLat[] = []
+  const elevations: (number | null)[] = []
+  let firstPointDate: string | null = null
+  for (const pt of Array.from(doc.getElementsByTagName(tagName))) {
+    const lat = Number(pt.getAttribute('lat'))
+    const lon = Number(pt.getAttribute('lon'))
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue
+    points.push([lon, lat])
+    const ele = Number(
+      pt.getElementsByTagName('ele')[0]?.textContent.trim() ?? NaN,
+    )
+    elevations.push(Number.isFinite(ele) ? ele : null)
+    if (firstPointDate === null) {
+      const time = pt.getElementsByTagName('time')[0]?.textContent.trim()
+      if (time) firstPointDate = time
+    }
+  }
+  return { points, elevations, firstPointDate }
 }
 
 /**

@@ -41,6 +41,24 @@ export const GPX_MALFORMED = `<?xml version="1.0"?><gpx><trk><trkseg><trkpt lat=
 /** Pas du GPX du tout. */
 export const GPX_NOT_GPX = `<?xml version="1.0"?><html><body>Pas un GPX</body></html>`
 
+/**
+ * Parcours planifié (<rte><rtept>), sans <trk> — le format produit par
+ * certains exports (ex. Suunto app, export « parcours ») pour un GPX qui
+ * décrit un itinéraire à suivre plutôt qu'une trace enregistrée.
+ */
+export const GPX_ROUTE_ONLY = `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Suunto app" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata>
+    <name>suuntoapp-Hiking-route</name>
+  </metadata>
+  <rte>
+    <name>suuntoapp-Hiking-route</name>
+    <rtept lat="45.505375" lon="4.68756"><ele>449.0</ele></rtept>
+    <rtept lat="45.505382" lon="4.687533"><ele>449.0</ele></rtept>
+    <rtept lat="45.505218" lon="4.686948"><ele>445.8</ele></rtept>
+  </rte>
+</gpx>`
+
 /** Coordonnées invalides : le point non numérique est ignoré. */
 export const GPX_BAD_COORDS = `<?xml version="1.0" encoding="UTF-8"?>
 <gpx version="1.1" creator="test" xmlns="http://www.topografix.com/GPX/1/1">
