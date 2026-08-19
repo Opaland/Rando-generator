@@ -1,0 +1,122 @@
+{
+ "type": "FeatureCollection",
+ "name": "boucle_de_randonnee",
+ "crs": {
+  "type": "name",
+  "properties": {
+   "name": "urn:ogc:def:crs:EPSG::4326"
+  }
+ },
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "gid": 901,
+    "nom": "Boucle du Vallon",
+    "commune_depart": "Vaugneray",
+    "difficulte": "facile",
+    "temps": "1h30",
+    "longueur": "5,0 ",
+    "denivele": "120 m",
+    "descriptif": "Boucle familiale.",
+    "lien_web": "https://www.grandlyon.com/sentier/exemple-901"
+   },
+   "geometry": {
+    "type": "MultiLineString",
+    "coordinates": [
+     [
+      [
+       4.7,
+       45.72
+      ],
+      [
+       4.71,
+       45.72
+      ],
+      [
+       4.71,
+       45.73
+      ],
+      [
+       4.7,
+       45.73
+      ],
+      [
+       4.7,
+       45.72
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "gid": 902,
+    "nom": "Grande Traversée",
+    "commune_depart": "Yzeron",
+    "difficulte": "difficile",
+    "temps": "4h00",
+    "longueur": "15,0 ",
+    "denivele": "800 m",
+    "descriptif": "Aller simple, retour en bus.",
+    "lien_web": "https://www.grandlyon.com/sentier/exemple-902"
+   },
+   "geometry": {
+    "type": "MultiLineString",
+    "coordinates": [
+     [
+      [
+       4.6,
+       45.6
+      ],
+      [
+       4.609999999999999,
+       45.6
+      ],
+      [
+       4.619999999999999,
+       45.6
+      ],
+      [
+       4.63,
+       45.6
+      ],
+      [
+       4.64,
+       45.6
+      ],
+      [
+       4.6499999999999995,
+       45.6
+      ],
+      [
+       4.659999999999999,
+       45.6
+      ],
+      [
+       4.67,
+       45.6
+      ],
+      [
+       4.68,
+       45.6
+      ],
+      [
+       4.6899999999999995,
+       45.6
+      ],
+      [
+       4.699999999999999,
+       45.6
+      ],
+      [
+       4.71,
+       45.6
+      ]
+     ]
+    ]
+   }
+  }
+ ]
+}
