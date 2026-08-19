@@ -13,3 +13,17 @@ createRoot(rootElement).render(
     <App />
   </StrictMode>,
 )
+
+// Service worker : rend l'application ouvrable hors connexion et met en cache
+// les fonds de carte déjà consultés. Uniquement en production — en
+// développement il masquerait les modifications de code.
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register(`${import.meta.env.BASE_URL}sw.js`)
+      .catch(() => {
+        // Contexte non sécurisé ou navigateur sans support : l'application
+        // fonctionne exactement comme avant, simplement sans hors-ligne.
+      })
+  })
+}

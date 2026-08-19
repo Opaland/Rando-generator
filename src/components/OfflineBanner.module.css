@@ -1,0 +1,7 @@
+.banner {
+  margin: 0;
+  padding: 8px 16px;
+  background: #fdf6e3;
+  border-bottom: 2px solid var(--jaune-pr);
+  font-size: 0.9rem;
+}
