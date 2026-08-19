@@ -72,6 +72,7 @@ function baseStyle(tiles: string, attribution: string): StyleSpecification {
       draw: { type: 'geojson', data: emptyCollection() },
       'draw-points': { type: 'geojson', data: emptyCollection() },
       'user-position': { type: 'geojson', data: emptyCollection() },
+      'elevation-hover': { type: 'geojson', data: emptyCollection() },
     },
     layers: [
       { id: 'basemap', type: 'raster', source: 'basemap' },
@@ -172,6 +173,19 @@ function baseStyle(tiles: string, attribution: string): StyleSpecification {
         },
       },
       {
+        // Point survolé sur le profil altimétrique : le lien entre « ça
+        // grimpe » et « ça grimpe *là* ».
+        id: 'elevation-hover',
+        type: 'circle',
+        source: 'elevation-hover',
+        paint: {
+          'circle-radius': 6,
+          'circle-color': '#c1272d',
+          'circle-stroke-width': 2.5,
+          'circle-stroke-color': '#ffffff',
+        },
+      },
+      {
         // Position de l'utilisateur, au-dessus de tout le reste.
         id: 'user-position',
         type: 'circle',
@@ -236,6 +250,7 @@ export function MapView() {
   const view3D = useAppStore((s) => s.view3D)
   const focusTarget = useAppStore((s) => s.focusTarget)
   const userPosition = useAppStore((s) => s.userPosition)
+  const elevationHover = useAppStore((s) => s.elevationHover)
   const drawMode = useAppStore((s) => s.drawMode)
   const drawPath = useAppStore((s) => s.drawPath)
   const drawWaypoints = useAppStore((s) => s.drawWaypoints)
@@ -521,6 +536,28 @@ export function MapView() {
     if (map.isStyleLoaded()) apply()
     else map.once('idle', apply)
   }, [userPosition, ready, styleEpoch])
+
+  // Point survolé sur le profil altimétrique.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !ready) return
+    const apply = () => {
+      void map.getSource<GeoJSONSource>('elevation-hover')?.setData({
+        type: 'FeatureCollection',
+        features: elevationHover
+          ? [
+              {
+                type: 'Feature',
+                geometry: { type: 'Point', coordinates: elevationHover.point },
+                properties: {},
+              },
+            ]
+          : [],
+      })
+    }
+    if (map.isStyleLoaded()) apply()
+    else map.once('idle', apply)
+  }, [elevationHover, ready, styleEpoch])
 
   // Curseur en croix pendant le tracé : le clic ne sert plus à naviguer.
   useEffect(() => {

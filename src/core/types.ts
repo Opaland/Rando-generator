@@ -131,6 +131,11 @@ export interface ElevationProfile {
   distances: number[]
   /** Altitude en mètres ; null si la donnée est indisponible à ce point. */
   elevations: (number | null)[]
+  /**
+   * Points du tracé, alignés sur `distances` : sans eux, un creux repéré sur
+   * le graphique resterait introuvable sur la carte.
+   */
+  coords: LonLat[]
 }
 
 /** Pas d'échantillonnage le long des ways, en mètres. */

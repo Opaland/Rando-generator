@@ -8,6 +8,7 @@ import {
   fillElevationGaps,
   ElevationError,
   MAX_ELEVATION_POINTS,
+  pointAtDistance,
 } from '../../src/core/elevation.ts'
 import { straightLine } from '../fixtures/synthetic.ts'
 import type { LonLat } from '../../src/core/types.ts'
@@ -163,5 +164,62 @@ describe('fetchElevationProfile', () => {
     await expect(fetchElevationProfile([[4.5, LAT]])).rejects.toThrow(
       ElevationError,
     )
+  })
+})
+
+describe('pointAtDistance', () => {
+  const profil = {
+    distances: [0, 100, 200],
+    elevations: [800, 850, 900] as (number | null)[],
+    coords: [
+      [4.5, 45.4],
+      [4.51, 45.4],
+      [4.52, 45.4],
+    ] as LonLat[],
+  }
+
+  it('situe un point au milieu de deux relevés', () => {
+    const trouve = pointAtDistance(profil, 150)
+    expect(trouve?.elevation).toBeCloseTo(875, 6)
+    expect(trouve?.point[0]).toBeCloseTo(4.515, 6)
+    expect(trouve?.distanceMeters).toBe(150)
+  })
+
+  it('retombe exactement sur un relevé', () => {
+    expect(pointAtDistance(profil, 100)?.elevation).toBe(850)
+    expect(pointAtDistance(profil, 0)?.point).toEqual([4.5, 45.4])
+  })
+
+  it('borne aux extrémités du tracé plutôt que d’extrapoler', () => {
+    // Le curseur peut sortir du graphique : hors du tracé, il n'y a rien à
+    // inventer, on reste au départ ou à l'arrivée.
+    expect(pointAtDistance(profil, -50)?.distanceMeters).toBe(0)
+    expect(pointAtDistance(profil, 10_000)?.distanceMeters).toBe(200)
+    expect(pointAtDistance(profil, 10_000)?.point).toEqual([4.52, 45.4])
+  })
+
+  it('n’invente pas une altitude manquante', () => {
+    const troue = { ...profil, elevations: [800, null, 900] }
+    expect(pointAtDistance(troue, 150)?.elevation).toBeNull()
+    // La position, elle, reste connue : le trou est altimétrique, pas géographique.
+    expect(pointAtDistance(troue, 150)?.point[0]).toBeCloseTo(4.515, 6)
+  })
+
+  it('retourne null sans géométrie', () => {
+    expect(
+      pointAtDistance({ distances: [], elevations: [], coords: [] }, 0),
+    ).toBeNull()
+  })
+
+  it('reste juste sur un profil plat de longueur nulle', () => {
+    const plat = {
+      distances: [0, 0],
+      elevations: [800, 800],
+      coords: [
+        [4.5, 45.4],
+        [4.5, 45.4],
+      ] as LonLat[],
+    }
+    expect(pointAtDistance(plat, 0)?.elevation).toBe(800)
   })
 })
