@@ -121,16 +121,28 @@ export function MapView() {
   const selectedItineraryId = useAppStore((s) => s.selectedItineraryId)
   const selectItinerary = useAppStore((s) => s.selectItinerary)
 
+  const [mapError, setMapError] = useState(false)
+
   // Création de la carte (une seule fois).
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return
-    const map = new MaplibreMap({
-      container: containerRef.current,
-      style: baseStyle(IGN_TILES, ATTRIBUTION),
-      center: [4.55, 45.5],
-      zoom: 9,
-      attributionControl: { compact: false },
-    })
+    let map: MaplibreMap
+    try {
+      map = new MaplibreMap({
+        container: containerRef.current,
+        style: baseStyle(IGN_TILES, ATTRIBUTION),
+        center: [4.55, 45.5],
+        zoom: 9,
+        attributionControl: { compact: false },
+      })
+    } catch {
+      // WebGL indisponible : l'application reste utilisable sans carte.
+      // (asynchrone pour ne pas déclencher un re-rendu en cascade dans l'effet)
+      queueMicrotask(() => {
+        setMapError(true)
+      })
+      return
+    }
     map.addControl(new NavigationControl(), 'top-right')
     mapRef.current = map
 
@@ -240,6 +252,14 @@ export function MapView() {
       data-testid="map"
       role="application"
       aria-label="Carte des itinéraires de randonnée"
-    />
+    >
+      {mapError && (
+        <p className={styles.mapError} role="alert">
+          La carte ne peut pas s’afficher (accélération graphique
+          indisponible). Les statistiques et les listes restent utilisables ;
+          essayez un autre navigateur pour voir la carte.
+        </p>
+      )}
+    </div>
   )
 }
