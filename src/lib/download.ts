@@ -21,3 +21,20 @@ export function downloadTextFile(
     URL.revokeObjectURL(url)
   }, 0)
 }
+
+/**
+ * Même chose pour un contenu binaire déjà fabriqué (image du bilan).
+ * Aucun envoi réseau : le blob est créé et consommé dans l'onglet.
+ */
+export function downloadBlob(filename: string, blob: Blob): void {
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = filename
+  document.body.appendChild(anchor)
+  anchor.click()
+  anchor.remove()
+  setTimeout(() => {
+    URL.revokeObjectURL(url)
+  }, 0)
+}
