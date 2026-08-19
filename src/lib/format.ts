@@ -1,3 +1,5 @@
+import type { Itinerary } from '../core/types.ts'
+
 const kmFormat = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 })
 const pctFormat = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 })
 
@@ -9,4 +11,9 @@ export function formatKm(meters: number): string {
 /** « 34,5 % » à partir d'un pourcentage 0–100. */
 export function formatPct(pct: number): string {
   return `${pctFormat.format(pct)} %`
+}
+
+/** Nom affiché d'un itinéraire : ref OSM, sinon nom, sinon id. */
+export function displayName(itin: Itinerary): string {
+  return itin.ref ?? itin.name ?? `Itinéraire ${itin.osmRelationId}`
 }

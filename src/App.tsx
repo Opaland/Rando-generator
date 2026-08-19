@@ -1,4 +1,7 @@
 import { useEffect } from 'react'
+import { Dashboard } from './components/Dashboard.tsx'
+import { ItineraryCard } from './components/ItineraryCard.tsx'
+import { ItineraryList } from './components/ItineraryList.tsx'
 import { MapView } from './components/MapView.tsx'
 import { TrackManager } from './components/TrackManager.tsx'
 import { ZonePicker } from './components/ZonePicker.tsx'
@@ -39,9 +42,12 @@ function App() {
         <aside className={styles.sidebar} aria-label="Panneau de contrôle">
           <ZonePicker />
           <TrackManager />
+          <Dashboard />
+          <ItineraryList />
         </aside>
         <main className={styles.main}>
           <MapView />
+          <ItineraryCard />
         </main>
       </div>
     </div>
