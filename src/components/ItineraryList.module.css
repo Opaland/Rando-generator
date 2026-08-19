@@ -139,3 +139,58 @@
   font-size: 0.78rem;
   color: var(--gris-vert);
 }
+
+.discovery {
+  border: 1px solid var(--gris-vert-clair);
+  border-radius: 6px;
+  padding: 6px 9px;
+  background: #fff;
+}
+
+.discoverySummary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--gris-vert);
+  letter-spacing: 0.02em;
+}
+
+.discoveryGrid {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.discoveryGrid label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.discoveryGrid select {
+  flex: 0 1 auto;
+  max-width: 60%;
+}
+
+.hint {
+  font-size: 0.8rem;
+  color: var(--gris-vert);
+  margin: 8px 0 0;
+}
+
+.reset {
+  margin-top: 8px;
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  border: 1px solid var(--gris-vert);
+  border-radius: 4px;
+  background: #fff;
+  color: var(--vert-noir);
+  cursor: pointer;
+}
+
+.rowFacts {
+  font-size: 0.78rem;
+  color: var(--gris-vert);
+  font-variant-numeric: tabular-nums;
+}

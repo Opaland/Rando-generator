@@ -13,6 +13,17 @@ export function formatPct(pct: number): string {
   return `${pctFormat.format(pct)} %`
 }
 
+/** « 2 h 30 », « 45 min » — durée lisible à partir de minutes. */
+export function formatDuration(minutes: number): string {
+  const arrondi = Math.max(0, Math.round(minutes))
+  if (arrondi < 60) return `${arrondi} min`
+  const heures = Math.floor(arrondi / 60)
+  const reste = arrondi % 60
+  return reste === 0
+    ? `${heures} h`
+    : `${heures} h ${reste.toString().padStart(2, '0')}`
+}
+
 /** Nom affiché d'un itinéraire : ref OSM, sinon nom, sinon id. */
 export function displayName(itin: Itinerary): string {
   return itin.ref ?? itin.name ?? `Itinéraire ${itin.osmRelationId}`
