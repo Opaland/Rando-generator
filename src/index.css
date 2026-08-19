@@ -2,7 +2,8 @@
   /* Palette « balisage » */
   --rouge-balisage: #c8102e;
   --jaune-pr: #d9a400;
-  --orange-grp: #ce5a12;
+  /* Orange foncé : garde un ratio de contraste ≥ 4,5:1 avec du texte blanc. */
+  --orange-grp: #b34a08;
   --blanc-papier: #faf7f2;
   --vert-noir: #1e2b23;
   --gris-vert: #5a6b5d;
