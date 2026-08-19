@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test'
 import pilatFixture from '../fixtures/overpass/pilat.json' with { type: 'json' }
+import poiFixture from '../fixtures/overpass/poi.json' with { type: 'json' }
 
 export const MIRROR_1 = 'https://overpass-api.de/api/interpreter'
 export const MIRROR_2 = 'https://overpass.kumi.systems/api/interpreter'
@@ -41,6 +42,13 @@ export async function mockOverpass(page: Page): Promise<OverpassMock> {
   let current: unknown = pilatFixture
   await page.route('**/api/interpreter', (route) => {
     calls += 1
+    // La requête de points d'intérêt (core/poi.ts) cible les mêmes miroirs
+    // Overpass que celle des itinéraires : on la distingue par son contenu.
+    const body = route.request().postData() ?? ''
+    if (body.includes('drinking_water')) {
+      void route.fulfill({ json: poiFixture })
+      return
+    }
     void route.fulfill({ json: current })
   })
   return {
@@ -49,6 +57,20 @@ export async function mockOverpass(page: Page): Promise<OverpassMock> {
       current = fixture
     },
   }
+}
+
+/**
+ * Mocke le service altimétrique IGN (data.geopf.fr/altimetrie) avec un profil
+ * synthétique croissant. À enregistrer APRÈS mockTiles/mockExternalNetwork :
+ * Playwright priorise la route la plus récemment enregistrée.
+ */
+export async function mockElevation(page: Page): Promise<void> {
+  await page.route('https://data.geopf.fr/altimetrie/**', (route) => {
+    const url = new URL(route.request().url())
+    const lon = (url.searchParams.get('lon') ?? '').split('|')
+    const elevations = lon.map((_, i) => ({ z: 800 + i * 3 }))
+    void route.fulfill({ json: { elevations } })
+  })
 }
 
 /** Fixture réduite : seule la relation GR 7 reste (pour tester l'actualisation). */

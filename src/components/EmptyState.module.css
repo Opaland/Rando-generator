@@ -1,7 +1,7 @@
 .overlay {
   position: absolute;
   inset: 0;
-  z-index: 4;
+  z-index: var(--z-overlay-guide);
   display: grid;
   place-items: center;
   padding: 16px;

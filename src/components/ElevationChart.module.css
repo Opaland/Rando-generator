@@ -1,0 +1,17 @@
+.chart {
+  width: 100%;
+  height: 70px;
+  display: block;
+}
+
+.area {
+  fill: color-mix(in srgb, var(--vert-noir) 12%, transparent);
+  stroke: none;
+}
+
+.line {
+  fill: none;
+  stroke: var(--vert-noir);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}

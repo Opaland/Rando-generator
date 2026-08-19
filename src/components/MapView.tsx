@@ -4,8 +4,10 @@ import {
   Map as MaplibreMap,
   NavigationControl,
   LngLatBounds,
+  Popup,
   type ErrorEvent as MapErrorEvent,
   type GeoJSONSource,
+  type MapGeoJSONFeature,
   type MapLayerMouseEvent,
 } from 'maplibre-gl'
 import type {
@@ -14,8 +16,15 @@ import type {
 } from '@maplibre/maplibre-gl-style-spec'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import '../lib/maplibreSetup.ts'
-import { buildTrailGeoJSON, buildTracksGeoJSON } from '../core/mapdata.ts'
+import {
+  buildTrailGeoJSON,
+  buildTracksGeoJSON,
+  itineraryCoords,
+} from '../core/mapdata.ts'
+import { bearingDegrees } from '../core/geo.ts'
 import { useAppStore } from '../store/appStore.ts'
+import { POI_COLORS, POI_LABELS } from '../lib/poiDisplay.ts'
+import type { LonLat, PoiKind, PointOfInterest } from '../core/types.ts'
 import styles from './MapView.module.css'
 
 const IGN_TILES =
@@ -55,6 +64,7 @@ function baseStyle(tiles: string, attribution: string): StyleSpecification {
       trails: { type: 'geojson', data: emptyCollection() },
       'trails-done': { type: 'geojson', data: emptyCollection() },
       tracks: { type: 'geojson', data: emptyCollection() },
+      pois: { type: 'geojson', data: emptyCollection() },
     },
     layers: [
       { id: 'basemap', type: 'raster', source: 'basemap' },
@@ -103,12 +113,41 @@ function baseStyle(tiles: string, attribution: string): StyleSpecification {
           'line-dasharray': [1, 2],
         },
       },
+      {
+        id: 'pois',
+        type: 'circle',
+        source: 'pois',
+        paint: {
+          'circle-radius': 6,
+          'circle-color': ['get', 'color'],
+          'circle-stroke-width': 2,
+          'circle-stroke-color': '#faf7f2',
+        },
+      },
     ],
   }
 }
 
 function emptyCollection(): FeatureCollection {
   return { type: 'FeatureCollection', features: [] }
+}
+
+/** Échappe le HTML — les noms de POI viennent d'OSM, jamais fiables tels quels. */
+function escapeHtml(text: string): string {
+  const div = document.createElement('div')
+  div.textContent = text
+  return div.innerHTML
+}
+
+function poisToGeoJSON(pois: PointOfInterest[]): FeatureCollection {
+  return {
+    type: 'FeatureCollection',
+    features: pois.map((poi) => ({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [poi.lon, poi.lat] },
+      properties: { name: poi.name, kind: poi.kind, color: POI_COLORS[poi.kind] },
+    })),
+  }
 }
 
 export function MapView() {
@@ -128,6 +167,10 @@ export function MapView() {
   const tracks = useAppStore((s) => s.tracks)
   const selectedItineraryId = useAppStore((s) => s.selectedItineraryId)
   const selectItinerary = useAppStore((s) => s.selectItinerary)
+  const detailItineraryId = useAppStore((s) => s.detailItineraryId)
+  const pois = useAppStore((s) => s.pois)
+  const view3D = useAppStore((s) => s.view3D)
+  const focusTarget = useAppStore((s) => s.focusTarget)
 
   const [mapError, setMapError] = useState(false)
 
@@ -175,12 +218,15 @@ export function MapView() {
       }
     })
 
+    // Cliquer un tracé sur la carte ouvre directement sa fiche détail
+    // (profil altimétrique, points d'intérêt, vue 3D) ; la sélection depuis
+    // la liste latérale, elle, ne fait que zoomer (cf. store.selectItinerary).
     const handleClick = (event: MapLayerMouseEvent) => {
       const feature = event.features?.[0]
       const id = (feature?.properties as { itineraryId?: number } | undefined)
         ?.itineraryId
       if (typeof id === 'number') {
-        useAppStore.getState().selectItinerary(id)
+        useAppStore.getState().openItineraryDetail(id)
       }
     }
     for (const layer of ['trails-base', 'trails-done']) {
@@ -192,6 +238,29 @@ export function MapView() {
         map.getCanvas().style.cursor = ''
       })
     }
+
+    const handlePoiClick = (
+      event: MapLayerMouseEvent & { features?: MapGeoJSONFeature[] },
+    ) => {
+      const props = event.features?.[0]?.properties as
+        | { name?: string; kind?: PoiKind }
+        | undefined
+      const kindLabel = props?.kind ? POI_LABELS[props.kind] : 'Point d’intérêt'
+      new Popup({ closeButton: true, offset: 10 })
+        .setLngLat(event.lngLat)
+        .setHTML(
+          `<strong>${escapeHtml(props?.name ?? kindLabel)}</strong>` +
+            (props?.name ? `<br><span>${escapeHtml(kindLabel)}</span>` : ''),
+        )
+        .addTo(map)
+    }
+    map.on('click', 'pois', handlePoiClick)
+    map.on('mouseenter', 'pois', () => {
+      map.getCanvas().style.cursor = 'pointer'
+    })
+    map.on('mouseleave', 'pois', () => {
+      map.getCanvas().style.cursor = ''
+    })
 
     return () => {
       delete (window as { __sentiersMap?: MaplibreMap }).__sentiersMap
@@ -222,6 +291,7 @@ export function MapView() {
       void map
         .getSource<GeoJSONSource>('tracks')
         ?.setData(buildTracksGeoJSON(tracks))
+      void map.getSource<GeoJSONSource>('pois')?.setData(poisToGeoJSON(pois))
       // Témoin pour les tests e2e : quelles données ont été appliquées, et
       // sur quelle génération de style (permet de vérifier la ré-application
       // après le repli de fond de carte).
@@ -238,7 +308,16 @@ export function MapView() {
     // Après un setStyle (repli OSM), les sources se rechargent : on ré-applique.
     if (map.isStyleLoaded()) apply()
     else map.once('idle', apply)
-  }, [itineraries, customItineraries, matching, customMatching, tracks, ready, styleEpoch])
+  }, [
+    itineraries,
+    customItineraries,
+    matching,
+    customMatching,
+    tracks,
+    pois,
+    ready,
+    styleEpoch,
+  ])
 
   // Cadrage sur la zone chargée (ou sur les itinéraires persos sans zone).
   useEffect(() => {
@@ -256,6 +335,60 @@ export function MapView() {
       map.fitBounds(bounds, { padding: 48, duration: 400 })
     }
   }, [itineraries, customItineraries, ready])
+
+  // Zoom sur l'itinéraire quand il est sélectionné (liste ou clic carte).
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !ready || selectedItineraryId === null) return
+    const itin =
+      itineraries.find((i) => i.osmRelationId === selectedItineraryId) ??
+      customItineraries.find((i) => i.osmRelationId === selectedItineraryId)
+    if (!itin) return
+    const bounds = new LngLatBounds()
+    for (const [lon, lat] of itineraryCoords(itin)) bounds.extend([lon, lat])
+    if (!bounds.isEmpty()) {
+      map.fitBounds(bounds, { padding: 64, duration: 500, maxZoom: 15 })
+    }
+    // Ne dépend QUE de la sélection : re-zoomer sur les mêmes coordonnées à
+    // chaque recalcul de matching serait agaçant (perte de la position pan/zoom
+    // de l'utilisateur pendant qu'il regarde la carte).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedItineraryId, ready])
+
+  // Vue 3D : incline la caméra sur l'itinéraire en fiche détail, dans le sens
+  // du premier tronçon. Reste une perspective (pitch/bearing MapLibre), pas
+  // un relief calculé à partir d'un modèle numérique de terrain.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !ready) return
+    if (!view3D || detailItineraryId === null) {
+      map.easeTo({ pitch: 0, bearing: 0, duration: 600 })
+      return
+    }
+    const itin =
+      itineraries.find((i) => i.osmRelationId === detailItineraryId) ??
+      customItineraries.find((i) => i.osmRelationId === detailItineraryId)
+    const coords = itin ? itineraryCoords(itin) : []
+    if (coords.length < 2) return
+    const bearing = bearingDegrees(coords[0] as LonLat, coords[1] as LonLat)
+    const bounds = new LngLatBounds()
+    for (const [lon, lat] of coords) bounds.extend([lon, lat])
+    const center = bounds.isEmpty() ? map.getCenter() : bounds.getCenter()
+    map.easeTo({ center, pitch: 60, bearing, duration: 900 })
+  }, [view3D, detailItineraryId, itineraries, customItineraries, ready])
+
+  // Centre la carte sur un point d'intérêt cliqué dans la fiche détail
+  // (consommé une seule fois : on efface la cible aussitôt après usage).
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !ready || !focusTarget) return
+    map.easeTo({
+      center: focusTarget,
+      zoom: Math.max(map.getZoom(), 15),
+      duration: 500,
+    })
+    useAppStore.getState().clearFocusTarget()
+  }, [focusTarget, ready])
 
   // Surlignage de l'itinéraire sélectionné.
   useEffect(() => {

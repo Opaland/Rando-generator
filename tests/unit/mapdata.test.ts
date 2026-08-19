@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { buildTrailGeoJSON, buildTracksGeoJSON } from '../../src/core/mapdata.ts'
+import {
+  buildTrailGeoJSON,
+  buildTracksGeoJSON,
+  itineraryCoords,
+} from '../../src/core/mapdata.ts'
 import { buildSamples } from '../../src/core/matching.ts'
 import { straightLine, makeItinerary } from '../fixtures/synthetic.ts'
 import type { Track } from '../../src/core/types.ts'
@@ -56,6 +60,23 @@ describe('buildTrailGeoJSON', () => {
     const { base, done } = buildTrailGeoJSON([pr, gr], samples)
     expect(base.features[0]!.properties.itineraryIds.sort()).toEqual([1, 2])
     expect(done.features[0]!.properties.itineraryIds.sort()).toEqual([1, 2])
+  })
+})
+
+describe('itineraryCoords', () => {
+  it('concatène les coordonnées de tous les ways, dans l’ordre', () => {
+    const a = straightLine(4.5, LAT, 200, 100)
+    const b = straightLine(4.6, LAT, 200, 100)
+    const itin = makeItinerary(1, [
+      { osmWayId: 10, coords: a },
+      { osmWayId: 11, coords: b },
+    ])
+    expect(itineraryCoords(itin)).toEqual([...a, ...b])
+  })
+
+  it('retourne un tableau vide sans ways', () => {
+    const itin = makeItinerary(1, [])
+    expect(itineraryCoords(itin)).toEqual([])
   })
 })
 

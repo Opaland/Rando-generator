@@ -1,0 +1,197 @@
+.panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--z-overlay-detail);
+  max-height: min(60vh, 480px);
+  overflow-y: auto;
+  background: var(--blanc-papier);
+  border-top: 1px solid var(--gris-vert-clair);
+  border-top: 5px solid var(--rouge-balisage);
+  box-shadow: 0 -3px 16px rgba(30, 43, 35, 0.22);
+  padding: 14px 16px 18px;
+  display: grid;
+  gap: 14px;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 7px;
+  border-radius: 3px;
+  color: #fff;
+  flex: none;
+  margin-top: 2px;
+}
+
+.GR {
+  background: var(--rouge-balisage);
+}
+
+.GRP {
+  background: var(--orange-grp);
+}
+
+.PR {
+  background: var(--jaune-pr);
+  color: var(--vert-noir);
+}
+
+.PERSO {
+  background: var(--vert-noir);
+}
+
+.titleBlock {
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  font-size: 1.15rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sub {
+  margin: 2px 0 0;
+  font-size: 0.85rem;
+  color: var(--gris-vert);
+}
+
+.view3d,
+.view3dActive {
+  flex: none;
+  border: 1px solid var(--vert-noir);
+  border-radius: 6px;
+  padding: 10px 12px;
+  min-height: 44px;
+  background: #fff;
+  color: var(--vert-noir);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.view3dActive {
+  background: var(--vert-noir);
+  color: #fff;
+}
+
+.close {
+  flex: none;
+  border: none;
+  background: none;
+  font-size: 1.4rem;
+  line-height: 1;
+  min-width: 44px;
+  min-height: 44px;
+  color: var(--gris-vert);
+}
+
+.close:hover {
+  color: var(--vert-noir);
+}
+
+.stats {
+  display: grid;
+  gap: 6px;
+}
+
+.pct {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 2.2rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.km {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--gris-vert);
+}
+
+.section {
+  display: grid;
+  gap: 6px;
+  border-top: 1px solid var(--gris-vert-clair);
+  padding-top: 12px;
+}
+
+.sectionTitle {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--gris-vert);
+  margin: 0;
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--gris-vert);
+}
+
+.elevationStats {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--gris-vert);
+}
+
+.poiList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.poiItem {
+  width: 100%;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px solid var(--gris-vert-clair);
+  border-radius: 6px;
+  background: #fff;
+  text-align: left;
+}
+
+.poiItem:hover {
+  border-color: var(--vert-noir);
+}
+
+.poiKind {
+  flex: none;
+  font-size: 0.75rem;
+  color: var(--gris-vert);
+}
+
+.poiName {
+  font-size: 0.88rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (min-width: 640px) {
+  .panel {
+    left: auto;
+    right: 12px;
+    bottom: 12px;
+    width: min(380px, calc(100% - 24px));
+    border-radius: 10px;
+    border-top-width: 1px;
+    border-left: 5px solid var(--rouge-balisage);
+  }
+}

@@ -18,6 +18,12 @@
   --font-sans: system-ui, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
 
   color-scheme: light;
+
+  /* Paliers d'empilement des overlays de carte (du plus bas au plus haut).
+     Un seul endroit à consulter avant d'ajouter un nouvel overlay. */
+  --z-overlay-guide: 4; /* EmptyState : guide de premier lancement */
+  --z-overlay-card: 5; /* ItineraryCard : fiche résumé flottante */
+  --z-overlay-detail: 6; /* ItineraryDetail : panneau détail (altimétrie, POI, 3D) */
 }
 
 * {

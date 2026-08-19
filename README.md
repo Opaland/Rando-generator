@@ -54,8 +54,16 @@ existant via `PW_CHROMIUM_PATH=/chemin/vers/chrome npm run e2e`.
    avec sa propre progression, hors statistiques des réseaux OSM.
 4. **Lire sa progression** : carte colorée (gris = non parcouru, couleur du
    balisage = parcouru), tableau de bord (% global, km faits/restants,
-   répartition GR/GRP/PR, top 5), liste triable/filtrable, fiche par itinéraire.
-5. **Régler la tolérance** (25–100 m) selon la précision de votre GPS ;
+   répartition GR/GRP/PR, top 5), liste triable/filtrable. Sélectionner un
+   itinéraire dans la liste **zoome dessus** sur la carte.
+5. **Fiche détail** : cliquer un tracé sur la carte ouvre un panneau avec son
+   **profil altimétrique** (service altimétrique IGN, Etalab 2.0 — D+/D−/
+   min/max), les **points d'intérêt** à proximité (sommets, points de vue,
+   refuges, points d'eau… via Overpass), et une **vue 3D** — une perspective
+   caméra inclinée sur le tracé (pas un relief calculé depuis un modèle
+   numérique de terrain). Le relief et les POI sont des bonus : indisponibles,
+   la fiche reste utilisable.
+6. **Régler la tolérance** (25–100 m) selon la précision de votre GPS ;
    tout est recalculé.
 
 ## Architecture
@@ -67,14 +75,16 @@ src/
 │  ├─ sampling.ts  # échantillonnage des ways tous les 100 m (report du reliquat)
 │  ├─ matching.ts  # index spatial, complétion par itinéraire/réseau/global
 │  ├─ overpass.ts  # requêtes zones/ref (hiking + foot/walking), parsing, miroirs
-│  ├─ gpx.ts       # parsing GPX (DOMParser injecté)
+│  ├─ gpx.ts       # parsing GPX (trkpt et rtept, DOMParser injecté)
 │  ├─ network.ts   # classement GR/GRP/PR depuis les tags OSM
+│  ├─ elevation.ts # profil altimétrique (service IGN), D+/D-, comblement de trous
+│  ├─ poi.ts       # points d'intérêt à proximité d'un tracé (Overpass)
 │  └─ mapdata.ts   # GeoJSON des couches carte (base / parcouru / traces)
 ├─ store/       # Zustand + client du worker de matching
 ├─ db/          # IndexedDB (idb), versionnée, TTL 30 jours
 ├─ workers/     # matching.worker.ts (repli synchrone si Worker indisponible)
 └─ components/  # MapView (MapLibre), ZonePicker, TrackManager, Dashboard,
-                # ItineraryList, ItineraryCard, Settings, About
+                # ItineraryList, ItineraryCard, ItineraryDetail, Settings, About
 tests/
 ├─ unit/        # Vitest — miroir de src/core + db
 ├─ fixtures/    # GPX synthétiques + réponse Overpass enregistrée (JSON)
@@ -109,8 +119,16 @@ tests/
   coûteux.
 - **Cache Overpass** : en cas d'échec des deux miroirs, on retombe sur le
   cache même périmé, avec un message honnête.
+- **« Vue 3D »** : une inclinaison de caméra MapLibre (pitch/bearing) sur le
+  tracé, pas un relief calculé depuis un modèle numérique de terrain — plus
+  simple, zéro dépendance de tuiles supplémentaire, et honnête dans son
+  intitulé (« vue » plutôt que « relief 3D »).
+- **Altimétrie et POI en meilleur effort** : ces deux appels réseau (service
+  IGN, Overpass) ne bloquent jamais l'affichage de la fiche détail ; en cas
+  d'échec, message clair et le reste (progression, carte) reste utilisable.
 - Chaque erreur (Overpass down, GPX corrompu, IndexedDB bloqué, WebGL
-  absent) a un message en français qui dit quoi faire.
+  absent, service altimétrique indisponible) a un message en français qui
+  dit quoi faire.
 
 ## Qualité
 
