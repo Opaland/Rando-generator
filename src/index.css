@@ -1,0 +1,96 @@
+:root {
+  /* Palette « balisage » */
+  --rouge-balisage: #c8102e;
+  --jaune-pr: #d9a400;
+  --orange-grp: #ce5a12;
+  --blanc-papier: #faf7f2;
+  --vert-noir: #1e2b23;
+  --gris-vert: #5a6b5d;
+  --gris-vert-clair: #e7e9e4;
+  --erreur-fond: #fdecec;
+  --erreur-bord: #c8102e;
+
+  /* Typographie : pas de police distante (les données ne quittent pas le
+     navigateur, les requêtes de polices non plus). */
+  --font-display: 'Avenir Next', 'Futura', 'Trebuchet MS', 'Segoe UI',
+    system-ui, sans-serif;
+  --font-sans: system-ui, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.45;
+  background: var(--blanc-papier);
+  color: var(--vert-noir);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+input,
+select {
+  font: inherit;
+}
+
+button:focus-visible,
+input:focus-visible,
+a:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid var(--rouge-balisage);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Balise GR : rectangle blanc sur rouge, signature graphique de l'appli. */
+.balise {
+  display: inline-flex;
+  flex-direction: column;
+  width: 22px;
+  height: 16px;
+  border-radius: 2px;
+  overflow: hidden;
+  flex: none;
+}
+
+.balise > span:first-child {
+  flex: 1;
+  background: #fff;
+}
+
+.balise > span:last-child {
+  flex: 1;
+  background: var(--rouge-balisage);
+}

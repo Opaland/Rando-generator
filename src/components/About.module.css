@@ -1,0 +1,65 @@
+.dialog {
+  border: none;
+  border-radius: 10px;
+  padding: 0;
+  max-width: 560px;
+  width: calc(100% - 32px);
+  max-height: 85vh;
+  background: var(--blanc-papier);
+  color: var(--vert-noir);
+}
+
+.dialog::backdrop {
+  background: rgba(30, 43, 35, 0.55);
+}
+
+.content {
+  padding: 18px 22px 22px;
+  display: grid;
+  gap: 14px;
+}
+
+.content h3 {
+  font-size: 1rem;
+  margin: 0 0 4px;
+}
+
+.content p,
+.content ul {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.content ul {
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+}
+
+.content a {
+  color: var(--rouge-balisage);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header h2 {
+  flex: 1;
+  font-size: 1.3rem;
+}
+
+.close {
+  border: none;
+  background: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--gris-vert);
+  padding: 2px 8px;
+}
+
+.close:hover {
+  color: var(--vert-noir);
+}

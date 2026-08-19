@@ -1,0 +1,18 @@
+.map {
+  position: absolute;
+  inset: 0;
+}
+
+.mapError {
+  margin: 24px auto;
+  max-width: 420px;
+  padding: 12px 16px;
+  background: var(--erreur-fond);
+  border-left: 4px solid var(--erreur-bord);
+  border-radius: 4px;
+}
+
+.map :global(.maplibregl-ctrl-attrib) {
+  font-size: 11px;
+  background: rgba(250, 247, 242, 0.85);
+}
