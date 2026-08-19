@@ -5,6 +5,7 @@ const NETWORK_COLORS: Record<Network, string> = {
   GR: 'var(--rouge-balisage)',
   GRP: 'var(--orange-grp)',
   PR: 'var(--jaune-pr)',
+  PERSO: 'var(--vert-noir)',
 }
 
 /**

@@ -7,14 +7,19 @@ import styles from './ItineraryCard.module.css'
 export function ItineraryCard() {
   const selectedItineraryId = useAppStore((s) => s.selectedItineraryId)
   const itineraries = useAppStore((s) => s.itineraries)
+  const customItineraries = useAppStore((s) => s.customItineraries)
   const matching = useAppStore((s) => s.matching)
+  const customMatching = useAppStore((s) => s.customMatching)
   const selectItinerary = useAppStore((s) => s.selectItinerary)
 
   if (selectedItineraryId === null) return null
-  const itin = itineraries.find((i) => i.osmRelationId === selectedItineraryId)
+  const itin =
+    itineraries.find((i) => i.osmRelationId === selectedItineraryId) ??
+    customItineraries.find((i) => i.osmRelationId === selectedItineraryId)
   if (!itin) return null
 
-  const result = matching?.results.find(
+  const relevantMatching = itin.network === 'PERSO' ? customMatching : matching
+  const result = relevantMatching?.results.find(
     (r) => r.itineraryId === selectedItineraryId,
   )
   const pct = result?.pct ?? 0

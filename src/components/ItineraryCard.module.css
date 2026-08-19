@@ -51,6 +51,10 @@
   color: var(--vert-noir);
 }
 
+.PERSO {
+  background: var(--vert-noir);
+}
+
 .close {
   border: none;
   background: none;

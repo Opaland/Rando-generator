@@ -10,7 +10,7 @@ export class DbError extends Error {
 }
 
 export const DB_NAME = 'sentiers'
-export const DB_VERSION = 1
+export const DB_VERSION = 2
 
 /** Durée de vie du cache des tracés : 30 jours. */
 export const CACHE_TTL_MS = 30 * 24 * 3600 * 1000
@@ -29,6 +29,8 @@ interface SentiersSchema extends DBSchema {
   zones: { key: string; value: CachedZone }
   tracks: { key: string; value: Track }
   settings: { key: string; value: number | string }
+  /** Itinéraires créés par l'utilisateur (ids négatifs, réseau PERSO). */
+  customItineraries: { key: number; value: Itinerary }
 }
 
 /** Vrai si un horodatage ISO a moins de CACHE_TTL_MS d'ancienneté à `nowIso`. */
@@ -47,6 +49,9 @@ export interface SentiersDb {
   saveTrack(track: Track): Promise<void>
   listTracks(): Promise<Track[]>
   deleteTrack(id: string): Promise<void>
+  saveCustomItinerary(itinerary: Itinerary): Promise<void>
+  listCustomItineraries(): Promise<Itinerary[]>
+  deleteCustomItinerary(id: number): Promise<void>
   getSetting(key: SettingKey): Promise<number | string | undefined>
   setSetting(key: SettingKey, value: number | string): Promise<void>
 }
@@ -87,6 +92,11 @@ export async function openSentiersDb(
           database.createObjectStore('tracks', { keyPath: 'id' })
           database.createObjectStore('settings')
         }
+        if (oldVersion < 2) {
+          database.createObjectStore('customItineraries', {
+            keyPath: 'osmRelationId',
+          })
+        }
       },
     })
   } catch {
@@ -115,6 +125,15 @@ export async function openSentiersDb(
     },
     async deleteTrack(id) {
       await raw.delete('tracks', id)
+    },
+    async saveCustomItinerary(itinerary) {
+      await raw.put('customItineraries', itinerary)
+    },
+    listCustomItineraries() {
+      return raw.getAll('customItineraries')
+    },
+    async deleteCustomItinerary(id) {
+      await raw.delete('customItineraries', id)
     },
     getSetting(key) {
       return raw.get('settings', key)

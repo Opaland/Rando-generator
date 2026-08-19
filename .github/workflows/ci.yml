@@ -23,8 +23,14 @@ jobs:
         run: npm run coverage
       - name: Build
         run: npm run build
+      - name: Cache des navigateurs Playwright
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - name: Installer Chromium pour Playwright
         run: npx playwright install --with-deps chromium
+        timeout-minutes: 10
       - name: Tests e2e
         run: npm run e2e
         env:

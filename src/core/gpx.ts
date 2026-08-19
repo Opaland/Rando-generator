@@ -15,6 +15,8 @@ export interface XmlParser {
 
 export interface ParsedGpx {
   points: LonLat[]
+  /** Altitudes alignées sur les points (null quand le trkpt n'a pas de <ele>). */
+  elevations: (number | null)[]
   /** Date de la trace (métadonnées, sinon premier point horodaté), sinon null. */
   date: string | null
 }
@@ -47,6 +49,7 @@ export function parseGpx(xmlText: string, parser: XmlParser): ParsedGpx {
   }
 
   const points: LonLat[] = []
+  const elevations: (number | null)[] = []
   let firstPointDate: string | null = null
   const trkpts = doc.getElementsByTagName('trkpt')
   for (const trkpt of Array.from(trkpts)) {
@@ -54,6 +57,10 @@ export function parseGpx(xmlText: string, parser: XmlParser): ParsedGpx {
     const lon = Number(trkpt.getAttribute('lon'))
     if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue
     points.push([lon, lat])
+    const ele = Number(
+      trkpt.getElementsByTagName('ele')[0]?.textContent.trim() ?? NaN,
+    )
+    elevations.push(Number.isFinite(ele) ? ele : null)
     if (firstPointDate === null) {
       const time = trkpt.getElementsByTagName('time')[0]?.textContent.trim()
       if (time) firstPointDate = time
@@ -65,5 +72,49 @@ export function parseGpx(xmlText: string, parser: XmlParser): ParsedGpx {
     ?.getElementsByTagName('time')[0]
     ?.textContent.trim()
 
-  return { points, date: metadataTime ?? firstPointDate }
+  return { points, elevations, date: metadataTime ?? firstPointDate }
+}
+
+/**
+ * Dénivelé positif cumulé, avec hystérésis pour filtrer le bruit GPS :
+ * une montée n'est comptée que lorsqu'elle dépasse `thresholdMeters` depuis
+ * le dernier point bas. Retourne null si aucune altitude n'est exploitable.
+ */
+export function elevationGainMeters(
+  elevations: (number | null)[],
+  thresholdMeters = 3,
+): number | null {
+  let gain = 0
+  let reference: number | null = null
+  let hasData = false
+  for (const elevation of elevations) {
+    if (elevation === null) continue
+    hasData = true
+    if (reference === null) {
+      reference = elevation
+      continue
+    }
+    if (elevation - reference >= thresholdMeters) {
+      gain += elevation - reference
+      reference = elevation
+    } else if (elevation < reference) {
+      reference = elevation
+    }
+  }
+  return hasData ? gain : null
+}
+
+/**
+ * Empreinte du contenu d'une trace, pour détecter un double import du même
+ * fichier (nombre de points + extrémités arrondies).
+ */
+export function trackFingerprint(points: LonLat[]): string {
+  const round = (value: number) => value.toFixed(6)
+  const first = points[0]
+  const last = points[points.length - 1]
+  return [
+    points.length,
+    first ? `${round(first[0])},${round(first[1])}` : '∅',
+    last ? `${round(last[0])},${round(last[1])}` : '∅',
+  ].join('|')
 }

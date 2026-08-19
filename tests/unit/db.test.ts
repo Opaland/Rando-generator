@@ -24,10 +24,31 @@ describe('openSentiersDb', () => {
   it('crée les stores attendus à la version courante', () => {
     expect(db.raw.version).toBe(DB_VERSION)
     expect(Array.from(db.raw.objectStoreNames).sort()).toEqual([
+      'customItineraries',
       'settings',
       'tracks',
       'zones',
     ])
+  })
+
+  it('migre une base v1 sans perdre les données existantes', async () => {
+    const name = `sentiers-migration-${counter}`
+    const { openDB } = await import('idb')
+    const v1 = await openDB(name, 1, {
+      upgrade(database) {
+        database.createObjectStore('zones', { keyPath: 'zoneKey' })
+        database.createObjectStore('tracks', { keyPath: 'id' })
+        database.createObjectStore('settings')
+      },
+    })
+    await v1.put('settings', 75, 'toleranceMeters')
+    v1.close()
+
+    const migrated = await openSentiersDb(name)
+    expect(migrated.raw.version).toBe(DB_VERSION)
+    expect(await migrated.getSetting('toleranceMeters')).toBe(75)
+    expect(await migrated.listCustomItineraries()).toEqual([])
+    migrated.raw.close()
   })
 
   it('peut être rouverte sans perte (migration idempotente)', async () => {
@@ -124,6 +145,21 @@ describe('traces GPX', () => {
     const all = await db.listTracks()
     expect(all).toHaveLength(1)
     expect(all[0]?.filename).toBe('renommé.gpx')
+  })
+})
+
+describe('itinéraires personnalisés', () => {
+  it('sauvegarde, liste et supprime des itinéraires persos', async () => {
+    const itin = makeItinerary(-1, [
+      { osmWayId: -1, coords: straightLine(4.5, 45.4, 500, 100) },
+    ], { network: 'PERSO', ref: null, name: 'Boucle du cartoguide' })
+    await db.saveCustomItinerary(itin)
+    const all = await db.listCustomItineraries()
+    expect(all).toHaveLength(1)
+    expect(all[0]?.name).toBe('Boucle du cartoguide')
+    expect(all[0]?.network).toBe('PERSO')
+    await db.deleteCustomItinerary(-1)
+    expect(await db.listCustomItineraries()).toEqual([])
   })
 })
 

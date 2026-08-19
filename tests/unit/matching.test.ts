@@ -109,6 +109,19 @@ describe('runMatching — fixtures de matching', () => {
     expect(global.pct).toBeCloseTo(50, 5)
   })
 
+  it('accepte les itinéraires persos (ids négatifs, réseau PERSO)', () => {
+    const line = straightLine(4.5, LAT, 1000, 100)
+    const itin = makeItinerary(-1, [{ osmWayId: -1, coords: line }], {
+      network: 'PERSO',
+      ref: null,
+      name: 'Boucle perso',
+    })
+    const { results, byNetwork } = runMatching([itin], line, opts())
+    expect(results[0]!.itineraryId).toBe(-1)
+    expect(results[0]!.pct).toBe(100)
+    expect(byNetwork.PERSO.doneMeters).toBe(1100)
+  })
+
   it('la tolérance est bien paramétrable (70 m passe à TOL = 100)', () => {
     const line = straightLine(4.5, LAT, 1000, 100)
     const trace = shiftNorth(straightLine(4.5, LAT, 1000, 10), 70)
