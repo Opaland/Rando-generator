@@ -26,7 +26,12 @@ export interface LineCollection<P> {
   features: LineFeature<P>[]
 }
 
-const NETWORK_PRIORITY: Record<Network, number> = { GR: 0, GRP: 1, PR: 2 }
+const NETWORK_PRIORITY: Record<Network, number> = {
+  GR: 0,
+  GRP: 1,
+  PR: 2,
+  PERSO: 3,
+}
 
 function lineFeature<P>(coordinates: LonLat[], properties: P): LineFeature<P> {
   return { type: 'Feature', geometry: { type: 'LineString', coordinates }, properties }

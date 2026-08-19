@@ -1,7 +1,8 @@
 /** Coordonnée [longitude, latitude] — convention GeoJSON. */
 export type LonLat = [number, number]
 
-export type Network = 'GR' | 'GRP' | 'PR'
+/** GR/GRP/PR : réseaux OSM ; PERSO : itinéraires créés par l'utilisateur. */
+export type Network = 'GR' | 'GRP' | 'PR' | 'PERSO'
 
 export interface TrailWay {
   osmWayId: number
@@ -40,6 +41,8 @@ export interface Track {
   /** Extrait du GPX si présent (ISO). */
   date: string | null
   importedAt: string
+  /** Dénivelé positif cumulé en mètres (null si le GPX n'a pas d'altitudes). */
+  elevationGain?: number | null
 }
 
 export interface CompletionResult {

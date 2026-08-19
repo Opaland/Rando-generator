@@ -7,7 +7,13 @@ import {
   OverpassError,
   ZONES,
 } from '../core/overpass.ts'
-import { parseGpx, GpxError } from '../core/gpx.ts'
+import {
+  parseGpx,
+  GpxError,
+  elevationGainMeters,
+  trackFingerprint,
+} from '../core/gpx.ts'
+import { polylineLengthMeters } from '../core/sampling.ts'
 import type { MatchResult } from '../core/matching.ts'
 import type { Itinerary, LonLat, Track } from '../core/types.ts'
 import { DEFAULT_TOLERANCE_METERS, STEP_METERS } from '../core/types.ts'
@@ -39,9 +45,14 @@ export interface AppState {
   tracks: Track[]
   importErrors: string[]
 
+  // Itinéraires créés par l'utilisateur (réseau PERSO, ids négatifs)
+  customItineraries: Itinerary[]
+
   // Matching
   toleranceMeters: number
   matching: MatchResult | null
+  /** Résultats des itinéraires persos, hors stats globales OSM. */
+  customMatching: MatchResult | null
   matchingBusy: boolean
 
   // UI
@@ -51,7 +62,9 @@ export interface AppState {
   loadZone: (zoneId: string, options?: { force?: boolean }) => Promise<void>
   loadRef: (ref: string, options?: { force?: boolean }) => Promise<void>
   importGpxFiles: (files: Iterable<File>) => Promise<void>
+  importCustomGpx: (files: Iterable<File>) => Promise<void>
   removeTrack: (id: string) => Promise<void>
+  removeCustomItinerary: (id: number) => Promise<void>
   setTolerance: (value: number) => Promise<void>
   selectItinerary: (id: number | null) => void
   clearImportErrors: () => void
@@ -61,20 +74,33 @@ let recomputeSequence = 0
 
 export const useAppStore = create<AppState>()((set, get) => {
   async function recompute(): Promise<void> {
-    const { itineraries, tracks, toleranceMeters } = get()
+    const { itineraries, customItineraries, tracks, toleranceMeters } = get()
     const sequence = ++recomputeSequence
     set({ matchingBusy: true })
     const trackPoints: LonLat[] = tracks.flatMap((t) => t.points)
+    const computedAt = new Date().toISOString()
     const result = await computeMatching({
       itineraries,
       trackPoints,
       toleranceMeters,
       stepMeters: STEP_METERS,
-      computedAt: new Date().toISOString(),
+      computedAt,
     })
+    // Les itinéraires persos sont calculés à part : ils ne comptent pas dans
+    // les statistiques globales des réseaux OSM.
+    const customResult =
+      customItineraries.length > 0
+        ? await computeMatching({
+            itineraries: customItineraries,
+            trackPoints,
+            toleranceMeters,
+            stepMeters: STEP_METERS,
+            computedAt,
+          })
+        : null
     // N'applique que le calcul le plus récent (l'utilisateur a pu re-régler).
     if (sequence === recomputeSequence) {
-      set({ matching: result, matchingBusy: false })
+      set({ matching: result, customMatching: customResult, matchingBusy: false })
     }
   }
 
@@ -178,8 +204,10 @@ export const useAppStore = create<AppState>()((set, get) => {
     zoneError: null,
     tracks: [],
     importErrors: [],
+    customItineraries: [],
     toleranceMeters: DEFAULT_TOLERANCE_METERS,
     matching: null,
+    customMatching: null,
     matchingBusy: false,
     selectedItineraryId: null,
 
@@ -198,13 +226,16 @@ export const useAppStore = create<AppState>()((set, get) => {
       }
       if (!db) return
 
-      const [tracks, tolerance, lastZoneKey] = await Promise.all([
-        db.listTracks(),
-        db.getSetting('toleranceMeters'),
-        db.getSetting('lastZoneKey'),
-      ])
+      const [tracks, customItineraries, tolerance, lastZoneKey] =
+        await Promise.all([
+          db.listTracks(),
+          db.listCustomItineraries(),
+          db.getSetting('toleranceMeters'),
+          db.getSetting('lastZoneKey'),
+        ])
       set({
         tracks,
+        customItineraries,
         toleranceMeters:
           typeof tolerance === 'number' ? tolerance : DEFAULT_TOLERANCE_METERS,
       })
@@ -252,6 +283,9 @@ export const useAppStore = create<AppState>()((set, get) => {
       const { db } = get()
       const errors: string[] = []
       const imported: Track[] = []
+      const knownFingerprints = new Map(
+        get().tracks.map((t) => [trackFingerprint(t.points), t.filename]),
+      )
       for (const file of files) {
         try {
           const text = await file.text()
@@ -262,12 +296,22 @@ export const useAppStore = create<AppState>()((set, get) => {
             )
             continue
           }
+          const fingerprint = trackFingerprint(parsed.points)
+          const duplicateOf = knownFingerprints.get(fingerprint)
+          if (duplicateOf) {
+            errors.push(
+              `${file.name} : identique à « ${duplicateOf} » déjà importée — ignorée.`,
+            )
+            continue
+          }
+          knownFingerprints.set(fingerprint, file.name)
           const track: Track = {
             id: crypto.randomUUID(),
             filename: file.name,
             points: parsed.points,
             date: parsed.date,
             importedAt: new Date().toISOString(),
+            elevationGain: elevationGainMeters(parsed.elevations),
           }
           if (db) await db.saveTrack(track)
           imported.push(track)
@@ -288,10 +332,72 @@ export const useAppStore = create<AppState>()((set, get) => {
       }
     },
 
+    async importCustomGpx(files) {
+      const { db } = get()
+      const errors: string[] = []
+      const imported: Itinerary[] = []
+      let nextId = Math.min(
+        0,
+        ...get().customItineraries.map((i) => i.osmRelationId),
+      )
+      for (const file of files) {
+        try {
+          const text = await file.text()
+          const parsed = parseGpx(text, new DOMParser())
+          if (parsed.points.length < 2) {
+            errors.push(
+              `${file.name} : pas assez de points pour en faire un itinéraire.`,
+            )
+            continue
+          }
+          nextId -= 1
+          const itinerary: Itinerary = {
+            osmRelationId: nextId,
+            ref: null,
+            name: file.name.replace(/\.gpx$/i, ''),
+            network: 'PERSO',
+            ways: [{ osmWayId: nextId, coords: parsed.points }],
+            totalMeters: polylineLengthMeters(parsed.points),
+            fetchedAt: new Date().toISOString(),
+          }
+          if (db) await db.saveCustomItinerary(itinerary)
+          imported.push(itinerary)
+        } catch (error) {
+          errors.push(
+            error instanceof GpxError
+              ? `${file.name} : ${error.message}`
+              : `${file.name} : lecture impossible.`,
+          )
+        }
+      }
+      if (imported.length > 0) {
+        set((state) => ({
+          customItineraries: [...state.customItineraries, ...imported],
+        }))
+        await recompute()
+      }
+      if (errors.length > 0) {
+        set((state) => ({ importErrors: [...state.importErrors, ...errors] }))
+      }
+    },
+
     async removeTrack(id) {
       const { db } = get()
       if (db) await db.deleteTrack(id)
       set((state) => ({ tracks: state.tracks.filter((t) => t.id !== id) }))
+      await recompute()
+    },
+
+    async removeCustomItinerary(id) {
+      const { db } = get()
+      if (db) await db.deleteCustomItinerary(id)
+      set((state) => ({
+        customItineraries: state.customItineraries.filter(
+          (i) => i.osmRelationId !== id,
+        ),
+        selectedItineraryId:
+          state.selectedItineraryId === id ? null : state.selectedItineraryId,
+      }))
       await recompute()
     },
 

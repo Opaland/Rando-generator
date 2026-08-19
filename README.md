@@ -47,11 +47,15 @@ existant via `PW_CHROMIUM_PATH=/chemin/vers/chrome npm run e2e`.
    prendre de 30 s à 2 min ; le résultat est mis en cache 30 jours dans le
    navigateur (bouton « Actualiser les tracés » pour forcer).
 2. **Importer des GPX** (multi-fichiers, drag & drop). Les traces sont listées
-   avec nom, date et distance, et persistées localement.
-3. **Lire sa progression** : carte colorée (gris = non parcouru, couleur du
+   avec nom, date, distance et D+, persistées localement ; un double import
+   du même fichier est détecté et refusé.
+3. **Créer « Mes itinéraires »** : importez le GPX d'un parcours *à faire*
+   (cartoguide, Visorando, tracé maison…) — il devient un itinéraire local
+   avec sa propre progression, hors statistiques des réseaux OSM.
+4. **Lire sa progression** : carte colorée (gris = non parcouru, couleur du
    balisage = parcouru), tableau de bord (% global, km faits/restants,
    répartition GR/GRP/PR, top 5), liste triable/filtrable, fiche par itinéraire.
-4. **Régler la tolérance** (25–100 m) selon la précision de votre GPS ;
+5. **Régler la tolérance** (25–100 m) selon la précision de votre GPS ;
    tout est recalculé.
 
 ## Architecture

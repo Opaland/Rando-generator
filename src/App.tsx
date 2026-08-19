@@ -1,18 +1,26 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { About } from './components/About.tsx'
+import { CustomItineraries } from './components/CustomItineraries.tsx'
 import { Dashboard } from './components/Dashboard.tsx'
+import { EmptyState } from './components/EmptyState.tsx'
 import { ItineraryCard } from './components/ItineraryCard.tsx'
 import { ItineraryList } from './components/ItineraryList.tsx'
-import { MapView } from './components/MapView.tsx'
 import { Settings } from './components/Settings.tsx'
 import { TrackManager } from './components/TrackManager.tsx'
 import { ZonePicker } from './components/ZonePicker.tsx'
 import { useAppStore } from './store/appStore.ts'
 import styles from './App.module.css'
 
+// La carte (MapLibre, ~900 kB) est chargée à part : le tableau de bord et les
+// listes sont utilisables immédiatement.
+const MapView = lazy(() => import('./components/MapView.tsx'))
+
 function App() {
   const init = useAppStore((s) => s.init)
   const dbWarning = useAppStore((s) => s.dbWarning)
+  const hasZoneData = useAppStore((s) => s.itineraries.length > 0)
+  const hasCustomData = useAppStore((s) => s.customItineraries.length > 0)
+  const zoneLoading = useAppStore((s) => s.zoneLoading)
   const [aboutOpen, setAboutOpen] = useState(false)
 
   useEffect(() => {
@@ -55,6 +63,7 @@ function App() {
         <aside className={styles.sidebar} aria-label="Panneau de contrôle">
           <ZonePicker />
           <TrackManager />
+          <CustomItineraries />
           <Dashboard />
           <ItineraryList />
           <Settings />
@@ -65,7 +74,14 @@ function App() {
           </footer>
         </aside>
         <main className={styles.main}>
-          <MapView />
+          <Suspense
+            fallback={
+              <p className={styles.mapLoading}>Chargement de la carte…</p>
+            }
+          >
+            <MapView />
+          </Suspense>
+          {!hasZoneData && !hasCustomData && !zoneLoading && <EmptyState />}
           <ItineraryCard />
         </main>
       </div>

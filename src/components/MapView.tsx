@@ -36,6 +36,8 @@ const NETWORK_COLOR_MATCH: ExpressionSpecification = [
   '#b34a08',
   'PR',
   '#d9a400',
+  'PERSO',
+  '#1e2b23',
   '#5a6b5d',
 ]
 
@@ -120,7 +122,9 @@ export function MapView() {
   const tileErrors = useRef(0)
 
   const itineraries = useAppStore((s) => s.itineraries)
+  const customItineraries = useAppStore((s) => s.customItineraries)
   const matching = useAppStore((s) => s.matching)
+  const customMatching = useAppStore((s) => s.customMatching)
   const tracks = useAppStore((s) => s.tracks)
   const selectedItineraryId = useAppStore((s) => s.selectedItineraryId)
   const selectItinerary = useAppStore((s) => s.selectItinerary)
@@ -201,8 +205,18 @@ export function MapView() {
     const map = mapRef.current
     if (!map || !ready) return
     const apply = () => {
-      const samples = matching?.samples ?? []
-      const { base, done } = buildTrailGeoJSON(itineraries, samples)
+      const { base, done } = buildTrailGeoJSON(
+        itineraries,
+        matching?.samples ?? [],
+      )
+      // Les itinéraires persos ont leur propre matching : on fusionne leurs
+      // features dans les mêmes couches.
+      const custom = buildTrailGeoJSON(
+        customItineraries,
+        customMatching?.samples ?? [],
+      )
+      base.features.push(...custom.base.features)
+      done.features.push(...custom.done.features)
       void map.getSource<GeoJSONSource>('trails')?.setData(base)
       void map.getSource<GeoJSONSource>('trails-done')?.setData(done)
       void map
@@ -224,14 +238,16 @@ export function MapView() {
     // Après un setStyle (repli OSM), les sources se rechargent : on ré-applique.
     if (map.isStyleLoaded()) apply()
     else map.once('idle', apply)
-  }, [itineraries, matching, tracks, ready, styleEpoch])
+  }, [itineraries, customItineraries, matching, customMatching, tracks, ready, styleEpoch])
 
-  // Cadrage sur la zone chargée.
+  // Cadrage sur la zone chargée (ou sur les itinéraires persos sans zone).
   useEffect(() => {
     const map = mapRef.current
-    if (!map || !ready || itineraries.length === 0) return
+    if (!map || !ready) return
+    const source = itineraries.length > 0 ? itineraries : customItineraries
+    if (source.length === 0) return
     const bounds = new LngLatBounds()
-    for (const itin of itineraries) {
+    for (const itin of source) {
       for (const way of itin.ways) {
         for (const [lon, lat] of way.coords) bounds.extend([lon, lat])
       }
@@ -239,7 +255,7 @@ export function MapView() {
     if (!bounds.isEmpty()) {
       map.fitBounds(bounds, { padding: 48, duration: 400 })
     }
-  }, [itineraries, ready])
+  }, [itineraries, customItineraries, ready])
 
   // Surlignage de l'itinéraire sélectionné.
   useEffect(() => {
@@ -288,3 +304,6 @@ export function MapView() {
     </div>
   )
 }
+
+// Export par défaut pour le chargement différé (React.lazy).
+export default MapView

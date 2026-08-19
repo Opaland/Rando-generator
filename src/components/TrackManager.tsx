@@ -100,6 +100,8 @@ export function TrackManager() {
                     : 'date inconnue'}
                   {' · '}
                   {formatKm(polylineLengthMeters(track.points))}
+                  {typeof track.elevationGain === 'number' &&
+                    ` · D+ ${Math.round(track.elevationGain)} m`}
                 </span>
               </div>
               <button

@@ -84,6 +84,11 @@
   min-width: 0;
 }
 
+.mapLoading {
+  margin: 24px;
+  color: var(--gris-vert);
+}
+
 @media (max-width: 800px) {
   .layout {
     flex-direction: column;

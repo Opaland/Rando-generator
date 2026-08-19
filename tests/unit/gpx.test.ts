@@ -1,6 +1,11 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest'
-import { parseGpx, GpxError } from '../../src/core/gpx.ts'
+import {
+  parseGpx,
+  GpxError,
+  elevationGainMeters,
+  trackFingerprint,
+} from '../../src/core/gpx.ts'
 import {
   GPX_SIMPLE,
   GPX_MULTI_SEG,
@@ -55,5 +60,51 @@ describe('parseGpx', () => {
       [4.5, 45.4],
       [4.7, 45.6],
     ])
+  })
+
+  it('extrait les altitudes (null quand absentes), alignées sur les points', () => {
+    const res = parseGpx(GPX_SIMPLE, parser)
+    expect(res.elevations).toEqual([1200, null, null])
+  })
+})
+
+describe('elevationGainMeters', () => {
+  it('cumule les montées d’un profil simple', () => {
+    // 100 → 150 → 120 → 200 : montées de 50 puis 80.
+    expect(elevationGainMeters([100, 150, 120, 200])).toBe(130)
+  })
+
+  it('filtre le bruit GPS sous le seuil', () => {
+    // Oscillations de ±1 m : aucune montée réelle.
+    const noisy = [100, 101, 100, 101, 100, 101, 100]
+    expect(elevationGainMeters(noisy)).toBe(0)
+  })
+
+  it('retourne null sans données d’altitude exploitables', () => {
+    expect(elevationGainMeters([])).toBeNull()
+    expect(elevationGainMeters([null, null])).toBeNull()
+  })
+
+  it('ignore les trous (null) au milieu du profil', () => {
+    expect(elevationGainMeters([100, null, 150])).toBe(50)
+  })
+})
+
+describe('trackFingerprint', () => {
+  it('est identique pour les mêmes points, différente sinon', () => {
+    const a: [number, number][] = [
+      [4.5, 45.4],
+      [4.51, 45.41],
+    ]
+    const same: [number, number][] = [
+      [4.5, 45.4],
+      [4.51, 45.41],
+    ]
+    const other: [number, number][] = [
+      [4.5, 45.4],
+      [4.52, 45.41],
+    ]
+    expect(trackFingerprint(a)).toBe(trackFingerprint(same))
+    expect(trackFingerprint(a)).not.toBe(trackFingerprint(other))
   })
 })
