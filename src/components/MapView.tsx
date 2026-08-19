@@ -112,6 +112,9 @@ export function MapView() {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<MaplibreMap | null>(null)
   const [ready, setReady] = useState(false)
+  // Incrémenté à chaque style.load (repli OSM) : les sources recréées par
+  // setStyle repartent vides, les effets de données doivent se rejouer.
+  const [styleEpoch, setStyleEpoch] = useState(0)
   const fallbackDone = useRef(false)
   const tileErrors = useRef(0)
 
@@ -148,6 +151,10 @@ export function MapView() {
 
     map.on('load', () => {
       setReady(true)
+    })
+
+    map.on('style.load', () => {
+      setStyleEpoch((epoch) => epoch + 1)
     })
 
     // Repli automatique sur les tuiles OSM si le flux IGN échoue.
@@ -201,7 +208,7 @@ export function MapView() {
     // Après un setStyle (repli OSM), les sources se rechargent : on ré-applique.
     if (map.isStyleLoaded()) apply()
     else map.once('idle', apply)
-  }, [itineraries, matching, tracks, ready])
+  }, [itineraries, matching, tracks, ready, styleEpoch])
 
   // Cadrage sur la zone chargée.
   useEffect(() => {
@@ -224,15 +231,17 @@ export function MapView() {
     if (!map || !ready) return
     const applyFilter = () => {
       if (!map.getLayer('trails-selected')) return
+      // `itineraryIds` liste tous les itinéraires passant par le way : le
+      // surlignage couvre aussi les tronçons partagés.
       map.setFilter('trails-selected', [
-        '==',
-        ['get', 'itineraryId'],
+        'in',
         selectedItineraryId ?? -1,
+        ['get', 'itineraryIds'],
       ])
     }
     if (map.isStyleLoaded()) applyFilter()
     else map.once('idle', applyFilter)
-  }, [selectedItineraryId, ready])
+  }, [selectedItineraryId, ready, styleEpoch])
 
   useEffect(() => {
     // Échap désélectionne l'itinéraire (navigation clavier).

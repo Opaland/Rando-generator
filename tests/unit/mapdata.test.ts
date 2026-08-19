@@ -46,6 +46,17 @@ describe('buildTrailGeoJSON', () => {
     const { base } = buildTrailGeoJSON([pr, gr], samples)
     expect(base.features[0]!.properties.network).toBe('GR')
   })
+
+  it('liste tous les itinéraires d’un way partagé (pour le surlignage)', () => {
+    const shared = { osmWayId: 10, coords: line }
+    const pr = makeItinerary(2, [shared], { network: 'PR', ref: 'PR X' })
+    const gr = makeItinerary(1, [shared], { network: 'GR' })
+    const samples = buildSamples([pr, gr], 100)
+    for (const i of [0, 1]) samples[i]!.done = true
+    const { base, done } = buildTrailGeoJSON([pr, gr], samples)
+    expect(base.features[0]!.properties.itineraryIds.sort()).toEqual([1, 2])
+    expect(done.features[0]!.properties.itineraryIds.sort()).toEqual([1, 2])
+  })
 })
 
 describe('buildTracksGeoJSON', () => {

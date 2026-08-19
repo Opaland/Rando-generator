@@ -98,6 +98,17 @@ export function About({ open, onClose }: { open: boolean; onClose: () => void })
         </section>
 
         <section>
+          <h3>Prudence sur les sentiers</h3>
+          <p>
+            Les tracés affichés sont issus de contributions bénévoles et
+            peuvent être incomplets ou datés. Sentiers est un outil de suivi,
+            pas un outil de navigation : sur le terrain, emportez une carte à
+            jour ou un topoguide, et adaptez vos sorties à la météo et à votre
+            niveau.
+          </p>
+        </section>
+
+        <section>
           <h3>Comment est calculée la progression ?</h3>
           <p>
             Chaque itinéraire est échantillonné tous les 100 mètres ; un point

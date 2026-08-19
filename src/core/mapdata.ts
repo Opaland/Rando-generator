@@ -8,7 +8,10 @@ export interface LineStringGeometry {
 
 export interface TrailProperties {
   network: Network
+  /** Itinéraire « principal » du way (réseau prioritaire), pour le clic. */
   itineraryId: number
+  /** Tous les itinéraires passant par ce way, pour le surlignage. */
+  itineraryIds: number[]
   wayId: number
 }
 
@@ -51,15 +54,21 @@ export function buildTrailGeoJSON(
   for (const itin of itineraries) {
     for (const way of itin.ways) {
       const existing = wayProps.get(way.osmWayId)
-      if (
-        !existing ||
-        NETWORK_PRIORITY[itin.network] < NETWORK_PRIORITY[existing.network]
-      ) {
+      if (!existing) {
         wayProps.set(way.osmWayId, {
           network: itin.network,
           itineraryId: itin.osmRelationId,
+          itineraryIds: [itin.osmRelationId],
           wayId: way.osmWayId,
         })
+      } else {
+        if (!existing.itineraryIds.includes(itin.osmRelationId)) {
+          existing.itineraryIds.push(itin.osmRelationId)
+        }
+        if (NETWORK_PRIORITY[itin.network] < NETWORK_PRIORITY[existing.network]) {
+          existing.network = itin.network
+          existing.itineraryId = itin.osmRelationId
+        }
       }
       if (!wayCoords.has(way.osmWayId)) {
         wayCoords.set(way.osmWayId, way.coords)
