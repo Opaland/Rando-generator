@@ -75,9 +75,12 @@ function baseStyle(tiles: string, attribution: string): StyleSpecification {
         type: 'line',
         source: 'trails',
         paint: {
-          'line-color': '#5a6b5d',
+          // Coloré par réseau (comme les tronçons parcourus, en plus discret)
+          // dès le chargement de la zone : sans ça, rien ne distingue un GR
+          // d'un PR tant qu'on n'a pas de trace GPS pour le prouver.
+          'line-color': NETWORK_COLOR_MATCH,
           'line-width': 2,
-          'line-opacity': 0.55,
+          'line-opacity': 0.45,
         },
         layout: { 'line-cap': 'round', 'line-join': 'round' },
       },
