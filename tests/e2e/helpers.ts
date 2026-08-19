@@ -2,6 +2,55 @@ import type { Page } from '@playwright/test'
 import pilatFixture from '../fixtures/overpass/pilat.json' with { type: 'json' }
 import poiFixture from '../fixtures/overpass/poi.json' with { type: 'json' }
 
+/** Sous-ensemble de l'API MapLibre exposée aux tests via window.__sentiersMap. */
+export interface MapLike {
+  project: (lngLat: [number, number]) => { x: number; y: number }
+  getZoom: () => number
+  getCenter: () => { lng: number; lat: number }
+  getPitch: () => number
+  isMoving: () => boolean
+}
+
+/** Vrai si la carte a pu s'initialiser (WebGL disponible dans ce navigateur). */
+export async function hasMap(page: Page): Promise<boolean> {
+  return page
+    .waitForFunction(() => '__sentiersMap' in window, undefined, {
+      timeout: 10_000,
+    })
+    .then(
+      () => true,
+      () => false,
+    )
+}
+
+/** Clique un point géographique sur la carte (coordonnées carte → écran). */
+export async function clickOnMap(
+  page: Page,
+  lon: number,
+  lat: number,
+): Promise<void> {
+  // La caméra peut encore finir un fitBounds animé : attendre l'arrêt avant
+  // de projeter, sinon le point calculé dérive de la ligne (tolérance de
+  // clic quasi nulle sur une géométrie « line » de 2 px).
+  await page.waitForFunction(
+    () =>
+      !(window as unknown as { __sentiersMap?: MapLike }).__sentiersMap?.isMoving(),
+  )
+  const mapBox = await page.getByTestId('map').boundingBox()
+  if (!mapBox) throw new Error('Carte introuvable')
+  const point = await page.evaluate(
+    ([lonArg, latArg]) => {
+      const map = (window as unknown as { __sentiersMap?: MapLike })
+        .__sentiersMap
+      if (!map) return null
+      return map.project([lonArg, latArg])
+    },
+    [lon, lat] as const,
+  )
+  if (!point) throw new Error('Carte non initialisée (WebGL indisponible ?)')
+  await page.mouse.click(mapBox.x + point.x, mapBox.y + point.y)
+}
+
 export const MIRROR_1 = 'https://overpass-api.de/api/interpreter'
 export const MIRROR_2 = 'https://overpass.kumi.systems/api/interpreter'
 

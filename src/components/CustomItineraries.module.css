@@ -16,6 +16,12 @@
   color: var(--gris-vert);
 }
 
+.addRow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .importing {
   margin: 0;
   padding: 6px 10px;

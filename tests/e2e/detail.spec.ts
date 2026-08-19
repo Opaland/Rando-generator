@@ -1,52 +1,12 @@
-import { test, expect, type Page } from '@playwright/test'
+import { test, expect } from '@playwright/test'
 import {
   mockExternalNetwork,
   mockElevation,
   buildGpx,
+  clickOnMap,
+  hasMap,
+  type MapLike,
 } from './helpers.ts'
-
-interface MapLike {
-  project: (lngLat: [number, number]) => { x: number; y: number }
-  getZoom: () => number
-  getCenter: () => { lng: number; lat: number }
-  getPitch: () => number
-  isMoving: () => boolean
-}
-
-/** Clique un point géographique sur la carte (coordonnées carte → écran). */
-async function clickOnMap(page: Page, lon: number, lat: number): Promise<void> {
-  // La caméra peut encore finir un fitBounds animé : attendre l'arrêt avant
-  // de projeter, sinon le point calculé dérive de la ligne (tolérance de
-  // clic quasi nulle sur une géométrie « line » de 2 px).
-  await page.waitForFunction(
-    () =>
-      !(window as unknown as { __sentiersMap?: MapLike }).__sentiersMap?.isMoving(),
-  )
-  const mapBox = await page.getByTestId('map').boundingBox()
-  if (!mapBox) throw new Error('Carte introuvable')
-  const point = await page.evaluate(
-    ([lonArg, latArg]) => {
-      const map = (window as unknown as { __sentiersMap?: MapLike })
-        .__sentiersMap
-      if (!map) return null
-      return map.project([lonArg, latArg])
-    },
-    [lon, lat] as const,
-  )
-  if (!point) throw new Error('Carte non initialisée (WebGL indisponible ?)')
-  await page.mouse.click(mapBox.x + point.x, mapBox.y + point.y)
-}
-
-async function hasMap(page: Page): Promise<boolean> {
-  return page
-    .waitForFunction(() => '__sentiersMap' in window, undefined, {
-      timeout: 10_000,
-    })
-    .then(
-      () => true,
-      () => false,
-    )
-}
 
 test('cliquer un tracé sur la carte ouvre la fiche détail (altimétrie + POI)', async ({
   page,

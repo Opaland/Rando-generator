@@ -16,6 +16,12 @@ import {
 import { polylineLengthMeters } from '../core/sampling.ts'
 import { itineraryCoords } from '../core/mapdata.ts'
 import { parseBouclesGeoJSON } from '../core/boucles.ts'
+import {
+  buildRoutingGraph,
+  routeThrough,
+  snapToNetwork,
+  type RoutingGraph,
+} from '../core/routing.ts'
 import { fetchElevationProfile, ElevationError } from '../core/elevation.ts'
 import { fetchPois } from '../core/poi.ts'
 import type { MatchResult } from '../core/matching.ts'
@@ -84,6 +90,16 @@ export interface AppState {
   /** Coordonnée à centrer sur la carte (POI cliqué) ; consommée une fois par MapView. */
   focusTarget: LonLat | null
 
+  // Tracé d'itinéraire accroché aux sentiers affichés
+  drawMode: boolean
+  /** Clés de nœuds du graphe pour chaque étape posée. */
+  drawWaypointKeys: string[]
+  /** Coordonnées des étapes, pour les afficher sur la carte. */
+  drawWaypoints: LonLat[]
+  /** Tracé calculé qui suit les chemins entre les étapes. */
+  drawPath: LonLat[]
+  drawError: string | null
+
   init: () => Promise<void>
   loadZone: (zoneId: string, options?: { force?: boolean }) => Promise<void>
   loadRef: (ref: string, options?: { force?: boolean }) => Promise<void>
@@ -102,6 +118,10 @@ export interface AppState {
   toggleView3D: () => void
   focusOn: (coords: LonLat) => void
   clearFocusTarget: () => void
+  toggleDrawMode: () => void
+  addDrawPoint: (point: LonLat) => void
+  undoDrawPoint: () => void
+  saveDrawnItinerary: (name: string) => Promise<void>
 }
 
 let recomputeSequence = 0
@@ -126,6 +146,36 @@ function fetchLocalBoucles(): Promise<Itinerary[]> {
 }
 
 export const useAppStore = create<AppState>()((set, get) => {
+  // Graphe de routage mémoïsé sur l'identité des tableaux d'itinéraires :
+  // le reconstruire à chaque clic de tracé serait inutilement coûteux sur
+  // une grosse zone (des dizaines de milliers de sommets).
+  let routingCache: {
+    itineraries: Itinerary[]
+    customItineraries: Itinerary[]
+    graph: RoutingGraph
+  } | null = null
+
+  function routingGraph(): RoutingGraph {
+    const { itineraries, customItineraries } = get()
+    if (
+      routingCache &&
+      routingCache.itineraries === itineraries &&
+      routingCache.customItineraries === customItineraries
+    ) {
+      return routingCache.graph
+    }
+    const graph = buildRoutingGraph([...itineraries, ...customItineraries])
+    routingCache = { itineraries, customItineraries, graph }
+    return graph
+  }
+
+  /** Prochain identifiant libre pour un itinéraire perso (ids négatifs). */
+  function nextCustomId(): number {
+    return (
+      Math.min(0, ...get().customItineraries.map((i) => i.osmRelationId)) - 1
+    )
+  }
+
   async function recompute(): Promise<void> {
     const { itineraries, customItineraries, tracks, toleranceMeters } = get()
     const sequence = ++recomputeSequence
@@ -308,6 +358,11 @@ export const useAppStore = create<AppState>()((set, get) => {
     poisLoading: false,
     view3D: false,
     focusTarget: null,
+    drawMode: false,
+    drawWaypointKeys: [],
+    drawWaypoints: [],
+    drawPath: [],
+    drawError: null,
 
     async init() {
       let db: SentiersDb | null = null
@@ -612,6 +667,86 @@ export const useAppStore = create<AppState>()((set, get) => {
 
     clearFocusTarget() {
       set({ focusTarget: null })
+    },
+
+    toggleDrawMode() {
+      const active = !get().drawMode
+      // La fiche détail occupe la même zone d'écran que le panneau de tracé.
+      if (active && get().detailItineraryId !== null) {
+        get().closeItineraryDetail()
+      }
+      set({
+        drawMode: active,
+        drawWaypointKeys: [],
+        drawWaypoints: [],
+        drawPath: [],
+        drawError: null,
+      })
+    },
+
+    addDrawPoint(point) {
+      if (!get().drawMode) return
+      const graph = routingGraph()
+      const key = snapToNetwork(graph, point)
+      if (!key) {
+        set({
+          drawError:
+            'Aucun sentier à proximité de ce point : cliquez plus près d’un tracé affiché.',
+        })
+        return
+      }
+      const keys = [...get().drawWaypointKeys, key]
+      const path = routeThrough(graph, keys)
+      if (!path) {
+        set({
+          drawError:
+            'Impossible de relier ce point au précédent en suivant les chemins : les deux tronçons ne se rejoignent pas dans les données affichées.',
+        })
+        return
+      }
+      set({
+        drawWaypointKeys: keys,
+        drawWaypoints: keys.map((k) => graph.nodes.get(k) as LonLat),
+        drawPath: path,
+        drawError: null,
+      })
+    },
+
+    undoDrawPoint() {
+      const keys = get().drawWaypointKeys.slice(0, -1)
+      const graph = routingGraph()
+      set({
+        drawWaypointKeys: keys,
+        drawWaypoints: keys.map((k) => graph.nodes.get(k) as LonLat),
+        drawPath: routeThrough(graph, keys) ?? [],
+        drawError: null,
+      })
+    },
+
+    async saveDrawnItinerary(name) {
+      const { drawPath, db } = get()
+      if (drawPath.length < 2) return
+      const id = nextCustomId()
+      const itinerary: Itinerary = {
+        osmRelationId: id,
+        ref: null,
+        name: name.trim() || 'Itinéraire tracé',
+        network: 'PERSO',
+        ways: [{ osmWayId: id, coords: drawPath }],
+        totalMeters: polylineLengthMeters(drawPath),
+        fetchedAt: new Date().toISOString(),
+      }
+      if (db) await db.saveCustomItinerary(itinerary)
+      set((state) => ({
+        customItineraries: [...state.customItineraries, itinerary],
+        drawMode: false,
+        drawWaypointKeys: [],
+        drawWaypoints: [],
+        drawPath: [],
+        drawError: null,
+        selectedItineraryId: id,
+      }))
+      await recompute()
     },
   }
 })

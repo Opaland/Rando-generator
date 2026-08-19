@@ -28,6 +28,7 @@
   --z-overlay-guide: 4; /* EmptyState : guide de premier lancement */
   --z-overlay-card: 5; /* ItineraryCard : fiche résumé flottante */
   --z-overlay-detail: 6; /* ItineraryDetail : panneau détail (altimétrie, POI, 3D) */
+  --z-overlay-draw: 7; /* RouteDrawer : panneau de tracé d'itinéraire */
 }
 
 * {

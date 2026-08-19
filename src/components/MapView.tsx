@@ -69,6 +69,8 @@ function baseStyle(tiles: string, attribution: string): StyleSpecification {
       'trails-done': { type: 'geojson', data: emptyCollection() },
       tracks: { type: 'geojson', data: emptyCollection() },
       pois: { type: 'geojson', data: emptyCollection() },
+      draw: { type: 'geojson', data: emptyCollection() },
+      'draw-points': { type: 'geojson', data: emptyCollection() },
     },
     layers: [
       { id: 'basemap', type: 'raster', source: 'basemap' },
@@ -131,6 +133,28 @@ function baseStyle(tiles: string, attribution: string): StyleSpecification {
           'circle-stroke-color': '#faf7f2',
         },
       },
+      {
+        id: 'draw-line',
+        type: 'line',
+        source: 'draw',
+        paint: {
+          'line-color': '#1e2b23',
+          'line-width': 5,
+          'line-opacity': 0.9,
+        },
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+      },
+      {
+        id: 'draw-points',
+        type: 'circle',
+        source: 'draw-points',
+        paint: {
+          'circle-radius': 6,
+          'circle-color': '#faf7f2',
+          'circle-stroke-width': 3,
+          'circle-stroke-color': '#1e2b23',
+        },
+      },
     ],
   }
 }
@@ -178,6 +202,15 @@ export function MapView() {
   const pois = useAppStore((s) => s.pois)
   const view3D = useAppStore((s) => s.view3D)
   const focusTarget = useAppStore((s) => s.focusTarget)
+  const drawMode = useAppStore((s) => s.drawMode)
+  const drawPath = useAppStore((s) => s.drawPath)
+  const drawWaypoints = useAppStore((s) => s.drawWaypoints)
+  // Le gestionnaire de clic est installé une seule fois : il lit le mode
+  // tracé via une ref plutôt que par une closure figée au premier rendu.
+  const drawModeRef = useRef(drawMode)
+  useEffect(() => {
+    drawModeRef.current = drawMode
+  }, [drawMode])
 
   const [mapError, setMapError] = useState(false)
 
@@ -229,6 +262,9 @@ export function MapView() {
     // (profil altimétrique, points d'intérêt, vue 3D) ; la sélection depuis
     // la liste latérale, elle, ne fait que zoomer (cf. store.selectItinerary).
     const handleClick = (event: MapLayerMouseEvent) => {
+      // En mode tracé, un clic pose une étape (géré plus bas) : ne pas
+      // ouvrir la fiche détail par-dessus.
+      if (drawModeRef.current) return
       const feature = event.features?.[0]
       const id = (feature?.properties as { itineraryId?: number } | undefined)
         ?.itineraryId
@@ -261,6 +297,13 @@ export function MapView() {
         )
         .addTo(map)
     }
+    // Mode tracé : chaque clic sur la carte pose une étape, accrochée au
+    // sentier le plus proche (le calcul de chemin vit dans le store).
+    map.on('click', (event) => {
+      if (!drawModeRef.current) return
+      useAppStore.getState().addDrawPoint([event.lngLat.lng, event.lngLat.lat])
+    })
+
     map.on('click', 'pois', handlePoiClick)
     map.on('mouseenter', 'pois', () => {
       map.getCanvas().style.cursor = 'pointer'
@@ -383,6 +426,44 @@ export function MapView() {
     const center = bounds.isEmpty() ? map.getCenter() : bounds.getCenter()
     map.easeTo({ center, pitch: 60, bearing, duration: 900 })
   }, [view3D, detailItineraryId, itineraries, customItineraries, ready])
+
+  // Tracé en cours : ligne calculée + étapes posées.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !ready) return
+    const apply = () => {
+      void map.getSource<GeoJSONSource>('draw')?.setData({
+        type: 'FeatureCollection',
+        features:
+          drawPath.length >= 2
+            ? [
+                {
+                  type: 'Feature',
+                  geometry: { type: 'LineString', coordinates: drawPath },
+                  properties: {},
+                },
+              ]
+            : [],
+      })
+      void map.getSource<GeoJSONSource>('draw-points')?.setData({
+        type: 'FeatureCollection',
+        features: drawWaypoints.map((coord) => ({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: coord },
+          properties: {},
+        })),
+      })
+    }
+    if (map.isStyleLoaded()) apply()
+    else map.once('idle', apply)
+  }, [drawPath, drawWaypoints, ready, styleEpoch])
+
+  // Curseur en croix pendant le tracé : le clic ne sert plus à naviguer.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !ready) return
+    map.getCanvas().style.cursor = drawMode ? 'crosshair' : ''
+  }, [drawMode, ready])
 
   // Centre la carte sur un point d'intérêt cliqué dans la fiche détail
   // (consommé une seule fois : on efface la cible aussitôt après usage).

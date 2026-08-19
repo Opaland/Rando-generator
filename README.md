@@ -57,7 +57,11 @@ existant via `PW_CHROMIUM_PATH=/chemin/vers/chrome npm run e2e`.
    du même fichier est détecté et refusé.
 3. **Créer « Mes itinéraires »** : importez le GPX d'un parcours *à faire*
    (cartoguide, Visorando, tracé maison…) — il devient un itinéraire local
-   avec sa propre progression, hors statistiques des réseaux OSM.
+   avec sa propre progression, hors statistiques des réseaux OSM. Ou
+   **tracez-le à la souris** (« Tracer sur la carte ») : chaque clic pose une
+   étape accrochée au sentier le plus proche, et le tracé **suit les chemins
+   affichés** entre les étapes (plus court chemin, calculé dans le
+   navigateur).
 4. **Lire sa progression** : carte colorée (gris = non parcouru, couleur du
    balisage = parcouru — une légende compacte rappelle le code couleur par
    réseau), tableau de bord (% global, km faits/restants, répartition
@@ -91,6 +95,8 @@ src/
 │  ├─ network.ts   # classement GR/GRP/PR depuis les tags OSM
 │  ├─ elevation.ts # profil altimétrique (service IGN), D+/D-, comblement de trous
 │  ├─ poi.ts       # points d'intérêt à proximité d'un tracé (Overpass)
+│  ├─ boucles.ts   # boucles communales open data (Métropole de Lyon, LO 2.0)
+│  ├─ routing.ts   # graphe des sentiers, accroche d'un clic, Dijkstra
 │  └─ mapdata.ts   # GeoJSON des couches carte (base / parcouru / traces)
 ├─ store/       # Zustand + client du worker de matching
 ├─ db/          # IndexedDB (idb), versionnée, TTL 30 jours
@@ -123,6 +129,15 @@ tests/
 - **Pas de turf.js** : la spec l'autorise « uniquement pour ce qu'on ne
   recode pas » ; tout le cœur géométrique étant recodé (et testé), la
   dépendance est inutile à ce stade.
+- **Routage recodé plutôt qu'une brique externe** : `route_snapper` (WASM,
+  Apache 2.0) impose de pré-générer un graphe binaire par zone au build, et
+  `geojson-path-finder` tire turf.js — deux dépendances lourdes pour un
+  Dijkstra sur un graphe qu'on a déjà en mémoire. `core/routing.ts` construit
+  le graphe directement depuis les ways affichés (OSM **et** boucles open
+  data) : le tracé colle donc exactement au réseau que l'utilisateur voit,
+  ce qu'un service de routage tiers (API IGN Géoplateforme, graphe BD TOPO®)
+  ne garantit pas. Les sommets sont quantifiés à ~1 m pour que deux ways
+  partageant une jonction se raccordent malgré les arrondis d'export.
 - **Pas de police distante** : l'app promet que rien ne sort du navigateur ;
   charger des webfonts contredirait cette promesse. Piles système soignées à
   la place.
