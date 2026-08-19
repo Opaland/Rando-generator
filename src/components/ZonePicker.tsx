@@ -5,6 +5,7 @@ import styles from './ZonePicker.module.css'
 
 export function ZonePicker() {
   const zoneKey = useAppStore((s) => s.zoneKey)
+  const zoneLabel = useAppStore((s) => s.zoneLabel)
   const zoneLoading = useAppStore((s) => s.zoneLoading)
   const zoneError = useAppStore((s) => s.zoneError)
   const zoneFetchedAt = useAppStore((s) => s.zoneFetchedAt)
@@ -88,10 +89,12 @@ export function ZonePicker() {
             className={styles.refresh}
             data-testid="zone-refresh"
             onClick={() => {
-              if (zoneKey.startsWith('ref:')) return
-              void loadZone(zoneKey, { force: true })
+              if (zoneKey.startsWith('ref:')) {
+                if (zoneLabel) void loadRef(zoneLabel, { force: true })
+              } else {
+                void loadZone(zoneKey, { force: true })
+              }
             }}
-            hidden={zoneKey.startsWith('ref:')}
           >
             Actualiser les tracés
           </button>

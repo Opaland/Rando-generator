@@ -49,7 +49,7 @@ export interface AppState {
 
   init: () => Promise<void>
   loadZone: (zoneId: string, options?: { force?: boolean }) => Promise<void>
-  loadRef: (ref: string) => Promise<void>
+  loadRef: (ref: string, options?: { force?: boolean }) => Promise<void>
   importGpxFiles: (files: Iterable<File>) => Promise<void>
   removeTrack: (id: string) => Promise<void>
   setTolerance: (value: number) => Promise<void>
@@ -216,11 +216,16 @@ export const useAppStore = create<AppState>()((set, get) => {
       await loadFromOverpass(zoneId, zone.label, buildZoneQuery(zoneId), force)
     },
 
-    async loadRef(ref) {
+    async loadRef(ref, options = {}) {
       const trimmed = ref.trim()
       if (!trimmed) return
+      const force = options.force ?? false
       const zoneKey = `ref:${trimmed.toUpperCase()}`
-      await loadFromOverpass(zoneKey, trimmed, buildRefQuery(trimmed), false)
+      if (force) {
+        const { db } = get()
+        if (db) await db.deleteZone(zoneKey)
+      }
+      await loadFromOverpass(zoneKey, trimmed, buildRefQuery(trimmed), force)
     },
 
     async importGpxFiles(files) {
