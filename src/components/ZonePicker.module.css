@@ -39,6 +39,34 @@
   cursor: wait;
 }
 
+.groupTitle {
+  margin: 4px 0 -4px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--gris-vert);
+}
+
+.featured {
+  display: grid;
+  gap: 8px;
+}
+
+.featured .zone,
+.featured .zoneActive {
+  display: grid;
+  gap: 2px;
+}
+
+.featuredRef {
+  font-weight: 700;
+}
+
+.featuredHint {
+  font-size: 0.8rem;
+  opacity: 0.85;
+}
+
 .refForm {
   display: grid;
   gap: 4px;
