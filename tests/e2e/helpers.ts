@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test'
+import { expect, type Page } from '@playwright/test'
 import pilatFixture from '../fixtures/overpass/pilat.json' with { type: 'json' }
 import poiFixture from '../fixtures/overpass/poi.json' with { type: 'json' }
 
@@ -49,6 +49,28 @@ export async function clickOnMap(
   )
   if (!point) throw new Error('Carte non initialisée (WebGL indisponible ?)')
   await page.mouse.click(mapBox.x + point.x, mapBox.y + point.y)
+}
+
+/**
+ * Ouvre la fiche détail en cliquant un tracé sur la carte.
+ *
+ * Le clic vise une géométrie de 2 px de large sur un canvas : entre le
+ * moment où la caméra s'immobilise et celui où la couche est effectivement
+ * rendue, il peut tomber dans le vide — c'était la cause de tests instables
+ * (deux navigateurs se partagent le GPU de la machine). On réessaie donc
+ * jusqu'à ce que la fiche s'ouvre, au lieu de parier sur un seul clic.
+ */
+export async function openDetailFromMap(
+  page: Page,
+  lon: number,
+  lat: number,
+): Promise<void> {
+  await expect(async () => {
+    await clickOnMap(page, lon, lat)
+    await expect(page.getByTestId('itinerary-detail')).toBeVisible({
+      timeout: 2_000,
+    })
+  }).toPass({ timeout: 25_000, intervals: [300, 700, 1_500, 3_000] })
 }
 
 export const MIRROR_1 = 'https://overpass-api.de/api/interpreter'
