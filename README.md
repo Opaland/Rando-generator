@@ -13,6 +13,8 @@ statistiques : « j'ai parcouru 34 % du GR 7, 61 % des sentiers du Pilat ».
   de Lyon © Métropole de Lyon (Licence Ouverte 2.0, jeu « Boucles communales
   de randonnée ») ; fond de carte Plan IGN v2 (licence ouverte Etalab 2.0)
   avec repli automatique sur les tuiles OSM.
+- **Utilisable hors réseau** : service worker sans dépendance (ni Workbox ni
+  greffon PWA), précache généré au build, tuiles déjà vues conservées.
 - Site statique : déployable tel quel sur GitHub Pages, Netlify, etc.
 
 > GR®, GR de Pays® et PR® sont des marques de la FFRandonnée. Cette
@@ -87,6 +89,22 @@ existant via `PW_CHROMIUM_PATH=/chemin/vers/chrome npm run e2e`.
    pour situer quelqu'un sur un sentier.
 7. **Régler la précision de suivi GPS** (tolérance de matching, 25–100 m)
    selon la précision de votre appareil ; tout est recalculé.
+
+### Hors connexion
+
+L'application s'installe et se relance **sans réseau** une fois visitée
+(service worker, `public/sw.js`). Fonctionnent hors connexion :
+
+- l'application elle-même et son interface ;
+- les **tracés et traces GPX** déjà chargés (IndexedDB, indépendamment du
+  service worker) ;
+- les **fonds de carte déjà consultés** — les autres tuiles resteront grises.
+
+Ne fonctionnent **pas** hors connexion, et ne sont pas présentés comme tels :
+charger une nouvelle zone (Overpass), le profil altimétrique (service IGN),
+les points d'intérêt. Ces réponses ne sont volontairement pas mises en cache :
+un relief ou des POI périmés ne valent pas mieux qu'un message clair. Un
+bandeau l'explique dès que la connexion tombe.
 
 Sur mobile, chaque section du panneau latéral est un accordéon repliable, et
 toute suppression (trace, itinéraire perso) demande une confirmation en deux

@@ -7,6 +7,7 @@ import { ItineraryCard } from './components/ItineraryCard.tsx'
 import { ItineraryDetail } from './components/ItineraryDetail.tsx'
 import { ItineraryList } from './components/ItineraryList.tsx'
 import { LocateButton } from './components/LocateButton.tsx'
+import { OfflineBanner } from './components/OfflineBanner.tsx'
 import { RouteDrawer } from './components/RouteDrawer.tsx'
 import { Settings } from './components/Settings.tsx'
 import { TrackManager } from './components/TrackManager.tsx'
@@ -56,6 +57,8 @@ function App() {
           À propos
         </button>
       </header>
+
+      <OfflineBanner />
 
       {dbWarning && (
         <p className={styles.dbWarning} role="alert">
