@@ -80,7 +80,12 @@ existant via `PW_CHROMIUM_PATH=/chemin/vers/chrome npm run e2e`.
    caméra inclinée sur le tracé (pas un relief calculé depuis un modèle
    numérique de terrain). Le relief et les POI sont des bonus : indisponibles,
    la fiche reste utilisable.
-6. **Régler la précision de suivi GPS** (tolérance de matching, 25–100 m)
+6. **Se localiser** : le bouton « Ma position » affiche l'appareil sur la
+   carte et recentre dessus au premier relevé. La position est lue par le
+   navigateur et **reste dans l'onglet** — ni enregistrée, ni transmise. La
+   précision annoncée est affichée, et signalée quand elle est trop mauvaise
+   pour situer quelqu'un sur un sentier.
+7. **Régler la précision de suivi GPS** (tolérance de matching, 25–100 m)
    selon la précision de votre appareil ; tout est recalculé.
 
 Sur mobile, chaque section du panneau latéral est un accordéon repliable, et

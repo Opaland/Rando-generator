@@ -115,6 +115,14 @@ export interface PointOfInterest {
   details: PoiDetails
 }
 
+/** Position de l'utilisateur, fournie par le navigateur — jamais transmise. */
+export interface UserPosition {
+  lon: number
+  lat: number
+  /** Rayon d'incertitude en mètres, tel que rapporté par l'appareil. */
+  accuracy: number
+}
+
 /** Profil altimétrique d'un tracé : distances cumulées et altitudes alignées. */
 export interface ElevationProfile {
   /** Distance cumulée depuis le départ, en mètres. */

@@ -71,9 +71,25 @@ function baseStyle(tiles: string, attribution: string): StyleSpecification {
       pois: { type: 'geojson', data: emptyCollection() },
       draw: { type: 'geojson', data: emptyCollection() },
       'draw-points': { type: 'geojson', data: emptyCollection() },
+      'user-position': { type: 'geojson', data: emptyCollection() },
     },
     layers: [
       { id: 'basemap', type: 'raster', source: 'basemap' },
+      {
+        // Liseré blanc sous les tracés : sans lui, un trait rouge sur un fond
+        // topographique chargé devient illisible en plein soleil. Deux couches
+        // superposées (large clair dessous, colorée dessus) — c'est la
+        // technique de « casing », line-gap-width ferait tout autre chose.
+        id: 'trails-casing',
+        type: 'line',
+        source: 'trails',
+        paint: {
+          'line-color': '#ffffff',
+          'line-width': 6,
+          'line-opacity': 0.85,
+        },
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+      },
       {
         id: 'trails-base',
         type: 'line',
@@ -155,6 +171,18 @@ function baseStyle(tiles: string, attribution: string): StyleSpecification {
           'circle-stroke-color': '#1e2b23',
         },
       },
+      {
+        // Position de l'utilisateur, au-dessus de tout le reste.
+        id: 'user-position',
+        type: 'circle',
+        source: 'user-position',
+        paint: {
+          'circle-radius': 7,
+          'circle-color': '#1d6fa5',
+          'circle-stroke-width': 3,
+          'circle-stroke-color': '#ffffff',
+        },
+      },
     ],
   }
 }
@@ -207,6 +235,7 @@ export function MapView() {
   const pois = useAppStore((s) => s.pois)
   const view3D = useAppStore((s) => s.view3D)
   const focusTarget = useAppStore((s) => s.focusTarget)
+  const userPosition = useAppStore((s) => s.userPosition)
   const drawMode = useAppStore((s) => s.drawMode)
   const drawPath = useAppStore((s) => s.drawPath)
   const drawWaypoints = useAppStore((s) => s.drawWaypoints)
@@ -467,6 +496,31 @@ export function MapView() {
     if (map.isStyleLoaded()) apply()
     else map.once('idle', apply)
   }, [drawPath, drawWaypoints, ready, styleEpoch])
+
+  // Position de l'utilisateur.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !ready) return
+    const apply = () => {
+      void map.getSource<GeoJSONSource>('user-position')?.setData({
+        type: 'FeatureCollection',
+        features: userPosition
+          ? [
+              {
+                type: 'Feature',
+                geometry: {
+                  type: 'Point',
+                  coordinates: [userPosition.lon, userPosition.lat],
+                },
+                properties: {},
+              },
+            ]
+          : [],
+      })
+    }
+    if (map.isStyleLoaded()) apply()
+    else map.once('idle', apply)
+  }, [userPosition, ready, styleEpoch])
 
   // Curseur en croix pendant le tracé : le clic ne sert plus à naviguer.
   useEffect(() => {
