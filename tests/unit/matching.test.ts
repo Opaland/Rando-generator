@@ -26,9 +26,22 @@ describe('runMatching — fixtures de matching', () => {
     expect(results[0]!.computedAt).toBe(NOW)
   })
 
-  it('trace décalée de 30 m → 100 % à TOL = 50', () => {
+  it('trace décalée de 30 m → 0 % à TOL = 50 (chemin parallèle)', () => {
+    // Comportement délibérément inversé : cette fixture créditait autrefois
+    // 100 %, alors qu'un écart de 30 m qui ne se referme jamais décrit une
+    // route qui longe le sentier, pas une marche dessus. C'était le faux
+    // positif principal du moteur — cf. docs/PRODUCT_AUDIT.md (P0-1) et
+    // tests/unit/matchingQuality.test.ts.
     const line = straightLine(4.5, LAT, 1000, 100)
     const trace = shiftNorth(straightLine(4.5, LAT, 1000, 10), 30)
+    const itin = makeItinerary(1, [{ osmWayId: 10, coords: line }])
+    const { results } = runMatching([itin], trace, opts(50))
+    expect(results[0]!.pct).toBe(0)
+  })
+
+  it('trace décalée de 12 m → 100 % à TOL = 50 (bruit GPS ordinaire)', () => {
+    const line = straightLine(4.5, LAT, 1000, 100)
+    const trace = shiftNorth(straightLine(4.5, LAT, 1000, 10), 12)
     const itin = makeItinerary(1, [{ osmWayId: 10, coords: line }])
     const { results } = runMatching([itin], trace, opts(50))
     expect(results[0]!.pct).toBe(100)
@@ -122,16 +135,32 @@ describe('runMatching — fixtures de matching', () => {
     expect(byNetwork.PERSO.doneMeters).toBe(1100)
   })
 
-  it('la tolérance est bien paramétrable (70 m passe à TOL = 100)', () => {
+  it('la tolérance reste paramétrable, mais ne suffit plus à elle seule', () => {
     const line = straightLine(4.5, LAT, 1000, 100)
-    const trace = shiftNorth(straightLine(4.5, LAT, 1000, 10), 70)
     const itin = makeItinerary(1, [{ osmWayId: 10, coords: line }])
-    const { results } = runMatching([itin], trace, {
-      toleranceMeters: 100,
-      stepMeters: 100,
-      computedAt: NOW,
-    })
-    expect(results[0]!.pct).toBe(100)
+
+    // Un décalage modeste (15 m, bruit GPS courant) reste crédité.
+    const proche = shiftNorth(straightLine(4.5, LAT, 1000, 10), 15)
+    expect(
+      runMatching([itin], proche, {
+        toleranceMeters: 50,
+        stepMeters: 100,
+        computedAt: NOW,
+      }).results[0]!.pct,
+    ).toBe(100)
+
+    // Un décalage constant de 70 m ne l'est pas, même en montant la tolérance
+    // à 100 m : un écart régulier qui ne se referme jamais est la signature
+    // d'un chemin parallèle, pas d'un GPS imprécis. Comportement délibérément
+    // changé — cf. docs/PRODUCT_AUDIT.md (P0-1).
+    const loin = shiftNorth(straightLine(4.5, LAT, 1000, 10), 70)
+    expect(
+      runMatching([itin], loin, {
+        toleranceMeters: 100,
+        stepMeters: 100,
+        computedAt: NOW,
+      }).results[0]!.pct,
+    ).toBe(0)
   })
 
   it('répartit les stats par réseau sans double compte global', () => {

@@ -15,6 +15,44 @@ export function distanceMeters(a: LonLat, b: LonLat): number {
   return EARTH_RADIUS_METERS * Math.hypot(x, y)
 }
 
+/**
+ * Distance d'un point au segment [a, b], et non à ses extrémités.
+ *
+ * C'est la différence entre « mon GPS a enregistré un point à moins de 50 m »
+ * et « je suis passé à moins de 50 m » : un appareil qui n'enregistre qu'un
+ * point tous les 500 m suit pourtant bien le sentier entre deux relevés.
+ */
+export function distanceToSegmentMeters(
+  point: LonLat,
+  a: LonLat,
+  b: LonLat,
+): number {
+  // Projection locale en mètres autour du segment : à ces échelles, l'erreur
+  // est négligeable devant la tolérance de matching.
+  const meanLatRad = ((a[1] + b[1]) / 2) * DEG_TO_RAD
+  const kx = EARTH_RADIUS_METERS * DEG_TO_RAD * Math.cos(meanLatRad)
+  const ky = EARTH_RADIUS_METERS * DEG_TO_RAD
+
+  const ax = a[0] * kx
+  const ay = a[1] * ky
+  const bx = b[0] * kx
+  const by = b[1] * ky
+  const px = point[0] * kx
+  const py = point[1] * ky
+
+  const dx = bx - ax
+  const dy = by - ay
+  const lengthSquared = dx * dx + dy * dy
+  if (lengthSquared === 0) return Math.hypot(px - ax, py - ay)
+
+  // Projection scalaire, bornée au segment.
+  const t = Math.min(
+    1,
+    Math.max(0, ((px - ax) * dx + (py - ay) * dy) / lengthSquared),
+  )
+  return Math.hypot(px - (ax + t * dx), py - (ay + t * dy))
+}
+
 /** Indices entiers de la cellule de hachage spatial contenant le point. */
 export function cellIndices(lon: number, lat: number): [number, number] {
   return [Math.floor(lon / CELL_SIZE_DEG), Math.floor(lat / CELL_SIZE_DEG)]

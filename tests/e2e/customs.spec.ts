@@ -29,7 +29,7 @@ test('itinéraire perso : import GPX cible, progression, suppression, persistanc
   await page.getByTestId('gpx-input').setInputFiles({
     name: 'ma-sortie.gpx',
     mimeType: 'application/gpx+xml',
-    buffer: Buffer.from(buildGpx(30), 'utf-8'),
+    buffer: Buffer.from(buildGpx(15), 'utf-8'),
   })
   await expect(list).toContainText('100 %')
 
@@ -69,7 +69,7 @@ test('double import du même GPX : la trace dupliquée est refusée', async ({
   const file = {
     name: 'sortie.gpx',
     mimeType: 'application/gpx+xml',
-    buffer: Buffer.from(buildGpx(30), 'utf-8'),
+    buffer: Buffer.from(buildGpx(15), 'utf-8'),
   }
   await page.getByTestId('gpx-input').setInputFiles(file)
   await expect(page.getByTestId('tracks-list')).toContainText('sortie.gpx')

@@ -36,9 +36,9 @@ test('le repli IGN → OSM conserve les tracés affichés', async ({ page }) => 
   await page.getByTestId('gpx-input').setInputFiles({
     name: 'sortie.gpx',
     mimeType: 'application/gpx+xml',
-    buffer: Buffer.from(buildGpx(30), 'utf-8'),
+    buffer: Buffer.from(buildGpx(15), 'utf-8'),
   })
-  await expect(page.getByTestId('global-pct')).toHaveText('56,8 %')
+  await expect(page.getByTestId('global-pct')).toHaveText('54,5 %')
 
   const stats = () =>
     page.evaluate(

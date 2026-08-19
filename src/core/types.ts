@@ -52,6 +52,8 @@ export interface Sample {
   /** Un way peut appartenir à plusieurs itinéraires. */
   itineraryIds: number[]
   done: boolean
+  /** Distance à la trace GPS la plus proche, renseignée par le matching. */
+  distanceMeters?: number
 }
 
 /** Trace GPX utilisateur. */

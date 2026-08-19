@@ -47,7 +47,7 @@ const JUNK_TEXTS = [
 ]
 
 const JUNK_FILES = [
-  { name: 'bernard.gpx', body: () => buildGpx(30) },
+  { name: 'bernard.gpx', body: () => buildGpx(15) },
   { name: 'photo-vacances.gpx', body: () => 'JFIF\x00\x01 pas du xml' },
   { name: 'cassé.gpx', body: () => GPX_MALFORMED },
   { name: 'vide.gpx', body: () => '' },

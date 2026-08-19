@@ -148,9 +148,9 @@ test('une trace importée met bien la fiche détail à 100 % (altimétrie indisp
   await page.getByTestId('gpx-input').setInputFiles({
     name: 'sortie.gpx',
     mimeType: 'application/gpx+xml',
-    buffer: Buffer.from(buildGpx(30), 'utf-8'),
+    buffer: Buffer.from(buildGpx(15), 'utf-8'),
   })
-  await expect(page.getByTestId('global-pct')).toHaveText('56,8 %')
+  await expect(page.getByTestId('global-pct')).toHaveText('54,5 %')
 
   await clickOnMap(page, 4.502, 45.4)
   const detail = page.getByTestId('itinerary-detail')

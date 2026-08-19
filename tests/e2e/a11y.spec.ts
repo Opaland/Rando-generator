@@ -20,9 +20,9 @@ test('aucune violation a11y sérieuse ou critique sur la vue principale', async 
   await page.getByTestId('gpx-input').setInputFiles({
     name: 'sortie.gpx',
     mimeType: 'application/gpx+xml',
-    buffer: Buffer.from(buildGpx(30), 'utf-8'),
+    buffer: Buffer.from(buildGpx(15), 'utf-8'),
   })
-  await expect(page.getByTestId('global-pct')).toHaveText('56,8 %')
+  await expect(page.getByTestId('global-pct')).toHaveText('54,5 %')
 
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa'])
