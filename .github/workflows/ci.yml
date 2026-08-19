@@ -20,7 +20,7 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
       - name: Tests unitaires (couverture ≥ 90 % sur src/core)
-        run: npm test
+        run: npm run coverage
       - name: Build
         run: npm run build
       - name: Installer Chromium pour Playwright

@@ -34,4 +34,11 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    // Dans les tests, l'assertion non nulle est idiomatique après un toHaveLength.
+    files: ['tests/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-non-null-assertion': 'off',
+    },
+  },
 )
