@@ -125,6 +125,10 @@ tests/
 - CI GitHub Actions : lint + typecheck + tests (couverture) + build + e2e.
 - Avant release : smoke test manuel sur données réelles — voir
   [docs/RELEASE.md](./docs/RELEASE.md).
+- Monkey testing : `npm run monkey` déchaîne « Bernard » (persona brouillon et
+  impatient) — des séances d'actions aléatoires reproductibles par graine
+  (`MONKEY_SEEDS`, `MONKEY_ACTIONS`), qui échouent à la moindre erreur
+  JavaScript. Exploratoire, hors CI.
 
 ## Déploiement (GitHub Pages)
 
