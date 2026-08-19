@@ -1,0 +1,85 @@
+.wrapper {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: var(--z-overlay-locate);
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+  max-width: min(280px, calc(100% - 24px));
+}
+
+.button,
+.buttonActive {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 14px;
+  border-radius: 22px;
+  border: 1px solid var(--gris-vert-clair);
+  background: var(--blanc-papier);
+  color: var(--vert-noir);
+  font-size: 0.88rem;
+  font-weight: 600;
+  box-shadow: 0 2px 10px rgba(30, 43, 35, 0.22);
+}
+
+.buttonActive {
+  background: #1d6fa5;
+  border-color: #1d6fa5;
+  color: #fff;
+}
+
+.button:hover {
+  background: #fff;
+}
+
+.label {
+  white-space: nowrap;
+}
+
+.accuracy,
+.poor {
+  margin: 0;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(250, 247, 242, 0.92);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--gris-vert);
+}
+
+.poor {
+  background: #fdf6e3;
+  color: var(--vert-noir);
+}
+
+.error {
+  margin: 0;
+  padding: 8px 10px;
+  border-left: 4px solid var(--erreur-bord);
+  background: var(--erreur-fond);
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+/* Sur mobile, la fiche détail occupe le bas de l'écran : on remonte le
+   bouton pour qu'il reste atteignable au pouce. */
+@media (max-width: 639px) {
+  .wrapper {
+    bottom: 8px;
+    right: 8px;
+  }
+
+  .label {
+    display: none;
+  }
+
+  .button,
+  .buttonActive {
+    padding: 8px;
+    min-width: 44px;
+    justify-content: center;
+  }
+}

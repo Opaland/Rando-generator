@@ -25,12 +25,17 @@ import {
 import { fetchElevationProfile, ElevationError } from '../core/elevation.ts'
 import { fetchPois } from '../core/poi.ts'
 import type { MatchResult } from '../core/matching.ts'
+import {
+  GEO_OPTIONS,
+  geolocationErrorMessage,
+} from '../core/geolocation.ts'
 import type {
   ElevationProfile,
   Itinerary,
   LonLat,
   PointOfInterest,
   Track,
+  UserPosition,
 } from '../core/types.ts'
 import { DEFAULT_TOLERANCE_METERS, STEP_METERS } from '../core/types.ts'
 import {
@@ -100,6 +105,11 @@ export interface AppState {
   drawPath: LonLat[]
   drawError: string | null
 
+  // Position de l'utilisateur (API du navigateur, jamais transmise)
+  userPosition: UserPosition | null
+  geoWatching: boolean
+  geoError: string | null
+
   init: () => Promise<void>
   loadZone: (zoneId: string, options?: { force?: boolean }) => Promise<void>
   loadRef: (ref: string, options?: { force?: boolean }) => Promise<void>
@@ -122,11 +132,14 @@ export interface AppState {
   addDrawPoint: (point: LonLat) => void
   undoDrawPoint: () => void
   saveDrawnItinerary: (name: string) => Promise<void>
+  toggleGeolocation: () => void
 }
 
 let recomputeSequence = 0
 let detailSequence = 0
 let zoneLoadSequence = 0
+/** Identifiant du suivi de position en cours (API navigateur). */
+let geoWatchId: number | null = null
 
 /** Zones dont le périmètre couvre la Métropole de Lyon (boucles locales). */
 const ZONES_WITH_LOCAL_BOUCLES = new Set(['rhone', 'trois'])
@@ -363,6 +376,9 @@ export const useAppStore = create<AppState>()((set, get) => {
     drawWaypoints: [],
     drawPath: [],
     drawError: null,
+    userPosition: null,
+    geoWatching: false,
+    geoError: null,
 
     async init() {
       let db: SentiersDb | null = null
@@ -747,6 +763,45 @@ export const useAppStore = create<AppState>()((set, get) => {
         selectedItineraryId: id,
       }))
       await recompute()
+    },
+
+    toggleGeolocation() {
+      if (get().geoWatching) {
+        if (geoWatchId !== null) navigator.geolocation.clearWatch(geoWatchId)
+        geoWatchId = null
+        set({ geoWatching: false, userPosition: null, geoError: null })
+        return
+      }
+      if (!('geolocation' in navigator)) {
+        set({
+          geoError: 'Votre navigateur ne fournit pas la localisation.',
+        })
+        return
+      }
+      set({ geoWatching: true, geoError: null })
+      geoWatchId = navigator.geolocation.watchPosition(
+        (position) => {
+          const next: UserPosition = {
+            lon: position.coords.longitude,
+            lat: position.coords.latitude,
+            accuracy: position.coords.accuracy,
+          }
+          // On ne recentre qu'au premier point : recentrer à chaque relevé
+          // arracherait la carte des mains de qui la déplace.
+          const isFirstFix = get().userPosition === null
+          set({ userPosition: next, geoError: null })
+          if (isFirstFix) get().focusOn([next.lon, next.lat])
+        },
+        (error: GeolocationPositionError) => {
+          geoWatchId = null
+          set({
+            geoWatching: false,
+            userPosition: null,
+            geoError: geolocationErrorMessage(error.code),
+          })
+        },
+        GEO_OPTIONS,
+      )
     },
   }
 })
