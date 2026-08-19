@@ -56,6 +56,39 @@ test('« Actualiser les tracés » recharge une zone en ignorant le cache', asyn
   expect(overpass.count()).toBe(2)
 })
 
+test('changer de zone met à jour les données ; zéro résultat est expliqué', async ({
+  page,
+}) => {
+  await mockTiles(page)
+  const overpass = await mockOverpass(page)
+  await page.goto('/')
+
+  // Zone 1 : la fixture complète.
+  await page.getByTestId('zone-pilat').click()
+  await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
+    timeout: 15_000,
+  })
+
+  // Zone 2 : Overpass renvoie d'autres données → l'UI doit refléter le changement.
+  overpass.setFixture(pilatGrOnly())
+  await page.getByTestId('zone-rhone').click()
+  await expect(page.getByTestId('zone-meta')).toContainText('1 itinéraire', {
+    timeout: 15_000,
+  })
+  expect(overpass.count()).toBe(2)
+
+  // Zone 3 : aucun itinéraire → message explicite, interface non bloquée.
+  overpass.setFixture({ version: 0.6, elements: [] })
+  await page.getByTestId('zone-loire').click()
+  await expect(page.getByTestId('zone-error')).toContainText(
+    /aucun itinéraire/i,
+    { timeout: 15_000 },
+  )
+  await expect(page.getByTestId('zone-meta')).toContainText('0 itinéraire')
+  // Les boutons de zone sont réactivés : on peut recharger ailleurs.
+  await expect(page.getByTestId('zone-pilat')).toBeEnabled()
+})
+
 test('recherche par ref : chargement puis actualisation possibles', async ({
   page,
 }) => {

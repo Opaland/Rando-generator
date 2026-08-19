@@ -50,7 +50,14 @@ export const ZONES: OverpassZone[] = [
   },
 ]
 
-/** Requête Overpass : toutes les relations route=hiking d'une zone prédéfinie. */
+/**
+ * Types de relations retenus : hiking (GR, GRP, la plupart des PR), mais aussi
+ * foot/walking — en France beaucoup de boucles locales balisées (cartoguides
+ * départementaux, sentiers métropolitains) sont taguées route=foot.
+ */
+const ROUTE_FILTER = '["route"~"^(hiking|foot|walking)$"]'
+
+/** Requête Overpass : toutes les relations d'itinéraires pédestres d'une zone. */
 export function buildZoneQuery(zoneId: string): string {
   const zone = ZONES.find((z) => z.id === zoneId)
   if (!zone) {
@@ -61,7 +68,7 @@ export function buildZoneQuery(zoneId: string): string {
 (
 ${areas}
 )->.zone;
-relation["route"="hiking"](area.zone);
+relation${ROUTE_FILTER}(area.zone);
 out geom;`
 }
 
@@ -78,7 +85,7 @@ export function buildRefQuery(ref: string): string {
     .replace(/\s+/g, ' ?')
   return `[out:json][timeout:180];
 area["ISO3166-1"="FR"]["admin_level"="2"]->.fr;
-relation["route"="hiking"]["ref"~"^${escaped}$",i](area.fr);
+relation${ROUTE_FILTER}["ref"~"^${escaped}$",i](area.fr);
 out geom;`
 }
 
@@ -175,11 +182,19 @@ export async function fetchOverpass(
 
   for (const mirror of mirrors) {
     try {
+      // AbortSignal.timeout peut manquer sur d'anciens navigateurs : dans ce
+      // cas on lance la requête sans limite plutôt que d'échouer d'office.
+      let signal: AbortSignal | undefined
+      try {
+        signal = AbortSignal.timeout(timeoutMs)
+      } catch {
+        signal = undefined
+      }
       const response = await fetchFn(mirror, {
         method: 'POST',
         body: `data=${encodeURIComponent(query)}`,
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        signal: AbortSignal.timeout(timeoutMs),
+        ...(signal ? { signal } : {}),
       })
       if (!response.ok) continue
       const data: unknown = await response.json()

@@ -101,44 +101,64 @@ export const useAppStore = create<AppState>()((set, get) => {
     query: string,
     force: boolean,
   ): Promise<void> {
-    const { db } = get()
     set({ zoneLoading: true, zoneError: null })
-
-    const cached = db ? await db.getZone(zoneKey) : undefined
-    const now = new Date().toISOString()
-    if (cached && !force && isFresh(cached.fetchedAt, now)) {
-      setItineraries(zoneKey, cached.label, cached.itineraries, cached.fetchedAt)
-      await persistLastZone(zoneKey)
-      await recompute()
-      return
-    }
-
     try {
-      const data = await fetchOverpass(query)
-      const itineraries = parseOverpassResponse(data, now)
-      if (db) {
-        await db.saveZone({ zoneKey, label: zoneLabel, itineraries, fetchedAt: now })
+      const { db } = get()
+      let cached
+      try {
+        cached = db ? await db.getZone(zoneKey) : undefined
+      } catch {
+        cached = undefined
       }
-      setItineraries(zoneKey, zoneLabel, itineraries, now)
-      await persistLastZone(zoneKey)
-      await recompute()
-    } catch (error) {
-      // Miroirs injoignables : on retombe sur le cache même périmé.
-      if (cached) {
+      const now = new Date().toISOString()
+      if (cached && !force && isFresh(cached.fetchedAt, now)) {
         setItineraries(zoneKey, cached.label, cached.itineraries, cached.fetchedAt)
-        set({
-          zoneError:
-            'Les serveurs OpenStreetMap sont injoignables : affichage des tracés en cache (ils datent peut-être un peu).',
-        })
         await persistLastZone(zoneKey)
         await recompute()
         return
       }
-      const message =
-        error instanceof OverpassError || error instanceof DbError
-          ? error.message
-          : 'Le chargement des tracés a échoué. Vérifiez votre connexion puis réessayez.'
-      set({ zoneLoading: false, zoneError: message })
+
+      try {
+        const data = await fetchOverpass(query)
+        const itineraries = parseOverpassResponse(data, now)
+        if (db) {
+          try {
+            await db.saveZone({ zoneKey, label: zoneLabel, itineraries, fetchedAt: now })
+          } catch {
+            // Quota de stockage dépassé (grosses zones) : on continue en
+            // mémoire, le cache sera simplement absent au prochain démarrage.
+          }
+        }
+        setItineraries(zoneKey, zoneLabel, itineraries, now)
+        if (itineraries.length === 0) {
+          set({
+            zoneError:
+              'Aucun itinéraire balisé trouvé dans cette zone sur OpenStreetMap. Réessayez avec « Actualiser les tracés », ou choisissez une autre zone.',
+          })
+        }
+        await persistLastZone(zoneKey)
+        await recompute()
+      } catch (error) {
+        // Miroirs injoignables : on retombe sur le cache même périmé.
+        if (cached) {
+          setItineraries(zoneKey, cached.label, cached.itineraries, cached.fetchedAt)
+          set({
+            zoneError:
+              'Les serveurs OpenStreetMap sont injoignables : affichage des tracés en cache (ils datent peut-être un peu).',
+          })
+          await persistLastZone(zoneKey)
+          await recompute()
+          return
+        }
+        const message =
+          error instanceof OverpassError || error instanceof DbError
+            ? error.message
+            : 'Le chargement des tracés a échoué. Vérifiez votre connexion puis réessayez.'
+        set({ zoneError: message })
+      }
+    } finally {
+      // Quoi qu'il arrive, l'interface ne reste jamais bloquée en chargement.
+      if (get().zoneLoading) set({ zoneLoading: false })
     }
   }
 
