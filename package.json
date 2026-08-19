@@ -12,7 +12,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "monkey": "MONKEY=1 playwright test tests/e2e/monkey.spec.ts --workers=2"
   },
   "dependencies": {
     "idb": "^8.0.3",
