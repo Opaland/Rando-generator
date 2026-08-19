@@ -31,6 +31,42 @@ self.__PRECACHE__ = []
 /** Au-delà, on supprime les plus anciennes : le quota n'est pas extensible. */
 const MAX_TUILES = 600
 
+/*
+ * Type du message de connectivité, recopié depuis src/core/connectivity.ts —
+ * ce fichier vit hors du bundle et ne peut rien importer. Un test unitaire
+ * vérifie que les deux valeurs ne divergent pas.
+ */
+const CONNECTIVITY_MESSAGE = 'sentiers:connectivity'
+
+/*
+ * Vrai dès qu'une requête de l'application a dû être servie depuis le cache
+ * faute de réseau. C'est le seul signal fiable pour la page : au chargement
+ * hors connexion, `navigator.onLine` peut encore répondre `true` et aucun
+ * événement `offline` ne sera émis, la coupure étant antérieure à la page.
+ */
+let secoursCache = false
+
+/** Prévient les pages ouvertes que l'application tourne sur le cache. */
+async function signalerSecours() {
+  const pages = await self.clients.matchAll({ includeUncontrolled: true })
+  for (const page of pages) {
+    page.postMessage({ type: CONNECTIVITY_MESSAGE, cacheFallback: true })
+  }
+}
+
+/*
+ * Une page qui vient de démarrer demande l'état : le service worker a déjà
+ * constaté l'échec pendant la navigation, avant même que ses scripts ne
+ * s'exécutent. La réponse part sur le port du MessageChannel fourni.
+ */
+self.addEventListener('message', (event) => {
+  if (event.data?.type !== CONNECTIVITY_MESSAGE) return
+  const port = event.ports?.[0]
+  const reponse = { type: CONNECTIVITY_MESSAGE, cacheFallback: secoursCache }
+  if (port) port.postMessage(reponse)
+  else event.source?.postMessage(reponse)
+})
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
     (async () => {
@@ -92,12 +128,17 @@ async function reseauPuisCache(request, cacheName, secours) {
   try {
     const reponse = await fetch(request)
     if (reponse && reponse.ok) await cache.put(request, reponse.clone())
+    secoursCache = false
     return reponse
   } catch (erreur) {
     const enCache =
       (await cache.match(request, OPTIONS_MATCH)) ??
       (secours && (await cache.match(secours, OPTIONS_MATCH)))
-    if (enCache) return enCache
+    if (enCache) {
+      secoursCache = true
+      void signalerSecours()
+      return enCache
+    }
     throw erreur
   }
 }

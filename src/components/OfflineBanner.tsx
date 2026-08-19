@@ -1,5 +1,45 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useReducer } from 'react'
+import {
+  CONNECTIVITY_MESSAGE,
+  initialConnectivity,
+  isOffline,
+  reduceConnectivity,
+} from '../core/connectivity.ts'
 import styles from './OfflineBanner.module.css'
+
+/** Au-delà, on considère que le service worker ne répondra pas. */
+const REPONSE_SW_MS = 3_000
+
+interface ConnectivityMessage {
+  type?: string
+  cacheFallback?: boolean
+}
+
+/**
+ * Demande au service worker s'il a servi l'application depuis le cache faute
+ * de réseau. C'est le seul moyen de le savoir quand la coupure précède le
+ * chargement de la page : `navigator.onLine` reste alors optimiste et aucun
+ * événement `offline` n'est émis.
+ */
+function demanderAuServiceWorker(): Promise<boolean> {
+  return new Promise<boolean>((resolve) => {
+    const controleur = navigator.serviceWorker.controller
+    if (!controleur) {
+      resolve(false)
+      return
+    }
+    const canal = new MessageChannel()
+    const minuteur = setTimeout(() => {
+      canal.port1.close()
+      resolve(false)
+    }, REPONSE_SW_MS)
+    canal.port1.onmessage = (event: MessageEvent<ConnectivityMessage>) => {
+      clearTimeout(minuteur)
+      resolve(event.data.cacheFallback === true)
+    }
+    controleur.postMessage({ type: CONNECTIVITY_MESSAGE }, [canal.port2])
+  })
+}
 
 /**
  * Bandeau affiché sans connexion. Il dit précisément ce qui reste possible
@@ -8,22 +48,46 @@ import styles from './OfflineBanner.module.css'
  * mauvais moment — en pleine forêt.
  */
 export function OfflineBanner() {
-  const [offline, setOffline] = useState(false)
+  const [etat, dispatch] = useReducer(
+    reduceConnectivity,
+    navigator.onLine,
+    initialConnectivity,
+  )
 
   useEffect(() => {
-    const majuscule = () => {
-      setOffline(!navigator.onLine)
+    const enLigne = () => {
+      dispatch('online')
     }
-    majuscule()
-    window.addEventListener('online', majuscule)
-    window.addEventListener('offline', majuscule)
+    const horsLigne = () => {
+      dispatch('offline')
+    }
+    window.addEventListener('online', enLigne)
+    window.addEventListener('offline', horsLigne)
+
+    const surMessage = (event: MessageEvent<ConnectivityMessage>) => {
+      if (
+        event.data.type === CONNECTIVITY_MESSAGE &&
+        event.data.cacheFallback === true
+      ) {
+        dispatch('cache-fallback')
+      }
+    }
+    navigator.serviceWorker.addEventListener('message', surMessage)
+
+    let vivant = true
+    void demanderAuServiceWorker().then((secours) => {
+      if (secours && vivant) dispatch('cache-fallback')
+    })
+
     return () => {
-      window.removeEventListener('online', majuscule)
-      window.removeEventListener('offline', majuscule)
+      vivant = false
+      window.removeEventListener('online', enLigne)
+      window.removeEventListener('offline', horsLigne)
+      navigator.serviceWorker.removeEventListener('message', surMessage)
     }
   }, [])
 
-  if (!offline) return null
+  if (!isOffline(etat)) return null
 
   return (
     <p className={styles.banner} role="status" data-testid="offline-banner">
