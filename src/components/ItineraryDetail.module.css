@@ -182,6 +182,29 @@
   border-color: var(--vert-noir);
 }
 
+.poiEntry {
+  display: grid;
+  gap: 2px;
+}
+
+.poiFacts {
+  margin: 0 0 0 10px;
+  font-size: 0.78rem;
+  color: var(--gris-vert);
+}
+
+.poiFacts a {
+  color: var(--rouge-balisage);
+}
+
+.poiCaveat {
+  margin: 0;
+  padding: 8px 10px;
+  border-left: 4px solid var(--jaune-pr);
+  background: #fdf6e3;
+  font-size: 0.78rem;
+}
+
 .poiKind {
   flex: none;
   font-size: 0.75rem;

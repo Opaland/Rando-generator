@@ -38,6 +38,19 @@ test('cliquer un tracé sur la carte ouvre la fiche détail (altimétrie + POI)'
   await expect(poiList).toContainText('Point de vue sur la vallée')
   await expect(poiList).toContainText('Crêt de la Perdrix')
 
+  // Le refuge est une surface OSM (polygone) : il doit quand même apparaître,
+  // avec ses informations pratiques.
+  await expect(poiList).toContainText('Refuge du Pilat')
+  await expect(poiList).toContainText('32 places')
+
+  // Les couchages libres passent en tête et l'avertissement s'affiche.
+  await expect(poiList).toContainText('Cabane des Chèvres')
+  await expect(page.getByTestId('detail-poi-caveat')).toContainText(
+    /gestionnaire/i,
+  )
+  // L'abribus de la fixture n'est jamais proposé comme point d'intérêt.
+  await expect(poiList).not.toContainText('Arrêt Les Sétoux')
+
   // La fiche résumé (petite carte) ne s'affiche plus en même temps.
   await expect(page.getByTestId('itinerary-card')).toHaveCount(0)
 

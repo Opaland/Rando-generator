@@ -74,21 +74,45 @@ export interface CompletionResult {
   computedAt: string
 }
 
-/** Catégories de points d'intérêt affichées dans la fiche détail. */
+/**
+ * Catégories de points d'intérêt affichées dans la fiche détail.
+ * La distinction entre `hut`, `bivouac` et `shelter` suit le wiki OSM :
+ * un refuge gardé se réserve, un refuge non gardé (ou une cabane) permet
+ * de dormir en autonomie, un abri météo n'est fait que pour une pause.
+ */
 export type PoiKind =
   | 'viewpoint'
   | 'peak'
+  /** Refuge gardé (tourism=alpine_hut) : personnel, repas, réservation. */
   | 'hut'
+  /** Refuge non gardé, cabane, abri où dormir (wilderness_hut, basic_hut…). */
+  | 'bivouac'
+  /** Abri météo : pause ou urgence, pas prévu pour la nuit. */
+  | 'shelter'
   | 'water'
   | 'picnic'
   | 'monument'
 
+/** Informations pratiques d'un POI, telles que taguées dans OSM. */
+export interface PoiDetails {
+  phone: string | null
+  website: string | null
+  /** Nombre de couchages annoncé (chaîne : OSM n'impose pas le format). */
+  capacity: string | null
+  openingHours: string | null
+  operator: string | null
+  /** Altitude en mètres, telle que taguée. */
+  elevation: string | null
+}
+
 export interface PointOfInterest {
-  id: number
+  /** « node/123 » : les ids OSM ne sont uniques qu'au sein d'un même type. */
+  id: string
   lon: number
   lat: number
   kind: PoiKind
   name: string | null
+  details: PoiDetails
 }
 
 /** Profil altimétrique d'un tracé : distances cumulées et altitudes alignées. */

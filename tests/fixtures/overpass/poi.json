@@ -18,13 +18,6 @@
     },
     {
       "type": "node",
-      "id": 9003,
-      "lat": 45.42,
-      "lon": 4.53,
-      "tags": { "tourism": "alpine_hut", "name": "Refuge du Pilat" }
-    },
-    {
-      "type": "node",
       "id": 9004,
       "lat": 45.43,
       "lon": 4.54,
@@ -32,9 +25,69 @@
     },
     { "type": "node", "id": 9005, "lat": 45.44, "lon": 4.55, "tags": {} },
     {
+      "type": "node",
+      "id": 9006,
+      "lat": 45.405,
+      "lon": 4.515,
+      "tags": {
+        "tourism": "wilderness_hut",
+        "name": "Cabane des Chèvres",
+        "capacity": "6",
+        "fireplace": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9007,
+      "lat": 45.406,
+      "lon": 4.516,
+      "tags": {
+        "amenity": "shelter",
+        "shelter_type": "lean_to",
+        "name": "Appentis du Col"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9008,
+      "lat": 45.407,
+      "lon": 4.517,
+      "tags": {
+        "amenity": "shelter",
+        "shelter_type": "weather_shelter",
+        "name": "Abri du Crêt"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9009,
+      "lat": 45.408,
+      "lon": 4.518,
+      "tags": {
+        "amenity": "shelter",
+        "shelter_type": "public_transport",
+        "name": "Arrêt Les Sétoux"
+      }
+    },
+    {
+      "type": "way",
+      "id": 9003,
+      "center": { "lat": 45.42, "lon": 4.53 },
+      "tags": {
+        "tourism": "alpine_hut",
+        "name": "Refuge du Pilat",
+        "phone": "+33 4 77 00 00 00",
+        "website": "https://example.org/refuge-du-pilat",
+        "capacity": "32",
+        "opening_hours": "Jun-Sep",
+        "operator": "FFCAM",
+        "ele": "1350"
+      }
+    },
+    {
       "type": "way",
       "id": 9100,
-      "tags": { "tourism": "viewpoint" }
+      "tags": { "tourism": "viewpoint", "name": "Surface sans centroïde" }
     }
   ]
 }

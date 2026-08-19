@@ -1,28 +1,41 @@
 import { fetchOverpass, type FetchOverpassOptions } from './overpass.ts'
-import type { LonLat, PoiKind, PointOfInterest } from './types.ts'
+import type { LonLat, PoiDetails, PoiKind, PointOfInterest } from './types.ts'
 
-/** Tags OSM retenus, mappés vers nos catégories d'affichage. */
-const TAG_TO_KIND: [tag: string, value: string, kind: PoiKind][] = [
-  ['tourism', 'viewpoint', 'viewpoint'],
-  ['natural', 'peak', 'peak'],
-  ['tourism', 'alpine_hut', 'hut'],
-  ['tourism', 'wilderness_hut', 'hut'],
-  ['amenity', 'drinking_water', 'water'],
-  ['natural', 'spring', 'water'],
-  ['tourism', 'picnic_site', 'picnic'],
-  ['historic', 'monument', 'monument'],
-  ['historic', 'memorial', 'monument'],
-]
+/**
+ * Points d'intérêt le long d'un tracé, depuis OpenStreetMap.
+ *
+ * Deux pièges traités ici :
+ *
+ * 1. **Les refuges sont souvent des surfaces.** En montagne, un refuge est
+ *    fréquemment cartographié comme le polygone du bâtiment, pas comme un
+ *    nœud. On interroge donc `nwr` (nœuds, ways et relations) avec
+ *    `out center`, qui fournit un centroïde exploitable pour les surfaces.
+ * 2. **Un long GR déborde toute boîte englobante raisonnable.** Une bbox
+ *    autour du GR 65 couvrirait un quart de la France : Overpass renverrait
+ *    des milliers de POI hors sujet, ou abandonnerait. Le tracé est donc
+ *    découpé en portions, chacune avec sa propre bbox.
+ */
 
-/** Marge ajoutée autour de la boîte englobante du tracé, en degrés (~1,5 km). */
+/** Marge ajoutée autour de chaque boîte englobante, en degrés (~1,5 km). */
 const BBOX_MARGIN_DEG = 0.015
 
-function boundingBox(
-  coords: LonLat[],
-): { south: number; west: number; north: number; east: number } {
-  if (coords.length === 0) {
-    throw new Error('Impossible de calculer une boîte englobante sans point.')
-  }
+/** Étendue maximale d'une portion avant découpage, en degrés (~25 km). */
+const MAX_SPAN_DEG = 0.25
+
+/** Nombre maximal de portions : borne la taille de la requête. */
+const MAX_CHUNKS = 40
+
+/** Nombre maximal de POI demandés à Overpass. */
+const MAX_POIS = 400
+
+export interface BoundingBox {
+  south: number
+  west: number
+  north: number
+  east: number
+}
+
+function bboxOf(coords: LonLat[]): BoundingBox {
   let south = Infinity
   let west = Infinity
   let north = -Infinity
@@ -41,21 +54,91 @@ function boundingBox(
   }
 }
 
+function evenSlices(coords: LonLat[], count: number): LonLat[][] {
+  const size = Math.ceil(coords.length / count)
+  const slices: LonLat[][] = []
+  for (let i = 0; i < coords.length; i += size) {
+    // Chevauchement d'un point : deux portions voisines ne laissent pas de
+    // trou entre leurs boîtes englobantes.
+    slices.push(coords.slice(i, Math.min(i + size + 1, coords.length)))
+  }
+  return slices
+}
+
 /**
- * Requête Overpass : points d'intérêt de randonnée (points de vue, sommets,
- * refuges, points d'eau, aires de pique-nique, monuments) dans la boîte
- * englobante d'un tracé, avec une marge.
+ * Découpe un tracé en boîtes englobantes successives, chacune d'étendue
+ * bornée. Au-delà de `maxChunks` portions, le tracé est redécoupé en parts
+ * égales : les boîtes sont plus larges mais la couverture reste complète.
+ */
+export function bboxChunks(
+  coords: LonLat[],
+  maxSpanDeg = MAX_SPAN_DEG,
+  maxChunks = MAX_CHUNKS,
+): BoundingBox[] {
+  if (coords.length === 0) {
+    throw new Error('Impossible de calculer une boîte englobante sans point.')
+  }
+
+  const chunks: LonLat[][] = []
+  let current: LonLat[] = []
+  let minLon = Infinity
+  let maxLon = -Infinity
+  let minLat = Infinity
+  let maxLat = -Infinity
+
+  for (const point of coords) {
+    const nextMinLon = Math.min(minLon, point[0])
+    const nextMaxLon = Math.max(maxLon, point[0])
+    const nextMinLat = Math.min(minLat, point[1])
+    const nextMaxLat = Math.max(maxLat, point[1])
+    const tooWide =
+      current.length > 0 &&
+      (nextMaxLon - nextMinLon > maxSpanDeg ||
+        nextMaxLat - nextMinLat > maxSpanDeg)
+    if (tooWide) {
+      chunks.push(current)
+      // La portion suivante repart du dernier point : pas de trou.
+      current = [current[current.length - 1] as LonLat]
+      minLon = maxLon = (current[0] as LonLat)[0]
+      minLat = maxLat = (current[0] as LonLat)[1]
+    }
+    current.push(point)
+    minLon = Math.min(minLon, point[0])
+    maxLon = Math.max(maxLon, point[0])
+    minLat = Math.min(minLat, point[1])
+    maxLat = Math.max(maxLat, point[1])
+  }
+  if (current.length > 0) chunks.push(current)
+
+  const bounded = chunks.length > maxChunks ? evenSlices(coords, maxChunks) : chunks
+  return bounded.map(bboxOf)
+}
+
+/**
+ * Requête Overpass : POI de randonnée le long du tracé.
+ *
+ * Les abris (`amenity=shelter`) sont filtrés par `shelter_type` dès la
+ * requête : sans ça, un tracé urbain ramènerait tous les abribus.
  */
 export function buildPoiQuery(coords: LonLat[]): string {
-  const { south, west, north, east } = boundingBox(coords)
-  const bbox = `${south.toFixed(5)},${west.toFixed(5)},${north.toFixed(5)},${east.toFixed(5)}`
-  const filters = TAG_TO_KIND.map(([tag, value]) => `["${tag}"="${value}"]`)
-  const clauses = filters.map((filter) => `  node${filter}(${bbox});`).join('\n')
-  return `[out:json][timeout:25];
+  const clauses = bboxChunks(coords)
+    .map(({ south, west, north, east }) => {
+      const bbox = `${south.toFixed(5)},${west.toFixed(5)},${north.toFixed(5)},${east.toFixed(5)}`
+      return [
+        `  nwr["tourism"~"^(viewpoint|alpine_hut|wilderness_hut|picnic_site)$"](${bbox});`,
+        `  nwr["natural"~"^(peak|spring)$"](${bbox});`,
+        `  nwr["amenity"="drinking_water"](${bbox});`,
+        `  nwr["amenity"="shelter"]["shelter_type"~"^(basic_hut|lean_to|rock_shelter|weather_shelter)$"](${bbox});`,
+        `  nwr["historic"~"^(monument|memorial)$"](${bbox});`,
+      ].join('\n')
+    })
+    .join('\n')
+
+  return `[out:json][timeout:60];
 (
 ${clauses}
 );
-out body;`
+out center ${MAX_POIS};`
 }
 
 interface OverpassPoiElement {
@@ -63,43 +146,114 @@ interface OverpassPoiElement {
   id: number
   lat?: number
   lon?: number
+  center?: { lat?: number; lon?: number }
   tags?: Record<string, string>
 }
 
+/**
+ * Classe un élément OSM. Suit le wiki : un abri « météo » n'est pas prévu
+ * pour la nuit, contrairement à une cabane ou un appentis — la nuance
+ * compte pour qui cherche où dormir.
+ */
 function classify(tags: Record<string, string>): PoiKind | null {
-  for (const [tag, value, kind] of TAG_TO_KIND) {
-    if (tags[tag] === value) return kind
+  switch (tags.tourism) {
+    case 'viewpoint':
+      return 'viewpoint'
+    case 'alpine_hut':
+      return 'hut'
+    case 'wilderness_hut':
+      return 'bivouac'
+    case 'picnic_site':
+      return 'picnic'
+  }
+  if (tags.natural === 'peak') return 'peak'
+  if (tags.natural === 'spring' || tags.amenity === 'drinking_water') {
+    return 'water'
+  }
+  if (tags.amenity === 'shelter') {
+    switch (tags.shelter_type) {
+      case 'basic_hut':
+      case 'lean_to':
+      case 'rock_shelter':
+        return 'bivouac'
+      case 'weather_shelter':
+        return 'shelter'
+      default:
+        // Abribus, abri de pique-nique… : hors sujet pour la randonnée.
+        return null
+    }
+  }
+  if (tags.historic === 'monument' || tags.historic === 'memorial') {
+    return 'monument'
   }
   return null
 }
 
-/** Extrait les points d'intérêt reconnus d'une réponse Overpass. */
+function trimmed(value: string | undefined): string | null {
+  return typeof value === 'string' && value.trim() !== '' ? value.trim() : null
+}
+
+function httpUrl(value: string | undefined): string | null {
+  const url = trimmed(value)
+  return url && /^https?:\/\//i.test(url) ? url : null
+}
+
+function detailsOf(tags: Record<string, string>): PoiDetails {
+  return {
+    phone: trimmed(tags.phone ?? tags['contact:phone']),
+    website: httpUrl(tags.website ?? tags['contact:website']),
+    capacity: trimmed(tags.capacity ?? tags['capacity:beds']),
+    openingHours: trimmed(tags.opening_hours),
+    operator: trimmed(tags.operator),
+    elevation: trimmed(tags.ele),
+  }
+}
+
+/** Ordre d'affichage : ce qui sert à passer la nuit d'abord. */
+const KIND_ORDER: PoiKind[] = [
+  'bivouac',
+  'hut',
+  'shelter',
+  'water',
+  'peak',
+  'viewpoint',
+  'picnic',
+  'monument',
+]
+
+/**
+ * Extrait les POI reconnus d'une réponse Overpass. Les surfaces (ways,
+ * relations) sont acceptées via leur centroïde `center`.
+ */
 export function parsePoiResponse(data: unknown): PointOfInterest[] {
   const elements = (data as { elements?: OverpassPoiElement[] } | null)
     ?.elements
   if (!Array.isArray(elements)) return []
 
-  const pois: PointOfInterest[] = []
+  const pois = new Map<string, PointOfInterest>()
   for (const element of elements) {
-    if (
-      element.type !== 'node' ||
-      typeof element.lat !== 'number' ||
-      typeof element.lon !== 'number'
-    ) {
-      continue
-    }
+    const lat = element.lat ?? element.center?.lat
+    const lon = element.lon ?? element.center?.lon
+    if (typeof lat !== 'number' || typeof lon !== 'number') continue
     const tags = element.tags ?? {}
     const kind = classify(tags)
     if (!kind) continue
-    pois.push({
-      id: element.id,
-      lat: element.lat,
-      lon: element.lon,
+    // Les portions se chevauchent : un même POI peut revenir plusieurs fois.
+    const id = `${element.type}/${element.id}`
+    if (pois.has(id)) continue
+    pois.set(id, {
+      id,
+      lat,
+      lon,
       kind,
-      name: tags.name ?? null,
+      name: trimmed(tags.name),
+      details: detailsOf(tags),
     })
   }
-  return pois
+
+  return [...pois.values()].sort(
+    (a, b) => KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind),
+  )
 }
 
 /**
