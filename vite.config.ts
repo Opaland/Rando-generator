@@ -55,6 +55,10 @@ export default defineConfig({
   test: {
     include: ['tests/unit/**/*.test.ts'],
     passWithNoTests: true,
+    // Sans cela, un import `?raw` d'une feuille de style rend une chaîne
+    // vide : le test qui compare la palette CSS aux constantes JavaScript
+    // passerait sans rien vérifier.
+    css: true,
     coverage: {
       provider: 'v8',
       include: ['src/core/**'],

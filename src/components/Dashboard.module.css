@@ -3,11 +3,15 @@
   gap: 12px;
 }
 
+/* Le tableau de bord est le résultat, pas un réglage : son titre porte plus
+   que les cinq autres sections, qui partagent volontairement le même style
+   discret. */
 .title {
-  font-size: 1rem;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--gris-vert);
+  letter-spacing: 0.04em;
+  color: var(--vert-noir);
   display: flex;
   align-items: center;
   gap: 10px;

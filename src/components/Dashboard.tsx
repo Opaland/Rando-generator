@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useAppStore } from '../store/appStore.ts'
 import type { Network } from '../core/types.ts'
 import { displayName, formatKm, formatPct } from '../lib/format.ts'
+import { useCountUp } from '../lib/useCountUp.ts'
 import { ProgressBalise } from './ProgressBalise.tsx'
 import styles from './Dashboard.module.css'
 
@@ -20,6 +21,10 @@ export function Dashboard() {
   const itineraries = useAppStore((s) => s.itineraries)
   const matchingBusy = useAppStore((s) => s.matchingBusy)
   const selectItinerary = useAppStore((s) => s.selectItinerary)
+
+  // Le chiffre rattrape la barre : les voir bouger séparément donne
+  // l'impression qu'ils ne parlent pas du même résultat.
+  const pctAnime = useCountUp(matching?.global.pct ?? 0)
 
   const byId = useMemo(
     () => new Map(itineraries.map((i) => [i.osmRelationId, i])),
@@ -54,7 +59,7 @@ export function Dashboard() {
       {global && (
         <div className={styles.global}>
           <p className={styles.bigPct} data-testid="global-pct">
-            {formatPct(global.pct)}
+            {formatPct(pctAnime)}
           </p>
           <p className={styles.globalDetail} data-testid="global-km">
             {formatKm(global.doneMeters)} parcourus ·{' '}
