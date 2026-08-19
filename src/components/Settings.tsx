@@ -6,6 +6,13 @@ import styles from './Settings.module.css'
 export function Settings() {
   const toleranceMeters = useAppStore((s) => s.toleranceMeters)
   const setTolerance = useAppStore((s) => s.setTolerance)
+  const aDesDonnees = useAppStore(
+    (s) => s.itineraries.length > 0 || s.tracks.length > 0,
+  )
+  // null = suivre l'état des données ; dès que l'utilisateur ouvre ou ferme
+  // la section, c'est son choix qui prime. Régler la précision de suivi GPS
+  // avant d'avoir la moindre trace n'a aucun sens : la section reste repliée.
+  const [ouvert, setOuvert] = useState<boolean | null>(null)
   // Valeur en cours de réglage ; null = suivre la valeur du store.
   const [draft, setDraft] = useState<number | null>(null)
   const commitTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -31,7 +38,14 @@ export function Settings() {
   }
 
   return (
-    <details className={styles.section} open>
+    <details
+      className={styles.section}
+      data-testid="settings"
+      open={ouvert ?? aDesDonnees}
+      onToggle={(e) => {
+        setOuvert(e.currentTarget.open)
+      }}
+    >
       <summary className="acc-summary">
         <h2 id="settings-title" className={styles.title}>
           Précision de suivi GPS

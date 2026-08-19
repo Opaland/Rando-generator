@@ -1,6 +1,14 @@
 import type { Network } from '../core/types.ts'
 
-/** Couleur de balisage par réseau — source unique pour la carte et la légende. */
+/**
+ * Couleur de balisage par réseau, pour la carte et la légende.
+ *
+ * Ces valeurs sont forcément dupliquées avec les variables de src/index.css :
+ * MapLibre ne lit pas les propriétés personnalisées CSS, et une feuille de
+ * style ne lit pas une constante JavaScript. tests/unit/networkColors.test.ts
+ * empêche les deux listes de diverger — un badge et un tracé de couleurs
+ * différentes ne se remarquent qu'au moment où l'on compare, donc jamais.
+ */
 export const NETWORK_COLORS: Record<Network, string> = {
   GR: '#c8102e',
   GRP: '#b34a08',

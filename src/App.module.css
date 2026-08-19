@@ -89,6 +89,19 @@
   color: var(--gris-vert);
 }
 
+/* Entre 800 et 1100 px — fenêtre réduite, tablette en paysage, écran
+   partagé — la barre latérale pouvait manger 45 % de la largeur et laisser
+   la carte, qui est le produit, à l'étroit. Palier intermédiaire : elle
+   redevient une colonne, pas une moitié d'écran. */
+@media (max-width: 1100px) and (min-width: 801px) {
+  .sidebar {
+    width: 320px;
+    max-width: 38vw;
+    padding: 14px;
+    gap: 18px;
+  }
+}
+
 @media (max-width: 800px) {
   .layout {
     flex-direction: column;
