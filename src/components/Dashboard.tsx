@@ -3,6 +3,7 @@ import { useAppStore } from '../store/appStore.ts'
 import type { Network } from '../core/types.ts'
 import { displayName, formatKm, formatPct } from '../lib/format.ts'
 import { useCountUp } from '../lib/useCountUp.ts'
+import { COMPLETION_PCT, isCompleted } from '../core/milestones.ts'
 import { ProgressBalise } from './ProgressBalise.tsx'
 import styles from './Dashboard.module.css'
 
@@ -29,6 +30,14 @@ export function Dashboard() {
   const byId = useMemo(
     () => new Map(itineraries.map((i) => [i.osmRelationId, i])),
     [itineraries],
+  )
+
+  // « Bouclé » plutôt que « 100 % » : un tronçon impraticable, une déviation
+  // de balisage ou une géométrie OSM imparfaite ne sont pas de la faute du
+  // randonneur (cf. src/core/milestones.ts).
+  const boucles = useMemo(
+    () => (matching?.results ?? []).filter((r) => isCompleted(r.pct)).length,
+    [matching],
   )
 
   const top5 = useMemo(() => {
@@ -65,6 +74,12 @@ export function Dashboard() {
             {formatKm(global.doneMeters)} parcourus ·{' '}
             {formatKm(global.totalMeters - global.doneMeters)} restants
           </p>
+          {boucles > 0 && (
+            <p className={styles.globalDetail} data-testid="global-completed">
+              {boucles} itinéraire{boucles > 1 ? 's' : ''} bouclé
+              {boucles > 1 ? 's' : ''} (au moins {COMPLETION_PCT} % parcourus)
+            </p>
+          )}
           <ProgressBalise pct={global.pct} label="Progression globale" />
         </div>
       )}

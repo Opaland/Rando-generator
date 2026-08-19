@@ -1,4 +1,10 @@
 import { useAppStore } from '../store/appStore.ts'
+import {
+  COMPLETION_PCT,
+  isCompleted,
+  metersToNextMilestone,
+  nextMilestone,
+} from '../core/milestones.ts'
 import { displayName, formatKm, formatPct } from '../lib/format.ts'
 import { NETWORK_BADGES } from '../lib/networkDisplay.ts'
 import { ProgressBalise } from './ProgressBalise.tsx'
@@ -30,6 +36,8 @@ export function ItineraryCard() {
   const pct = result?.pct ?? 0
   const done = result?.doneMeters ?? 0
   const total = result?.totalMeters ?? itin.totalMeters
+  // Un pourcentage qui monte lentement ne dit rien ; un palier à portée, si.
+  const restantJalon = metersToNextMilestone(pct, total)
 
   return (
     <aside
@@ -66,6 +74,13 @@ export function ItineraryCard() {
       <p className={styles.detail}>
         {formatKm(done)} parcourus · {formatKm(Math.max(0, total - done))}{' '}
         restants
+      </p>
+      <p className={styles.milestone} data-testid="itinerary-card-milestone">
+        {isCompleted(pct)
+          ? `Itinéraire bouclé (au moins ${COMPLETION_PCT} % parcourus)`
+          : restantJalon !== null
+            ? `Encore ${formatKm(restantJalon)} pour atteindre ${nextMilestone(pct) ?? 100} %`
+            : ''}
       </p>
       <button
         type="button"
