@@ -87,6 +87,8 @@ export interface AppState {
 
   // UI
   selectedItineraryId: number | null
+  /** Avancement d'un import multi-fichiers, pour que l'attente ait un sujet. */
+  importProgress: { done: number; total: number; filename: string } | null
 
   // Fiche détail (profil altimétrique + points d'intérêt + vue 3D)
   detailItineraryId: number | null
@@ -145,6 +147,15 @@ export interface AppState {
 let recomputeSequence = 0
 let detailSequence = 0
 let zoneLoadSequence = 0
+/**
+ * Rend la main au navigateur le temps d'un rendu. Sans cela, l'avancement
+ * d'un import est bien mis à jour dans l'état… et jamais peint, le fil
+ * principal enchaînant directement sur le parsing suivant.
+ */
+function pause(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0))
+}
+
 /** Identifiant du suivi de position en cours (API navigateur). */
 let geoWatchId: number | null = null
 
@@ -371,6 +382,7 @@ export const useAppStore = create<AppState>()((set, get) => {
     matchingBusy: false,
     selectedItineraryId: null,
     detailItineraryId: null,
+    importProgress: null,
     elevationProfile: null,
     elevationHover: null,
     elevationError: null,
@@ -472,12 +484,23 @@ export const useAppStore = create<AppState>()((set, get) => {
       const { db } = get()
       const errors: string[] = []
       const imported: Track[] = []
+      const liste = [...files]
       const knownFingerprints = new Map(
         get().tracks.map((t) => [trackFingerprint(t.points), t.filename]),
       )
-      for (const file of files) {
+      for (const [index, file] of liste.entries()) {
         try {
+          set({
+            importProgress: {
+              done: index,
+              total: liste.length,
+              filename: file.name,
+            },
+          })
           const text = await file.text()
+          // Laisse le navigateur peindre l'avancement avant le parsing, qui
+          // bloque le fil principal (mesuré : ~320 ms pour un GPX de 9 Mo).
+          await pause()
           const parsed = parseGpx(text, new DOMParser())
           if (parsed.points.length === 0) {
             errors.push(
@@ -512,6 +535,7 @@ export const useAppStore = create<AppState>()((set, get) => {
           )
         }
       }
+      set({ importProgress: null })
       if (imported.length > 0) {
         set((state) => ({ tracks: [...state.tracks, ...imported] }))
         await recompute()
@@ -529,9 +553,18 @@ export const useAppStore = create<AppState>()((set, get) => {
         0,
         ...get().customItineraries.map((i) => i.osmRelationId),
       )
-      for (const file of files) {
+      const liste = [...files]
+      for (const [index, file] of liste.entries()) {
         try {
+          set({
+            importProgress: {
+              done: index,
+              total: liste.length,
+              filename: file.name,
+            },
+          })
           const text = await file.text()
+          await pause()
           const parsed = parseGpx(text, new DOMParser())
           if (parsed.points.length < 2) {
             errors.push(
@@ -559,6 +592,7 @@ export const useAppStore = create<AppState>()((set, get) => {
           )
         }
       }
+      set({ importProgress: null })
       if (imported.length > 0) {
         set((state) => ({
           customItineraries: [...state.customItineraries, ...imported],

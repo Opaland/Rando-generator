@@ -24,6 +24,18 @@ export function formatDuration(minutes: number): string {
     : `${heures} h ${reste.toString().padStart(2, '0')}`
 }
 
+/** « Lecture de sortie.gpx (2 sur 5)… » — avancement d'un import multi-fichiers. */
+export function importProgressLabel(progress: {
+  done: number
+  total: number
+  filename: string
+}): string {
+  const rang = Math.min(progress.done + 1, Math.max(progress.total, 1))
+  return progress.total > 1
+    ? `Lecture de ${progress.filename} (${rang} sur ${progress.total})…`
+    : `Lecture de ${progress.filename}…`
+}
+
 /** Nom affiché d'un itinéraire : ref OSM, sinon nom, sinon id. */
 export function displayName(itin: Itinerary): string {
   return itin.ref ?? itin.name ?? `Itinéraire ${itin.osmRelationId}`

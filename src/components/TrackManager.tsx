@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type DragEvent } from 'react'
 import { polylineLengthMeters } from '../core/sampling.ts'
 import { useAppStore } from '../store/appStore.ts'
-import { formatKm } from '../lib/format.ts'
+import { formatKm, importProgressLabel } from '../lib/format.ts'
 import { ConfirmDeleteButton } from './ConfirmDeleteButton.tsx'
 import styles from './TrackManager.module.css'
 
@@ -11,6 +11,7 @@ export function TrackManager() {
   const tracks = useAppStore((s) => s.tracks)
   const importErrors = useAppStore((s) => s.importErrors)
   const importGpxFiles = useAppStore((s) => s.importGpxFiles)
+  const importProgress = useAppStore((s) => s.importProgress)
   const removeTrack = useAppStore((s) => s.removeTrack)
   const clearImportErrors = useAppStore((s) => s.clearImportErrors)
   const inputRef = useRef<HTMLInputElement | null>(null)
@@ -107,7 +108,9 @@ export function TrackManager() {
 
       {importing && (
         <p className={styles.importing} role="status" data-testid="gpx-importing">
-          Import en cours…
+          {importProgress
+            ? importProgressLabel(importProgress)
+            : 'Import en cours…'}
         </p>
       )}
 
