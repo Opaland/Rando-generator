@@ -194,3 +194,7 @@
   color: var(--gris-vert);
   font-variant-numeric: tabular-nums;
 }
+
+.done {
+  color: var(--rouge-balisage);
+}

@@ -6,6 +6,7 @@ import {
   matchesFilters,
   type DiscoveryFilters,
 } from '../core/discovery.ts'
+import { isCompleted } from '../core/milestones.ts'
 import type { LonLat, Network } from '../core/types.ts'
 import {
   displayName,
@@ -396,7 +397,15 @@ export function ItineraryList() {
                   />
                 </span>
                 <span className={styles.rowStats}>
-                  <span className={styles.rowPct}>{formatPct(pct)}</span>
+                  <span className={styles.rowPct}>
+                    {formatPct(pct)}
+                    {isCompleted(pct) && (
+                      <span className={styles.done} title="Itinéraire bouclé">
+                        {' '}
+                        ✓
+                      </span>
+                    )}
+                  </span>
                   <span className={styles.rowKm}>
                     {formatKm(itin.totalMeters)}
                   </span>
