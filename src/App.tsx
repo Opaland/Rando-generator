@@ -6,6 +6,7 @@ import { EmptyState } from './components/EmptyState.tsx'
 import { ItineraryCard } from './components/ItineraryCard.tsx'
 import { ItineraryDetail } from './components/ItineraryDetail.tsx'
 import { ItineraryList } from './components/ItineraryList.tsx'
+import { RouteDrawer } from './components/RouteDrawer.tsx'
 import { Settings } from './components/Settings.tsx'
 import { TrackManager } from './components/TrackManager.tsx'
 import { ZonePicker } from './components/ZonePicker.tsx'
@@ -88,6 +89,7 @@ function App() {
           )}
           <ItineraryCard />
           <ItineraryDetail />
+          <RouteDrawer />
         </main>
       </div>
 

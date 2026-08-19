@@ -1,0 +1,89 @@
+.panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--z-overlay-draw);
+  max-height: min(60vh, 460px);
+  overflow-y: auto;
+  background: var(--blanc-papier);
+  border-top: 5px solid var(--vert-noir);
+  box-shadow: 0 -3px 16px rgba(30, 43, 35, 0.22);
+  padding: 14px 16px 18px;
+  display: grid;
+  gap: 10px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.title {
+  flex: 1;
+  font-size: 1.1rem;
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--gris-vert);
+}
+
+.stats {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.error {
+  margin: 0;
+  padding: 8px 10px;
+  border-left: 4px solid var(--erreur-bord);
+  background: var(--erreur-fond);
+  font-size: 0.85rem;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.nameLabel {
+  font-size: 0.85rem;
+  color: var(--gris-vert);
+}
+
+.saveRow {
+  display: flex;
+  gap: 8px;
+}
+
+.nameInput {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 9px;
+  border: 1px solid var(--gris-vert);
+  border-radius: 6px;
+  background: #fff;
+}
+
+.note {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--gris-vert);
+}
+
+@media (min-width: 640px) {
+  .panel {
+    left: auto;
+    right: 12px;
+    bottom: 12px;
+    width: min(340px, calc(100% - 24px));
+    border-radius: 10px;
+    border-top-width: 1px;
+    border-left: 5px solid var(--vert-noir);
+  }
+}

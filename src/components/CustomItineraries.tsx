@@ -18,6 +18,11 @@ export function CustomItineraries() {
   const selectItinerary = useAppStore((s) => s.selectItinerary)
   const importCustomGpx = useAppStore((s) => s.importCustomGpx)
   const removeCustomItinerary = useAppStore((s) => s.removeCustomItinerary)
+  const toggleDrawMode = useAppStore((s) => s.toggleDrawMode)
+  // Tracer n'a de sens qu'avec un réseau affiché à suivre.
+  const hasNetwork = useAppStore(
+    (s) => s.itineraries.length > 0 || s.customItineraries.length > 0,
+  )
   const inputRef = useRef<HTMLInputElement | null>(null)
   const [importing, setImporting] = useState(false)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
@@ -69,14 +74,30 @@ export function CustomItineraries() {
         Visorando, tracé maison…) et suivez votre progression dessus. Rien ne
         quitte votre navigateur.
       </p>
-      <button
-        type="button"
-        className="btn-primary"
-        data-testid="custom-browse"
-        onClick={() => inputRef.current?.click()}
-      >
-        Ajouter un itinéraire (GPX)
-      </button>
+      <div className={styles.addRow}>
+        <button
+          type="button"
+          className="btn-primary"
+          data-testid="custom-browse"
+          onClick={() => inputRef.current?.click()}
+        >
+          Ajouter un itinéraire (GPX)
+        </button>
+        <button
+          type="button"
+          className="btn-secondary"
+          data-testid="custom-draw"
+          disabled={!hasNetwork}
+          title={
+            hasNetwork
+              ? undefined
+              : 'Chargez d’abord une zone : le tracé suit les chemins affichés.'
+          }
+          onClick={toggleDrawMode}
+        >
+          Tracer sur la carte
+        </button>
+      </div>
       <input
         ref={inputRef}
         type="file"

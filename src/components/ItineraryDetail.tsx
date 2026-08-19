@@ -122,7 +122,10 @@ export function ItineraryDetail() {
               target="_blank"
               rel="noreferrer"
             >
-              Fiche complète sur le site du producteur →
+              {/^https?:\/\/[^?#]*\.pdf(\?|#|$)/i.test(itin.details.lienWeb)
+                ? 'Carte PDF du producteur'
+                : 'Fiche sur le site du producteur'}{' '}
+              (lien fourni par la source, parfois obsolète) →
             </a>
           )}
           <p className={styles.localSource}>
