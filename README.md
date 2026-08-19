@@ -115,6 +115,21 @@ tests/
   Playwright intercepte tout le trafic externe.
 - CI GitHub Actions : lint + typecheck + tests (couverture) + build + e2e.
 
+## Déploiement (GitHub Pages)
+
+Le workflow [`deploy.yml`](.github/workflows/deploy.yml) construit le site et
+publie `dist/` sur la branche **`gh-pages`** à chaque push (branche de dev et
+`main`). L'activation initiale de Pages demande les droits d'administration
+du dépôt — une seule fois, dans l'interface GitHub :
+
+> **Settings → Pages → Build and deployment → Source : « Deploy from a
+> branch » → branche `gh-pages`, dossier `/ (root)` → Save.**
+
+Le site est ensuite servi (et mis à jour à chaque push) sur
+<https://opaland.github.io/Rando-generator/>. Le build utilise une base
+relative (`base: './'`), il fonctionne donc sous ce sous-chemin sans réglage
+supplémentaire.
+
 ## Licences
 
 - Code : voir [LICENSE](./LICENSE).
