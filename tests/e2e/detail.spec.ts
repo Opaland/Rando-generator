@@ -3,7 +3,7 @@ import {
   mockExternalNetwork,
   mockElevation,
   buildGpx,
-  clickOnMap,
+  openDetailFromMap,
   hasMap,
   type MapLike,
 } from './helpers.ts'
@@ -23,7 +23,7 @@ test('cliquer un tracé sur la carte ouvre la fiche détail (altimétrie + POI)'
   })
 
   // Un point du GR 7 (way 100 de la fixture Pilat, lat 45.4, lon 4.5–4.505).
-  await clickOnMap(page, 4.502, 45.4)
+  await openDetailFromMap(page, 4.502, 45.4)
 
   const detail = page.getByTestId('itinerary-detail')
   await expect(detail).toBeVisible()
@@ -72,7 +72,7 @@ test('la vue 3D incline la caméra ; la fermer la remet à plat', async ({
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
-  await clickOnMap(page, 4.502, 45.4)
+  await openDetailFromMap(page, 4.502, 45.4)
   await expect(page.getByTestId('itinerary-detail')).toBeVisible()
 
   const pitch = () =>
@@ -152,7 +152,7 @@ test('une trace importée met bien la fiche détail à 100 % (altimétrie indisp
   })
   await expect(page.getByTestId('global-pct')).toHaveText('54,5 %')
 
-  await clickOnMap(page, 4.502, 45.4)
+  await openDetailFromMap(page, 4.502, 45.4)
   const detail = page.getByTestId('itinerary-detail')
   await expect(detail).toBeVisible()
   await expect(detail).toContainText('100 %')
@@ -173,7 +173,7 @@ test('survoler le profil altimétrique pose un marqueur sur le tracé', async ({
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
-  await clickOnMap(page, 4.502, 45.4)
+  await openDetailFromMap(page, 4.502, 45.4)
   await expect(page.getByTestId('itinerary-detail')).toBeVisible()
   await expect(page.getByTestId('itinerary-detail')).toContainText('D+', {
     timeout: 10_000,
