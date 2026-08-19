@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { ZONES } from '../core/overpass.ts'
+import { FEATURED_ROUTES, ZONES } from '../core/overpass.ts'
 import { useAppStore } from '../store/appStore.ts'
 import styles from './ZonePicker.module.css'
 
@@ -52,7 +52,7 @@ export function ZonePicker() {
         </h2>
       </summary>
       <div className={styles.zones} role="group" aria-label="Zones prédéfinies">
-        {ZONES.map((zone) => (
+        {ZONES.filter((zone) => zone.group === 'proche').map((zone) => (
           <button
             key={zone.id}
             type="button"
@@ -65,6 +65,52 @@ export function ZonePicker() {
             {zone.label}
           </button>
         ))}
+      </div>
+
+      <p className={styles.groupTitle} id="aura-title">
+        Auvergne-Rhône-Alpes, par département
+      </p>
+      <div className={styles.zones} role="group" aria-labelledby="aura-title">
+        {ZONES.filter((zone) => zone.group === 'aura').map((zone) => (
+          <button
+            key={zone.id}
+            type="button"
+            className={zoneKey === zone.id ? styles.zoneActive : styles.zone}
+            aria-pressed={zoneKey === zone.id}
+            data-testid={`zone-${zone.id}`}
+            disabled={zoneLoading}
+            onClick={() => void loadZone(zone.id)}
+          >
+            {zone.label}
+          </button>
+        ))}
+      </div>
+
+      <p className={styles.groupTitle} id="featured-title">
+        Grands itinéraires
+      </p>
+      <div
+        className={styles.featured}
+        role="group"
+        aria-labelledby="featured-title"
+      >
+        {FEATURED_ROUTES.map((route) => {
+          const key = `ref:${route.ref.toUpperCase()}`
+          return (
+            <button
+              key={route.ref}
+              type="button"
+              className={zoneKey === key ? styles.zoneActive : styles.zone}
+              aria-pressed={zoneKey === key}
+              data-testid={`featured-${route.ref.replace(/\s+/g, '').toLowerCase()}`}
+              disabled={zoneLoading}
+              onClick={() => void loadRef(route.ref)}
+            >
+              <span className={styles.featuredRef}>{route.label}</span>
+              <span className={styles.featuredHint}>{route.hint}</span>
+            </button>
+          )
+        })}
       </div>
 
       <form className={styles.refForm} onSubmit={onRefSubmit}>

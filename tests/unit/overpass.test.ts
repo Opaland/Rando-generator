@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import {
   ZONES,
+  FEATURED_ROUTES,
   buildZoneQuery,
   buildRefQuery,
   parseOverpassResponse,
@@ -20,7 +21,9 @@ describe('buildZoneQuery', () => {
     expect(q).toContain('"admin_level"="6"')
     expect(q).toContain('"name"="Rhône"')
     expect(q).toContain('"name"="Métropole de Lyon"')
-    expect(q).toContain('relation["route"~"^(hiking|foot|walking)$"](area.zone)')
+    expect(q).toContain(
+      'relation["route"~"^(hiking|foot|walking|pilgrimage)$"](area.zone)',
+    )
     expect(q).toContain('out geom;')
   })
 
@@ -41,17 +44,58 @@ describe('buildZoneQuery', () => {
     expect(() => buildZoneQuery('atlantide')).toThrow()
   })
 
-  it('les 4 zones prédéfinies sont exposées pour l’UI', () => {
-    expect(ZONES.map((z) => z.id)).toEqual(['rhone', 'loire', 'pilat', 'trois'])
+  it('les zones proches restent en tête, suivies des départements AURA', () => {
+    const proches = ZONES.filter((z) => z.group === 'proche').map((z) => z.id)
+    expect(proches).toEqual(['rhone', 'loire', 'pilat', 'trois'])
+    const aura = ZONES.filter((z) => z.group === 'aura').map((z) => z.id)
+    // Les 12 départements de la région, moins Rhône et Loire déjà proposés.
+    expect(aura).toHaveLength(10)
+    expect(aura).toContain('isere')
+    expect(aura).toContain('haute-savoie')
+    expect(aura).not.toContain('rhone')
+    expect(aura).not.toContain('loire')
+  })
+
+  it('chaque département AURA produit une requête admin_level=6 à son nom', () => {
+    expect(buildZoneQuery('puy-de-dome')).toContain('"name"="Puy-de-Dôme"')
+    expect(buildZoneQuery('ardeche')).toContain('"name"="Ardèche"')
+    expect(buildZoneQuery('haute-savoie')).toContain('"name"="Haute-Savoie"')
+  })
+
+  it('les identifiants de zone sont uniques', () => {
+    const ids = ZONES.map((z) => z.id)
+    expect(new Set(ids).size).toBe(ids.length)
+  })
+})
+
+describe('FEATURED_ROUTES', () => {
+  it('propose des grands itinéraires chargeables par leur ref', () => {
+    const refs = FEATURED_ROUTES.map((r) => r.ref)
+    expect(refs).toContain('GR 65') // Saint-Jacques, voie du Puy
+    expect(refs).toContain('GR 70') // Stevenson
+    expect(new Set(refs).size).toBe(refs.length)
+  })
+
+  it('chaque ref mise en avant produit une requête France entière valide', () => {
+    for (const route of FEATURED_ROUTES) {
+      const q = buildRefQuery(route.ref)
+      expect(q).toContain('["ISO3166-1"="FR"]')
+      expect(q).toContain('out geom;')
+    }
   })
 })
 
 describe('buildRefQuery', () => {
   it('cherche le ref avec espace optionnel, insensible à la casse', () => {
     const q = buildRefQuery('GR 20')
-    expect(q).toContain('"route"~"^(hiking|foot|walking)$"')
+    expect(q).toContain('"route"~"^(hiking|foot|walking|pilgrimage)$"')
     expect(q).toContain('GR ?20')
     expect(q).toContain(',i]')
+  })
+
+  it('inclut route=pilgrimage : certains chemins de Saint-Jacques y sont tagués', () => {
+    expect(buildRefQuery('GR 65')).toContain('pilgrimage')
+    expect(buildZoneQuery('rhone')).toContain('pilgrimage')
   })
 
   it('les requêtes de zone incluent les itinéraires route=foot (cartoguides)', () => {

@@ -43,9 +43,15 @@ existant via `PW_CHROMIUM_PATH=/chemin/vers/chrome npm run e2e`.
 ## Utilisation
 
 1. **Charger une zone** : Rhône + Métropole de Lyon, Loire, PNR du Pilat, les
-   trois — ou un ref d'itinéraire (ex. « GR 20 »). Sont retenues les relations
-   OSM `route=hiking`, `foot` et `walking` (les boucles locales type
-   cartoguides sont souvent taguées `foot`). La requête Overpass peut
+   trois, ou **n'importe quel département d'Auvergne-Rhône-Alpes** — ou encore
+   un ref d'itinéraire (ex. « GR 20 »), avec quelques **grands itinéraires**
+   proposés en un clic (GR 65 Saint-Jacques, GR 70 Stevenson, GR 5 Alpes…),
+   cherchés sur la France entière puisqu'aucune zone ne les contient. Sont
+   retenues les relations OSM `route=hiking`, `foot`, `walking` (les boucles
+   locales type cartoguides sont souvent taguées `foot`) et `pilgrimage`
+   (certains chemins de Saint-Jacques). Les départements sont chargés **un par
+   un** : une requête couvrant toute la région dépasserait le délai d'Overpass
+   et le quota de stockage du navigateur. La requête Overpass peut
    prendre de 30 s à 2 min ; le résultat est mis en cache 30 jours dans le
    navigateur (bouton « Actualiser les tracés » pour forcer). Pour les zones
    couvrant la Métropole de Lyon, les **55 boucles communales** du jeu open

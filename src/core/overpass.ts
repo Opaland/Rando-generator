@@ -17,21 +17,46 @@ export const OVERPASS_MIRRORS = [
 
 export const OVERPASS_TIMEOUT_MS = 180_000
 
+/** Regroupement des zones dans l'UI. */
+export type ZoneGroup = 'proche' | 'aura'
+
 export interface OverpassZone {
   id: string
   label: string
   areaSelectors: string[]
+  group: ZoneGroup
+}
+
+/** Sélecteur de département (ou collectivité à statut particulier) par nom OSM. */
+function departementSelector(name: string): string {
+  return `area["boundary"="administrative"]["admin_level"="6"]["name"="${name}"]`
 }
 
 const RHONE_SELECTORS = [
-  'area["boundary"="administrative"]["admin_level"="6"]["name"="Rhône"]',
-  'area["boundary"="administrative"]["admin_level"="6"]["name"="Métropole de Lyon"]',
+  departementSelector('Rhône'),
+  departementSelector('Métropole de Lyon'),
 ]
-const LOIRE_SELECTORS = [
-  'area["boundary"="administrative"]["admin_level"="6"]["name"="Loire"]',
-]
+const LOIRE_SELECTORS = [departementSelector('Loire')]
 const PILAT_SELECTORS = [
   'area["boundary"="protected_area"]["name"="Parc naturel régional du Pilat"]',
+]
+
+/**
+ * Départements d'Auvergne-Rhône-Alpes, hors Rhône et Loire déjà proposés
+ * ci-dessus. Chargés un par un : une requête couvrant toute la région
+ * dépasserait le délai d'Overpass et le quota de stockage du navigateur.
+ */
+const AURA_DEPARTEMENTS: { id: string; label: string; name: string }[] = [
+  { id: 'ain', label: 'Ain', name: 'Ain' },
+  { id: 'allier', label: 'Allier', name: 'Allier' },
+  { id: 'ardeche', label: 'Ardèche', name: 'Ardèche' },
+  { id: 'cantal', label: 'Cantal', name: 'Cantal' },
+  { id: 'drome', label: 'Drôme', name: 'Drôme' },
+  { id: 'isere', label: 'Isère', name: 'Isère' },
+  { id: 'haute-loire', label: 'Haute-Loire', name: 'Haute-Loire' },
+  { id: 'puy-de-dome', label: 'Puy-de-Dôme', name: 'Puy-de-Dôme' },
+  { id: 'savoie', label: 'Savoie', name: 'Savoie' },
+  { id: 'haute-savoie', label: 'Haute-Savoie', name: 'Haute-Savoie' },
 ]
 
 /** Zones prédéfinies proposées dans l'UI. */
@@ -40,22 +65,58 @@ export const ZONES: OverpassZone[] = [
     id: 'rhone',
     label: 'Rhône + Métropole de Lyon',
     areaSelectors: RHONE_SELECTORS,
+    group: 'proche',
   },
-  { id: 'loire', label: 'Loire', areaSelectors: LOIRE_SELECTORS },
-  { id: 'pilat', label: 'PNR du Pilat', areaSelectors: PILAT_SELECTORS },
+  { id: 'loire', label: 'Loire', areaSelectors: LOIRE_SELECTORS, group: 'proche' },
+  {
+    id: 'pilat',
+    label: 'PNR du Pilat',
+    areaSelectors: PILAT_SELECTORS,
+    group: 'proche',
+  },
   {
     id: 'trois',
     label: 'Les trois',
     areaSelectors: [...RHONE_SELECTORS, ...LOIRE_SELECTORS, ...PILAT_SELECTORS],
+    group: 'proche',
   },
+  ...AURA_DEPARTEMENTS.map((dept) => ({
+    id: dept.id,
+    label: dept.label,
+    areaSelectors: [departementSelector(dept.name)],
+    group: 'aura' as const,
+  })),
+]
+
+/** Grand itinéraire mis en avant, chargé par sa ref (recherche France entière). */
+export interface FeaturedRoute {
+  ref: string
+  label: string
+  hint: string
+}
+
+/**
+ * Quelques grands itinéraires proposés en un clic : ils traversent plusieurs
+ * départements, donc aucune zone ne les contient entièrement — ils passent
+ * par la recherche par ref, qui interroge toute la France.
+ */
+export const FEATURED_ROUTES: FeaturedRoute[] = [
+  { ref: 'GR 65', label: 'GR 65', hint: 'Chemin de Saint-Jacques (voie du Puy)' },
+  { ref: 'GR 70', label: 'GR 70', hint: 'Chemin de Stevenson' },
+  { ref: 'GR 5', label: 'GR 5', hint: 'Grande Traversée des Alpes' },
+  { ref: 'GR 7', label: 'GR 7', hint: 'Vosges → Pyrénées, par le Pilat' },
+  { ref: 'GR 4', label: 'GR 4', hint: 'Méditerranée → Océan, par l’Auvergne' },
+  { ref: 'GR 3', label: 'GR 3', hint: 'Le sentier de la Loire' },
 ]
 
 /**
  * Types de relations retenus : hiking (GR, GRP, la plupart des PR), mais aussi
  * foot/walking — en France beaucoup de boucles locales balisées (cartoguides
- * départementaux, sentiers métropolitains) sont taguées route=foot.
+ * départementaux, sentiers métropolitains) sont taguées route=foot — et
+ * pilgrimage, sous lequel sont parfois cartographiés les chemins de
+ * Saint-Jacques et autres itinéraires de pèlerinage.
  */
-const ROUTE_FILTER = '["route"~"^(hiking|foot|walking)$"]'
+const ROUTE_FILTER = '["route"~"^(hiking|foot|walking|pilgrimage)$"]'
 
 /** Requête Overpass : toutes les relations d'itinéraires pédestres d'une zone. */
 export function buildZoneQuery(zoneId: string): string {
