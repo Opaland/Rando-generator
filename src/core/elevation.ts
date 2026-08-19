@@ -219,5 +219,53 @@ export async function fetchElevationProfile(
     distances.push((distances[i - 1] as number) + distanceMeters(prev, cur))
   }
 
-  return { distances, elevations }
+  return { distances, elevations, coords: points }
+}
+
+/** Un point du profil : où c'est sur le tracé, à quelle altitude, à quelle distance. */
+export interface ProfilePoint {
+  distanceMeters: number
+  elevation: number | null
+  point: LonLat
+}
+
+/**
+ * Point du tracé situé à `target` mètres du départ, interpolé entre les deux
+ * relevés qui l'encadrent. C'est ce qui relie le graphique à la carte : un
+ * profil altimétrique sans localisation ne dit pas *où* ça grimpe.
+ */
+export function pointAtDistance(
+  profile: ElevationProfile,
+  target: number,
+): ProfilePoint | null {
+  const { distances, coords, elevations } = profile
+  if (coords.length === 0 || distances.length === 0) return null
+  const dernier = distances.length - 1
+  const fin = distances[dernier] ?? 0
+  const borne = Math.min(Math.max(target, 0), fin)
+
+  let apres = distances.findIndex((d) => d >= borne)
+  if (apres < 0) apres = dernier
+  const avant = Math.max(0, apres - 1)
+  const dAvant = distances[avant] ?? 0
+  const dApres = distances[apres] ?? dAvant
+  const pAvant = coords[Math.min(avant, coords.length - 1)]
+  const pApres = coords[Math.min(apres, coords.length - 1)]
+  if (!pAvant || !pApres) return null
+
+  const t = dApres === dAvant ? 0 : (borne - dAvant) / (dApres - dAvant)
+  const eAvant = elevations[avant] ?? null
+  const eApres = elevations[apres] ?? null
+  // Une altitude manquante ne s'interpole pas : on préfère ne rien annoncer.
+  const elevation =
+    eAvant === null || eApres === null ? null : eAvant + (eApres - eAvant) * t
+
+  return {
+    distanceMeters: borne,
+    elevation,
+    point: [
+      pAvant[0] + (pApres[0] - pAvant[0]) * t,
+      pAvant[1] + (pApres[1] - pAvant[1]) * t,
+    ],
+  }
 }

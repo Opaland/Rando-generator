@@ -22,7 +22,11 @@ import {
   snapToNetwork,
   type RoutingGraph,
 } from '../core/routing.ts'
-import { fetchElevationProfile, ElevationError } from '../core/elevation.ts'
+import {
+  fetchElevationProfile,
+  ElevationError,
+  type ProfilePoint,
+} from '../core/elevation.ts'
 import { fetchPois } from '../core/poi.ts'
 import type { MatchResult } from '../core/matching.ts'
 import {
@@ -89,6 +93,8 @@ export interface AppState {
   elevationProfile: ElevationProfile | null
   elevationError: string | null
   elevationLoading: boolean
+  /** Point survolé sur le profil altimétrique, à marquer sur la carte. */
+  elevationHover: ProfilePoint | null
   pois: PointOfInterest[]
   poisLoading: boolean
   view3D: boolean
@@ -122,6 +128,7 @@ export interface AppState {
   removeCustomItinerary: (id: number) => Promise<void>
   setTolerance: (value: number) => Promise<void>
   selectItinerary: (id: number | null) => void
+  setElevationHover: (point: ProfilePoint | null) => void
   clearImportErrors: () => void
   openItineraryDetail: (id: number) => void
   closeItineraryDetail: () => void
@@ -365,6 +372,7 @@ export const useAppStore = create<AppState>()((set, get) => {
     selectedItineraryId: null,
     detailItineraryId: null,
     elevationProfile: null,
+    elevationHover: null,
     elevationError: null,
     elevationLoading: false,
     pois: [],
@@ -600,6 +608,7 @@ export const useAppStore = create<AppState>()((set, get) => {
           ? {
               detailItineraryId: null,
               elevationProfile: null,
+              elevationHover: null,
               elevationError: null,
               elevationLoading: false,
               pois: [],
@@ -608,6 +617,10 @@ export const useAppStore = create<AppState>()((set, get) => {
             }
           : {}),
       }))
+    },
+
+    setElevationHover(point) {
+      set({ elevationHover: point })
     },
 
     clearImportErrors() {
@@ -621,6 +634,7 @@ export const useAppStore = create<AppState>()((set, get) => {
         selectedItineraryId: id,
         view3D: false,
         elevationProfile: null,
+        elevationHover: null,
         elevationError: null,
         elevationLoading: true,
         pois: [],
@@ -665,6 +679,7 @@ export const useAppStore = create<AppState>()((set, get) => {
       set({
         detailItineraryId: null,
         elevationProfile: null,
+        elevationHover: null,
         elevationError: null,
         elevationLoading: false,
         pois: [],

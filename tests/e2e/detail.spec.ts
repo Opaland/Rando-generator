@@ -159,3 +159,63 @@ test('une trace importée met bien la fiche détail à 100 % (altimétrie indisp
   // Message d'indisponibilité du relief, sans jamais bloquer l'affichage.
   await expect(detail).toContainText(/altimétrique/i, { timeout: 10_000 })
 })
+
+test('survoler le profil altimétrique pose un marqueur sur le tracé', async ({
+  page,
+}) => {
+  await mockExternalNetwork(page)
+  await mockElevation(page)
+  await page.goto('/')
+
+  test.skip(!(await hasMap(page)), 'WebGL indisponible dans ce navigateur headless')
+
+  await page.getByTestId('zone-pilat').click()
+  await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
+    timeout: 15_000,
+  })
+  await clickOnMap(page, 4.502, 45.4)
+  await expect(page.getByTestId('itinerary-detail')).toBeVisible()
+  await expect(page.getByTestId('itinerary-detail')).toContainText('D+', {
+    timeout: 10_000,
+  })
+
+  const readout = page.getByTestId('elevation-readout')
+  await expect(readout).toContainText(/survolez/i)
+
+  // Combien de points le marqueur porte-t-il sur la carte ?
+  const marqueurs = () =>
+    page.evaluate(() => {
+      const map = (
+        window as unknown as {
+          __sentiersMap?: {
+            getSource: (id: string) => { serialize: () => unknown } | undefined
+          }
+        }
+      ).__sentiersMap
+      const source = map?.getSource('elevation-hover')
+      if (!source) return -1
+      const data = (source.serialize() as { data?: { features?: unknown[] } })
+        .data
+      return data?.features?.length ?? -1
+    })
+
+  expect(await marqueurs()).toBe(0)
+
+  // Survol du graphique : la lecture affiche la distance et l'altitude, et
+  // un marqueur apparaît sur le tracé — c'est tout l'intérêt du lien.
+  await page.getByTestId('elevation-chart').hover()
+  await expect(readout).toContainText(/km/)
+  await expect(readout).toContainText(/m$/)
+  await expect.poll(marqueurs, { timeout: 5_000 }).toBe(1)
+
+  // Le clavier fait la même chose que la souris.
+  await page.getByTestId('elevation-chart').focus()
+  await page.keyboard.press('Home')
+  await expect(readout).toContainText('0 km')
+  await page.keyboard.press('End')
+  await expect(readout).not.toContainText('0 km')
+  // Quitter le graphique efface le curseur — et le marqueur avec lui.
+  await page.keyboard.press('Tab')
+  await expect(readout).toContainText(/survolez/i)
+  await expect.poll(marqueurs, { timeout: 5_000 }).toBe(0)
+})
