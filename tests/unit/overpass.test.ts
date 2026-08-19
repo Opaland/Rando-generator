@@ -20,7 +20,7 @@ describe('buildZoneQuery', () => {
     expect(q).toContain('"admin_level"="6"')
     expect(q).toContain('"name"="Rhône"')
     expect(q).toContain('"name"="Métropole de Lyon"')
-    expect(q).toContain('relation["route"="hiking"](area.zone)')
+    expect(q).toContain('relation["route"~"^(hiking|foot|walking)$"](area.zone)')
     expect(q).toContain('out geom;')
   })
 
@@ -49,9 +49,16 @@ describe('buildZoneQuery', () => {
 describe('buildRefQuery', () => {
   it('cherche le ref avec espace optionnel, insensible à la casse', () => {
     const q = buildRefQuery('GR 20')
-    expect(q).toContain('"route"="hiking"')
+    expect(q).toContain('"route"~"^(hiking|foot|walking)$"')
     expect(q).toContain('GR ?20')
     expect(q).toContain(',i]')
+  })
+
+  it('les requêtes de zone incluent les itinéraires route=foot (cartoguides)', () => {
+    // Les boucles départementales/métropolitaines sont souvent route=foot.
+    for (const zoneId of ['rhone', 'loire', 'pilat', 'trois']) {
+      expect(buildZoneQuery(zoneId)).toContain('foot')
+    }
   })
 
   it('échappe les caractères spéciaux de regex', () => {

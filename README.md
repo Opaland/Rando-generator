@@ -41,7 +41,9 @@ existant via `PW_CHROMIUM_PATH=/chemin/vers/chrome npm run e2e`.
 ## Utilisation
 
 1. **Charger une zone** : Rhône + Métropole de Lyon, Loire, PNR du Pilat, les
-   trois — ou un ref d'itinéraire (ex. « GR 20 »). La requête Overpass peut
+   trois — ou un ref d'itinéraire (ex. « GR 20 »). Sont retenues les relations
+   OSM `route=hiking`, `foot` et `walking` (les boucles locales type
+   cartoguides sont souvent taguées `foot`). La requête Overpass peut
    prendre de 30 s à 2 min ; le résultat est mis en cache 30 jours dans le
    navigateur (bouton « Actualiser les tracés » pour forcer).
 2. **Importer des GPX** (multi-fichiers, drag & drop). Les traces sont listées
@@ -60,7 +62,7 @@ src/
 │  ├─ geo.ts       # distance équirectangulaire, hachage spatial, interpolation
 │  ├─ sampling.ts  # échantillonnage des ways tous les 100 m (report du reliquat)
 │  ├─ matching.ts  # index spatial, complétion par itinéraire/réseau/global
-│  ├─ overpass.ts  # requêtes zones/ref, parsing, bascule entre miroirs
+│  ├─ overpass.ts  # requêtes zones/ref (hiking + foot/walking), parsing, miroirs
 │  ├─ gpx.ts       # parsing GPX (DOMParser injecté)
 │  ├─ network.ts   # classement GR/GRP/PR depuis les tags OSM
 │  └─ mapdata.ts   # GeoJSON des couches carte (base / parcouru / traces)
