@@ -13,6 +13,7 @@ import type {
   StyleSpecification,
 } from '@maplibre/maplibre-gl-style-spec'
 import 'maplibre-gl/dist/maplibre-gl.css'
+import '../lib/maplibreSetup.ts'
 import { buildTrailGeoJSON, buildTracksGeoJSON } from '../core/mapdata.ts'
 import { useAppStore } from '../store/appStore.ts'
 import styles from './MapView.module.css'
@@ -32,7 +33,7 @@ const NETWORK_COLOR_MATCH: ExpressionSpecification = [
   'GR',
   '#c8102e',
   'GRP',
-  '#ce5a12',
+  '#b34a08',
   'PR',
   '#d9a400',
   '#5a6b5d',
@@ -148,6 +149,8 @@ export function MapView() {
     }
     map.addControl(new NavigationControl(), 'top-right')
     mapRef.current = map
+    // Exposé en lecture pour les tests e2e (état du fond de carte et des sources).
+    ;(window as { __sentiersMap?: MaplibreMap }).__sentiersMap = map
 
     map.on('load', () => {
       setReady(true)
@@ -187,6 +190,7 @@ export function MapView() {
     }
 
     return () => {
+      delete (window as { __sentiersMap?: MaplibreMap }).__sentiersMap
       map.remove()
       mapRef.current = null
     }
@@ -204,6 +208,18 @@ export function MapView() {
       void map
         .getSource<GeoJSONSource>('tracks')
         ?.setData(buildTracksGeoJSON(tracks))
+      // Témoin pour les tests e2e : quelles données ont été appliquées, et
+      // sur quelle génération de style (permet de vérifier la ré-application
+      // après le repli de fond de carte).
+      ;(
+        window as {
+          __sentiersTrailStats?: { base: number; done: number; styleEpoch: number }
+        }
+      ).__sentiersTrailStats = {
+        base: base.features.length,
+        done: done.features.length,
+        styleEpoch,
+      }
     }
     // Après un setStyle (repli OSM), les sources se rechargent : on ré-applique.
     if (map.isStyleLoaded()) apply()

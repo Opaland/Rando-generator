@@ -113,7 +113,12 @@ tests/
   (TOL = 50), moitié → 50 %, way partagé compté 1× en global.
 - Aucun test ne touche le réseau : Overpass est une fixture enregistrée,
   Playwright intercepte tout le trafic externe.
+- E2E : scénario nominal complet, GPX corrompu, Overpass injoignable, bascule
+  de miroir, actualisation forcée (zone et ref), repli de tuiles IGN → OSM avec
+  conservation des tracés, multi-import/suppression, audit axe-core (WCAG 2 A/AA).
 - CI GitHub Actions : lint + typecheck + tests (couverture) + build + e2e.
+- Avant release : smoke test manuel sur données réelles — voir
+  [docs/RELEASE.md](./docs/RELEASE.md).
 
 ## Déploiement (GitHub Pages)
 
