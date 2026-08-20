@@ -273,3 +273,15 @@
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
+
+.quality {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: var(--gris-vert);
+  border-left: 3px solid var(--jaune-pr);
+  padding-left: 8px;
+}
