@@ -33,6 +33,7 @@ import {
   chercherLieux,
   type Lieu,
 } from '../core/geocode.ts'
+import { resumeObjectif, type ResumeObjectif } from '../core/objectifs.ts'
 import { polylineLengthMeters } from '../core/sampling.ts'
 import { itineraryCoords } from '../core/mapdata.ts'
 import { parseBouclesGeoJSON } from '../core/boucles.ts'
@@ -137,6 +138,12 @@ export interface AppState {
   lieuError: string | null
   /** Vrai quand la dernière recherche n'a rien trouvé — différent de « pas encore cherché ». */
   lieuxVides: boolean
+
+  /**
+   * Itinéraires épinglés comme objectifs (issue #13). Le tableau de bord
+   * constate ; un objectif dit par où continuer.
+   */
+  objectifs: number[]
   zoneError: string | null
 
   // Traces GPX
@@ -226,6 +233,10 @@ export interface AppState {
   loadAutour: (lieu: Lieu) => Promise<void>
   /** Referme la liste des propositions. */
   effacerLieux: () => void
+  /** Épingle (ou dépingle) un itinéraire comme objectif. */
+  basculerObjectif: (id: number) => Promise<void>
+  /** Ce qu'il reste sur un objectif : mètres, pourcentage, tronçons. */
+  resumeDeLObjectif: (id: number) => ResumeObjectif | null
   setTolerance: (value: number) => Promise<void>
   setCompletionPct: (value: number) => Promise<void>
   selectItinerary: (id: number | null) => void
@@ -256,6 +267,21 @@ let outingSequence = 0
  */
 let pctsPrecedents: Map<number, number> | null = null
 let detailSequence = 0
+/**
+ * Relit la liste des objectifs épinglés. Elle est stockée en JSON parce que
+ * le magasin de réglages ne connaît que des nombres et des chaînes ; un
+ * contenu abîmé ne doit pas empêcher l'application de démarrer.
+ */
+function lireObjectifs(brut: number | string | undefined): number[] {
+  if (typeof brut !== 'string') return []
+  try {
+    const lu: unknown = JSON.parse(brut)
+    return Array.isArray(lu) ? lu.filter((id) => typeof id === 'number') : []
+  } catch {
+    return []
+  }
+}
+
 let zoneLoadSequence = 0
 /** Même garde pour la recherche de lieu : une frappe abandonnée ne gagne pas. */
 let lieuSequence = 0
@@ -690,6 +716,7 @@ export const useAppStore = create<AppState>()((set, get) => {
     lieuxLoading: false,
     lieuError: null,
     lieuxVides: false,
+    objectifs: [],
     customItineraries: [],
     toleranceMeters: DEFAULT_TOLERANCE_METERS,
     completionPct: DEFAULT_COMPLETION_PCT,
@@ -736,14 +763,21 @@ export const useAppStore = create<AppState>()((set, get) => {
       }
       if (!db) return
 
-      const [tracks, customItineraries, tolerance, completion, lastZoneKey] =
-        await Promise.all([
-          db.listTracks(),
-          db.listCustomItineraries(),
-          db.getSetting('toleranceMeters'),
-          db.getSetting('completionPct'),
-          db.getSetting('lastZoneKey'),
-        ])
+      const [
+        tracks,
+        customItineraries,
+        tolerance,
+        completion,
+        lastZoneKey,
+        objectifsBruts,
+      ] = await Promise.all([
+        db.listTracks(),
+        db.listCustomItineraries(),
+        db.getSetting('toleranceMeters'),
+        db.getSetting('completionPct'),
+        db.getSetting('lastZoneKey'),
+        db.getSetting('objectifs'),
+      ])
       // Fusion, jamais remplacement : lire IndexedDB prend quelques centaines
       // de millisecondes, et l'utilisateur peut avoir déposé un fichier
       // entre-temps. Écraser la liste faisait disparaître sa trace sans un
@@ -754,6 +788,7 @@ export const useAppStore = create<AppState>()((set, get) => {
         toleranceMeters:
           typeof tolerance === 'number' ? tolerance : DEFAULT_TOLERANCE_METERS,
         completionPct: normalizeCompletionPct(completion),
+        objectifs: lireObjectifs(objectifsBruts),
       }))
 
       // Rattrapage : ce qui a été importé pendant l'ouverture de la base n'y a
@@ -1128,6 +1163,25 @@ export const useAppStore = create<AppState>()((set, get) => {
         buildAroundQuery(lieu.center, RAYON_AUTOUR_METERS),
         false,
       )
+    },
+
+    async basculerObjectif(id) {
+      const actuels = get().objectifs
+      const objectifs = actuels.includes(id)
+        ? actuels.filter((autre) => autre !== id)
+        : [...actuels, id]
+      set({ objectifs })
+      const db = await baseOuverte()
+      if (db) await db.setSetting('objectifs', JSON.stringify(objectifs))
+    },
+
+    resumeDeLObjectif(id) {
+      const { matching, itineraries, customItineraries } = get()
+      const itineraire = [...itineraries, ...customItineraries].find(
+        (i) => i.osmRelationId === id,
+      )
+      if (!itineraire || !matching) return null
+      return resumeObjectif(itineraire, matching.samples, STEP_METERS)
     },
 
     effacerLieux() {

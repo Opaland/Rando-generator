@@ -23,7 +23,12 @@ export interface CachedZone {
   fetchedAt: string
 }
 
-export type SettingKey = 'toleranceMeters' | 'completionPct' | 'lastZoneKey'
+export type SettingKey =
+  | 'toleranceMeters'
+  | 'completionPct'
+  | 'lastZoneKey'
+  /** Itinéraires épinglés comme objectifs, en JSON (liste d'identifiants). */
+  | 'objectifs'
 
 interface SentiersSchema extends DBSchema {
   zones: { key: string; value: CachedZone }
