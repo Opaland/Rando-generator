@@ -4,6 +4,7 @@ import { IDBFactory } from 'fake-indexeddb'
 import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest'
 import { useAppStore, MIN_TOLERANCE, MAX_TOLERANCE } from '../../src/store/appStore.ts'
 import pilat from '../fixtures/overpass/pilat.json' with { type: 'json' }
+import { buildZip, gzip } from '../fixtures/zip.ts'
 
 /**
  * Tests du store (issue #9). Sa logique est riche et n'était couverte que par
@@ -485,5 +486,66 @@ describe('seuil de complétion', () => {
     await useAppStore.getState().setCompletionPct(90)
     // Même objet : rien n'a été recalculé, seul le mot posé dessus change.
     expect(useAppStore.getState().matching).toBe(avant)
+  })
+})
+
+describe('archives d’export', () => {
+  const gpx = (points: [number, number][]): string => {
+    const trkpts = points
+      .map(([lon, lat]) => `<trkpt lat="${lat}" lon="${lon}"><ele>800</ele></trkpt>`)
+      .join('')
+    return `<?xml version="1.0"?><gpx version="1.1" xmlns="http://www.topografix.com/GPX/1/1"><trk><trkseg>${trkpts}</trkseg></trk></gpx>`
+  }
+
+  it('importe les traces d’une archive déposée telle quelle', async () => {
+    // Ce qui remplace un connecteur Strava : l'utilisateur exporte ses
+    // données chez eux et dépose l'archive ici, sans rien envoyer nulle part.
+    const archive = await buildZip([
+      { nom: 'activities/1.gpx', contenu: gpx(ligne(10)) },
+      { nom: 'activities/2.gpx.gz', contenu: await gzip(gpx(ligne(12, 45.41))), methode: 0 },
+      { nom: 'profile.csv', contenu: 'nom,prenom' },
+      { nom: '__MACOSX/._1.gpx', contenu: 'x', methode: 0 },
+    ])
+    await useAppStore.getState().init()
+    await useAppStore
+      .getState()
+      .importGpxFiles([new File([archive], 'export.zip')])
+
+    const noms = useAppStore.getState().tracks.map((t) => t.filename)
+    // Les noms perdent leur dossier, et le .gz disparaît avec la compression.
+    expect(noms).toEqual(['1.gpx', '2.gpx'])
+    // Le CSV et les métadonnées macOS ne sont pas des erreurs d'import.
+    expect(useAppStore.getState().importErrors).toEqual([])
+  })
+
+  it('dit clairement qu’une archive ne contient aucune trace', async () => {
+    const archive = await buildZip([{ nom: 'profile.csv', contenu: 'x' }])
+    await useAppStore.getState().init()
+    await useAppStore
+      .getState()
+      .importGpxFiles([new File([archive], 'export.zip')])
+
+    expect(useAppStore.getState().importErrors.join(' ')).toMatch(
+      /aucune trace/i,
+    )
+    expect(useAppStore.getState().tracks).toEqual([])
+  })
+
+  it('mélange sans broncher une archive et des fichiers isolés', async () => {
+    const archive = await buildZip([
+      { nom: 'activities/1.gpx', contenu: gpx(ligne(10)) },
+    ])
+    await useAppStore.getState().init()
+    await useAppStore
+      .getState()
+      .importGpxFiles([
+        new File([archive], 'export.zip'),
+        fichierGpx('a-part.gpx', ligne(14, 45.42)),
+      ])
+
+    expect(useAppStore.getState().tracks.map((t) => t.filename)).toEqual([
+      '1.gpx',
+      'a-part.gpx',
+    ])
   })
 })
