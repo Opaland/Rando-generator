@@ -245,7 +245,7 @@ export function ZonePicker() {
 
       <form className={styles.refForm} onSubmit={onRefSubmit}>
         <label className={styles.refLabel} htmlFor="ref-input">
-          Ou par ref d’itinéraire
+          Ou par numéro d’itinéraire
         </label>
         <div className={styles.refRow}>
           <input

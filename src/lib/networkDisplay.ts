@@ -35,3 +35,20 @@ export const NETWORK_BADGES: Record<Network, string> = {
   LOCAL: 'Boucle',
   PERSO: 'PERSO',
 }
+
+/**
+ * Ce que chaque famille veut dire, une fois (issue #145).
+ *
+ * Les sigles sont les bons — ce sont les mots peints sur les arbres, et les
+ * remplacer par « long / moyen / court » couperait l'application du terrain.
+ * Mais rien ne les introduisait : quelqu'un qui débute ne sait pas si « PR »
+ * le concerne.
+ */
+export const NETWORK_EXPLANATIONS: Record<Network, string> = {
+  GR: 'Grande Randonnée : les grands itinéraires balisés blanc et rouge, souvent sur plusieurs jours.',
+  GRP: 'GR de Pays : une boucle régionale balisée jaune et rouge, de quelques jours.',
+  PR: 'Promenade et Randonnée : un circuit local balisé jaune, en général de deux à six heures.',
+  LOCAL:
+    'Boucle communale publiée en open data par une collectivité (Métropole de Lyon, par exemple).',
+  PERSO: 'Itinéraire que vous avez importé ou tracé vous-même.',
+}

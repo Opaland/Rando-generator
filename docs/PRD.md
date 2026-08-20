@@ -42,6 +42,7 @@ famille de défauts la plus fréquente trouvée par les personas.
 | Les kilomètres d'un seul tenant sont distingués du cumul | ✅ #118 | Plus longue série continue affichée |
 | Un point d'intérêt annonce son détour | ✅ #122 | Distance au tracé sur chaque POI |
 | Une source n'est pas déclarée potable | ✅ #123 | « potabilité non renseignée » quand OSM se tait |
+| La coloration « parcouru » épouse les lacets | ✅ #142 | Portion découpée sur la géométrie réelle du chemin, pas sur les échantillons |
 
 **Non-but** : masquer les défauts de donnée pour faire joli. Un trou dans
 OpenStreetMap se dit.
@@ -58,7 +59,7 @@ de chez vous » est une sortie de dimanche. C'est le différenciateur produit.
 | « Prochaine sortie » : le plus long tronçon restant, pondéré par l'approche | ✅ | Trois propositions, cliquables |
 | Épingler un itinéraire comme objectif | ✅ #13 | Persistant, avec ses tronçons restants cliquables |
 | Franchir un jalon est annoncé | ✅ #117 | L'annonce tient tant qu'elle est vraie |
-| Confort du tracé : aller-retour, boucle, D+ prévisionnel | 🔜 #137 | P3 — aucun n'est bloquant |
+| Confort du tracé : aller-retour, boucle, D+ prévisionnel | ✅ #137 | Trois boutons ; le D+ se demande, une seule requête. Poignées de déplacement non faites |
 
 ---
 

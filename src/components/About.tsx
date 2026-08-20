@@ -122,6 +122,38 @@ export function About({ open, onClose }: { open: boolean; onClose: () => void })
         </section>
 
         <section>
+          <h3>GR, GR de Pays, PR : qu’est-ce que c’est&nbsp;?</h3>
+          <p>
+            Ce sont les trois familles d’itinéraires balisés par la
+            FFRandonnée et ses comités, reconnaissables à leurs marques
+            peintes sur les arbres, les rochers et les poteaux&nbsp;:
+          </p>
+          <ul>
+            <li>
+              <strong>GR — Grande Randonnée</strong> (balisage blanc et
+              rouge)&nbsp;: les grands itinéraires, souvent sur plusieurs
+              jours, parfois plusieurs semaines. Le GR 7 traverse la France des
+              Vosges aux Pyrénées.
+            </li>
+            <li>
+              <strong>GR de Pays</strong> (jaune et rouge)&nbsp;: une boucle
+              régionale de quelques jours, qui fait le tour d’un massif ou
+              d’un pays.
+            </li>
+            <li>
+              <strong>PR — Promenade et Randonnée</strong> (jaune)&nbsp;: un
+              circuit local, en général de deux à six heures. C’est la balade
+              du dimanche.
+            </li>
+          </ul>
+          <p>
+            S’y ajoutent les <strong>boucles locales</strong> publiées en
+            données ouvertes par des collectivités, et vos{' '}
+            <strong>itinéraires personnels</strong> — importés ou tracés ici.
+          </p>
+        </section>
+
+        <section>
           <h3>Marques</h3>
           <p>
             GR®, GR de Pays® et PR® sont des marques de la FFRandonnée. Cette
