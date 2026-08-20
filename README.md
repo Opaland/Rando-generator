@@ -298,6 +298,21 @@ faire.
   (`MONKEY_SEEDS`, `MONKEY_ACTIONS`), qui échouent à la moindre erreur
   JavaScript. Exploratoire, hors CI.
 
+## Les documents du projet
+
+Ils se lisent dans cet ordre — chacun répond à une question différente, et
+aucun ne recopie les autres.
+
+| Document | La question à laquelle il répond |
+|---|---|
+| [`docs/BRIEF.md`](./docs/BRIEF.md) | Quel problème, pour qui, contre qui — et **ce qu'on ne fera pas** |
+| [`docs/PRD.md`](./docs/PRD.md) | Dans quel ordre, et à quoi voit-on qu'un sujet est fini |
+| [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) | Quelles décisions structurent le code, et **pourquoi** |
+| [`docs/PERSONAS.md`](./docs/PERSONAS.md) | Six personnes suivies pas à pas, et l'endroit exact où elles s'arrêtent |
+| [`docs/PRODUCT_AUDIT.md`](./docs/PRODUCT_AUDIT.md) | Le constat critique daté du 19/08, avec l'état de chaque point |
+| [`docs/AUDIT_MOBILE.md`](./docs/AUDIT_MOBILE.md) | L'audit téléphone M0–M8, mesures avant/après |
+| [`docs/RELEASE.md`](./docs/RELEASE.md) | Ce qu'on vérifie à la main avant de publier |
+
 ## Déploiement (GitHub Pages)
 
 Le site est en ligne sur <https://opaland.github.io/Rando-generator/>.
