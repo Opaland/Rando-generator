@@ -31,7 +31,11 @@ import {
 import { fetchPois } from '../core/poi.ts'
 import { outingHighlights, type OutingHighlight } from '../core/outing.ts'
 import { FitError, looksLikeFit, parseFit } from '../core/fit.ts'
-import { crossedMilestones } from '../core/milestones.ts'
+import {
+  crossedMilestones,
+  DEFAULT_COMPLETION_PCT,
+  normalizeCompletionPct,
+} from '../core/milestones.ts'
 import type { MatchResult } from '../core/matching.ts'
 import {
   GEO_OPTIONS,
@@ -101,6 +105,8 @@ export interface AppState {
 
   // Matching
   toleranceMeters: number
+  /** Seuil « bouclé », choisi par l'utilisateur (voir core/milestones). */
+  completionPct: number
   matching: MatchResult | null
   /** Résultats des itinéraires persos, hors stats globales OSM. */
   customMatching: MatchResult | null
@@ -166,6 +172,7 @@ export interface AppState {
   removeTrack: (id: string) => Promise<void>
   removeCustomItinerary: (id: number) => Promise<void>
   setTolerance: (value: number) => Promise<void>
+  setCompletionPct: (value: number) => Promise<void>
   selectItinerary: (id: number | null) => void
   setElevationHover: (point: ProfilePoint | null) => void
   toggleOutingDetail: (trackId: string) => Promise<void>
@@ -514,6 +521,7 @@ export const useAppStore = create<AppState>()((set, get) => {
     importErrors: [],
     customItineraries: [],
     toleranceMeters: DEFAULT_TOLERANCE_METERS,
+    completionPct: DEFAULT_COMPLETION_PCT,
     matching: null,
     customMatching: null,
     matchingBusy: false,
@@ -557,11 +565,12 @@ export const useAppStore = create<AppState>()((set, get) => {
       }
       if (!db) return
 
-      const [tracks, customItineraries, tolerance, lastZoneKey] =
+      const [tracks, customItineraries, tolerance, completion, lastZoneKey] =
         await Promise.all([
           db.listTracks(),
           db.listCustomItineraries(),
           db.getSetting('toleranceMeters'),
+          db.getSetting('completionPct'),
           db.getSetting('lastZoneKey'),
         ])
       // Fusion, jamais remplacement : lire IndexedDB prend quelques centaines
@@ -573,6 +582,7 @@ export const useAppStore = create<AppState>()((set, get) => {
         customItineraries: fusionner(customItineraries, etat.customItineraries),
         toleranceMeters:
           typeof tolerance === 'number' ? tolerance : DEFAULT_TOLERANCE_METERS,
+        completionPct: normalizeCompletionPct(completion),
       }))
 
       // Rattrapage : ce qui a été importé pendant l'ouverture de la base n'y a
@@ -805,6 +815,15 @@ export const useAppStore = create<AppState>()((set, get) => {
       const { db } = get()
       if (db) await db.setSetting('toleranceMeters', clamped)
       await recompute()
+    },
+
+    async setCompletionPct(value) {
+      // Aucun recalcul : le seuil ne change pas les pourcentages, seulement
+      // le mot qu'on met dessus. Les composants le relisent au rendu.
+      const seuil = normalizeCompletionPct(value)
+      set({ completionPct: seuil })
+      const db = await baseOuverte()
+      if (db) await db.setSetting('completionPct', seuil)
     },
 
     selectItinerary(id) {

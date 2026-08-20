@@ -450,3 +450,34 @@ describe('annonces et bilans, cycle de vie', () => {
     expect(useAppStore.getState().outingDetail).toBeNull()
   })
 })
+
+describe('seuil de complétion', () => {
+  it('démarre à 95 % et retient le choix de l’utilisateur', async () => {
+    await useAppStore.getState().init()
+    expect(useAppStore.getState().completionPct).toBe(95)
+
+    await useAppStore.getState().setCompletionPct(100)
+    expect(useAppStore.getState().completionPct).toBe(100)
+
+    const db = useAppStore.getState().db
+    expect(await db?.getSetting('completionPct')).toBe(100)
+  })
+
+  it('ramène une valeur inconnue à un seuil proposé', async () => {
+    await useAppStore.getState().init()
+    await useAppStore.getState().setCompletionPct(42)
+    expect(useAppStore.getState().completionPct).toBe(90)
+  })
+
+  it('ne relance pas le calcul : le seuil ne change pas les pourcentages', async () => {
+    await useAppStore.getState().init()
+    await useAppStore.getState().loadZone('pilat')
+    await useAppStore
+      .getState()
+      .importGpxFiles([fichierGpx('sortie.gpx', ligne(20))])
+    const avant = useAppStore.getState().matching
+    await useAppStore.getState().setCompletionPct(90)
+    // Même objet : rien n'a été recalculé, seul le mot posé dessus change.
+    expect(useAppStore.getState().matching).toBe(avant)
+  })
+})

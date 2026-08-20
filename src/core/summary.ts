@@ -1,5 +1,5 @@
 import type { AggregateStats } from './matching.ts'
-import { isCompleted } from './milestones.ts'
+import { DEFAULT_COMPLETION_PCT, isCompleted } from './milestones.ts'
 import type { CompletionResult, Itinerary, Track } from './types.ts'
 
 /**
@@ -38,6 +38,8 @@ export interface SummaryInput {
   itineraries: Itinerary[]
   tracks: Track[]
   zoneLabel?: string | null
+  /** Seuil « bouclé » retenu par l'utilisateur (défaut : celui du module). */
+  completionPct?: number
 }
 
 function isoDay(date: string | null): string | null {
@@ -47,7 +49,14 @@ function isoDay(date: string | null): string | null {
 }
 
 export function buildSummary(input: SummaryInput): Summary {
-  const { global, results, itineraries, tracks, zoneLabel = null } = input
+  const {
+    global,
+    results,
+    itineraries,
+    tracks,
+    zoneLabel = null,
+    completionPct = DEFAULT_COMPLETION_PCT,
+  } = input
   const nameById = new Map(
     itineraries.map((i) => [
       i.osmRelationId,
@@ -63,7 +72,7 @@ export function buildSummary(input: SummaryInput): Summary {
     .map((r) => ({
       name: nameById.get(r.itineraryId) ?? '',
       pct: r.pct,
-      completed: isCompleted(r.pct),
+      completed: isCompleted(r.pct, completionPct),
     }))
 
   const jours = tracks.map((t) => isoDay(t.date)).filter((j) => j !== null)

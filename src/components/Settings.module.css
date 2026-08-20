@@ -33,3 +33,33 @@
   font-size: var(--texte-secondaire);
   color: var(--gris-vert);
 }
+
+/* Seuil « bouclé » : un réglage à trois valeurs, pas un curseur — entre 90 et
+   100 % il n'y a pas de continuum, il y a trois manières de compter. */
+.fieldset {
+  margin: 14px 0 0;
+  padding: 0;
+  border: none;
+  border-top: 1px solid var(--gris-vert-clair);
+  padding-top: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.legend {
+  padding: 0;
+  font-weight: 600;
+}
+
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+}
+
+.choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
