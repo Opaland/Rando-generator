@@ -21,6 +21,48 @@
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <!--
+        Tout le rendu se fait dans le navigateur : sans JavaScript, la page
+        reste vide. Un visiteur qui l'a désactivé, ou un robot d'indexation
+        rudimentaire, n'a alors aucun moyen de savoir ce que ce site fait.
+        Ce bloc dit au moins de quoi il s'agit — et pourquoi le calcul a lieu
+        ici plutôt que sur un serveur.
+      -->
+      <main
+        style="
+          max-width: 40rem;
+          margin: 0 auto;
+          padding: 2rem 1.25rem;
+          font-family: system-ui, sans-serif;
+          line-height: 1.5;
+        "
+      >
+        <h1>Sentiers</h1>
+        <p>
+          <strong
+            >Sentiers mesure votre progression sur les itinéraires de
+            randonnée balisés français</strong
+          >
+          — GR, GRP, PR et boucles locales — à partir de vos traces GPX ou
+          FIT. Les tracés viennent d’OpenStreetMap et des données ouvertes
+          des collectivités.
+        </p>
+        <p>
+          Le calcul se fait entièrement dans votre navigateur : vos traces ne
+          sont envoyées nulle part, il n’y a ni compte, ni serveur, ni
+          télémétrie. C’est aussi pourquoi cette page a besoin de JavaScript
+          — il n’y a personne d’autre pour faire le travail.
+        </p>
+        <p>
+          Activez JavaScript pour utiliser l’application. Le code est
+          consultable sur
+          <a href="https://github.com/Opaland/Rando-generator"
+            >github.com/Opaland/Rando-generator</a
+          >.
+        </p>
+      </main>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
