@@ -56,6 +56,13 @@ test('cliquer un tracé sur la carte ouvre la fiche détail (altimétrie + POI)'
   )
   const rang = (nom: string) => positions.findIndex((t) => t.includes(nom))
   expect(rang('Point de vue')).toBeLessThan(rang('Crêt de la Perdrix'))
+
+  // Une source n'est pas une fontaine : le silence d'OpenStreetMap sur la
+  // potabilité est dit, plutôt que laissé à l'interprétation (issue #123).
+  await expect(poiList).toContainText('Source du Vallon')
+  await expect(poiList).toContainText('potabilité non renseignée')
+  // Et quand la donnée est là, elle est reprise telle quelle.
+  await expect(poiList).toContainText('non potable · saisonnière')
   await expect(page.getByTestId('detail-poi-caveat')).toContainText(
     /gestionnaire/i,
   )

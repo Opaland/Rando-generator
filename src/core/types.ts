@@ -113,6 +113,16 @@ export interface PoiDetails {
   operator: string | null
   /** Altitude en mètres, telle que taguée. */
   elevation: string | null
+  /**
+   * Potabilité déclarée dans OpenStreetMap, quand elle l'est. `null` signifie
+   * « non renseigné », pas « non potable » — la nuance décide de ce qu'on
+   * affiche, et de ce qu'on n'a pas le droit de laisser supposer.
+   */
+  drinkingWater: 'oui' | 'non' | 'traitee' | null
+  /** Source saisonnière ou intermittente : tarie, elle ne rend pas service. */
+  seasonal: boolean
+  /** Source naturelle, par opposition à une fontaine aménagée. */
+  spring: boolean
 }
 
 export interface PointOfInterest {
