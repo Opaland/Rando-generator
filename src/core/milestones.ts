@@ -1,3 +1,5 @@
+import type { CompletionResult } from './types.ts'
+
 /**
  * Jalons de complétion.
  *
@@ -44,4 +46,38 @@ export function metersToNextMilestone(
 
 export function isCompleted(pct: number): boolean {
   return pct >= COMPLETION_PCT
+}
+
+export interface MilestoneCrossing {
+  itineraryId: number
+  milestone: number
+}
+
+/**
+ * Jalons franchis entre deux calculs.
+ *
+ * Deux règles de prudence, parce qu'une fausse annonce vaut moins que pas
+ * d'annonce du tout :
+ * - **rien au premier calcul** : au chargement d'une zone, tout paraîtrait
+ *   « franchi » alors qu'on découvre simplement l'état ;
+ * - **un seul jalon par itinéraire**, le plus haut : importer une saison de
+ *   traces d'un coup ne doit pas déclencher quatre annonces pour le même GR.
+ */
+export function crossedMilestones(
+  previousPcts: ReadonlyMap<number, number>,
+  results: CompletionResult[],
+): MilestoneCrossing[] {
+  const franchis: MilestoneCrossing[] = []
+  for (const result of results) {
+    const avant = previousPcts.get(result.itineraryId)
+    if (avant === undefined) continue
+    const jalonAvant = reachedMilestone(avant)
+    const jalonApres = reachedMilestone(result.pct)
+    if (jalonApres === null) continue
+    if (jalonAvant !== null && jalonApres <= jalonAvant) continue
+    franchis.push({ itineraryId: result.itineraryId, milestone: jalonApres })
+  }
+  return franchis.sort(
+    (a, b) => b.milestone - a.milestone || a.itineraryId - b.itineraryId,
+  )
 }
