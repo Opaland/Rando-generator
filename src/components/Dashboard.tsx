@@ -4,6 +4,7 @@ import type { Network } from '../core/types.ts'
 import { displayName, formatKm, formatPct } from '../lib/format.ts'
 import { useCountUp } from '../lib/useCountUp.ts'
 import { isCompleted } from '../core/milestones.ts'
+import { tracesHorsZone } from '../core/couverture.ts'
 import { buildSummary, summaryFilename } from '../core/summary.ts'
 import { summaryCardBlob } from '../lib/summaryCard.ts'
 import { downloadBlob } from '../lib/download.ts'
@@ -28,6 +29,7 @@ export function Dashboard() {
   const celebration = useAppStore((s) => s.celebration)
   const dismissCelebration = useAppStore((s) => s.dismissCelebration)
   const seuilBoucle = useAppStore((s) => s.completionPct)
+  const tracks = useAppStore((s) => s.tracks)
 
   // Le chiffre rattrape la barre : les voir bouger séparément donne
   // l'impression qu'ils ne parlent pas du même résultat.
@@ -46,6 +48,16 @@ export function Dashboard() {
       (matching?.results ?? []).filter((r) => isCompleted(r.pct, seuilBoucle))
         .length,
     [matching, seuilBoucle],
+  )
+
+  // Deux chiffres, deux périmètres. « Mes sorties » additionne toutes les
+  // traces ; ce pourcentage ne porte que sur les itinéraires téléchargés.
+  // Les deux sont justes, et leur écart n'était expliqué nulle part : on
+  // rentre de Bretagne avec le Pilat chargé, les kilomètres montent d'un
+  // côté et le pourcentage ne bouge pas de l'autre (issue #133).
+  const horsZone = useMemo(
+    () => tracesHorsZone(tracks, itineraries).length,
+    [tracks, itineraries],
   )
 
   /**
@@ -129,6 +141,13 @@ export function Dashboard() {
             <p className={styles.globalDetail} data-testid="global-completed">
               {boucles} itinéraire{boucles > 1 ? 's' : ''} bouclé
               {boucles > 1 ? 's' : ''} (au moins {seuilBoucle} % parcourus)
+            </p>
+          )}
+          {horsZone > 0 && (
+            <p className={styles.horsZone} data-testid="global-hors-zone">
+              {horsZone} de vos {tracks.length} sorties{' '}
+              {horsZone > 1 ? 'sont' : 'est'} hors de la zone chargée et ne
+              compte{horsZone > 1 ? 'nt' : ''} pas dans ce pourcentage.
             </p>
           )}
           <ProgressBalise pct={global.pct} label="Progression globale" />

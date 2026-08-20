@@ -277,27 +277,32 @@ test('le repère posé sur le profil reste quand on regarde la carte', async ({
     timeout: 10_000,
   })
 
+  const marqueurs = () =>
+    page.evaluate(() => {
+      const source = (
+        window as unknown as {
+          __sentiersMap?: {
+            getSource: (id: string) => { serialize: () => unknown } | undefined
+          }
+        }
+      ).__sentiersMap?.getSource('elevation-hover')
+      if (!source) return -1
+      const data = (source.serialize() as { data?: { features?: unknown[] } })
+        .data
+      return data?.features?.length ?? -1
+    })
+
   await page.getByTestId('elevation-chart').click()
   await expect(page.getByTestId('elevation-readout')).toContainText('km')
+  // Le marqueur est bien posé sur la carte, pas seulement dans le texte. On
+  // l'attend ici : la carte le reçoit via un rendu React puis un setData, et
+  // c'est sa *survie* au geste suivant qu'on teste, pas sa vitesse d'arrivée.
+  await expect.poll(marqueurs, { timeout: 5_000 }).toBe(1)
 
   // Le geste qui suit le clic, c'est de regarder la carte — donc de sortir
   // du graphique. Le repère disparaissait à cet instant précis : on cliquait,
   // on tournait la tête, il n'y avait rien.
   await page.mouse.move(10, 10)
   await expect(page.getByTestId('elevation-readout')).toContainText('km')
-
-  // Et le marqueur est bien posé sur la carte, pas seulement dans le texte.
-  const marqueurs = await page.evaluate(() => {
-    const source = (
-      window as unknown as {
-        __sentiersMap?: {
-          getSource: (id: string) => { serialize: () => unknown } | undefined
-        }
-      }
-    ).__sentiersMap?.getSource('elevation-hover')
-    if (!source) return -1
-    const data = (source.serialize() as { data?: { features?: unknown[] } }).data
-    return data?.features?.length ?? -1
-  })
-  expect(marqueurs).toBe(1)
+  expect(await marqueurs()).toBe(1)
 })
