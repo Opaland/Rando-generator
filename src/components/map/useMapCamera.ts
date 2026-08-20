@@ -2,6 +2,7 @@ import { useEffect, type RefObject } from 'react'
 import { LngLatBounds, type Map as MaplibreMap } from 'maplibre-gl'
 import { itineraryCoords } from '../../core/mapdata.ts'
 import { bearingDegrees } from '../../core/geo.ts'
+import { margeBassePanneau } from '../../lib/mapPadding.ts'
 import { useAppStore } from '../../store/appStore.ts'
 import type { LonLat } from '../../core/types.ts'
 
@@ -84,11 +85,9 @@ export function useMapCamera(
     const panneau = document
       .querySelector('[data-testid="itinerary-detail"]')
       ?.getBoundingClientRect()
-    // Ce que la fiche recouvre réellement du bas de la carte : sur grand
-    // écran elle flotte dans un coin et ne mord presque rien.
-    const recouvre = panneau
-      ? Math.max(0, cadre.bottom - Math.max(panneau.top, cadre.top))
-      : 0
+    // Ce que la fiche recouvre réellement du bas de la carte : la règle vit
+    // dans lib/mapPadding, où elle est vérifiée sur les deux dispositions.
+    const recouvre = margeBassePanneau(cadre, panneau)
     map.fitBounds(bounds, {
       padding: {
         top: 48,
