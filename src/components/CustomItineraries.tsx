@@ -70,9 +70,15 @@ export function CustomItineraries() {
         </h2>
       </summary>
       <p className={styles.hint}>
-        Importez le GPX d’un parcours <strong>à faire</strong> (cartoguide,
-        Visorando, tracé maison…) et suivez votre progression dessus. Rien ne
-        quitte votre navigateur.
+        Importez un parcours <strong>à faire</strong> (cartoguide, Visorando,
+        tracé maison…) et suivez votre progression dessus. Rien ne quitte
+        votre navigateur.
+      </p>
+      <p className={styles.hint}>
+        GPX, FIT et TCX pour un parcours ; <strong>GeoJSON</strong> pour un jeu
+        entier — le PDIPR d’un département, par exemple : téléchargez-le chez
+        le producteur, déposez-le ici, chaque sentier devient un itinéraire à
+        compléter.
       </p>
       <div className={styles.addRow}>
         <button
@@ -81,7 +87,7 @@ export function CustomItineraries() {
           data-testid="custom-browse"
           onClick={() => inputRef.current?.click()}
         >
-          Ajouter un itinéraire (GPX)
+          Ajouter un itinéraire
         </button>
         <button
           type="button"
@@ -101,7 +107,7 @@ export function CustomItineraries() {
       <input
         ref={inputRef}
         type="file"
-        accept=".gpx,.fit,.tcx,application/gpx+xml,application/vnd.ant.fit"
+        accept=".gpx,.fit,.tcx,.geojson,.json,application/gpx+xml,application/geo+json"
         multiple
         hidden
         data-testid="custom-input"
