@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   COMPLETION_CHOICES,
+  franchissementTientEncore,
   COMPLETION_PCT,
   DEFAULT_COMPLETION_PCT,
   MILESTONES,
@@ -135,5 +136,29 @@ describe('seuil de complétion réglable', () => {
     expect(normalizeCompletionPct(150)).toBe(100)
     expect(normalizeCompletionPct(Number.NaN)).toBe(DEFAULT_COMPLETION_PCT)
     expect(normalizeCompletionPct(undefined)).toBe(DEFAULT_COMPLETION_PCT)
+  })
+})
+
+describe('franchissementTientEncore', () => {
+  const resultat = (pct: number) => [
+    { itineraryId: 7, doneMeters: 0, totalMeters: 100, pct, computedAt: 'x' },
+  ]
+
+  it('tient tant que le jalon reste atteint', () => {
+    const annonce = { itineraryId: 7, milestone: 50 }
+    expect(franchissementTientEncore(annonce, resultat(50))).toBe(true)
+    expect(franchissementTientEncore(annonce, resultat(80))).toBe(true)
+  })
+
+  it('tombe si le pourcentage repasse sous le jalon', () => {
+    // Une trace supprimée, une tolérance resserrée : annoncer encore un
+    // franchissement qui n'a plus lieu serait un mensonge.
+    const annonce = { itineraryId: 7, milestone: 50 }
+    expect(franchissementTientEncore(annonce, resultat(49))).toBe(false)
+  })
+
+  it('tombe si l’itinéraire a disparu du calcul', () => {
+    const annonce = { itineraryId: 999, milestone: 50 }
+    expect(franchissementTientEncore(annonce, resultat(100))).toBe(false)
   })
 })

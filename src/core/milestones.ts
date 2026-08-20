@@ -117,3 +117,21 @@ export function crossedMilestones(
     (a, b) => b.milestone - a.milestone || a.itineraryId - b.itineraryId,
   )
 }
+
+/**
+ * Vrai tant que le franchissement annoncé reste vrai.
+ *
+ * L'annonce ne doit ni s'effacer toute seule — un recalcul de fond, déclenché
+ * par le démarrage ou par l'arrivée de données, la faisait disparaître dans la
+ * seconde — ni survivre à ce qu'elle raconte : une trace supprimée ou une
+ * tolérance resserrée peut ramener l'itinéraire sous son jalon.
+ */
+export function franchissementTientEncore(
+  annonce: MilestoneCrossing,
+  results: CompletionResult[],
+): boolean {
+  const resultat = results.find((r) => r.itineraryId === annonce.itineraryId)
+  if (!resultat) return false
+  const jalon = reachedMilestone(resultat.pct)
+  return jalon !== null && jalon >= annonce.milestone
+}

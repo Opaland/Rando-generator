@@ -36,6 +36,13 @@ test('franchir un jalon est annoncé une fois, sobrement', async ({ page }) => {
   await expect(annonce).toContainText('GR 7')
   await expect(annonce).toContainText('100 %')
 
+  // Elle tient : un recalcul de fond — démarrage, arrivée des boucles
+  // locales — l'effaçait dans la seconde, et le franchissement passait
+  // inaperçu. Tant que le jalon reste atteint, l'annonce reste.
+  await page.getByTestId('tolerance-slider').fill('60')
+  await expect(page.getByTestId('global-pct')).toHaveText('54,5 %')
+  await expect(annonce).toBeVisible()
+
   // Elle se referme et ne revient pas d'elle-même.
   await annonce.getByRole('button', { name: /masquer/i }).click()
   await expect(page.getByTestId('celebration')).toHaveCount(0)

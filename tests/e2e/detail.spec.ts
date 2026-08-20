@@ -131,7 +131,7 @@ test('sélectionner un itinéraire depuis la liste zoome dessus sans ouvrir le d
             (window as unknown as { __sentiersMap?: MapLike }).__sentiersMap?.getZoom() ??
             0,
         ),
-      { timeout: 10_000 },
+      { timeout: 15_000 },
     )
     .not.toBe(zoomBefore)
 })

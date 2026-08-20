@@ -413,7 +413,7 @@ describe('selectItinerary', () => {
 })
 
 describe('annonces et bilans, cycle de vie', () => {
-  it('l’annonce d’un jalon ne survit pas au calcul suivant', async () => {
+  it('l’annonce d’un jalon tient jusqu’à ce qu’elle cesse d’être vraie', async () => {
     await useAppStore.getState().init()
     await useAppStore.getState().loadZone('pilat')
     // Tolérance serrée : la trace ne crédite rien.
@@ -429,9 +429,15 @@ describe('annonces et bilans, cycle de vie', () => {
     await useAppStore.getState().setTolerance(MAX_TOLERANCE)
     expect(useAppStore.getState().celebration).not.toBeNull()
 
-    // Un calcul suivant sans franchissement efface l'annonce : elle portait
-    // sur le calcul précédent, la garder affichée serait mentir.
+    // Un calcul suivant sans nouveau franchissement ne l'efface pas : le
+    // jalon reste atteint, et un recalcul de fond — démarrage, arrivée des
+    // boucles locales — la faisait disparaître dans la seconde.
     await useAppStore.getState().setTolerance(MAX_TOLERANCE - 5)
+    expect(useAppStore.getState().celebration).not.toBeNull()
+
+    // Elle tombe en revanche dès qu'elle cesse d'être vraie : à tolérance
+    // serrée, l'itinéraire repasse sous son jalon.
+    await useAppStore.getState().setTolerance(MIN_TOLERANCE)
     expect(useAppStore.getState().celebration).toBeNull()
   })
 

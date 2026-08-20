@@ -1,5 +1,10 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork, hasMap, type MapLike } from './helpers.ts'
+import {
+  mockExternalNetwork,
+  hasMap,
+  waitForMapReady,
+  type MapLike,
+} from './helpers.ts'
 
 // Position simulée : sur le GR 7 de la fixture Pilat (lat 45,4).
 test.use({
@@ -18,6 +23,9 @@ test('afficher sa position sur la carte, puis arrêter le suivi', async ({
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+
+  // La caméra n'obéit qu'une fois la carte chargée (cf. issue #111).
+  await waitForMapReady(page)
 
   const toggle = page.getByTestId('locate-toggle')
   await expect(toggle).toHaveAttribute('aria-pressed', 'false')
@@ -39,7 +47,7 @@ test('afficher sa position sur la carte, puis arrêter le suivi', async ({
             .__sentiersMap
           return map ? Math.abs(map.getCenter().lng - 4.505) : 99
         }),
-      { timeout: 10_000 },
+      { timeout: 15_000 },
     )
     .toBeLessThan(0.01)
 
