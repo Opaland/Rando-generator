@@ -25,6 +25,11 @@ function precacheServiceWorker(): Plugin {
       const fichiers = [
         './',
         './index.html',
+        // La page « pourquoi » est servie telle quelle, hors du bundle : sans
+        // elle ici, le lien de l'en-tête retomberait sur l'application hors
+        // connexion (le secours de navigation, cf. public/sw.js).
+        './pourquoi.html',
+        './og-image.png',
         './manifest.webmanifest',
         './icon.svg',
         './icon-192.png',

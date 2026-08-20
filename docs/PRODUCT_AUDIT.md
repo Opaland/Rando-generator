@@ -327,6 +327,41 @@ vraies traces), #87 et #88 (sources départementales et Geotrek injoignables),
 #20 (demande d'interroger Overpass en vrai). Aucun n'a été « avancé » en
 devinant un schéma.
 
+## Journal — fin de session du 20 août 2026
+
+Trois demandes menées à la suite, plus un audit externe reçu en cours de route.
+
+| Sujet | Résultat |
+|---|---|
+| Page publique « pourquoi Sentiers » | Livrée, autonome (ni bundle ni JavaScript), dernière ligne de #19 |
+| Seconde passe personas | `docs/PERSONAS.md` gagne une seconde partie ; quatre issues ouvertes |
+| Alignement du nom du dépôt | **Pas faisable ici** : renommer relève des réglages du dépôt, hors de mes outils. Checklist et remplacements préparés dans #162 |
+| Audit externe « brutal et transformation » | Mesures rejouées, neuf issues ouvertes, index dans #157 |
+
+Trois choses méritent d'être notées.
+
+**La passe personas a trouvé un bouton mort, né le jour même.** Sylvie cherche
+« Saint-Étienne », charge la zone, clique « Actualiser les tracés » : rien. La
+clé d'une zone « Autour de… » n'est pas un identifiant de `ZONES`, `loadZone`
+retournait sans rien faire, et aucun message ne le disait. La recherche par
+lieu, livrée quelques heures plus tôt, marchait — son entretien non. La leçon
+dépasse le bug : **chaque nouvelle sorte d'objet doit être promenée dans les
+fonctions transverses qui existent déjà** — actualiser, supprimer, exporter,
+restaurer.
+
+**L'audit externe n'a pas été transcrit, il a été rejoué.** Ses treize tests
+adverses passent sur le code actuel, et sa trouvaille principale a été
+remesurée directement : l'espacement des points GPS produit une *falaise*, pas
+une dégradation — 780 m entre points crédite 100 %, 1,2 km crédite 0 %. Une
+montre en mode économie de batterie rend donc une bibliothèque entière
+illisible, sans un mot. C'est #148, et c'est le plus grave constat ouvert.
+
+**Quatre affirmations de l'audit étaient périmées** — il dit lui-même n'avoir
+pas pu lire les issues. La fraîcheur amont OSM *est* affichée (#115), la vue
+3D *existe*, les objectifs *ont été livrés* (#140), et les POI *sont* dans la
+fiche. Le détail est dans #157 : un audit qu'on recopie sans vérifier fait
+rouvrir des chantiers déjà finis.
+
 ## Definition of done retenue
 
 Une fonctionnalité n'est livrée que si : tests unitaires sur `src/core`,

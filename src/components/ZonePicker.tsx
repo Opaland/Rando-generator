@@ -31,6 +31,7 @@ export function ZonePicker() {
   const lieuError = useAppStore((s) => s.lieuError)
   const lieuxVides = useAppStore((s) => s.lieuxVides)
   const cancelZoneLoad = useAppStore((s) => s.cancelZoneLoad)
+  const rafraichirZone = useAppStore((s) => s.rafraichirZone)
   const zoneRestoredAtStartup = useAppStore((s) => s.zoneRestoredAtStartup)
   const [refInput, setRefInput] = useState('')
   const [lieuInput, setLieuInput] = useState('')
@@ -324,11 +325,10 @@ export function ZonePicker() {
             className="btn-link"
             data-testid="zone-refresh"
             onClick={() => {
-              if (zoneKey.startsWith('ref:')) {
-                if (zoneLabel) void loadRef(zoneLabel, { force: true })
-              } else {
-                void loadZone(zoneKey, { force: true })
-              }
+              // Le magasin sait de quelle sorte de zone il s'agit ; ce bouton
+              // ne le devinait pas, et ne faisait rien du tout sur une zone
+              // « Autour de… » — en silence.
+              void rafraichirZone()
             }}
           >
             Actualiser les tracés

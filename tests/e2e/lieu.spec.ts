@@ -45,6 +45,19 @@ test('chercher une ville charge les sentiers autour', async ({ page }) => {
 
   // La liste de propositions se referme une fois le choix fait.
   await expect(page.getByTestId('lieu-results')).toHaveCount(0)
+
+  // « Actualiser les tracés » doit refaire la requête. Sur une zone « autour
+  // d'un lieu », le bouton ne faisait rien du tout — la clé de zone n'est pas
+  // un identifiant de la liste des zones, et l'échec était silencieux.
+  const appelsAvant = overpass.count()
+  await page.getByTestId('zone-refresh').click()
+  await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
+    timeout: 15_000,
+  })
+  expect(overpass.count()).toBeGreaterThan(appelsAvant)
+  await expect(page.getByTestId('zone-section')).toContainText(
+    'Autour de Saint-Étienne',
+  )
 })
 
 test('une ville introuvable le dit, sans laisser croire à une panne', async ({

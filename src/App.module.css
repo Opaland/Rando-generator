@@ -43,10 +43,29 @@
   border-radius: 5px;
   padding: 4px 12px;
   font-size: var(--texte-secondaire);
+  /* Le lien et le bouton voisins doivent se ressembler exactement. */
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
 }
 
 .aboutLink:hover {
   background: rgba(250, 247, 242, 0.12);
+}
+
+/* Même allure que le bouton « À propos » voisin, mais c'est un lien. */
+.pourquoiEntete {
+  composes: aboutLink;
+}
+
+/*
+ * Sur téléphone, le lien descend dans le pied du panneau : dans l'en-tête il
+ * coûtait 50 px de hauteur de carte, mesurés, et une page marketing ne passe
+ * pas avant la carte.
+ */
+.pourquoiPied {
+  display: none;
 }
 
 .footer {
@@ -119,6 +138,17 @@
     align-items: center;
     gap: 10px;
     padding: 8px 12px;
+  }
+
+  .pourquoiEntete {
+    display: none;
+  }
+
+  .pourquoiPied {
+    display: block;
+    margin-bottom: 8px;
+    font-size: var(--texte-secondaire);
+    color: var(--rouge-balisage);
   }
 
   .privacyLong {

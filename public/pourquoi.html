@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pourquoi Sentiers — et pourquoi pas une autre application</title>
+    <meta
+      name="description"
+      content="Sentiers mesure la part des itinéraires balisés français que vous avez parcourue, à partir de vos traces GPX. Gratuit, sans compte, sans serveur. Ce qu'il fait, ce qu'il ne fait pas, et face à quoi."
+    />
+    <meta name="theme-color" content="#1e2b23" />
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <meta property="og:type" content="article" />
+    <meta
+      property="og:title"
+      content="Pourquoi Sentiers — et pourquoi pas une autre application"
+    />
+    <meta
+      property="og:description"
+      content="Personne ne répond à « quelle part des sentiers balisés de mon département ai-je parcourue ». C'est la seule chose que fait Sentiers."
+    />
+    <meta
+      property="og:image"
+      content="https://opaland.github.io/Rando-generator/og-image.png"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <!--
+      Page volontairement autonome : ni bundle, ni JavaScript, ni police
+      distante. Un lien partagé doit s'ouvrir chez quelqu'un qui n'a rien
+      installé, sur un réseau lent, et rester lisible si le script échoue.
+      Les couleurs sont celles de src/index.css, recopiées ici en connaissance
+      de cause — cette page ne suit pas les composants de l'application.
+    -->
+    <style>
+      :root {
+        --rouge-balisage: #c8102e;
+        --blanc-papier: #faf7f2;
+        --vert-noir: #1e2b23;
+        --gris-vert: #5a6b5d;
+        --gris-vert-clair: #e7e9e4;
+        --font-display: 'Avenir Next', 'Futura', 'Trebuchet MS', 'Segoe UI',
+          system-ui, sans-serif;
+        --font-sans: system-ui, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--blanc-papier);
+        color: var(--vert-noir);
+        font-family: var(--font-sans);
+        line-height: 1.55;
+      }
+      header {
+        background: var(--vert-noir);
+        color: var(--blanc-papier);
+        padding: 20px 24px;
+      }
+      .bandeau {
+        max-width: 760px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .balise {
+        display: flex;
+        flex-direction: column;
+        width: 26px;
+        border-radius: 3px;
+        overflow: hidden;
+        flex: none;
+      }
+      .balise span {
+        height: 7px;
+      }
+      .blanc {
+        background: var(--blanc-papier);
+      }
+      .rouge {
+        background: var(--rouge-balisage);
+      }
+      .marque {
+        font-family: var(--font-display);
+        font-size: 1.25rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        flex: 1;
+      }
+      .retour {
+        color: var(--blanc-papier);
+        border: 1px solid rgba(250, 247, 242, 0.4);
+        border-radius: 5px;
+        padding: 6px 12px;
+        text-decoration: none;
+        font-size: 0.85rem;
+        min-height: 32px;
+        display: inline-flex;
+        align-items: center;
+      }
+      .retour:hover {
+        background: rgba(250, 247, 242, 0.12);
+      }
+      main {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 32px 24px 64px;
+      }
+      h1 {
+        font-family: var(--font-display);
+        font-size: clamp(1.7rem, 5vw, 2.4rem);
+        line-height: 1.15;
+        margin: 0 0 8px;
+      }
+      .chapo {
+        font-size: 1.1rem;
+        color: var(--gris-vert);
+        margin: 0 0 32px;
+      }
+      h2 {
+        font-family: var(--font-display);
+        font-size: 1.3rem;
+        margin: 40px 0 10px;
+        padding-top: 24px;
+        border-top: 1px solid var(--gris-vert-clair);
+      }
+      h3 {
+        font-size: 1rem;
+        margin: 24px 0 6px;
+      }
+      p,
+      li {
+        margin: 0 0 12px;
+      }
+      ul {
+        padding-left: 20px;
+      }
+      .table-wrap {
+        overflow-x: auto;
+        margin: 16px 0;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        min-width: 520px;
+        font-size: 0.92rem;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--gris-vert-clair);
+        vertical-align: top;
+      }
+      th {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--gris-vert);
+      }
+      .oui {
+        color: var(--rouge-balisage);
+        font-weight: 600;
+      }
+      .cta {
+        display: inline-block;
+        margin-top: 8px;
+        background: var(--rouge-balisage);
+        color: var(--blanc-papier);
+        text-decoration: none;
+        padding: 12px 20px;
+        border-radius: 5px;
+        font-weight: 600;
+        min-height: 44px;
+      }
+      .cta:hover {
+        background: #a60d26;
+      }
+      .aveu {
+        border-left: 3px solid var(--gris-vert);
+        padding: 4px 0 4px 14px;
+        color: var(--gris-vert);
+      }
+      footer {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 24px;
+        font-size: 0.8rem;
+        color: var(--gris-vert);
+        border-top: 1px solid var(--gris-vert-clair);
+      }
+      a {
+        color: var(--rouge-balisage);
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="bandeau">
+        <span class="balise" aria-hidden="true">
+          <span class="blanc"></span>
+          <span class="rouge"></span>
+        </span>
+        <span class="marque">Sentiers</span>
+        <a class="retour" href="./">Ouvrir l’application</a>
+      </div>
+    </header>
+
+    <main>
+      <h1>Vos GR par leur nom, vos données chez vous</h1>
+      <p class="chapo">
+        Sentiers répond à une question que personne d’autre ne traite&nbsp;:
+        <strong>quelle part des sentiers balisés avez-vous déjà
+        parcourue&nbsp;?</strong> Pas «&nbsp;combien de kilomètres ce
+        mois-ci&nbsp;», pas «&nbsp;où aller dimanche&nbsp;» — quelle part du GR 7,
+        des PR de votre département, des boucles autour de chez vous.
+      </p>
+
+      <h2>Le problème</h2>
+      <p>
+        Vous accumulez des traces GPX depuis des années — montre, téléphone,
+        applications diverses. Elles sont là, et pourtant vous ne pouvez
+        répondre à aucune des questions qui vous intéressent&nbsp;:
+      </p>
+      <ul>
+        <li>quelle part du GR 7 ai-je réellement parcourue&nbsp;?</li>
+        <li>quels sentiers balisés de mon département me restent-ils&nbsp;?</li>
+        <li>
+          où est le trou le plus proche que je pourrais combler dimanche&nbsp;?
+        </li>
+      </ul>
+      <p>
+        Ce qui manque n’est pas la donnée. C’est la <strong>mise en regard</strong>
+        de vos traces et du réseau balisé.
+      </p>
+
+      <h2>Face à quoi</h2>
+      <p>
+        Le paysage se divise en deux familles, et Sentiers n’est dans ni l’une
+        ni l’autre.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Ce que vous cherchez</th>
+              <th>Là où on le trouve</th>
+              <th>Sentiers</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Trouver et suivre un itinéraire</td>
+              <td>Komoot, AllTrails, Visorando, MaRando</td>
+              <td>Non — et c’est délibéré</td>
+            </tr>
+            <tr>
+              <td>Le pourcentage des <em>routes</em> parcourues, à vélo</td>
+              <td>Wandrer, CityStrides, Statshunters</td>
+              <td>Non — ce sont des rues, pas des sentiers nommés</td>
+            </tr>
+            <tr>
+              <td>
+                Le pourcentage des <strong>itinéraires balisés français</strong>,
+                par leur nom
+              </td>
+              <td>Personne</td>
+              <td class="oui">C’est exactement ça</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Le cas de Wandrer, le plus proche</h3>
+      <p>
+        C’est le seul recouvrement réel&nbsp;: il inclut les sentiers, il a des
+        jalons, il met en avant les tronçons non parcourus — deux idées qu’on
+        lui emprunte volontiers, et on le dit. Trois différences restent&nbsp;:
+      </p>
+      <ul>
+        <li>
+          il est <strong>payant</strong> et passe par un compte Strava, donc par
+          un tiers de plus qui voit vos traces&nbsp;;
+        </li>
+        <li>
+          il compte des <strong>kilomètres de segments routiers</strong>. Sentiers
+          compte «&nbsp;le GR 7&nbsp;»&nbsp;: un itinéraire a un nom, une ref, une
+          couleur de balisage&nbsp;;
+        </li>
+        <li>
+          il n’a aucune raison de connaître le vocabulaire français des GR, GR de
+          Pays, PR et cartoguides départementaux.
+        </li>
+      </ul>
+
+      <h2>Ce que Sentiers ne fera pas</h2>
+      <p>
+        Cette liste n’est pas une feuille de route en attente. Ce sont des refus,
+        et ils sont ce qui garde l’application petite et compréhensible.
+      </p>
+      <ul>
+        <li>
+          <strong>Pas de compte, pas de serveur, pas de synchronisation.</strong>
+          Vos traces sont lues et analysées dans votre navigateur, et stockées
+          là. Aucune ne part nulle part.
+        </li>
+        <li>
+          <strong>Pas de guidage ni de navigation vocale.</strong> Sur le terrain,
+          emportez une carte à jour. Sentiers est un carnet, pas un GPS.
+        </li>
+        <li>
+          <strong>Pas de fil social, pas de photos, pas de notation.</strong>
+          Cela existe en mieux ailleurs, et diluerait le propos.
+        </li>
+        <li><strong>Pas de météo, pas d’hébergements marchands.</strong></li>
+        <li>
+          <strong>Pas de mesure d’audience, pas de traceur, pas de police
+          distante.</strong> Le site ne sait pas que vous êtes venu.
+        </li>
+      </ul>
+
+      <h2>Ce que ça coûte, et qu’il vaut mieux savoir avant</h2>
+      <p class="aveu">
+        Comme rien ne part sur un serveur, <strong>rien ne suit d’un appareil à
+        l’autre</strong>, et vider les données du site efface vos traces. C’est
+        le prix du «&nbsp;tout local&nbsp;», et il est réel. Une sauvegarde
+        exportable existe pour le rendre supportable&nbsp;: un fichier que vous
+        gardez où vous voulez et qui se relit ailleurs.
+      </p>
+      <p class="aveu">
+        Les tracés viennent d’OpenStreetMap, c’est-à-dire de bénévoles. Quand un
+        itinéraire y est incomplet, l’application <strong>le signale</strong>
+        plutôt que d’afficher un pourcentage muet — mais elle ne peut pas
+        inventer ce qui manque.
+      </p>
+
+      <h2>Concrètement</h2>
+      <ul>
+        <li>
+          Choisissez une zone — votre ville, un département, un grand itinéraire.
+        </li>
+        <li>
+          Déposez vos fichiers GPX, FIT ou TCX. L’archive d’export de Strava ou
+          Garmin s’ouvre telle quelle.
+        </li>
+        <li>
+          Lisez votre pourcentage, par réseau et par itinéraire, et les tronçons
+          qu’il vous reste — avec, pour chacun, où l’on se gare.
+        </li>
+      </ul>
+      <p>
+        Gratuit, sans inscription, sans installation. Le code est ouvert, les
+        données aussi.
+      </p>
+      <p><a class="cta" href="./">Essayer maintenant</a></p>
+    </main>
+
+    <footer>
+      Itinéraires © les contributeurs OpenStreetMap (ODbL) · Fond de carte © IGN
+      (Etalab 2.0) · GR®, GR de Pays® et PR® sont des marques de la FFRandonnée.
+      Sentiers est indépendant. ·
+      <a href="https://github.com/Opaland/Rando-generator">Code source</a>
+    </footer>
+  </body>
+</html>
