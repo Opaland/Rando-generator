@@ -129,7 +129,8 @@ export function buildPoiQuery(coords: LonLat[]): string {
         `  nwr["natural"~"^(peak|spring)$"](${bbox});`,
         `  nwr["amenity"="drinking_water"](${bbox});`,
         `  nwr["amenity"="shelter"]["shelter_type"~"^(basic_hut|lean_to|rock_shelter|weather_shelter)$"](${bbox});`,
-        `  nwr["historic"~"^(monument|memorial)$"](${bbox});`,
+        `  nwr["historic"~"^(monument|memorial|ruins|castle|fort|tower|archaeological_site|wayside_cross|wayside_shrine|boundary_stone)$"](${bbox});`,
+        `  nwr["man_made"~"^(watermill|windmill)$"](${bbox});`,
       ].join('\n')
     })
     .join('\n')
@@ -183,8 +184,24 @@ function classify(tags: Record<string, string>): PoiKind | null {
         return null
     }
   }
-  if (tags.historic === 'monument' || tags.historic === 'memorial') {
-    return 'monument'
+  switch (tags.historic) {
+    case 'monument':
+    case 'memorial':
+      return 'monument'
+    case 'ruins':
+    case 'castle':
+    case 'fort':
+    case 'tower':
+    case 'archaeological_site':
+      return 'ruins'
+    case 'wayside_cross':
+    case 'wayside_shrine':
+    case 'boundary_stone':
+      return 'marker'
+  }
+  // Moulins : ce qui reste des vallées d'avant, et qui se visite.
+  if (tags.man_made === 'watermill' || tags.man_made === 'windmill') {
+    return 'ruins'
   }
   return null
 }
@@ -239,6 +256,8 @@ const KIND_ORDER: PoiKind[] = [
   'peak',
   'viewpoint',
   'picnic',
+  'ruins',
+  'marker',
   'monument',
 ]
 

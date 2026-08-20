@@ -101,6 +101,10 @@ export type PoiKind =
   | 'shelter'
   | 'water'
   | 'picnic'
+  /** Vestige qu'on va voir : ruine, château, site archéologique, moulin. */
+  | 'ruins'
+  /** Signalétique ancienne des chemins : croix, oratoire, borne. */
+  | 'marker'
   | 'monument'
 
 /** Informations pratiques d'un POI, telles que taguées dans OSM. */

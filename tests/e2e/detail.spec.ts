@@ -63,6 +63,13 @@ test('cliquer un tracé sur la carte ouvre la fiche détail (altimétrie + POI)'
   await expect(poiList).toContainText('potabilité non renseignée')
   // Et quand la donnée est là, elle est reprise telle quelle.
   await expect(poiList).toContainText('non potable · saisonnière')
+
+  // Le patrimoine ne se limite plus aux monuments : ce qu'on va voir, et ce
+  // qui borde le chemin (issue #124).
+  await expect(poiList).toContainText('Tour des Sarrasins')
+  await expect(poiList).toContainText('Vestige')
+  await expect(poiList).toContainText('Croix des Trois Chemins')
+  await expect(poiList).toContainText('Croix ou borne')
   await expect(page.getByTestId('detail-poi-caveat')).toContainText(
     /gestionnaire/i,
   )
