@@ -22,7 +22,17 @@ export function ZonePicker() {
   const loadZone = useAppStore((s) => s.loadZone)
   const loadRef = useAppStore((s) => s.loadRef)
   const cancelZoneLoad = useAppStore((s) => s.cancelZoneLoad)
+  const zoneRestoredAtStartup = useAppStore((s) => s.zoneRestoredAtStartup)
   const [refInput, setRefInput] = useState('')
+  /**
+   * null = suivre l'état des données ; dès que l'utilisateur ouvre ou ferme
+   * la section, c'est son choix qui prime.
+   *
+   * La section est repliée uniquement quand la zone vient du cache au
+   * démarrage — « je reviens voir ma progression » — et pas après un clic de
+   * l'utilisateur, qui est peut-être en train d'en essayer plusieurs.
+   */
+  const [ouvert, setOuvert] = useState<boolean | null>(null)
   const [elapsedS, setElapsedS] = useState(0)
 
   useEffect(() => {
@@ -44,13 +54,35 @@ export function ZonePicker() {
     if (refInput.trim()) void loadRef(refInput)
   }
 
+  const deplie = ouvert ?? !zoneRestoredAtStartup
+
   return (
-    <details className={styles.section} open>
-      <summary className="acc-summary">
-        <h2 id="zone-title" className={styles.title}>
-          Zone
-        </h2>
-      </summary>
+    <section className={styles.section} aria-labelledby="zone-title">
+      {/*
+        Section entièrement contrôlée : le navigateur émet un événement
+        `toggle` au montage quand l'élément démarre ouvert, ce qui figerait
+        aussitôt le « choix de l'utilisateur ». On intercepte donc le clic
+        sur la poignée plutôt que d'écouter le résultat.
+      */}
+      <details
+        className={styles.picker}
+        data-testid="zone-section"
+        open={deplie}
+      >
+        <summary
+          className="acc-summary"
+          onClick={(e) => {
+            e.preventDefault()
+            setOuvert(!deplie)
+          }}
+        >
+          <h2 id="zone-title" className={styles.title}>
+            Zone
+            {zoneLabel && (
+              <span className={styles.zoneActiveName}> · {zoneLabel}</span>
+            )}
+          </h2>
+        </summary>
       <div className={styles.zones} role="group" aria-label="Zones prédéfinies">
         {ZONES.filter((zone) => zone.group === 'proche').map((zone) => (
           <button
@@ -140,6 +172,8 @@ export function ZonePicker() {
         </div>
       </form>
 
+      </details>
+
       {zoneLoading && (
         <div className={styles.waiting} role="status" data-testid="zone-loading">
           <span className={styles.spinner} aria-hidden="true" />
@@ -190,6 +224,7 @@ export function ZonePicker() {
           </button>
         </p>
       )}
-    </details>
+    </section>
+
   )
 }

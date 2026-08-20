@@ -93,6 +93,12 @@ export interface AppState {
   selectedItineraryId: number | null
   /** Avancement d'un import multi-fichiers, pour que l'attente ait un sujet. */
   importProgress: { done: number; total: number; filename: string } | null
+  /**
+   * Vrai quand la zone affichée vient du cache au démarrage, et non d'un clic
+   * de l'utilisateur pendant cette session. C'est ce qui distingue « je
+   * reviens voir ma progression » de « je suis en train de choisir ».
+   */
+  zoneRestoredAtStartup: boolean
   /** Jalon franchi lors du dernier recalcul, à annoncer une fois. */
   celebration: { itineraryId: number; milestone: number } | null
   /** Ce qu'une sortie a apporté, calculé à la demande (trace dépliée). */
@@ -295,6 +301,8 @@ export const useAppStore = create<AppState>()((set, get) => {
     itineraries: Itinerary[],
     fetchedAt: string,
   ): void {
+    // Un chargement explicite : ce n'est plus la zone restaurée au démarrage.
+    set({ zoneRestoredAtStartup: false })
     // Nouvelle zone : les pourcentages précédents ne veulent plus rien dire,
     // et le bilan de sortie ouvert nomme des itinéraires qui ne sont plus là.
     pctsPrecedents = null
@@ -439,6 +447,7 @@ export const useAppStore = create<AppState>()((set, get) => {
     selectedItineraryId: null,
     detailItineraryId: null,
     importProgress: null,
+    zoneRestoredAtStartup: false,
     celebration: null,
     outingDetail: null,
     elevationProfile: null,
@@ -500,6 +509,7 @@ export const useAppStore = create<AppState>()((set, get) => {
             cached.itineraries,
             cached.fetchedAt,
           )
+          set({ zoneRestoredAtStartup: true })
         }
       }
       await recompute()

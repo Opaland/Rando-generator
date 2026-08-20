@@ -144,3 +144,19 @@
   font-size: 0.85rem;
   color: var(--gris-vert);
 }
+
+/* Une fois la section repliée, le nom de la zone active reste lisible :
+   c'est l'information qu'on vient chercher. */
+.zoneActiveName {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--vert-noir);
+}
+
+/* Le choix de la zone est repliable ; l'état de la zone chargée (nombre
+   d'itinéraires, actualisation) reste dehors, toujours visible. */
+.picker {
+  display: grid;
+  gap: 10px;
+}

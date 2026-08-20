@@ -40,3 +40,39 @@ test('la carte garde la place sur les largeurs intermédiaires', async ({
   const large = await barre.boundingBox()
   expect(large?.width ?? 0).toBeGreaterThan(360)
 })
+
+test('la section Zone est repliée au retour sur l’application', async ({
+  page,
+}) => {
+  await mockExternalNetwork(page)
+  await page.goto('/')
+
+  // Tant qu'il n'y a rien de chargé, choisir une zone est la première chose
+  // à faire : la section est ouverte.
+  const zone = page.getByTestId('zone-section')
+  await expect(zone).toHaveAttribute('open', /.*/)
+
+  await page.getByTestId('zone-pilat').click()
+  await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
+    timeout: 15_000,
+  })
+  // Elle reste ouverte : l'utilisateur est peut-être en train d'en essayer
+  // plusieurs, et lui replier la liste sous le nez serait pénible.
+  await expect(zone).toHaveAttribute('open', /.*/)
+
+  // Au retour sur l'application, la zone vient du cache : on vient voir sa
+  // progression, pas faire défiler quatorze départements.
+  await page.reload()
+  await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
+    timeout: 15_000,
+  })
+  await expect(zone).not.toHaveAttribute('open', /.*/)
+  // Le nom de la zone active reste lisible, section repliée.
+  await expect(zone.locator('summary')).toContainText('PNR du Pilat')
+  // Et « Actualiser les tracés » reste accessible sans rien déplier.
+  await expect(page.getByTestId('zone-refresh')).toBeVisible()
+
+  // Le choix de l'utilisateur prime ensuite.
+  await zone.locator('summary').click()
+  await expect(zone).toHaveAttribute('open', /.*/)
+})
