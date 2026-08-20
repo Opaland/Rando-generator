@@ -220,3 +220,54 @@ details[open] > .acc-summary::after {
   flex: 1;
   background: var(--rouge-balisage);
 }
+
+/* Cibles tactiles (WCAG 2.2 AA, critère 2.5.8 « Target Size (Minimum) »).
+   Mesuré le 20/08/2026 sur un viewport téléphone : 56 éléments interactifs
+   sur 85 sous 44 px, et plusieurs sous les 24 px du critère — les cases à
+   cocher des réseaux à 13 px, les poignées d'accordéon à 23 px alors
+   qu'elles *sont* la navigation mobile (docs/AUDIT_MOBILE.md, constat M0).
+
+   Le plancher ne s'applique qu'aux pointeurs grossiers : au doigt, la cible
+   doit être large ; à la souris, l'élargir ne ferait qu'étirer l'interface
+   sans rien apporter. */
+@media (pointer: coarse) {
+  .acc-summary {
+    min-height: 44px;
+  }
+
+  button,
+  summary,
+  select,
+  input[type='search'],
+  input[type='text'],
+  input[type='number'] {
+    min-height: 44px;
+  }
+
+  /* La coche reste discrète visuellement, mais sa zone de contact ne l'est
+     plus : c'est l'étiquette entière qui devient la cible. */
+  input[type='checkbox'],
+  input[type='radio'] {
+    width: 24px;
+    height: 24px;
+  }
+
+  label:has(input[type='checkbox']),
+  label:has(input[type='radio']) {
+    min-height: 44px;
+  }
+
+  /* Un curseur de 16 px de haut se rate au doigt ; on élargit la zone sans
+     grossir le trait. */
+  input[type='range'] {
+    height: 44px;
+  }
+
+  /* Contrôles de MapLibre : leur taille vient de la feuille de style de la
+     bibliothèque, chargée après celle-ci. À spécificité égale, c'est elle
+     qui gagnerait — d'où le sélecteur plus long, qui évite un !important. */
+  .maplibregl-map .maplibregl-ctrl-group button {
+    width: 44px;
+    height: 44px;
+  }
+}
