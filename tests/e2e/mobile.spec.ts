@@ -99,4 +99,11 @@ test('le profil altimétrique répond au doigt, pas seulement à la souris', asy
   await expect(lecture).toContainText(/parcourez/i)
   await page.getByTestId('elevation-chart').tap()
   await expect(lecture).toContainText('km')
+
+  // Et le repère doit tenir : la fin du contact émet un « pointerleave »
+  // qui effaçait la lecture aussitôt posée — un défaut que seul le hasard
+  // de l'ordonnancement rendait visible.
+  const apres = await lecture.textContent()
+  await page.waitForTimeout(400)
+  await expect(lecture).toHaveText(apres ?? '')
 })
