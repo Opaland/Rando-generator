@@ -724,3 +724,62 @@ describe('recherche de lieu', () => {
     expect(useAppStore.getState().lieux.map((l) => l.label)).toEqual(['Lyon'])
   })
 })
+
+describe('actualiser la zone affichée', () => {
+  const reponseBan = (features: unknown[]) =>
+    new Response(JSON.stringify({ type: 'FeatureCollection', features }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    })
+
+  it('refait la requête pour une zone prédéfinie', async () => {
+    await useAppStore.getState().init()
+    await useAppStore.getState().loadZone('pilat')
+    const avant = fetchMock.mock.calls.length
+    await useAppStore.getState().rafraichirZone()
+    expect(fetchMock.mock.calls.length).toBeGreaterThan(avant)
+  })
+
+  it('refait la requête pour une recherche par ref', async () => {
+    await useAppStore.getState().init()
+    await useAppStore.getState().loadRef('GR 7')
+    const avant = fetchMock.mock.calls.length
+    await useAppStore.getState().rafraichirZone()
+    expect(fetchMock.mock.calls.length).toBeGreaterThan(avant)
+  })
+
+  it('refait la requête pour une zone « autour d’un lieu »', async () => {
+    // Régression : la clé d'une zone « autour » n'est pas un identifiant de
+    // ZONES, et le bouton « Actualiser » ne faisait donc rien du tout — en
+    // silence, ce qui est la pire façon de ne rien faire.
+    await useAppStore.getState().init()
+    fetchMock.mockImplementation((url) =>
+      url.includes('api-adresse')
+        ? Promise.resolve(reponseBan([]))
+        : Promise.resolve(reponseOverpass()),
+    )
+    await useAppStore.getState().loadAutour({
+      label: 'Saint-Étienne',
+      contexte: '42, Loire',
+      center: [4.38, 45.43],
+    })
+    const avant = fetchMock.mock.calls.length
+
+    await useAppStore.getState().rafraichirZone()
+
+    expect(fetchMock.mock.calls.length).toBeGreaterThan(avant)
+    // Et c'est bien la même zone qui est rechargée, au même endroit.
+    const derniere = new URLSearchParams(
+      fetchMock.mock.calls[fetchMock.mock.calls.length - 1]?.[1]?.body ?? '',
+    ).get('data')
+    expect(derniere).toContain('around:12000,45.430000,4.380000')
+    expect(useAppStore.getState().zoneLabel).toBe('Autour de Saint-Étienne')
+  })
+
+  it('ne fait rien quand aucune zone n’est chargée', async () => {
+    await useAppStore.getState().init()
+    const avant = fetchMock.mock.calls.length
+    await useAppStore.getState().rafraichirZone()
+    expect(fetchMock.mock.calls.length).toBe(avant)
+  })
+})

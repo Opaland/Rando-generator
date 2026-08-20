@@ -220,6 +220,12 @@ export interface AppState {
   init: () => Promise<void>
   loadZone: (zoneId: string, options?: { force?: boolean }) => Promise<void>
   loadRef: (ref: string, options?: { force?: boolean }) => Promise<void>
+  /**
+   * Recharge la zone affichée depuis le réseau, quelle que soit sa nature.
+   * Savoir de quelle sorte de zone il s'agit appartient au magasin : le
+   * bouton « Actualiser » ne peut pas deviner, et se trompait en silence.
+   */
+  rafraichirZone: () => Promise<void>
   /** Interrompt le chargement de zone en cours (l'appel réseau peut continuer
    *  en arrière-plan, mais son résultat n'est plus appliqué à l'UI). */
   cancelZoneLoad: () => void
@@ -236,7 +242,7 @@ export interface AppState {
   /** Cherche des communes par nom (API Adresse de la BAN). */
   chercherLieu: (query: string) => Promise<void>
   /** Charge les itinéraires dans un rayon autour d'un lieu trouvé. */
-  loadAutour: (lieu: Lieu) => Promise<void>
+  loadAutour: (lieu: Lieu, options?: { force?: boolean }) => Promise<void>
   /** Referme la liste des propositions. */
   effacerLieux: () => void
   /** Épingle (ou dépingle) un itinéraire comme objectif. */
@@ -1195,16 +1201,50 @@ export const useAppStore = create<AppState>()((set, get) => {
       }
     },
 
-    async loadAutour(lieu) {
+    async loadAutour(lieu, options = {}) {
       const [lon, lat] = lieu.center
       const zoneKey = `autour:${lon.toFixed(4)},${lat.toFixed(4)}`
+      const force = options.force ?? false
+      if (force) {
+        const db = await baseOuverte()
+        if (db) await db.deleteZone(zoneKey)
+      }
       set({ lieux: [], lieuError: null, lieuxVides: false })
       await loadFromOverpass(
         zoneKey,
         `Autour de ${lieu.label}`,
         buildAroundQuery(lieu.center, RAYON_AUTOUR_METERS),
-        false,
+        force,
       )
+    },
+
+    async rafraichirZone() {
+      const { zoneKey, zoneLabel } = get()
+      if (!zoneKey) return
+      if (zoneKey.startsWith('ref:')) {
+        if (zoneLabel) await get().loadRef(zoneLabel, { force: true })
+        return
+      }
+      if (zoneKey.startsWith('autour:')) {
+        // La clé porte le centre de la recherche, précisément pour qu'on
+        // puisse la rejouer sans avoir gardé le lieu d'origine.
+        const [lon, lat] = zoneKey
+          .slice('autour:'.length)
+          .split(',')
+          .map(Number)
+        if (lon === undefined || lat === undefined) return
+        if (!Number.isFinite(lon) || !Number.isFinite(lat)) return
+        await get().loadAutour(
+          {
+            label: (zoneLabel ?? '').replace(/^Autour de /, ''),
+            contexte: null,
+            center: [lon, lat],
+          },
+          { force: true },
+        )
+        return
+      }
+      await get().loadZone(zoneKey, { force: true })
     },
 
     async basculerObjectif(id) {

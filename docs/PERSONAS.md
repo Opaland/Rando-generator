@@ -124,6 +124,81 @@ Son département vient d'ouvrir son PDIPR. Veut voir ce que ça donne.
 
 ---
 
+# Seconde passe — 20/08, après les livraisons de la soirée
+
+Les six parcours rejoués sur l'application telle qu'elle est maintenant. Les
+trois manques communs de la première passe sont traités ; ce qui suit est ce
+que la seconde lecture a trouvé, et qui n'existait pas avant.
+
+## Ce qui est levé
+
+| Constat de la première passe | État |
+|---|---|
+| Bernard — rien ne se sauvegarde ni ne se transfère | **Levé** (#132) : sauvegarde exportable, restauration qui ajoute sans écraser, prix annoncé dans « À propos » |
+| Sylvie — on ne peut pas chercher un lieu | **Levé** (#131) : recherche par commune, en tête du premier écran |
+| Sylvie — le vocabulaire est celui du milieu | **Levé** (#145) : « ref » devient « numéro », GR/GRP/PR expliqués dans la légende et « À propos » |
+| Karim — ses sorties hors zone ne comptent pas, sans explication | **Levé** (#133) : l'écart est nommé sous le pourcentage |
+| Camille — préparer hors connexion | **Ouvert, issue posée** (#153) : altimétrie et POI ne sont toujours pas cachés |
+
+## Ce que la seconde passe a trouvé
+
+### Un bouton mort, introduit le jour même
+
+**Sylvie cherche « Saint-Étienne », charge la zone, et clique « Actualiser les
+tracés ». Il ne se passe rien.**
+
+La clé d'une zone « Autour de… » n'est pas un identifiant de `ZONES` : le
+bouton appelait `loadZone` avec une clé introuvable, la fonction retournait
+sans rien faire, et **aucun message ne le disait**. Le défaut est né avec la
+recherche par lieu quelques heures plus tôt — la fonctionnalité marchait, son
+entretien non.
+
+Corrigé le jour même : savoir de quelle sorte de zone il s'agit appartient
+désormais au magasin (`rafraichirZone`), pas au bouton. Quatre tests
+unitaires et un e2e couvrent les trois sortes de zone.
+
+*La leçon est plus large que le bug : chaque nouvelle sorte d'objet doit être
+promenée dans les fonctions transverses qui existent déjà — actualiser,
+supprimer, exporter, restaurer.*
+
+### Sylvie, toujours : « j'ai fait celui-là »
+
+Elle n'a **aucune trace GPX** — ses sorties sont dans sa tête. Elle peut
+maintenant trouver les sentiers autour de chez elle, comprendre ce qu'est un
+PR, et… ne rien pouvoir en faire. Le produit tout entier suppose un fichier
+qu'elle n'a pas.
+
+C'est le seul persona pour qui l'application reste inutilisable de bout en
+bout. Cocher un itinéraire à la main la ferait entrer dans le produit
+(voir la nouvelle issue dédiée), et l'enregistrement de sortie la ferait
+rester.
+
+### Camille : les étapes ne sont toujours pas déplaçables
+
+Le découpage est régulier et calculé ; il ignore les refuges, qui sont
+pourtant ce qui décide d'une étape en montagne. Et son plan ne s'exporte pas
+vers sa montre. Deux manques de la première passe, intacts.
+
+### Karim : une grosse archive n'est toujours pas mesurée
+
+Le développement s'est fait sur des archives de quelques fichiers. Sur 800
+activités, le temps d'import et le quota IndexedDB restent inconnus. Et la
+sauvegarde complète (#132) hérite du même angle mort : une bibliothèque de
+800 traces produit un fichier dont personne n'a mesuré la taille.
+
+### Marc : le constat ne mène toujours à aucune action
+
+Aucun lien vers l'éditeur OSM. Inchangé.
+
+### Bernard, sur les objectifs livrés ce soir
+
+Il épingle le GR 7, voit ses tronçons restants, clique « y aller ». Le
+parcours fonctionne. Deux réserves de lecture, mineures : au-delà de cinq ou
+six objectifs la section devient longue, et rien ne les ordonne autrement que
+par ordre d'ajout.
+
+---
+
 ## Ce que ces six parcours ont en commun
 
 Trois manques reviennent chez plusieurs personas, et ce sont eux qui méritent
@@ -140,3 +215,9 @@ d'être traités avant le reste :
 Le reste — étapes déplaçables, export du plan, lien vers l'éditeur OSM,
 attribution des couches importées — relève de l'approfondissement, pas du
 blocage.
+
+**Au 20/08, ces trois manques communs sont traités** (#131, #132, #133). Ce
+que la seconde passe laisse ouvert est suivi en issues : #158 (cocher un
+itinéraire à la main), #159 (mesurer une grosse bibliothèque), #160 (lien
+vers l'éditeur OSM), #161 (étapes calées sur les refuges, export du plan),
+#153 (préparer hors connexion).
