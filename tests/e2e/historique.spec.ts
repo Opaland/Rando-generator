@@ -60,3 +60,26 @@ test('une trace sans date est comptée sans fausser le graphique', async ({
   // rangée dans un mois arbitraire.
   await expect(page.getByTestId('history')).toContainText(/sans date/i)
 })
+
+test('« Mes sorties » dit le plus long enchaînement d’un seul tenant', async ({
+  page,
+}) => {
+  await mockExternalNetwork(page)
+  await page.goto('/')
+
+  await page.getByTestId('zone-pilat').click()
+  await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
+    timeout: 15_000,
+  })
+  await page.getByTestId('gpx-input').setInputFiles({
+    name: 'sortie.gpx',
+    mimeType: 'application/gpx+xml',
+    buffer: Buffer.from(buildGpx(15), 'utf-8'),
+  })
+  await expect(page.getByTestId('global-pct')).toHaveText('54,5 %')
+
+  // Le pourcentage dit combien ; celui-ci dit si c'était d'affilée.
+  const enchainement = page.getByTestId('history-run')
+  await expect(enchainement).toContainText('km')
+  await expect(enchainement).toContainText(/tronçons? qui se suiv/)
+})
