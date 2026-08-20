@@ -41,7 +41,7 @@
 
 .groupTitle {
   margin: 4px 0 -4px;
-  font-size: 0.8rem;
+  font-size: var(--texte-appui);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--gris-vert);
@@ -63,7 +63,7 @@
 }
 
 .featuredHint {
-  font-size: 0.8rem;
+  font-size: var(--texte-appui);
   opacity: 0.85;
 }
 
@@ -73,7 +73,7 @@
 }
 
 .refLabel {
-  font-size: 0.85rem;
+  font-size: var(--texte-secondaire);
   color: var(--gris-vert);
 }
 
@@ -141,7 +141,7 @@
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
-  font-size: 0.85rem;
+  font-size: var(--texte-secondaire);
   color: var(--gris-vert);
 }
 

@@ -27,7 +27,7 @@
 
 .hint {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: var(--texte-secondaire);
   color: var(--gris-vert);
 }
 
@@ -42,7 +42,7 @@
   padding: 8px 10px;
   border-left: 4px solid var(--erreur-bord);
   background: var(--erreur-fond);
-  font-size: 0.85rem;
+  font-size: var(--texte-secondaire);
 }
 
 .actions {
@@ -52,7 +52,7 @@
 }
 
 .nameLabel {
-  font-size: 0.85rem;
+  font-size: var(--texte-secondaire);
   color: var(--gris-vert);
 }
 
@@ -72,7 +72,7 @@
 
 .note {
   margin: 0;
-  font-size: 0.78rem;
+  font-size: var(--texte-appui);
   color: var(--gris-vert);
 }
 

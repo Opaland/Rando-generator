@@ -6,7 +6,7 @@
   padding: 0 4px;
   min-height: 44px;
   min-width: 44px;
-  font-size: 0.85rem;
+  font-size: var(--texte-secondaire);
   flex: none;
 }
 
@@ -22,7 +22,7 @@
   border-radius: 6px;
   padding: 0 12px;
   min-height: 44px;
-  font-size: 0.85rem;
+  font-size: var(--texte-secondaire);
   font-weight: 700;
 }
 

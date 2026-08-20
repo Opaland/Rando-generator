@@ -12,7 +12,7 @@
 
 .hint {
   margin: 0;
-  font-size: 0.82rem;
+  font-size: var(--texte-secondaire);
   color: var(--gris-vert);
 }
 
@@ -27,7 +27,7 @@
   padding: 6px 10px;
   border-left: 4px solid var(--jaune-pr);
   background: #fdf6e3;
-  font-size: 0.85rem;
+  font-size: var(--texte-secondaire);
 }
 
 .success {
@@ -35,7 +35,7 @@
   padding: 6px 10px;
   border-left: 4px solid var(--vert-noir);
   background: var(--gris-vert-clair);
-  font-size: 0.85rem;
+  font-size: var(--texte-secondaire);
 }
 
 .list {
@@ -98,6 +98,6 @@
 }
 
 .km {
-  font-size: 0.78rem;
+  font-size: var(--texte-appui);
   color: var(--gris-vert);
 }

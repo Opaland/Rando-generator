@@ -22,7 +22,7 @@
 }
 
 .badge {
-  font-size: 0.72rem;
+  font-size: var(--texte-etiquette);
   font-weight: 700;
   padding: 3px 7px;
   border-radius: 3px;
@@ -66,7 +66,7 @@
 
 .sub {
   margin: 2px 0 0;
-  font-size: 0.85rem;
+  font-size: var(--texte-secondaire);
   color: var(--gris-vert);
 }
 
@@ -79,7 +79,7 @@
   min-height: 44px;
   background: #fff;
   color: var(--vert-noir);
-  font-size: 0.85rem;
+  font-size: var(--texte-secondaire);
   font-weight: 600;
 }
 
@@ -104,7 +104,7 @@
 
 .km {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: var(--texte-secondaire);
   color: var(--gris-vert);
 }
 
@@ -116,7 +116,7 @@
 }
 
 .sectionTitle {
-  font-size: 0.85rem;
+  font-size: var(--texte-secondaire);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--gris-vert);
@@ -125,19 +125,19 @@
 
 .hint {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: var(--texte-secondaire);
   color: var(--gris-vert);
 }
 
 .elevationStats {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: var(--texte-secondaire);
   color: var(--gris-vert);
 }
 
 .localMeta {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: var(--texte-secondaire);
   color: var(--gris-vert);
 }
 
@@ -148,13 +148,13 @@
 
 .localLink {
   justify-self: start;
-  font-size: 0.85rem;
+  font-size: var(--texte-secondaire);
   color: var(--rouge-balisage);
 }
 
 .localSource {
   margin: 0;
-  font-size: 0.75rem;
+  font-size: var(--texte-appui);
   color: var(--gris-vert);
 }
 
@@ -190,7 +190,7 @@
 
 .poiFacts {
   margin: 0 0 0 10px;
-  font-size: 0.78rem;
+  font-size: var(--texte-appui);
   color: var(--gris-vert);
 }
 
@@ -203,12 +203,12 @@
   padding: 8px 10px;
   border-left: 4px solid var(--jaune-pr);
   background: #fdf6e3;
-  font-size: 0.78rem;
+  font-size: var(--texte-appui);
 }
 
 .poiKind {
   flex: none;
-  font-size: 0.75rem;
+  font-size: var(--texte-appui);
   color: var(--gris-vert);
 }
 
@@ -252,7 +252,7 @@
   background: #fff;
   text-align: left;
   cursor: pointer;
-  font-size: 0.82rem;
+  font-size: var(--texte-secondaire);
 }
 
 .stage:hover {
@@ -280,7 +280,7 @@
   padding: 0;
   display: grid;
   gap: 4px;
-  font-size: 0.8rem;
+  font-size: var(--texte-appui);
   color: var(--gris-vert);
   border-left: 3px solid var(--jaune-pr);
   padding-left: 8px;

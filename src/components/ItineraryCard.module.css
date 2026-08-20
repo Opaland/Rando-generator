@@ -46,7 +46,7 @@
 }
 
 .badge {
-  font-size: 0.72rem;
+  font-size: var(--texte-etiquette);
   font-weight: 700;
   padding: 2px 6px;
   border-radius: 3px;
@@ -77,7 +77,7 @@
 
 .sub {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: var(--texte-secondaire);
   color: var(--gris-vert);
 }
 
@@ -91,7 +91,7 @@
 
 .detail {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: var(--texte-secondaire);
   color: var(--gris-vert);
 }
 
@@ -102,14 +102,14 @@
   padding: 0;
   min-height: 44px;
   color: var(--rouge-balisage);
-  font-size: 0.85rem;
+  font-size: var(--texte-secondaire);
   font-weight: 600;
   text-decoration: underline;
 }
 
 .milestone {
   margin: 4px 0 0;
-  font-size: 0.8rem;
+  font-size: var(--texte-appui);
   color: var(--gris-vert);
   font-variant-numeric: tabular-nums;
   min-height: 1.1em;

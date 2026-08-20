@@ -166,3 +166,57 @@ test('la légende et l’attribution ne se recouvrent pas sur téléphone', asyn
   })
   expect(chevauchements).toEqual([])
 })
+
+test('rien ne descend sous 13 px sur un écran de téléphone', async ({
+  page,
+}) => {
+  await mockExternalNetwork(page)
+  await mockTilesOk(page)
+  await page.goto('/')
+
+  await page.getByTestId('zone-pilat').click()
+  await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
+    timeout: 15_000,
+  })
+  await page.getByTestId('gpx-input').setInputFiles({
+    name: 'sortie.gpx',
+    mimeType: 'application/gpx+xml',
+    buffer: Buffer.from(buildGpx(15), 'utf-8'),
+  })
+  await expect(page.getByTestId('global-pct')).toHaveText('54,5 %')
+
+  const textes = await page.evaluate(() => {
+    const releve: { px: number; texte: string; badge: boolean }[] = []
+    for (const el of document.querySelectorAll('body *')) {
+      const propre = el.textContent.trim()
+      if (!propre) continue
+      // Seuls les éléments qui portent eux-mêmes du texte : sinon on mesure
+      // la taille héritée d'un conteneur, pas celle qu'on lit.
+      const porteur = [...el.childNodes].some(
+        (n) => n.nodeType === Node.TEXT_NODE && n.textContent?.trim(),
+      )
+      if (!porteur) continue
+      const boite = el.getBoundingClientRect()
+      if (boite.width === 0 || boite.height === 0) continue
+      releve.push({
+        px: Math.round(parseFloat(getComputedStyle(el).fontSize) * 10) / 10,
+        texte: propre.slice(0, 40),
+        badge: /_badge_/.test(el.className),
+      })
+    }
+    return releve
+  })
+
+  // Deux exceptions assumées, et pas une de plus :
+  //  — les badges de réseau (GR, GRP, PR, Boucle) : deux ou trois capitales
+  //    grasses sur fond plein, contraintes en largeur dans les listes ;
+  //  — l'attribution MapLibre, phrase dense qu'on consulte une fois et qui
+  //    occuperait le quart de la carte à 14 px.
+  const attribution = (t: string) => /MapLibre|IGN|OpenStreetMap|Métropole/.test(t)
+  expect(
+    textes.filter((t) => t.px < 13 && !attribution(t.texte)),
+  ).toEqual([])
+  expect(
+    textes.filter((t) => t.px < 14 && !t.badge && !attribution(t.texte)),
+  ).toEqual([])
+})
