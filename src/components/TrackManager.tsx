@@ -79,7 +79,7 @@ export function TrackManager() {
         onDrop={onDrop}
       >
         <p className={styles.dropText}>
-          Glissez vos fichiers GPX ou FIT ici, ou
+          Glissez vos fichiers GPX, FIT ou TCX ici, ou
           <button
             type="button"
             className="btn-link"
@@ -90,12 +90,14 @@ export function TrackManager() {
           </button>
         </p>
         <p className={styles.dropHint}>
-          Lecture 100 % locale : vos traces ne sont envoyées nulle part.
+          Lecture 100 % locale : vos traces ne sont envoyées nulle part. Vous
+          pouvez aussi déposer l’archive d’export de Strava ou Garmin, telle
+          quelle : elle est ouverte ici, sur votre appareil.
         </p>
         <input
           ref={inputRef}
           type="file"
-          accept=".gpx,.fit,.tcx,application/gpx+xml,application/vnd.ant.fit"
+          accept=".gpx,.fit,.tcx,.zip,application/gpx+xml,application/vnd.ant.fit,application/zip"
           multiple
           hidden
           data-testid="gpx-input"

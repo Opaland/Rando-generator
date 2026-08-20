@@ -33,6 +33,13 @@ import { outingHighlights, type OutingHighlight } from '../core/outing.ts'
 import { FitError, looksLikeFit, parseFit } from '../core/fit.ts'
 import { TcxError, looksLikeTcx, parseTcx } from '../core/tcx.ts'
 import {
+  ZipError,
+  entreesDeTrace,
+  listZipEntries,
+  looksLikeZip,
+  readZipEntry,
+} from '../core/zip.ts'
+import {
   crossedMilestones,
   DEFAULT_COMPLETION_PCT,
   franchissementTientEncore,
@@ -234,6 +241,77 @@ async function parseTraceFile(file: File): Promise<ParsedGpx> {
   const texte = new TextDecoder().decode(buffer)
   if (looksLikeTcx(texte)) return parseTcx(texte, new DOMParser())
   return parseGpx(texte, new DOMParser())
+}
+
+/**
+ * Nom de fichier lisible pour une entrée d'archive : sans son dossier, et
+ * sans le `.gz` d'un `.gpx.gz` puisque le contenu, lui, est décompressé.
+ */
+function nomDEntree(chemin: string): string {
+  const feuille = chemin.slice(chemin.lastIndexOf('/') + 1)
+  return feuille.toLowerCase().endsWith('.gz') ? feuille.slice(0, -3) : feuille
+}
+
+/**
+ * Remplace chaque archive déposée par les traces qu'elle contient.
+ *
+ * C'est ce qui tient lieu de connecteur Strava ou Garmin : l'utilisateur
+ * exporte ses données chez eux et dépose l'archive ici (issue #89). Ce qui
+ * n'est pas une trace — CSV de profil, photos, métadonnées macOS — est
+ * ignoré sans être compté comme une erreur : ce sont des fichiers qui ne
+ * nous concernent pas, pas des fichiers ratés.
+ */
+async function developperArchives(
+  fichiers: File[],
+  avancement: (nom: string, faits: number, total: number) => void,
+): Promise<{ fichiers: File[]; erreurs: string[] }> {
+  const sortie: File[] = []
+  const erreurs: string[] = []
+  for (const fichier of fichiers) {
+    let buffer: ArrayBuffer
+    try {
+      buffer = await fichier.arrayBuffer()
+    } catch {
+      erreurs.push(`${fichier.name} : lecture impossible.`)
+      continue
+    }
+    if (!looksLikeZip(buffer)) {
+      sortie.push(fichier)
+      continue
+    }
+    try {
+      const traces = entreesDeTrace(listZipEntries(buffer))
+      if (traces.length === 0) {
+        erreurs.push(
+          `${fichier.name} : aucune trace GPX, FIT ou TCX dans cette archive.`,
+        )
+        continue
+      }
+      for (const [index, entree] of traces.entries()) {
+        avancement(nomDEntree(entree.name), index, traces.length)
+        await pause()
+        try {
+          const contenu = await readZipEntry(buffer, entree)
+          sortie.push(
+            new File([contenu as BlobPart], nomDEntree(entree.name)),
+          )
+        } catch (error) {
+          erreurs.push(
+            error instanceof ZipError
+              ? `${nomDEntree(entree.name)} : ${error.message}`
+              : `${nomDEntree(entree.name)} : extraction impossible.`,
+          )
+        }
+      }
+    } catch (error) {
+      erreurs.push(
+        error instanceof ZipError
+          ? `${fichier.name} : ${error.message}`
+          : `${fichier.name} : archive illisible.`,
+      )
+    }
+  }
+  return { fichiers: sortie, erreurs }
 }
 
 /** Identifiant du suivi de position en cours (API navigateur). */
@@ -681,7 +759,14 @@ export const useAppStore = create<AppState>()((set, get) => {
     async importGpxFiles(files) {
       const errors: string[] = []
       const imported: Track[] = []
-      const liste = [...files]
+      const developpement = await developperArchives(
+        [...files],
+        (filename, done, total) => {
+          set({ importProgress: { done, total, filename } })
+        },
+      )
+      errors.push(...developpement.erreurs)
+      const liste = developpement.fichiers
       const knownFingerprints = new Map(
         get().tracks.map((t) => [trackFingerprint(t.points), t.filename]),
       )
