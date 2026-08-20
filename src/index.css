@@ -83,6 +83,13 @@ a:focus-visible,
 [tabindex]:focus-visible {
   outline: 3px solid var(--rouge-balisage);
   outline-offset: 2px;
+  /* Le liseré de focus reprend le rouge des tracés parcourus : posé sur la
+     carte, il pouvait se confondre avec eux. Un halo clair comble le décalage
+     puis un cerne sombre le détache — la séquence clair / rouge / sombre reste
+     visible sur un fond de carte comme sur un panneau blanc. */
+  box-shadow:
+    0 0 0 2px var(--blanc-papier),
+    0 0 0 8px rgba(30, 43, 35, 0.4);
 }
 
 @media (prefers-reduced-motion: reduce) {
