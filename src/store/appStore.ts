@@ -196,6 +196,11 @@ let pctsPrecedents: Map<number, number> | null = null
 let detailSequence = 0
 let zoneLoadSequence = 0
 /**
+ * Ouverture d'IndexedDB en cours, s'il y en a une. Sert à faire patienter les
+ * écritures lancées pendant le démarrage plutôt qu'à les perdre (baseOuverte).
+ */
+let ouvertureBase: Promise<SentiersDb> | null = null
+/**
  * Rend la main au navigateur le temps d'un rendu. Sans cela, l'avancement
  * d'un import est bien mis à jour dans l'état… et jamais peint, le fil
  * principal enchaînant directement sur le parsing suivant.
@@ -356,9 +361,14 @@ export const useAppStore = create<AppState>()((set, get) => {
       zoneLoadBytes: 0,
     })
     try {
-      const { db } = get()
+      // Relu à chaque usage, jamais figé : au démarrage, la base s'ouvre
+      // pendant que l'utilisateur clique une zone. Un `db` capturé à l'entrée
+      // valait encore null au retour d'Overpass, deux minutes plus tard — la
+      // zone n'était donc jamais mise en cache, et la visite suivante
+      // repartait pour une interrogation complète.
       let cached
       try {
+        const db = get().db
         cached = db ? await db.getZone(zoneKey) : undefined
       } catch {
         cached = undefined
@@ -391,6 +401,7 @@ export const useAppStore = create<AppState>()((set, get) => {
         if (!isCurrent()) return
         set({ zoneLoadStage: 'processing' })
         const itineraries = parseOverpassResponse(data, now)
+        const db = await baseOuverte()
         if (db) {
           try {
             await db.saveZone({ zoneKey, label: zoneLabel, itineraries, fetchedAt: now })
@@ -400,6 +411,11 @@ export const useAppStore = create<AppState>()((set, get) => {
           }
         }
         if (!isCurrent()) return
+        // Enregistrée avant d'être affichée : si la zone est à l'écran, elle
+        // sera restaurée au prochain démarrage. Dans l'autre ordre, recharger
+        // la page dans la seconde qui suit interrompait l'écriture, et la
+        // zone repartait pour une interrogation complète.
+        await persistLastZone(zoneKey)
         setItineraries(zoneKey, zoneLabel, itineraries, now)
         if (itineraries.length === 0) {
           set({
@@ -407,7 +423,6 @@ export const useAppStore = create<AppState>()((set, get) => {
               'Aucun itinéraire balisé trouvé dans cette zone sur OpenStreetMap. Réessayez avec « Actualiser les tracés », ou choisissez une autre zone.',
           })
         }
-        await persistLastZone(zoneKey)
         await recompute()
       } catch (error) {
         if (!isCurrent()) return
@@ -437,8 +452,33 @@ export const useAppStore = create<AppState>()((set, get) => {
     }
   }
 
+  /**
+   * La base, une fois ouverte — en patientant si son ouverture est en cours.
+   *
+   * Au démarrage, `openSentiersDb()` prend quelques centaines de
+   * millisecondes pendant lesquelles l'utilisateur clique déjà. Les écritures
+   * lancées dans cette fenêtre trouvaient `db` à null et étaient perdues
+   * sans erreur : la zone n'était pas mise en cache, et la visite suivante
+   * repartait pour une interrogation complète d'Overpass.
+   *
+   * Rend `null` sans attendre si aucune ouverture n'est en cours — un store
+   * dont `init()` n'a jamais été appelé ne doit pas se figer.
+   */
+  async function baseOuverte(): Promise<SentiersDb | null> {
+    const dejaLa = get().db
+    if (dejaLa) return dejaLa
+    if (ouvertureBase) {
+      try {
+        await ouvertureBase
+      } catch {
+        // L'échec est déjà signalé par init() via dbWarning.
+      }
+    }
+    return get().db
+  }
+
   async function persistLastZone(zoneKey: string): Promise<void> {
-    const { db } = get()
+    const db = await baseOuverte()
     if (db) await db.setSetting('lastZoneKey', zoneKey)
   }
 
@@ -504,7 +544,8 @@ export const useAppStore = create<AppState>()((set, get) => {
     async init() {
       let db: SentiersDb | null = null
       try {
-        db = await openSentiersDb()
+        ouvertureBase = openSentiersDb()
+        db = await ouvertureBase
         set({ db })
       } catch (error) {
         set({
@@ -655,10 +696,10 @@ export const useAppStore = create<AppState>()((set, get) => {
             importedAt: new Date().toISOString(),
             elevationGain: elevationGainMeters(parsed.elevations),
           }
-          // Relu à chaque fichier plutôt que capturé à l'entrée : pendant le
-          // démarrage, la base s'ouvre en parallèle et un `db` figé à null
-          // aurait laissé la trace en mémoire seulement.
-          const db = get().db
+          // La base est attendue si elle s'ouvre encore : pendant le
+          // démarrage, un `db` figé à null aurait laissé la trace en mémoire
+          // seulement.
+          const db = await baseOuverte()
           if (db) await db.saveTrack(track)
           imported.push(track)
         } catch (error) {
@@ -714,7 +755,7 @@ export const useAppStore = create<AppState>()((set, get) => {
             totalMeters: polylineLengthMeters(parsed.points),
             fetchedAt: new Date().toISOString(),
           }
-          const db = get().db
+          const db = await baseOuverte()
           if (db) await db.saveCustomItinerary(itinerary)
           imported.push(itinerary)
         } catch (error) {

@@ -65,6 +65,19 @@ afterEach(() => {
 })
 
 describe('init', () => {
+  it('met en cache une zone chargée pendant le démarrage', async () => {
+    // Même course que pour les traces : la base s'ouvre pendant que
+    // l'utilisateur clique. Sans cache, la visite suivante repart pour deux
+    // minutes d'interrogation d'Overpass au lieu de restaurer sa zone.
+    const demarrage = useAppStore.getState().init()
+    await useAppStore.getState().loadZone('pilat')
+    await demarrage
+
+    const db = useAppStore.getState().db
+    expect(await db?.getZone('pilat')).toBeTruthy()
+    expect(await db?.getSetting('lastZoneKey')).toBe('pilat')
+  })
+
   it('ne perd pas une trace importée pendant le démarrage', async () => {
     // L'utilisateur dépose un GPX avant que la lecture d'IndexedDB soit
     // terminée — quelques centaines de millisecondes, largement atteignables

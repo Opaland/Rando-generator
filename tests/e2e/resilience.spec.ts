@@ -111,3 +111,33 @@ test('recherche par ref : chargement puis actualisation possibles', async ({
   })
   expect(overpass.count()).toBe(2)
 })
+
+/*
+ * Deux garanties en une : la zone est mise en cache même choisie pendant
+ * l'ouverture de la base, et elle l'est *avant* d'être affichée — recharger
+ * la page dans la seconde qui suit ne doit pas faire repartir deux minutes
+ * d'interrogation d'Overpass.
+ */
+test('une zone choisie dès l’ouverture est bien mise en cache', async ({
+  page,
+}) => {
+  await mockTiles(page)
+  const overpass = await mockOverpass(page)
+  await page.goto('/')
+
+  // Sans rien attendre : la base s'ouvre encore. L'écriture du cache partait
+  // alors dans le vide, et la visite suivante repayait deux minutes
+  // d'interrogation d'Overpass pour une zone déjà téléchargée.
+  await page.getByTestId('zone-pilat').click()
+  await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
+    timeout: 15_000,
+  })
+  expect(overpass.count()).toBe(1)
+
+  await page.reload()
+  await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
+    timeout: 15_000,
+  })
+  // Restaurée depuis le cache : aucune nouvelle interrogation.
+  expect(overpass.count()).toBe(1)
+})
