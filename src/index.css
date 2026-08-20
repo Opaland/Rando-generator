@@ -38,6 +38,7 @@
   --z-overlay-detail: 6; /* ItineraryDetail : panneau détail (altimétrie, POI, 3D) */
   --z-overlay-draw: 7; /* RouteDrawer : panneau de tracé d'itinéraire */
   --z-overlay-locate: 8; /* LocateButton : « où suis-je », toujours atteignable */
+  --z-feuille: 9; /* Panneau de contrôle en feuille glissante (téléphone) */
 }
 
 * {

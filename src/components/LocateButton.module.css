@@ -83,3 +83,15 @@
     justify-content: center;
   }
 }
+
+/* Sur téléphone, le panneau de contrôle est une feuille glissante ancrée en
+   bas : le bouton « où suis-je » y disparaissait dessous quelle que soit la
+   position de la feuille. Il passe donc en haut à droite, sous les commandes
+   de zoom, où il reste atteignable dans les trois positions. */
+@media (max-width: 800px) {
+  .wrapper {
+    top: 224px;
+    right: 8px;
+    bottom: auto;
+  }
+}
