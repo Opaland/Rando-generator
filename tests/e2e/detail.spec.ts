@@ -5,6 +5,7 @@ import {
   buildGpx,
   openDetailFromMap,
   hasMap,
+  waitForMapReady,
   type MapLike,
 } from './helpers.ts'
 
@@ -102,6 +103,10 @@ test('sélectionner un itinéraire depuis la liste zoome dessus sans ouvrir le d
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+
+  // La caméra ne bouge qu'une fois la carte prête : sans cette attente, le
+  // test mesure l'absence de mouvement d'une carte qui n'écoute pas encore.
+  await waitForMapReady(page)
 
   const zoomBefore = await page.evaluate(
     () =>

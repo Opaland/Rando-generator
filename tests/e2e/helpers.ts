@@ -23,12 +23,34 @@ export async function hasMap(page: Page): Promise<boolean> {
     )
 }
 
+/**
+ * Attend que la carte soit prête à bouger.
+ *
+ * `__sentiersMap` existe dès la construction, bien avant que MapLibre émette
+ * `load` — et c'est cet événement qui autorise les cadrages (voir `ready`
+ * dans MapView). Sous charge, avec toutes les tuiles avortées par les
+ * doublures, l'écart entre les deux se compte en secondes : un test qui
+ * attend un mouvement de caméra sans attendre cela mesure une carte qui
+ * n'écoute encore personne (issue #111).
+ */
+export async function waitForMapReady(page: Page): Promise<void> {
+  await page.waitForFunction(
+    () =>
+      (window as unknown as { __sentiersMap?: { loaded: () => boolean } })
+        .__sentiersMap?.loaded() === true,
+    undefined,
+    { timeout: 30_000 },
+  )
+}
+
 /** Clique un point géographique sur la carte (coordonnées carte → écran). */
 export async function clickOnMap(
   page: Page,
   lon: number,
   lat: number,
 ): Promise<void> {
+  // Les couches ne répondent aux clics qu'une fois la carte chargée.
+  await waitForMapReady(page)
   // La caméra peut encore finir un fitBounds animé : attendre l'arrêt avant
   // de projeter, sinon le point calculé dérive de la ligne (tolérance de
   // clic quasi nulle sur une géométrie « line » de 2 px).
