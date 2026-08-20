@@ -85,9 +85,11 @@
 }
 
 .item {
-  display: flex;
+  /* Deux colonnes (infos, suppression) et une ligne pleine largeur pour le
+     bilan de sortie déplié. */
+  display: grid;
+  grid-template-columns: 1fr auto;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
   padding: 8px 10px;
   background: #fff;
@@ -96,6 +98,11 @@
 }
 
 .itemInfo {
+  border: none;
+  background: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
   display: grid;
   min-width: 0;
 }
@@ -110,4 +117,35 @@
 .itemMeta {
   font-size: 0.8rem;
   color: var(--gris-vert);
+}
+
+.outing {
+  grid-column: 1 / -1;
+  margin-top: 6px;
+  padding: 6px 8px;
+  border-left: 3px solid var(--rouge-balisage);
+  background: var(--gris-vert-clair);
+  border-radius: 0 4px 4px 0;
+}
+
+.outingTitle {
+  margin: 0 0 4px;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.outingHint {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--gris-vert);
+}
+
+.outingList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
 }
