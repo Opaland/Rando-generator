@@ -211,7 +211,17 @@ export function MapView() {
       ref={containerRef}
       className={styles.map}
       data-testid="map"
-      role="application"
+      /*
+        Pas role="application" : ce rôle demande au lecteur d'écran de rendre
+        toutes les touches à la page, et n'a de sens que si la page les gère.
+        Ici les tracés ne s'ouvrent qu'au clic — l'utilisateur de lecteur
+        d'écran y perdait ses raccourcis de navigation en échange de rien.
+
+        Tout ce que la carte permet est atteignable depuis la liste latérale :
+        sélectionner un itinéraire, le zoomer, ouvrir sa fiche et ses points
+        d'intérêt. La carte s'annonce donc pour ce qu'elle est, une région.
+      */
+      role="region"
       aria-label="Carte des itinéraires de randonnée"
     >
       {mapError && (

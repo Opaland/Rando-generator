@@ -101,3 +101,72 @@ test('aucune violation a11y dans les panneaux ajoutés (filtres, fiche, sortie)'
     ),
   ).toEqual([])
 })
+
+/**
+ * Le rôle annoncé par la carte doit correspondre à ce qu'elle sait faire.
+ * `role="application"` demande au lecteur d'écran de rendre toutes les
+ * touches à la page ; il n'a de sens que si la page les gère. Ici les tracés
+ * ne s'ouvrent qu'au clic — et la liste latérale mène partout où mène la
+ * carte. C'est cette équivalence que le test vérifie : sans elle, changer le
+ * rôle retirerait quelque chose.
+ */
+async function tabJusqua(
+  page: import('@playwright/test').Page,
+  repere: { testId?: string; texte?: string; dans?: string },
+  maximum = 80,
+): Promise<number> {
+  for (let coups = 1; coups <= maximum; coups += 1) {
+    await page.keyboard.press('Tab')
+    const atteint = await page.evaluate((cible) => {
+      const actif = document.activeElement
+      if (!actif) return false
+      if (cible.dans !== undefined && !actif.closest(cible.dans)) return false
+      if (cible.testId !== undefined) {
+        return actif.getAttribute('data-testid') === cible.testId
+      }
+      return actif.textContent.includes(cible.texte ?? '')
+    }, repere)
+    if (atteint) return coups
+  }
+  throw new Error(
+    `« ${repere.testId ?? repere.texte ?? ''} » n’est pas atteignable au clavier`,
+  )
+}
+
+test('la carte s’annonce comme une région, et la liste mène partout où elle mène', async ({
+  page,
+}) => {
+  await mockExternalNetwork(page)
+  await page.goto('/')
+
+  const carte = page.getByTestId('map')
+  await expect(carte).toHaveAttribute('role', 'region')
+  await expect(carte).toHaveAttribute('aria-label', /carte des itinéraires/i)
+
+  await page.getByTestId('zone-pilat').click()
+  await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
+    timeout: 15_000,
+  })
+
+  // Au clavier seul, sans jamais toucher la carte : sélectionner un
+  // itinéraire, puis ouvrir sa fiche — les deux gestes que le clic sur un
+  // tracé permet.
+  await page.evaluate(() => {
+    document.body.focus()
+  })
+  // Restreint à la liste : « GR 7 » figure aussi parmi les grands
+  // itinéraires du sélecteur de zone, et le premier essai chargeait le GR 70.
+  await tabJusqua(page, {
+    texte: 'GR 7',
+    dans: '[data-testid="itinerary-list"]',
+  })
+  await page.keyboard.press('Enter')
+  await expect(page.getByTestId('itinerary-card')).toBeVisible()
+
+  await tabJusqua(page, { testId: 'itinerary-card-detail-link' })
+  await page.keyboard.press('Enter')
+  const fiche = page.getByTestId('itinerary-detail')
+  await expect(fiche).toBeVisible()
+  // Les points d'intérêt aussi : sur la carte ils ne s'ouvrent qu'au clic.
+  await expect(fiche).toContainText(/point|eau|abri|refuge|aucun/i)
+})
