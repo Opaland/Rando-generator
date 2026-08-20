@@ -95,7 +95,7 @@ export function TrackManager() {
         <input
           ref={inputRef}
           type="file"
-          accept=".gpx,.fit,application/gpx+xml,application/vnd.ant.fit"
+          accept=".gpx,.fit,.tcx,application/gpx+xml,application/vnd.ant.fit"
           multiple
           hidden
           data-testid="gpx-input"

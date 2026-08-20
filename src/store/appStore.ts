@@ -31,6 +31,7 @@ import {
 import { fetchPois } from '../core/poi.ts'
 import { outingHighlights, type OutingHighlight } from '../core/outing.ts'
 import { FitError, looksLikeFit, parseFit } from '../core/fit.ts'
+import { TcxError, looksLikeTcx, parseTcx } from '../core/tcx.ts'
 import {
   crossedMilestones,
   DEFAULT_COMPLETION_PCT,
@@ -228,7 +229,11 @@ async function parseTraceFile(file: File): Promise<ParsedGpx> {
     const fit = parseFit(buffer)
     return { points: fit.points, elevations: fit.elevations, date: fit.date }
   }
-  return parseGpx(new TextDecoder().decode(buffer), new DOMParser())
+  // Le format est reconnu au contenu, pas à l'extension : un fichier renommé
+  // reste lisible, et un fichier mal nommé ne fait pas échouer l'import.
+  const texte = new TextDecoder().decode(buffer)
+  if (looksLikeTcx(texte)) return parseTcx(texte, new DOMParser())
+  return parseGpx(texte, new DOMParser())
 }
 
 /** Identifiant du suivi de position en cours (API navigateur). */
@@ -724,7 +729,9 @@ export const useAppStore = create<AppState>()((set, get) => {
           imported.push(track)
         } catch (error) {
           errors.push(
-            error instanceof GpxError || error instanceof FitError
+            error instanceof GpxError ||
+            error instanceof FitError ||
+            error instanceof TcxError
               ? `${file.name} : ${error.message}`
               : `${file.name} : lecture impossible.`,
           )
@@ -780,7 +787,9 @@ export const useAppStore = create<AppState>()((set, get) => {
           imported.push(itinerary)
         } catch (error) {
           errors.push(
-            error instanceof GpxError || error instanceof FitError
+            error instanceof GpxError ||
+            error instanceof FitError ||
+            error instanceof TcxError
               ? `${file.name} : ${error.message}`
               : `${file.name} : lecture impossible.`,
           )
