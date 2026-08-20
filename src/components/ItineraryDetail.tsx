@@ -4,6 +4,7 @@ import { POI_LABELS, POI_OVERNIGHT } from '../lib/poiDisplay.ts'
 import { NETWORK_BADGES } from '../lib/networkDisplay.ts'
 import { elevationStats } from '../core/elevation.ts'
 import { itineraryCoords } from '../core/mapdata.ts'
+import { DEFAULT_STAGE_METERS, buildStages } from '../core/stages.ts'
 import {
   buildGpxDocument,
   gpxAttributionFor,
@@ -35,6 +36,7 @@ export function ItineraryDetail() {
   const closeItineraryDetail = useAppStore((s) => s.closeItineraryDetail)
   const toggleView3D = useAppStore((s) => s.toggleView3D)
   const focusOn = useAppStore((s) => s.focusOn)
+  const focusOnBounds = useAppStore((s) => s.focusOnBounds)
 
   if (detailItineraryId === null) return null
   const itin =
@@ -51,6 +53,10 @@ export function ItineraryDetail() {
   const total = result?.totalMeters ?? itin.totalMeters
   const stats = elevationProfile ? elevationStats(elevationProfile.elevations) : null
   const hasSleepingSpot = pois.some((poi) => POI_OVERNIGHT.includes(poi.kind))
+  // Un long GR ne se lit pas en un seul pourcentage : on le découpe en
+  // étapes calculées (les découpages des topo-guides sont éditoriaux, donc
+  // hors de portée — cf. src/core/stages.ts).
+  const etapes = buildStages(itin, relevantMatching?.samples ?? [])
 
   return (
     <aside
@@ -158,6 +164,46 @@ export function ItineraryDetail() {
           <p className={styles.localSource}>
             Source : {itin.details.source} (Licence Ouverte 2.0)
           </p>
+        </section>
+      )}
+
+      {etapes.length > 0 && (
+        <section className={styles.section} aria-labelledby="stages-title">
+          <h4 id="stages-title" className={styles.sectionTitle}>
+            Étapes
+          </h4>
+          <p className={styles.hint}>
+            Découpage régulier calculé par l’application, en tranches d’environ{' '}
+            {Math.round(DEFAULT_STAGE_METERS / 1_000)} km — ce ne sont pas les
+            étapes d’un topo-guide.
+          </p>
+          <ol className={styles.stages} data-testid="detail-stages">
+            {etapes.map((etape) => (
+              <li key={etape.index}>
+                <button
+                  type="button"
+                  className={styles.stage}
+                  onClick={() => {
+                    focusOnBounds(etape.bounds)
+                  }}
+                >
+                  <span className={styles.stageName}>
+                    Étape {etape.index}
+                    <span className={styles.stageRange}>
+                      {' '}
+                      {formatKm(etape.startMeters)} → {formatKm(etape.endMeters)}
+                    </span>
+                  </span>
+                  <ProgressBalise
+                    pct={etape.pct}
+                    network={itin.network}
+                    label={`Progression étape ${etape.index}`}
+                  />
+                  <span className={styles.stagePct}>{formatPct(etape.pct)}</span>
+                </button>
+              </li>
+            ))}
+          </ol>
         </section>
       )}
 

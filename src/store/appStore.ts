@@ -102,6 +102,8 @@ export interface AppState {
   view3D: boolean
   /** Coordonnée à centrer sur la carte (POI cliqué) ; consommée une fois par MapView. */
   focusTarget: LonLat | null
+  /** Cadre à cadrer sur la carte (étape d'un long itinéraire) ; consommé une fois. */
+  focusBounds: [LonLat, LonLat] | null
 
   // Tracé d'itinéraire accroché aux sentiers affichés
   drawMode: boolean
@@ -137,6 +139,8 @@ export interface AppState {
   toggleView3D: () => void
   focusOn: (coords: LonLat) => void
   clearFocusTarget: () => void
+  focusOnBounds: (bounds: [LonLat, LonLat]) => void
+  clearFocusBounds: () => void
   toggleDrawMode: () => void
   addDrawPoint: (point: LonLat) => void
   undoDrawPoint: () => void
@@ -391,6 +395,7 @@ export const useAppStore = create<AppState>()((set, get) => {
     poisLoading: false,
     view3D: false,
     focusTarget: null,
+    focusBounds: null,
     drawMode: false,
     drawWaypointKeys: [],
     drawWaypoints: [],
@@ -732,6 +737,14 @@ export const useAppStore = create<AppState>()((set, get) => {
 
     clearFocusTarget() {
       set({ focusTarget: null })
+    },
+
+    focusOnBounds(bounds) {
+      set({ focusBounds: bounds })
+    },
+
+    clearFocusBounds() {
+      set({ focusBounds: null })
     },
 
     toggleDrawMode() {

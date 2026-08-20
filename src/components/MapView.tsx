@@ -249,6 +249,7 @@ export function MapView() {
   const pois = useAppStore((s) => s.pois)
   const view3D = useAppStore((s) => s.view3D)
   const focusTarget = useAppStore((s) => s.focusTarget)
+  const focusBounds = useAppStore((s) => s.focusBounds)
   const userPosition = useAppStore((s) => s.userPosition)
   const elevationHover = useAppStore((s) => s.elevationHover)
   const drawMode = useAppStore((s) => s.drawMode)
@@ -578,6 +579,15 @@ export function MapView() {
     })
     useAppStore.getState().clearFocusTarget()
   }, [focusTarget, ready])
+
+  // Cadre une étape d'un long itinéraire : un point centré ne dirait pas
+  // jusqu'où elle va.
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !ready || !focusBounds) return
+    map.fitBounds(focusBounds, { padding: 48, duration: 500, maxZoom: 14 })
+    useAppStore.getState().clearFocusBounds()
+  }, [focusBounds, ready])
 
   // Surlignage de l'itinéraire sélectionné.
   useEffect(() => {
