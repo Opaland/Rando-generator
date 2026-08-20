@@ -9,7 +9,7 @@
   background: rgba(250, 247, 242, 0.92);
   border: 1px solid var(--gris-vert-clair);
   border-radius: 8px;
-  font-size: 0.75rem;
+  font-size: var(--texte-appui);
   color: var(--vert-noir);
   box-shadow: 0 2px 8px rgba(30, 43, 35, 0.18);
 }

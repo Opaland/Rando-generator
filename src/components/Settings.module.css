@@ -30,6 +30,6 @@
 
 .hint {
   margin: 0;
-  font-size: 0.82rem;
+  font-size: var(--texte-secondaire);
   color: var(--gris-vert);
 }

@@ -20,6 +20,14 @@
     system-ui, sans-serif;
   --font-sans: system-ui, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
 
+  /* Trois paliers de texte secondaire. Ils existent pour qu'un seul endroit
+     décide de leur taille : l'application se lit dehors, en marchant, en
+     plein soleil, et pas seulement à vingt centimètres dans un salon
+     (docs/AUDIT_MOBILE.md, constat M8). */
+  --texte-etiquette: 0.72rem; /* badges de réseau : GR, GRP, PR, Boucle */
+  --texte-appui: 0.78rem; /* mentions discrètes, légende de carte */
+  --texte-secondaire: 0.85rem; /* second niveau de lecture courant */
+
   color-scheme: light;
 
   /* Paliers d'empilement des overlays de carte (du plus bas au plus haut).
@@ -231,6 +239,30 @@ details[open] > .acc-summary::after {
    doit être large ; à la souris, l'élargir ne ferait qu'étirer l'interface
    sans rien apporter. */
 @media (pointer: coarse) {
+  /* Sur un appareil tactile, l'écran est tenu à bout de bras, souvent au
+     soleil, parfois derrière des verres polarisés. Les paliers secondaires
+     remontent donc à 14 px — la taille minimale confortable en extérieur.
+     Les badges de réseau restent un cran en dessous : ce sont deux ou trois
+     capitales grasses sur fond plein, contraintes en largeur dans les
+     listes, et ils se lisent d'un coup d'œil plutôt qu'ils ne se lisent. */
+  :root {
+    --texte-etiquette: 0.8125rem; /* 13 px */
+    --texte-appui: 0.875rem; /* 14 px */
+    /* Les deux paliers se rejoignent au plancher : sur téléphone, mieux vaut
+       une hiérarchie plus plate que du texte qu'on ne lit pas. */
+    --texte-secondaire: 0.875rem; /* 14 px */
+  }
+
+  /* L'attribution de MapLibre descend à 11 px dans sa feuille de style.
+     Sélecteur allongé : elle est chargée après la nôtre. On la remonte à
+     12 px sans aller jusqu'à 14 : dépliée, elle occupe déjà le quart d'une
+     carte de téléphone, et c'est une phrase dense qu'on consulte une fois,
+     pas une information qu'on relit en marchant. */
+  .maplibregl-map .maplibregl-ctrl-attrib,
+  .maplibregl-map .maplibregl-ctrl-attrib-inner {
+    font-size: 12px;
+  }
+
   .acc-summary {
     min-height: 44px;
   }

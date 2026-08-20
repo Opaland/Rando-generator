@@ -79,7 +79,7 @@
 }
 
 .badge {
-  font-size: 0.72rem;
+  font-size: var(--texte-etiquette);
   font-weight: 700;
   padding: 2px 6px;
   border-radius: 3px;
@@ -116,7 +116,7 @@
 }
 
 .rowSub {
-  font-size: 0.8rem;
+  font-size: var(--texte-appui);
   color: var(--gris-vert);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -136,7 +136,7 @@
 }
 
 .rowKm {
-  font-size: 0.78rem;
+  font-size: var(--texte-appui);
   color: var(--gris-vert);
 }
 
@@ -149,7 +149,7 @@
 
 .discoverySummary {
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: var(--texte-secondaire);
   color: var(--gris-vert);
   letter-spacing: 0.02em;
 }
@@ -173,7 +173,7 @@
 }
 
 .hint {
-  font-size: 0.8rem;
+  font-size: var(--texte-appui);
   color: var(--gris-vert);
   margin: 8px 0 0;
 }
@@ -181,7 +181,7 @@
 .reset {
   margin-top: 8px;
   padding: 4px 8px;
-  font-size: 0.8rem;
+  font-size: var(--texte-appui);
   border: 1px solid var(--gris-vert);
   border-radius: 4px;
   background: #fff;
@@ -190,7 +190,7 @@
 }
 
 .rowFacts {
-  font-size: 0.78rem;
+  font-size: var(--texte-appui);
   color: var(--gris-vert);
   font-variant-numeric: tabular-nums;
 }
@@ -201,5 +201,5 @@
 
 .gap {
   color: var(--orange-grp);
-  font-size: 0.8rem;
+  font-size: var(--texte-appui);
 }

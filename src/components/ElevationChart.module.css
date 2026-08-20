@@ -41,7 +41,7 @@
 
 .readout {
   margin: 0;
-  font-size: 0.78rem;
+  font-size: var(--texte-appui);
   color: var(--gris-vert);
   font-variant-numeric: tabular-nums;
   min-height: 1.1em;

@@ -45,7 +45,7 @@
   padding: 4px 8px;
   border-radius: 6px;
   background: rgba(250, 247, 242, 0.92);
-  font-size: 0.75rem;
+  font-size: var(--texte-appui);
   font-variant-numeric: tabular-nums;
   color: var(--gris-vert);
 }
@@ -61,7 +61,7 @@
   border-left: 4px solid var(--erreur-bord);
   background: var(--erreur-fond);
   border-radius: 4px;
-  font-size: 0.8rem;
+  font-size: var(--texte-appui);
 }
 
 /* Sur mobile, la fiche détail occupe le bas de l'écran : on remonte le

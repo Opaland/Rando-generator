@@ -35,12 +35,14 @@
   margin: 0;
   display: flex;
   justify-content: space-between;
-  font-size: 0.72rem;
+  /* Les mois sous l'histogramme sont du texte qu'on lit, pas une étiquette
+     contrainte en largeur : ils suivent le plancher commun. */
+  font-size: var(--texte-appui);
   color: var(--gris-vert);
 }
 
 .hint {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: var(--texte-appui);
   color: var(--gris-vert);
 }

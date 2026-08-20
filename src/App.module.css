@@ -27,7 +27,7 @@
 
 .privacy {
   margin: 0;
-  font-size: 0.82rem;
+  font-size: var(--texte-secondaire);
   opacity: 0.85;
   flex: 1;
 }
@@ -42,7 +42,7 @@
   color: var(--blanc-papier);
   border-radius: 5px;
   padding: 4px 12px;
-  font-size: 0.85rem;
+  font-size: var(--texte-secondaire);
 }
 
 .aboutLink:hover {
@@ -50,7 +50,7 @@
 }
 
 .footer {
-  font-size: 0.75rem;
+  font-size: var(--texte-appui);
   color: var(--gris-vert);
   border-top: 1px solid var(--gris-vert-clair);
   padding-top: 10px;

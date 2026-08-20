@@ -40,7 +40,7 @@
 
 .privacy {
   margin: 0;
-  font-size: 0.82rem;
+  font-size: var(--texte-secondaire);
   color: var(--gris-vert);
   border-top: 1px solid var(--gris-vert-clair);
   padding-top: 8px;

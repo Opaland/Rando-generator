@@ -12,7 +12,7 @@
 
 .hint {
   margin: 0;
-  font-size: 0.78rem;
+  font-size: var(--texte-appui);
   color: var(--gris-vert);
 }
 
@@ -44,7 +44,7 @@
 }
 
 .badge {
-  font-size: 0.72rem;
+  font-size: var(--texte-etiquette);
   font-weight: 700;
   padding: 2px 6px;
   border-radius: 3px;
@@ -85,7 +85,7 @@
 }
 
 .facts {
-  font-size: 0.78rem;
+  font-size: var(--texte-appui);
   color: var(--gris-vert);
   font-variant-numeric: tabular-nums;
 }
