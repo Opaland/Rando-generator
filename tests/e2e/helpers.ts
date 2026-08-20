@@ -156,9 +156,7 @@ export function pilatGrOnly(): unknown {
   return { ...data, elements: data.elements.filter((e) => e.id === 1001) }
 }
 
-export async function mockExternalNetwork(
-  page: Page,
-): Promise<{ count: () => number }> {
+export async function mockExternalNetwork(page: Page): Promise<OverpassMock> {
   await mockTiles(page)
   return mockOverpass(page)
 }

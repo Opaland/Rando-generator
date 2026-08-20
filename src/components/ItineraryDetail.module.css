@@ -231,3 +231,45 @@
     border-left: 5px solid var(--rouge-balisage);
   }
 }
+
+.stages {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.stage {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 70px auto;
+  gap: 8px;
+  align-items: center;
+  padding: 5px 8px;
+  border: 1px solid var(--gris-vert-clair);
+  border-radius: 5px;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.82rem;
+}
+
+.stage:hover {
+  border-color: var(--rouge-balisage);
+}
+
+.stageName {
+  font-weight: 600;
+}
+
+.stageRange {
+  font-weight: 400;
+  color: var(--gris-vert);
+  font-variant-numeric: tabular-nums;
+}
+
+.stagePct {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
