@@ -162,3 +162,15 @@
   cursor: pointer;
   color: var(--gris-vert);
 }
+
+/*
+ * L'écart entre « Mes sorties » et le pourcentage global. Ce n'est pas une
+ * erreur à signaler en rouge : c'est une précision sur ce que le chiffre
+ * mesure, donc le ton d'une note de bas de page.
+ */
+.horsZone {
+  margin: 0;
+  font-size: 0.82rem;
+  opacity: 0.85;
+  font-style: italic;
+}
