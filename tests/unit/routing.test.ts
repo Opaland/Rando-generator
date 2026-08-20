@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import {
   buildRoutingGraph,
+  clefsAllerRetour,
+  clefsBouclees,
   findPath,
   nodeKey,
   routeThrough,
@@ -237,5 +239,38 @@ describe('performance', () => {
     const elapsed = performance.now() - started
     expect(path).not.toBeNull()
     expect(elapsed).toBeLessThan(2000)
+  })
+})
+
+describe('clefsAllerRetour', () => {
+  it('revient par où l’on est venu, sans répéter le point de demi-tour', () => {
+    expect(clefsAllerRetour(['a', 'b', 'c'])).toEqual(['a', 'b', 'c', 'b', 'a'])
+  })
+
+  it('laisse un tracé trop court tel quel', () => {
+    // Un seul point : il n'y a rien dont on puisse revenir.
+    expect(clefsAllerRetour(['a'])).toEqual(['a'])
+    expect(clefsAllerRetour([])).toEqual([])
+  })
+
+  it('sur deux points, fait l’aller-retour le plus simple', () => {
+    expect(clefsAllerRetour(['a', 'b'])).toEqual(['a', 'b', 'a'])
+  })
+})
+
+describe('clefsBouclees', () => {
+  it('ramène au point de départ', () => {
+    expect(clefsBouclees(['a', 'b', 'c'])).toEqual(['a', 'b', 'c', 'a'])
+  })
+
+  it('ne refait pas un tour à une boucle déjà fermée', () => {
+    expect(clefsBouclees(['a', 'b', 'c', 'a'])).toEqual(['a', 'b', 'c', 'a'])
+  })
+
+  it('refuse de boucler ce qui n’a pas de forme', () => {
+    // Deux points bouclés, c'est un aller-retour : autant le dire par le
+    // bouton qui porte ce nom.
+    expect(clefsBouclees(['a', 'b'])).toEqual(['a', 'b'])
+    expect(clefsBouclees([])).toEqual([])
   })
 })

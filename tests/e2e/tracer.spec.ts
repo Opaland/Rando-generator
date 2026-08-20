@@ -1,5 +1,10 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork, clickOnMap, hasMap } from './helpers.ts'
+import {
+  mockExternalNetwork,
+  mockElevation,
+  clickOnMap,
+  hasMap,
+} from './helpers.ts'
 
 /**
  * Mode « tracer un itinéraire » : les clics posent des étapes accrochées au
@@ -81,4 +86,50 @@ test('messages clairs quand le point est hors réseau ou non relié', async ({
   await page.getByTestId('route-drawer-undo').click()
   await expect(page.getByTestId('route-drawer-stats')).toContainText('0 étape')
   await expect(page.getByTestId('route-drawer-save')).toBeDisabled()
+})
+
+test('aller-retour, boucle et dénivelé estimé (issue #137)', async ({ page }) => {
+  await mockExternalNetwork(page)
+  await mockElevation(page)
+  await page.goto('/')
+  test.skip(!(await hasMap(page)), 'WebGL indisponible dans ce navigateur headless')
+
+  await page.getByTestId('zone-pilat').click()
+  await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
+    timeout: 15_000,
+  })
+  await page.getByTestId('custom-draw').click()
+
+  const stats = page.getByTestId('route-drawer-stats')
+  const allerRetour = page.getByTestId('route-drawer-aller-retour')
+  const boucler = page.getByTestId('route-drawer-boucler')
+
+  // Rien à retourner ni à boucler tant qu'il n'y a pas de tracé.
+  await expect(allerRetour).toBeDisabled()
+  await expect(boucler).toBeDisabled()
+
+  await clickOnMap(page, 4.5, 45.4)
+  await clickOnMap(page, 4.53, 45.4)
+  await expect(stats).toContainText('2 étapes')
+  // Deux points font un aller ; il en faut trois pour qu'une boucle ait une
+  // forme — à deux, « boucler » ne serait qu'un aller-retour déguisé.
+  await expect(allerRetour).toBeEnabled()
+  await expect(boucler).toBeDisabled()
+
+  const kmAller = (await stats.textContent()) ?? ''
+
+  await allerRetour.click()
+  await expect(stats).toContainText('3 étapes')
+  // Le retour double la distance : le chiffre doit avoir changé.
+  await expect(stats).not.toHaveText(kmAller)
+
+  // Le dénivelé se demande, il ne s'invite pas à chaque clic.
+  await expect(stats).not.toContainText('D+')
+  await page.getByTestId('route-drawer-denivele').click()
+  await expect(stats).toContainText(/D\+ \d+ m/, { timeout: 10_000 })
+
+  // Poser une étape de plus périme le chiffre : il disparaît plutôt que de
+  // décrire un tracé qui n'existe plus.
+  await clickOnMap(page, 4.53, 45.41)
+  await expect(stats).not.toContainText('D+')
 })

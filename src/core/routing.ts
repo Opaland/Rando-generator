@@ -274,3 +274,29 @@ export function routeThrough(
   }
   return path
 }
+
+/**
+ * Clés d'un aller-retour : on revient par où l'on est venu (issue #137).
+ *
+ * C'est la forme la plus courante d'une sortie depuis un parking, et la
+ * recliquer à l'envers point par point est un travail que la machine fait
+ * mieux. Le dernier point n'est pas répété : on en repart.
+ */
+export function clefsAllerRetour(keys: string[]): string[] {
+  if (keys.length < 2) return keys
+  return [...keys, ...keys.slice(0, -1).reverse()]
+}
+
+/**
+ * Clés d'une boucle fermée : on rentre au point de départ par les chemins.
+ *
+ * Le routage choisit le retour ; ce n'est donc pas un aller-retour, sauf si
+ * aucun autre chemin n'existe. Une boucle déjà fermée est laissée telle
+ * quelle plutôt que de repartir pour un tour.
+ */
+export function clefsBouclees(keys: string[]): string[] {
+  const premier = keys[0]
+  if (keys.length < 3 || premier === undefined) return keys
+  if (keys[keys.length - 1] === premier) return keys
+  return [...keys, premier]
+}
