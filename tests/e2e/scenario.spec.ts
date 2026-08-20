@@ -118,3 +118,23 @@ test('message honnête si Overpass est injoignable', async ({ page }) => {
     { timeout: 15_000 },
   )
 })
+
+test('le premier écran explique son vocabulaire au lieu de le supposer acquis', async ({
+  page,
+}) => {
+  await mockExternalNetwork(page)
+  await page.goto('/')
+
+  // « ref » est le nom du champ dans OpenStreetMap ; personne ne dit ça.
+  const zone = page.getByTestId('zone-section')
+  await expect(zone).toContainText('numéro d’itinéraire')
+  await expect(zone).not.toContainText('ref d’itinéraire')
+
+  // Et les trois familles sont expliquées quelque part, une fois.
+  await page.getByTestId('about-open').click()
+  const about = page.getByTestId('about-dialog')
+  await expect(about).toContainText('Grande Randonnée')
+  await expect(about).toContainText('Promenade et Randonnée')
+  // Sans remplacer les sigles : ce sont les mots peints sur les arbres.
+  await expect(about).toContainText('blanc et rouge')
+})
