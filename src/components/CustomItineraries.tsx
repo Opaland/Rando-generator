@@ -101,7 +101,7 @@ export function CustomItineraries() {
       <input
         ref={inputRef}
         type="file"
-        accept=".gpx,application/gpx+xml"
+        accept=".gpx,.fit,application/gpx+xml,application/vnd.ant.fit"
         multiple
         hidden
         data-testid="custom-input"

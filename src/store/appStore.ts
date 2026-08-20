@@ -12,6 +12,7 @@ import {
   GpxError,
   elevationGainMeters,
   trackFingerprint,
+  type ParsedGpx,
 } from '../core/gpx.ts'
 import { polylineLengthMeters } from '../core/sampling.ts'
 import { itineraryCoords } from '../core/mapdata.ts'
@@ -29,6 +30,7 @@ import {
 } from '../core/elevation.ts'
 import { fetchPois } from '../core/poi.ts'
 import { outingHighlights, type OutingHighlight } from '../core/outing.ts'
+import { FitError, looksLikeFit, parseFit } from '../core/fit.ts'
 import { crossedMilestones } from '../core/milestones.ts'
 import type { MatchResult } from '../core/matching.ts'
 import {
@@ -177,6 +179,20 @@ let zoneLoadSequence = 0
  */
 function pause(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0))
+}
+
+/**
+ * Lit un fichier de trace, GPX ou FIT. Le format est reconnu à la signature
+ * du contenu, pas à l'extension : une montre qui nomme mal son export reste
+ * lisible, et un fichier renommé en .fit ne trompe personne.
+ */
+async function parseTraceFile(file: File): Promise<ParsedGpx> {
+  const buffer = await file.arrayBuffer()
+  if (looksLikeFit(buffer)) {
+    const fit = parseFit(buffer)
+    return { points: fit.points, elevations: fit.elevations, date: fit.date }
+  }
+  return parseGpx(new TextDecoder().decode(buffer), new DOMParser())
 }
 
 /** Identifiant du suivi de position en cours (API navigateur). */
@@ -540,11 +556,10 @@ export const useAppStore = create<AppState>()((set, get) => {
               filename: file.name,
             },
           })
-          const text = await file.text()
           // Laisse le navigateur peindre l'avancement avant le parsing, qui
           // bloque le fil principal (mesuré : ~320 ms pour un GPX de 9 Mo).
           await pause()
-          const parsed = parseGpx(text, new DOMParser())
+          const parsed = await parseTraceFile(file)
           if (parsed.points.length === 0) {
             errors.push(
               `${file.name} : aucun point de trace exploitable dans ce fichier.`,
@@ -572,7 +587,7 @@ export const useAppStore = create<AppState>()((set, get) => {
           imported.push(track)
         } catch (error) {
           errors.push(
-            error instanceof GpxError
+            error instanceof GpxError || error instanceof FitError
               ? `${file.name} : ${error.message}`
               : `${file.name} : lecture impossible.`,
           )
@@ -606,9 +621,8 @@ export const useAppStore = create<AppState>()((set, get) => {
               filename: file.name,
             },
           })
-          const text = await file.text()
           await pause()
-          const parsed = parseGpx(text, new DOMParser())
+          const parsed = await parseTraceFile(file)
           if (parsed.points.length < 2) {
             errors.push(
               `${file.name} : pas assez de points pour en faire un itinéraire.`,
@@ -629,7 +643,7 @@ export const useAppStore = create<AppState>()((set, get) => {
           imported.push(itinerary)
         } catch (error) {
           errors.push(
-            error instanceof GpxError
+            error instanceof GpxError || error instanceof FitError
               ? `${file.name} : ${error.message}`
               : `${file.name} : lecture impossible.`,
           )

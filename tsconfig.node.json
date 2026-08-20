@@ -25,6 +25,7 @@
     "vite.config.ts",
     "playwright.config.ts",
     "tests/e2e",
-    "tests/fixtures/gpx.ts"
+    "tests/fixtures/gpx.ts",
+    "tests/fixtures/fit.ts"
   ]
 }

@@ -62,7 +62,7 @@ export function TrackManager() {
     <details className={styles.section} open>
       <summary className="acc-summary">
         <h2 id="tracks-title" className={styles.title}>
-          Mes traces GPX
+          Mes traces
         </h2>
       </summary>
 
@@ -79,7 +79,7 @@ export function TrackManager() {
         onDrop={onDrop}
       >
         <p className={styles.dropText}>
-          Glissez vos fichiers GPX ici, ou
+          Glissez vos fichiers GPX ou FIT ici, ou
           <button
             type="button"
             className="btn-link"
@@ -95,7 +95,7 @@ export function TrackManager() {
         <input
           ref={inputRef}
           type="file"
-          accept=".gpx,application/gpx+xml"
+          accept=".gpx,.fit,application/gpx+xml,application/vnd.ant.fit"
           multiple
           hidden
           data-testid="gpx-input"
