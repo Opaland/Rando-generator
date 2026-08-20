@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useAppStore } from '../store/appStore.ts'
+import { largestWalkedRun } from '../core/connected.ts'
 import {
   historyStats,
   monthLabel,
@@ -19,6 +20,16 @@ const CHART_HEIGHT = 70
  */
 export function History() {
   const tracks = useAppStore((s) => s.tracks)
+  const itineraries = useAppStore((s) => s.itineraries)
+  const samples = useAppStore((s) => s.matching?.samples)
+
+  // Le pourcentage dit combien on a parcouru ; il ne dit pas si on l'a fait
+  // d'un seul tenant. C'est une mesure plus exigeante, et elle se calcule
+  // sur ce qu'on a déjà (issue #91).
+  const enchainement = useMemo(
+    () => largestWalkedRun(itineraries, samples ?? []),
+    [itineraries, samples],
+  )
 
   const { stats, buckets } = useMemo(
     () => ({
@@ -50,6 +61,15 @@ export function History() {
         {stats.elevationGain > 0 &&
           ` · ${Math.round(stats.elevationGain).toLocaleString('fr-FR')} m D+`}
       </p>
+
+      {enchainement.meters > 0 && (
+        <p className={styles.totals} data-testid="history-run">
+          Plus long enchaînement d’un seul tenant :{' '}
+          <strong>{formatKm(enchainement.meters)}</strong> sur{' '}
+          {enchainement.wayIds.length} tronçon
+          {enchainement.wayIds.length > 1 ? 's' : ''} qui se suivent.
+        </p>
+      )}
 
       {buckets.length > 0 && (
         <div className={styles.chart} data-testid="history-chart">
