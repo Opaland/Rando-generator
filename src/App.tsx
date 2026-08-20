@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { About } from './components/About.tsx'
+import { Backup } from './components/Backup.tsx'
 import { CustomItineraries } from './components/CustomItineraries.tsx'
 import { Dashboard } from './components/Dashboard.tsx'
 import { EmptyState } from './components/EmptyState.tsx'
@@ -164,6 +165,7 @@ function App() {
           <History />
           <ItineraryList />
           <Settings />
+          <Backup />
           <footer className={styles.footer}>
             Itinéraires © les contributeurs OpenStreetMap (ODbL) · Fond de
             carte © IGN (Etalab 2.0) · GR®, GR de Pays® et PR® sont des

@@ -49,6 +49,13 @@ export function About({ open, onClose }: { open: boolean; onClose: () => void })
             Aucune trace, aucun identifiant, aucune mesure d’audience ne quitte
             votre appareil. Il n’y a ni compte, ni serveur applicatif.
           </p>
+          <p>
+            Ce choix a un prix, et il est juste de l’annoncer :{' '}
+            <strong>vos données ne suivent pas d’un appareil à l’autre</strong>,
+            et vider les données du site les efface définitivement. La section
+            «&nbsp;Sauvegarde&nbsp;» écrit un fichier que vous gardez où vous
+            voulez, et qui se relit ici ou sur un autre appareil.
+          </p>
         </section>
 
         <section>

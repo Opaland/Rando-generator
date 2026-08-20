@@ -14,6 +14,18 @@ import {
   trackFingerprint,
   type ParsedGpx,
 } from '../core/gpx.ts'
+import {
+  backupFilename,
+  buildBackup,
+  compresserBackup,
+  resumeFusion,
+  fusionnerItineraires,
+  fusionnerTraces,
+  lireArchiveBackup,
+  serialiserBackup,
+  BackupError,
+} from '../core/backup.ts'
+import { downloadBlob } from '../lib/download.ts'
 import { polylineLengthMeters } from '../core/sampling.ts'
 import { itineraryCoords } from '../core/mapdata.ts'
 import { parseBouclesGeoJSON } from '../core/boucles.ts'
@@ -109,6 +121,8 @@ export interface AppState {
   zoneLoadStage: ZoneLoadStage
   /** Octets reçus du serveur Overpass pendant l'étape de téléchargement. */
   zoneLoadBytes: number
+  /** Compte rendu du dernier import de sauvegarde, à afficher puis effacer. */
+  backupMessage: string | null
   zoneError: string | null
 
   // Traces GPX
@@ -186,6 +200,12 @@ export interface AppState {
   importCustomGpx: (files: Iterable<File>) => Promise<void>
   removeTrack: (id: string) => Promise<void>
   removeCustomItinerary: (id: number) => Promise<void>
+  /** Écrit une sauvegarde complète (traces, itinéraires perso, réglages). */
+  exporterSauvegarde: () => Promise<void>
+  /** Relit une sauvegarde et la fusionne avec ce qui est déjà là. */
+  importerSauvegarde: (file: File) => Promise<void>
+  /** Efface le compte rendu du dernier import de sauvegarde. */
+  clearBackupMessage: () => void
   setTolerance: (value: number) => Promise<void>
   setCompletionPct: (value: number) => Promise<void>
   selectItinerary: (id: number | null) => void
@@ -643,6 +663,7 @@ export const useAppStore = create<AppState>()((set, get) => {
     zoneError: null,
     tracks: [],
     importErrors: [],
+    backupMessage: null,
     customItineraries: [],
     toleranceMeters: DEFAULT_TOLERANCE_METERS,
     completionPct: DEFAULT_COMPLETION_PCT,
@@ -966,6 +987,81 @@ export const useAppStore = create<AppState>()((set, get) => {
           state.selectedItineraryId === id ? null : state.selectedItineraryId,
       }))
       await recompute()
+    },
+
+    async exporterSauvegarde() {
+      const etat = get()
+      const backup = buildBackup({
+        tracks: etat.tracks,
+        customItineraries: etat.customItineraries,
+        settings: {
+          toleranceMeters: etat.toleranceMeters,
+          completionPct: etat.completionPct,
+        },
+        exportedAt: new Date().toISOString(),
+      })
+      const octets = await compresserBackup(serialiserBackup(backup))
+      downloadBlob(
+        backupFilename(backup.exportedAt),
+        new Blob([octets as BlobPart], { type: 'application/gzip' }),
+      )
+    },
+
+    async importerSauvegarde(file) {
+      let backup
+      try {
+        backup = await lireArchiveBackup(await file.arrayBuffer())
+      } catch (error) {
+        set((state) => ({
+          importErrors: [
+            ...state.importErrors,
+            `${file.name} : ${
+              error instanceof BackupError
+                ? error.message
+                : 'lecture impossible.'
+            }`,
+          ],
+        }))
+        return
+      }
+
+      const traces = fusionnerTraces(get().tracks, backup.tracks)
+      const persos = fusionnerItineraires(
+        get().customItineraries,
+        backup.customItineraries,
+      )
+
+      const db = await baseOuverte()
+      if (db) {
+        for (const track of traces.tracks.slice(get().tracks.length)) {
+          await db.saveTrack(track)
+        }
+        for (const itin of persos.itineraries.slice(
+          get().customItineraries.length,
+        )) {
+          await db.saveCustomItinerary(itin)
+        }
+      }
+
+      set({ tracks: traces.tracks, customItineraries: persos.itineraries })
+      if (traces.ajoutees > 0 || persos.ajoutes > 0) await recompute()
+
+      // Les réglages ne sont repris que s'ils sont présents : une sauvegarde
+      // ne doit pas remettre la tolérance à zéro parce qu'elle est ancienne.
+      if (typeof backup.settings.toleranceMeters === 'number') {
+        await get().setTolerance(backup.settings.toleranceMeters)
+      }
+      if (typeof backup.settings.completionPct === 'number') {
+        await get().setCompletionPct(backup.settings.completionPct)
+      }
+
+      set({
+        backupMessage: resumeFusion(traces, persos),
+      })
+    },
+
+    clearBackupMessage() {
+      set({ backupMessage: null })
     },
 
     async setTolerance(value) {
