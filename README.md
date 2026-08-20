@@ -269,9 +269,21 @@ faire.
   échantillonné, saut, aller-retour).
 - Aucun test ne touche le réseau : Overpass est une fixture enregistrée,
   Playwright intercepte tout le trafic externe.
+- **Tests unitaires du store** (`tests/unit/appStore.test.ts`) : cache de zone,
+  forçage, repli sur un cache périmé, séquencement de deux chargements
+  concurrents, dédoublonnage à l'import, bornage de la tolérance. Une fabrique
+  IndexedDB neuve par test — supprimer la base ne suffit pas, une connexion
+  restée ouverte bloque la suppression indéfiniment.
 - E2E : scénario nominal complet, GPX corrompu, Overpass injoignable, bascule
   de miroir, actualisation forcée (zone et ref), repli de tuiles IGN → OSM avec
-  conservation des tracés, multi-import/suppression, audit axe-core (WCAG 2 A/AA).
+  conservation des tracés, multi-import/suppression, lot de gros GPX,
+  hors-ligne (service worker), filtres de découverte, étapes, bilan d'une
+  sortie, relation OSM trouée signalée, franchissement de jalon, export de
+  bilan en image, audit axe-core (WCAG 2 A/AA) sur la vue principale **et sur
+  les panneaux dépliés**.
+- Un clic sur la carte vise 2 px de canvas : les tests qui ouvrent une fiche
+  **réessaient le clic avec l'assertion dans la boucle**, plutôt que de parier
+  sur un seul essai (la CI masquait ces échecs derrière ses relances).
 - CI GitHub Actions : lint + typecheck + tests (couverture) + build + e2e.
 - Avant release : smoke test manuel sur données réelles — voir
   [docs/RELEASE.md](./docs/RELEASE.md).
