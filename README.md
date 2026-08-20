@@ -305,6 +305,7 @@ aucun ne recopie les autres.
 
 | Document | La question à laquelle il répond |
 |---|---|
+| [`public/pourquoi.html`](./public/pourquoi.html) | La version publique du brief — ce que le produit fait de différent, et ce qu'il coûte ([en ligne](https://opaland.github.io/Rando-generator/pourquoi.html)) |
 | [`docs/BRIEF.md`](./docs/BRIEF.md) | Quel problème, pour qui, contre qui — et **ce qu'on ne fera pas** |
 | [`docs/PRD.md`](./docs/PRD.md) | Dans quel ordre, et à quoi voit-on qu'un sujet est fini |
 | [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) | Quelles décisions structurent le code, et **pourquoi** |

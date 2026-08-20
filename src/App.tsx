@@ -109,6 +109,26 @@ function App() {
             Tout reste sur votre appareil.
           </span>
         </p>
+        {/*
+          Une vraie page, servie telle quelle : un lien partagé doit s'ouvrir
+          chez quelqu'un qui n'a rien installé, et être indexable. C'est le
+          seul endroit qui explique ce que le produit fait de différent.
+        */}
+        {/*
+          Une vraie page, servie telle quelle : un lien partagé doit s'ouvrir
+          chez quelqu'un qui n'a rien installé, et être indexable.
+
+          Sur téléphone il vit dans le pied du panneau, pas ici : mesuré, il
+          coûtait 50 px de carte dans l'en-tête, et une page marketing ne
+          passe pas avant la carte (docs/AUDIT_MOBILE.md, constat M2).
+        */}
+        <a
+          className={styles.pourquoiEntete}
+          href="pourquoi.html"
+          data-testid="pourquoi-link"
+        >
+          Pourquoi Sentiers
+        </a>
         <button
           type="button"
           className={styles.aboutLink}
@@ -169,6 +189,13 @@ function App() {
           <Settings />
           <Backup />
           <footer className={styles.footer}>
+            <a
+              className={styles.pourquoiPied}
+              href="pourquoi.html"
+              data-testid="pourquoi-link-pied"
+            >
+              Pourquoi Sentiers&nbsp;?
+            </a>
             Itinéraires © les contributeurs OpenStreetMap (ODbL) · Fond de
             carte © IGN (Etalab 2.0) · GR®, GR de Pays® et PR® sont des
             marques de la FFRandonnée.
