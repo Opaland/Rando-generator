@@ -135,8 +135,14 @@ les points d'intérêt. Ces réponses ne sont volontairement pas mises en cache 
 un relief ou des POI périmés ne valent pas mieux qu'un message clair. Un
 bandeau l'explique dès que la connexion tombe.
 
-Sur mobile, chaque section du panneau latéral est un accordéon repliable, et
-toute suppression (trace, itinéraire perso) demande une confirmation en deux
+Sur téléphone, la carte occupe tout le cadre et le panneau de contrôle devient
+une feuille glissante à trois positions : repliée sur sa seule poignée — qui
+affiche le pourcentage global —, à mi-hauteur, ou presque plein écran. Elle
+s'ouvre à mi-hauteur à la première visite, quand il n'y a rien à voir sur la
+carte et tout à faire dans le panneau, et reste basse au retour, quand la zone
+vient du cache. Chaque section reste un accordéon repliable.
+
+Toute suppression (trace, itinéraire perso) demande une confirmation en deux
 temps — pas de boîte de dialogue native, un simple second clic sur
 « Confirmer ? ».
 

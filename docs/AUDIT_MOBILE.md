@@ -18,6 +18,10 @@ bureau** : le panneau latéral devient un long empilement à faire défiler, et 
 carte, qui est le produit, se retrouve reléguée à 40 % de l'écran, sous une
 colonne de réglages.
 
+**État au 20/08/2026 : les neuf constats sont traités.** Le détail des mesures
+avant/après figure plus bas ; les constats ci-dessous sont conservés tels
+qu'ils ont été écrits, pour qu'on puisse relire ce qui avait été mesuré.
+
 ## Les problèmes, par gravité
 
 ### M0 — cibles tactiles sous le minimum
@@ -94,6 +98,34 @@ MapLibre : les deux deviennent illisibles. Sur bureau, la hauteur disponible
 Badges de réseau à **11,5 px**, attribution à **11 px**. Lisible à 20 cm dans un
 salon, moins en plein soleil avec des lunettes de soleil polarisées — le
 contexte réel de l'application.
+
+## Où en est chaque constat, mesuré à nouveau
+
+Même protocole, même viewport, le 20/08/2026 après corrections.
+
+| | constat | avant | après | traité par |
+|---|---|---|---|---|
+| M0 | cibles tactiles | 56 sous 44 px, plusieurs sous 24 | **6 sous 44 px, 0 sous 24** | #100 |
+| M1 | part de la carte | 338 px sur 844 (40 %) | **379 px feuille ouverte, 732 repliée** (93 %) | #110 |
+| M2 | hauteur d'en-tête | 170 px | **60 px** | #99 |
+| M3 | sélecteur de zone | occupe la première vue à chaque visite | replié au retour, nom de zone visible | #98 |
+| M4 | fiche détail | tracé 28 px sous le panneau, invisible | **tracé cadré au-dessus** | #113 |
+| M5 | état d'accueil | dépasse de 47 px du cadre | **tient, défile** | #103 |
+| M6 | textes pour la souris | « survolez », « cliquez » | réécrits pour le doigt | #100 |
+| M7 | légende / attribution | superposées | **séparées**, et zoom dégagé | #103 |
+| M8 | polices | 11 px et 11,5 px | **rien sous 13 px**, plancher 14 | #104 |
+
+Les six cibles restantes sous 44 px sont des cases à cocher et des boutons
+radio : ils respectent le plancher WCAG 2.5.8 de 24 px, que le test fige, mais
+pas la recommandation plus généreuse de 44. Les agrandir davantage
+déformerait les listes de réseaux ; c'est un choix, pas un oubli.
+
+Trois défauts sans rapport avec la mise en page ont été trouvés en chemin, en
+suivant des tests qui échouaient au lieu de les relancer : un repère
+altimétrique effacé par le doigt qui venait de le poser (#101), une trace
+importée pendant le démarrage effacée par la restauration (#97), et une zone
+chargée au démarrage jamais mise en cache — donc retéléchargée à chaque visite
+(#109).
 
 ## Ce qui va déjà bien
 
