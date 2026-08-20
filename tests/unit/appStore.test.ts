@@ -100,6 +100,43 @@ describe('init', () => {
 })
 
 describe('loadZone', () => {
+  it('affiche les octets reçus, puis remet le compteur à zéro', async () => {
+    // Deux minutes d'attente sans rien qui bouge, et l'utilisateur recharge :
+    // le compteur d'octets est le seul signal honnête dont on dispose.
+    const brut = new TextEncoder().encode(JSON.stringify(pilat))
+    const vus: number[] = []
+    fetchMock.mockImplementation(
+      (url) =>
+        new Promise<Response>((resolve) => {
+          if (!url.includes('interpreter')) {
+            resolve(new Response('{}', { status: 200 }))
+            return
+          }
+          const flux = new ReadableStream<Uint8Array>({
+            start(controller) {
+              controller.enqueue(brut.slice(0, 50))
+              vus.push(useAppStore.getState().zoneLoadBytes)
+              controller.enqueue(brut.slice(50))
+              controller.close()
+            },
+          })
+          resolve(new Response(flux, { status: 200 }))
+        }),
+    )
+
+    const desabonner = useAppStore.subscribe((etat) => {
+      if (etat.zoneLoading && etat.zoneLoadBytes > 0) vus.push(etat.zoneLoadBytes)
+    })
+    await useAppStore.getState().loadZone('pilat')
+    desabonner()
+
+    expect(vus).toContain(50)
+    expect(vus).toContain(brut.byteLength)
+    // Le chargement terminé, le compteur ne doit pas rester affiché.
+    expect(useAppStore.getState().zoneLoadBytes).toBe(0)
+    expect(useAppStore.getState().zoneLoading).toBe(false)
+  })
+
   it('charge une zone, la met en cache et calcule la progression', async () => {
     await useAppStore.getState().init()
     await useAppStore.getState().loadZone('pilat')

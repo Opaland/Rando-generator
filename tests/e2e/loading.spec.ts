@@ -38,6 +38,35 @@ test('le chargement d’une zone peut être annulé sans bloquer l’UI', async 
   ).toBeVisible()
 })
 
+test('l’attente dissuade de recharger la page', async ({ page }) => {
+  await mockTiles(page)
+  const pending: { resolve: (() => void) | null } = { resolve: null }
+  await page.route('**/api/interpreter', async (route) => {
+    await new Promise<void>((resolve) => {
+      pending.resolve = resolve
+    })
+    await route.fulfill({ json: pilatFixture })
+  })
+  await page.goto('/')
+
+  await page.getByTestId('zone-pilat').click()
+  const loading = page.getByTestId('zone-loading')
+
+  // Recharger est la réaction naturelle devant deux minutes d'attente, et la
+  // pire : la requête repart de zéro et la charge Overpass augmente. Il faut
+  // que ce soit écrit là où l'utilisateur regarde, pas dans « À propos ».
+  await expect(loading).toContainText(/ne rechargez pas/i)
+  await expect(loading).toContainText(/gardée sur votre appareil/i)
+  await expect(page.getByTestId('zone-cancel')).toBeVisible()
+
+  pending.resolve?.()
+  await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
+    timeout: 15_000,
+  })
+  // L'attente finie, la consigne disparaît avec elle.
+  await expect(loading).toHaveCount(0)
+})
+
 test('la bascule de miroir affiche un message de nouvelle tentative', async ({
   page,
 }) => {

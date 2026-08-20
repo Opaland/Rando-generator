@@ -228,6 +228,50 @@ export interface FetchOverpassOptions {
   /** Appelé avant chaque tentative de miroir — permet à l'appelant d'afficher
    *  une progression (« interrogation… » puis « nouvelle tentative… »). */
   onAttempt?: (mirrorIndex: number, totalMirrors: number) => void
+  /**
+   * Appelé pendant le téléchargement avec le nombre d'octets déjà reçus,
+   * cumulé depuis le début de la réponse.
+   *
+   * Volontairement pas de pourcentage : la réponse arrive compressée et sans
+   * `Content-Length` exploitable — l'en-tête, quand il existe, décrit les
+   * octets compressés alors que le lecteur en rend des décompressés. Une
+   * barre calculée là-dessus avancerait n'importe comment. Un compteur
+   * d'octets ne promet rien qu'il ne tienne.
+   */
+  onProgress?: (octetsRecus: number) => void
+}
+
+/**
+ * Lit le corps de la réponse en signalant l'avancement.
+ *
+ * Sans `onProgress` — ou sans flux, ce qui arrive sur d'anciens navigateurs
+ * et dans les doublures de test — on retombe sur `response.json()`.
+ */
+async function lireCorps(
+  response: Response,
+  onProgress?: (octetsRecus: number) => void,
+): Promise<unknown> {
+  const flux = response.body
+  if (!onProgress || !flux) return response.json()
+
+  const lecteur = flux.getReader()
+  const morceaux: Uint8Array[] = []
+  let recus = 0
+  for (;;) {
+    const { done, value } = await lecteur.read()
+    if (done) break
+    morceaux.push(value)
+    recus += value.byteLength
+    onProgress(recus)
+  }
+
+  const entier = new Uint8Array(recus)
+  let position = 0
+  for (const morceau of morceaux) {
+    entier.set(morceau, position)
+    position += morceau.byteLength
+  }
+  return JSON.parse(new TextDecoder().decode(entier))
 }
 
 /**
@@ -262,7 +306,7 @@ export async function fetchOverpass(
         ...(signal ? { signal } : {}),
       })
       if (!response.ok) continue
-      const data: unknown = await response.json()
+      const data: unknown = await lireCorps(response, options.onProgress)
       if (isOverpassResponse(data)) return data
     } catch {
       // Miroir injoignable ou réponse illisible : on tente le suivant.

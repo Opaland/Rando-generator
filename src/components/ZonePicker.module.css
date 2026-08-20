@@ -99,7 +99,25 @@
   font-size: 0.9rem;
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
+}
+
+/* Octets reçus : sur sa propre ligne, c'est le seul élément qui bouge
+   vraiment pendant les deux minutes d'attente. */
+.received {
+  display: block;
+  font-variant-numeric: tabular-nums;
+  color: var(--gris-vert);
+}
+
+/* Le rechargement est la réaction naturelle devant une attente longue, et
+   c'est la pire : la requête repart de zéro et la charge augmente. La phrase
+   passe sous la ligne d'état, en pleine largeur. */
+.dontReload {
+  flex-basis: 100%;
+  font-size: var(--texte-appui);
+  color: var(--gris-vert);
 }
 
 .spinner {
