@@ -253,6 +253,65 @@ describe('fetchOverpass', () => {
     }
   })
 
+  it('signale les octets reçus au fil du téléchargement', async () => {
+    // Une réponse découpée en morceaux, comme l'envoie un serveur Overpass :
+    // l'attente dure deux minutes, il faut pouvoir montrer qu'elle avance.
+    const brut = new TextEncoder().encode(JSON.stringify(pilatFixture))
+    const morceaux = [brut.slice(0, 100), brut.slice(100, 400), brut.slice(400)]
+    const corps = new ReadableStream<Uint8Array>({
+      start(controller) {
+        for (const morceau of morceaux) controller.enqueue(morceau)
+        controller.close()
+      },
+    })
+    const fetchFn = vi
+      .fn()
+      .mockResolvedValue(new Response(corps, { status: 200 }))
+
+    const octets: number[] = []
+    const data = await fetchOverpass('QUERY', {
+      fetchFn,
+      onProgress: (recus) => octets.push(recus),
+    })
+
+    // Cumulatif et croissant : c'est ce que l'utilisateur voit défiler.
+    expect(octets).toEqual([100, 400, brut.byteLength])
+    expect((data as { elements: unknown[] }).elements).toHaveLength(4)
+  })
+
+  it('lit quand même la réponse si le corps n’est pas diffusable', async () => {
+    // Anciens navigateurs, et doublures de test qui rendent une réponse sans
+    // flux : la progression est alors muette, mais le chargement fonctionne.
+    const sansCorps = {
+      ok: true,
+      body: null,
+      json: () => Promise.resolve(pilatFixture),
+    } as unknown as Response
+    const onProgress = vi.fn()
+    const data = await fetchOverpass('QUERY', {
+      fetchFn: vi.fn().mockResolvedValue(sansCorps),
+      onProgress,
+    })
+    expect((data as { elements: unknown[] }).elements).toHaveLength(4)
+    expect(onProgress).not.toHaveBeenCalled()
+  })
+
+  it('passe au miroir suivant si le flux se coupe en cours de route', async () => {
+    const corps = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode('{"elements":'))
+        controller.error(new Error('connexion perdue'))
+      },
+    })
+    const fetchFn = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(corps, { status: 200 }))
+      .mockResolvedValueOnce(okResponse())
+    const data = await fetchOverpass('QUERY', { fetchFn, onProgress: vi.fn() })
+    expect(fetchFn).toHaveBeenCalledTimes(2)
+    expect((data as { elements: unknown[] }).elements).toHaveLength(4)
+  })
+
   it('signale chaque tentative de miroir via onAttempt', async () => {
     const fetchFn = vi
       .fn()

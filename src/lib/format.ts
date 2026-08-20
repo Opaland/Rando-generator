@@ -13,6 +13,21 @@ export function formatPct(pct: number): string {
   return `${pctFormat.format(pct)} %`
 }
 
+const moFormat = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 })
+
+/**
+ * « 842 o », « 250 ko », « 3,5 Mo » — volume reçu pendant un téléchargement.
+ *
+ * Pas de décimale avant le mégaoctet : au kilo-octet près, elle défile trop
+ * vite pour être lue et ne dit rien de plus.
+ */
+export function formatOctets(octets: number): string {
+  const sain = Number.isFinite(octets) && octets > 0 ? octets : 0
+  if (sain < 1024) return `${Math.round(sain)} o`
+  if (sain < 1024 * 1024) return `${Math.floor(sain / 1024)} ko`
+  return `${moFormat.format(sain / (1024 * 1024))} Mo`
+}
+
 /** « 2 h 30 », « 45 min » — durée lisible à partir de minutes. */
 export function formatDuration(minutes: number): string {
   const arrondi = Math.max(0, Math.round(minutes))

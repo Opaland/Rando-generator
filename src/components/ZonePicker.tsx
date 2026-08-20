@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { FEATURED_ROUTES, ZONES } from '../core/overpass.ts'
+import { formatOctets } from '../lib/format.ts'
 import { useAppStore } from '../store/appStore.ts'
 import styles from './ZonePicker.module.css'
 
@@ -16,6 +17,7 @@ export function ZonePicker() {
   const zoneLabel = useAppStore((s) => s.zoneLabel)
   const zoneLoading = useAppStore((s) => s.zoneLoading)
   const zoneLoadStage = useAppStore((s) => s.zoneLoadStage)
+  const zoneLoadBytes = useAppStore((s) => s.zoneLoadBytes)
   const zoneError = useAppStore((s) => s.zoneError)
   const zoneFetchedAt = useAppStore((s) => s.zoneFetchedAt)
   const itineraries = useAppStore((s) => s.itineraries)
@@ -185,6 +187,14 @@ export function ZonePicker() {
                 ({elapsedS} s)
               </span>
             )}
+            {zoneLoadBytes > 0 && (
+              <span
+                className={styles.received}
+                data-testid="zone-loading-bytes"
+              >
+                {formatOctets(zoneLoadBytes)} reçus
+              </span>
+            )}
           </span>
           <button
             type="button"
@@ -194,6 +204,11 @@ export function ZonePicker() {
           >
             Annuler
           </button>
+          <span className={styles.dontReload}>
+            Ne rechargez pas la page : la requête repartirait de zéro et
+            chargerait un peu plus les serveurs. Une fois reçue, la zone est
+            gardée sur votre appareil — les fois suivantes sont immédiates.
+          </span>
         </div>
       )}
 
