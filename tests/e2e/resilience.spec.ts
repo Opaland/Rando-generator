@@ -113,11 +113,10 @@ test('recherche par ref : chargement puis actualisation possibles', async ({
 })
 
 /*
- * Le cache d'une zone n'a pas de signal visible dans l'interface : ce test
- * décrit le comportement attendu de bout en bout. Le garde-fou contre la
- * course qui le cassait est le test unitaire du store — sur un poste de
- * bureau, l'ouverture d'IndexedDB gagne toujours et ce test-ci passerait
- * même sans le correctif.
+ * Deux garanties en une : la zone est mise en cache même choisie pendant
+ * l'ouverture de la base, et elle l'est *avant* d'être affichée — recharger
+ * la page dans la seconde qui suit ne doit pas faire repartir deux minutes
+ * d'interrogation d'Overpass.
  */
 test('une zone choisie dès l’ouverture est bien mise en cache', async ({
   page,
@@ -134,40 +133,6 @@ test('une zone choisie dès l’ouverture est bien mise en cache', async ({
     timeout: 15_000,
   })
   expect(overpass.count()).toBe(1)
-
-  // L'écriture du cache n'a pas de signal visible : on l'attend dans la base
-  // plutôt que de recharger au hasard, ce qui interromprait une écriture en
-  // cours et testerait autre chose que ce qu'on veut vérifier.
-  await expect
-    .poll(
-      () =>
-        page.evaluate(
-          () =>
-            new Promise<boolean>((resolve) => {
-              const demande = indexedDB.open('sentiers')
-              demande.onerror = () => {
-                resolve(false)
-              }
-              demande.onsuccess = () => {
-                const base = demande.result
-                const lecture = base
-                  .transaction('zones')
-                  .objectStore('zones')
-                  .get('pilat')
-                lecture.onsuccess = () => {
-                  resolve(Boolean(lecture.result))
-                  base.close()
-                }
-                lecture.onerror = () => {
-                  resolve(false)
-                  base.close()
-                }
-              }
-            }),
-        ),
-      { timeout: 10_000 },
-    )
-    .toBe(true)
 
   await page.reload()
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {

@@ -411,6 +411,11 @@ export const useAppStore = create<AppState>()((set, get) => {
           }
         }
         if (!isCurrent()) return
+        // Enregistrée avant d'être affichée : si la zone est à l'écran, elle
+        // sera restaurée au prochain démarrage. Dans l'autre ordre, recharger
+        // la page dans la seconde qui suit interrompait l'écriture, et la
+        // zone repartait pour une interrogation complète.
+        await persistLastZone(zoneKey)
         setItineraries(zoneKey, zoneLabel, itineraries, now)
         if (itineraries.length === 0) {
           set({
@@ -418,7 +423,6 @@ export const useAppStore = create<AppState>()((set, get) => {
               'Aucun itinéraire balisé trouvé dans cette zone sur OpenStreetMap. Réessayez avec « Actualiser les tracés », ou choisissez une autre zone.',
           })
         }
-        await persistLastZone(zoneKey)
         await recompute()
       } catch (error) {
         if (!isCurrent()) return
