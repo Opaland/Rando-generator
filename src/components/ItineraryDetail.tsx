@@ -5,6 +5,7 @@ import { NETWORK_BADGES } from '../lib/networkDisplay.ts'
 import { elevationStats } from '../core/elevation.ts'
 import { itineraryCoords } from '../core/mapdata.ts'
 import { DEFAULT_STAGE_METERS, buildStages } from '../core/stages.ts'
+import { assessItinerary } from '../core/dataQuality.ts'
 import {
   buildGpxDocument,
   gpxAttributionFor,
@@ -57,6 +58,9 @@ export function ItineraryDetail() {
   // étapes calculées (les découpages des topo-guides sont éditoriaux, donc
   // hors de portée — cf. src/core/stages.ts).
   const etapes = buildStages(itin, relevantMatching?.samples ?? [])
+  // Une relation trouée produit un pourcentage faux sans le dire : le
+  // signaler ne répare rien, mais rend le chiffre lisible.
+  const qualite = assessItinerary(itin, new Date().toISOString())
 
   return (
     <aside
@@ -164,6 +168,17 @@ export function ItineraryDetail() {
           <p className={styles.localSource}>
             Source : {itin.details.source} (Licence Ouverte 2.0)
           </p>
+        </section>
+      )}
+
+      {qualite.warnings.length > 0 && (
+        <section className={styles.section} data-testid="detail-quality">
+          <h4 className={styles.sectionTitle}>Qualité de la donnée</h4>
+          <ul className={styles.quality}>
+            {qualite.warnings.map((avertissement) => (
+              <li key={avertissement}>{avertissement}</li>
+            ))}
+          </ul>
         </section>
       )}
 

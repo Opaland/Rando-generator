@@ -51,9 +51,19 @@ function nodeKey(point: LonLat): string {
   return `${Math.round(point[0] / NODE_PRECISION_DEG)},${Math.round(point[1] / NODE_PRECISION_DEG)}`
 }
 
-interface Maillon {
+export interface Maillon {
   wayId: number
   reversed: boolean
+  /** Premier point du tronçon, dans le sens de la marche. */
+  start: LonLat
+  /** Dernier point du tronçon, dans le sens de la marche. */
+  end: LonLat
+  /**
+   * Vrai quand ce tronçon ne s'accroche pas au précédent : la relation est
+   * trouée (ou ramifiée) et la chaîne repart d'ailleurs. C'est ce que
+   * `core/dataQuality.ts` mesure pour prévenir l'utilisateur.
+   */
+  newPiece: boolean
 }
 
 /**
@@ -63,7 +73,7 @@ interface Maillon {
  * puis on enchaîne de proche en proche ; ce qui reste (relation trouée ou
  * ramifiée) est ajouté dans l'ordre donné, pour ne perdre aucun kilomètre.
  */
-function chainWays(ways: TrailWay[]): Maillon[] {
+export function chainWays(ways: TrailWay[]): Maillon[] {
   const utilisables = ways.filter((w) => w.coords.length >= 2)
   if (utilisables.length === 0) return []
 
@@ -93,14 +103,22 @@ function chainWays(ways: TrailWay[]): Maillon[] {
   const utilise = new Set<number>()
   const chaine: Maillon[] = []
 
-  const ajouter = (index: number, reversed: boolean): LonLat => {
+  const ajouter = (index: number, reversed: boolean, newPiece: boolean): LonLat => {
     const way = utilisables[index] as TrailWay
     utilise.add(index)
-    chaine.push({ wayId: way.osmWayId, reversed })
-    return (reversed ? way.coords[0] : way.coords[way.coords.length - 1]) as LonLat
+    const premier = way.coords[0] as LonLat
+    const dernier = way.coords[way.coords.length - 1] as LonLat
+    chaine.push({
+      wayId: way.osmWayId,
+      reversed,
+      start: reversed ? dernier : premier,
+      end: reversed ? premier : dernier,
+      newPiece,
+    })
+    return reversed ? premier : dernier
   }
 
-  let fin = ajouter(depart, departInverse)
+  let fin = ajouter(depart, departInverse, true)
   while (utilise.size < utilisables.length) {
     const candidats = parNoeud.get(nodeKey(fin)) ?? []
     const suivant = candidats.find((i) => !utilise.has(i))
@@ -108,12 +126,12 @@ function chainWays(ways: TrailWay[]): Maillon[] {
       // Trou dans la relation : on reprend au premier tronçon non utilisé.
       const reste = utilisables.findIndex((_, i) => !utilise.has(i))
       if (reste < 0) break
-      fin = ajouter(reste, false)
+      fin = ajouter(reste, false, true)
       continue
     }
     const way = utilisables[suivant] as TrailWay
     const reversed = nodeKey(way.coords[way.coords.length - 1] as LonLat) === nodeKey(fin)
-    fin = ajouter(suivant, reversed)
+    fin = ajouter(suivant, reversed, false)
   }
   return chaine
 }
