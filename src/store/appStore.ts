@@ -54,6 +54,21 @@ import {
 } from '../db/database.ts'
 import { computeMatching } from './matchingClient.ts'
 
+/**
+ * Réunit ce qui vient de la base et ce qui est déjà en mémoire, sans doublon.
+ * Les entrées mémoire absentes de la base — importées pendant que celle-ci se
+ * lisait — sont conservées à la suite.
+ */
+function fusionner<T extends { id: string } | { osmRelationId: number }>(
+  base: T[],
+  memoire: T[],
+): T[] {
+  const cle = (element: T): string =>
+    'id' in element ? element.id : String(element.osmRelationId)
+  const connus = new Set(base.map(cle))
+  return [...base, ...memoire.filter((element) => !connus.has(cle(element)))]
+}
+
 export const MIN_TOLERANCE = 25
 export const MAX_TOLERANCE = 100
 
@@ -508,12 +523,42 @@ export const useAppStore = create<AppState>()((set, get) => {
           db.getSetting('toleranceMeters'),
           db.getSetting('lastZoneKey'),
         ])
-      set({
-        tracks,
-        customItineraries,
+      // Fusion, jamais remplacement : lire IndexedDB prend quelques centaines
+      // de millisecondes, et l'utilisateur peut avoir déposé un fichier
+      // entre-temps. Écraser la liste faisait disparaître sa trace sans un
+      // mot — et le même fichier redéposé n'était même plus vu comme doublon.
+      set((etat) => ({
+        tracks: fusionner(tracks, etat.tracks),
+        customItineraries: fusionner(customItineraries, etat.customItineraries),
         toleranceMeters:
           typeof tolerance === 'number' ? tolerance : DEFAULT_TOLERANCE_METERS,
-      })
+      }))
+
+      // Rattrapage : ce qui a été importé pendant l'ouverture de la base n'y a
+      // pas été écrit, faute de base à ce moment-là. Sans cela la trace
+      // survivrait à l'affichage mais pas au rechargement suivant.
+      const idsEnBase = new Set(tracks.map((trace) => trace.id))
+      for (const trace of get().tracks.filter(
+        (candidate) => !idsEnBase.has(candidate.id),
+      )) {
+        try {
+          await db.saveTrack(trace)
+        } catch {
+          // Quota dépassé : la trace reste en mémoire pour cette session.
+        }
+      }
+      const idsCustoms = new Set(
+        customItineraries.map((itin) => itin.osmRelationId),
+      )
+      for (const itineraire of get().customItineraries.filter(
+        (candidate) => !idsCustoms.has(candidate.osmRelationId),
+      )) {
+        try {
+          await db.saveCustomItinerary(itineraire)
+        } catch {
+          // Idem : mémoire seulement.
+        }
+      }
 
       // Au démarrage, on restaure la dernière zone depuis le cache uniquement
       // (jamais d'appel réseau externe sans action de l'utilisateur — les
@@ -568,7 +613,6 @@ export const useAppStore = create<AppState>()((set, get) => {
     },
 
     async importGpxFiles(files) {
-      const { db } = get()
       const errors: string[] = []
       const imported: Track[] = []
       const liste = [...files]
@@ -611,6 +655,10 @@ export const useAppStore = create<AppState>()((set, get) => {
             importedAt: new Date().toISOString(),
             elevationGain: elevationGainMeters(parsed.elevations),
           }
+          // Relu à chaque fichier plutôt que capturé à l'entrée : pendant le
+          // démarrage, la base s'ouvre en parallèle et un `db` figé à null
+          // aurait laissé la trace en mémoire seulement.
+          const db = get().db
           if (db) await db.saveTrack(track)
           imported.push(track)
         } catch (error) {
@@ -632,7 +680,6 @@ export const useAppStore = create<AppState>()((set, get) => {
     },
 
     async importCustomGpx(files) {
-      const { db } = get()
       const errors: string[] = []
       const imported: Itinerary[] = []
       let nextId = Math.min(
@@ -667,6 +714,7 @@ export const useAppStore = create<AppState>()((set, get) => {
             totalMeters: polylineLengthMeters(parsed.points),
             fetchedAt: new Date().toISOString(),
           }
+          const db = get().db
           if (db) await db.saveCustomItinerary(itinerary)
           imported.push(itinerary)
         } catch (error) {

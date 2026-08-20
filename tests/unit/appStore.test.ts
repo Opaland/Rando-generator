@@ -65,6 +65,52 @@ afterEach(() => {
 })
 
 describe('init', () => {
+  it('ne perd pas une trace importée pendant le démarrage', async () => {
+    // L'utilisateur dépose un GPX avant que la lecture d'IndexedDB soit
+    // terminée — quelques centaines de millisecondes, largement atteignables
+    // sur un téléphone. La restauration écrasait alors la liste : la trace
+    // disparaissait sans un mot, et un second dépôt du même fichier n'était
+    // même plus détecté comme doublon.
+    const demarrage = useAppStore.getState().init()
+    await useAppStore
+      .getState()
+      .importGpxFiles([fichierGpx('pendant-le-demarrage.gpx', ligne(10))])
+    await demarrage
+
+    const noms = useAppStore.getState().tracks.map((t) => t.filename)
+    expect(noms).toContain('pendant-le-demarrage.gpx')
+  })
+
+  it('conserve la trace déposée au démarrage jusque dans la base', async () => {
+    const demarrage = useAppStore.getState().init()
+    await useAppStore
+      .getState()
+      .importGpxFiles([fichierGpx('pendant-le-demarrage.gpx', ligne(10))])
+    await demarrage
+
+    // Persistée, et pas seulement affichée : au rechargement suivant, elle
+    // doit encore être là.
+    const db = useAppStore.getState().db
+    const enBase = await db?.listTracks()
+    expect(enBase?.map((t) => t.filename)).toContain(
+      'pendant-le-demarrage.gpx',
+    )
+  })
+
+  it('refuse encore le doublon d’une trace déposée au démarrage', async () => {
+    const demarrage = useAppStore.getState().init()
+    await useAppStore
+      .getState()
+      .importGpxFiles([fichierGpx('sortie.gpx', ligne(10))])
+    await demarrage
+    await useAppStore
+      .getState()
+      .importGpxFiles([fichierGpx('sortie-copie.gpx', ligne(10))])
+
+    expect(useAppStore.getState().importErrors.join(' ')).toMatch(/identique/)
+    expect(useAppStore.getState().tracks).toHaveLength(1)
+  })
+
   it('ouvre la base et restaure les réglages sans toucher au réseau', async () => {
     await useAppStore.getState().init()
     expect(useAppStore.getState().db).not.toBeNull()
