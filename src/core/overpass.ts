@@ -130,7 +130,7 @@ export function buildZoneQuery(zoneId: string): string {
 ${areas}
 )->.zone;
 relation${ROUTE_FILTER}(area.zone);
-out geom;`
+out meta geom;`
 }
 
 /**
@@ -147,7 +147,7 @@ export function buildRefQuery(ref: string): string {
   return `[out:json][timeout:180];
 area["ISO3166-1"="FR"]["admin_level"="2"]->.fr;
 relation${ROUTE_FILTER}["ref"~"^${escaped}$",i](area.fr);
-out geom;`
+out meta geom;`
 }
 
 interface OverpassMember {
@@ -160,6 +160,8 @@ interface OverpassMember {
 interface OverpassElement {
   type: string
   id: number
+  /** Dernière modification de la relation dans OSM (`out meta`). */
+  timestamp?: string
   tags?: Record<string, string>
   members?: OverpassMember[]
 }
@@ -211,6 +213,7 @@ export function parseOverpassResponse(
         0,
       ),
       fetchedAt,
+      osmUpdatedAt: element.timestamp ?? null,
     })
   }
   return itineraries

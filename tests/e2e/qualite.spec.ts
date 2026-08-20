@@ -101,3 +101,29 @@ test('une relation continue n’affiche aucun avertissement', async ({ page }) =
       .getByRole('img', { name: /incomplet dans OpenStreetMap/i }),
   ).toHaveCount(0)
 })
+
+test('la fiche dit quand le tracé a été modifié dans OpenStreetMap', async ({
+  page,
+}) => {
+  await mockExternalNetwork(page)
+  await mockElevation(page)
+  await page.goto('/')
+
+  await page.getByTestId('zone-pilat').click()
+  await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
+    timeout: 15_000,
+  })
+  await page
+    .getByTestId('itinerary-list')
+    .getByRole('button', { name: /GR 7/ })
+    .click()
+  await page.getByTestId('itinerary-card-detail-link').click()
+
+  // L'application savait dire l'âge de sa copie ; elle ne savait rien dire de
+  // l'âge de la donnée elle-même (issue #96).
+  const amont = page.getByTestId('detail-osm-updated')
+  await expect(amont).toContainText('02/04/2019')
+  await expect(amont).toContainText('il y a')
+  // Ancien n'est pas faux : le ton reste factuel, ce n'est pas un reproche.
+  await expect(amont).toContainText('n’est pas forcément faux')
+})

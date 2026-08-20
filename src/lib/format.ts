@@ -28,6 +28,21 @@ export function formatOctets(octets: number): string {
   return `${moFormat.format(sain / (1024 * 1024))} Mo`
 }
 
+/**
+ * « il y a 12 jours », « il y a 7 ans » — ancienneté lisible à partir d'un
+ * nombre de jours. Les mois sont sautés au-delà de deux ans : à cette échelle
+ * ils ne disent plus rien.
+ */
+export function formatAnciennete(jours: number): string {
+  const sain = Math.max(0, Math.round(jours))
+  if (sain === 0) return 'aujourd’hui'
+  if (sain === 1) return 'hier'
+  if (sain < 60) return `il y a ${sain} jours`
+  const mois = Math.round(sain / 30)
+  if (sain < 730) return `il y a ${mois} mois`
+  return `il y a ${Math.round(sain / 365)} ans`
+}
+
 /** « 2 h 30 », « 45 min » — durée lisible à partir de minutes. */
 export function formatDuration(minutes: number): string {
   const arrondi = Math.max(0, Math.round(minutes))

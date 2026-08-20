@@ -122,3 +122,50 @@ describe('assessItinerary', () => {
     expect(bilan.warnings).toEqual([])
   })
 })
+
+describe('fraîcheur amont', () => {
+  const relation = (osmUpdatedAt: string | null): Itinerary => ({
+    osmRelationId: 1,
+    ref: 'GR 7',
+    name: null,
+    network: 'GR',
+    ways: [
+      {
+        osmWayId: 10,
+        coords: [
+          [4.5, 45.4],
+          [4.51, 45.4],
+        ],
+      },
+    ],
+    totalMeters: 800,
+    fetchedAt: '2026-08-20T00:00:00Z',
+    osmUpdatedAt,
+  })
+
+  it('compte l’âge de la donnée elle-même, pas celui de notre copie', () => {
+    const qualite = assessItinerary(
+      relation('2019-04-02T08:15:00Z'),
+      '2026-08-20T00:00:00Z',
+    )
+    expect(qualite.upstreamAgeDays).toBe(2696)
+    // Ancien n'est pas faux : un GR stable ne bouge pas. Rien à signaler.
+    expect(qualite.warnings.join(' ')).not.toMatch(/OpenStreetMap le/)
+  })
+
+  it('rend null quand la date amont est absente ou illisible', () => {
+    expect(assessItinerary(relation(null), '2026-08-20T00:00:00Z').upstreamAgeDays).toBeNull()
+    expect(
+      assessItinerary(relation('pas une date'), '2026-08-20T00:00:00Z')
+        .upstreamAgeDays,
+    ).toBeNull()
+  })
+
+  it('ne compte pas d’âge négatif si l’horloge locale retarde', () => {
+    const qualite = assessItinerary(
+      relation('2026-08-25T00:00:00Z'),
+      '2026-08-20T00:00:00Z',
+    )
+    expect(qualite.upstreamAgeDays).toBe(0)
+  })
+})
