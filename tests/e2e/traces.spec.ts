@@ -48,3 +48,27 @@ test('import multi-fichiers puis suppression : le % est recalculé', async ({
     'pilat-15m.gpx',
   )
 })
+
+test('une trace déposée à l’ouverture survit au rechargement', async ({
+  page,
+}) => {
+  await mockExternalNetwork(page)
+  await page.goto('/')
+
+  // Sans rien attendre : la lecture d'IndexedDB est encore en cours, et c'est
+  // exactement le moment où la restauration écrasait la liste. La trace
+  // disparaissait alors sans un mot — au rechargement, définitivement.
+  await page.getByTestId('gpx-input').setInputFiles({
+    name: 'des-l-ouverture.gpx',
+    mimeType: 'application/gpx+xml',
+    buffer: Buffer.from(buildGpx(15), 'utf-8'),
+  })
+  await expect(page.getByTestId('tracks-list')).toContainText(
+    'des-l-ouverture.gpx',
+  )
+
+  await page.reload()
+  await expect(page.getByTestId('tracks-list')).toContainText(
+    'des-l-ouverture.gpx',
+  )
+})
