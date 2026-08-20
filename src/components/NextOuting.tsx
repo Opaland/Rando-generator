@@ -21,13 +21,27 @@ export function NextOuting() {
   const selectItinerary = useAppStore((s) => s.selectItinerary)
   const focusOn = useAppStore((s) => s.focusOn)
 
+  // Même précaution que dans la liste : la position brute change à chaque
+  // relevé GPS, et reparcourir tous les échantillons une fois par seconde
+  // pour un classement qui ne bouge pas serait du gaspillage. On dépend des
+  // coordonnées arrondies à ~100 m.
+  const lonArrondi = userPosition
+    ? Math.round(userPosition.lon * 1_000) / 1_000
+    : null
+  const latArrondi = userPosition
+    ? Math.round(userPosition.lat * 1_000) / 1_000
+    : null
+
   const suggestions = useMemo(() => {
     if (!matching) return []
     return suggestNextOutings(itineraries, matching.samples, {
-      from: userPosition ? [userPosition.lon, userPosition.lat] : null,
+      from:
+        lonArrondi !== null && latArrondi !== null
+          ? [lonArrondi, latArrondi]
+          : null,
       limit: MAX_SUGGESTIONS,
     })
-  }, [itineraries, matching, userPosition])
+  }, [itineraries, matching, lonArrondi, latArrondi])
 
   const nameById = useMemo(
     () => new Map(itineraries.map((i) => [i.osmRelationId, i])),
