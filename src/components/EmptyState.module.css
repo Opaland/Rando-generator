@@ -11,6 +11,11 @@
 .card {
   pointer-events: auto;
   max-width: 420px;
+  /* Sur téléphone, la carte ne fait que 40 % de la hauteur : sans limite, le
+     panneau d'accueil sortait du cadre et sa dernière étape était coupée
+     (docs/AUDIT_MOBILE.md, constat M5). */
+  max-height: 100%;
+  overflow-y: auto;
   background: var(--blanc-papier);
   border: 1px solid var(--gris-vert-clair);
   border-top: 6px solid var(--rouge-balisage);

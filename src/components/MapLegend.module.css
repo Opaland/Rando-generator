@@ -61,10 +61,22 @@
   opacity: 0.55;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 800px) {
+  /* La ligne d'attribution de MapLibre occupe le bas de la carte : sur
+     téléphone, la légende passait par-dessus et les deux devenaient
+     illisibles (docs/AUDIT_MOBILE.md, constat M7). L'attribution n'est pas
+     décorative — elle est exigée par l'ODbL et la Licence Ouverte —, c'est
+     donc la légende qui monte. */
   .legend {
     left: 8px;
-    bottom: 8px;
-    font-size: 0.7rem;
+    /* Les commandes de zoom occupent le coin haut droit sur 54 px : la
+       légende s'arrête avant, elle ne s'étale pas jusqu'au bord. */
+    right: 60px;
+    /* MapLibre déplie volontairement l'attribution au premier affichage, même
+       en mode compact : c'est un choix de conformité, pas un défaut. Sur une
+       carte haute de 338 px, cela occupe 64 px en bas. La légende monte donc
+       en haut à gauche. */
+    top: 8px;
+    bottom: auto;
   }
 }

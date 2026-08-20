@@ -60,7 +60,12 @@ export function MapView() {
         style: baseStyle(IGN_TILES, ATTRIBUTION),
         center: [4.55, 45.5],
         zoom: 9,
-        attributionControl: { compact: false },
+        // Attribution laissée au comportement par défaut de MapLibre :
+        // dépliée sur grand écran, repliée derrière un « ⓘ » en dessous de
+        // 640 px. Forcée dépliée, elle occupait trois lignes et 60 px en bas
+        // de carte sur téléphone, par-dessus la légende et l'état d'accueil
+        // (docs/AUDIT_MOBILE.md, constat M7). Elle reste accessible : c'est
+        // une obligation ODbL et Licence Ouverte, pas un ornement.
       })
     } catch {
       // WebGL indisponible : l'application reste utilisable sans carte.
