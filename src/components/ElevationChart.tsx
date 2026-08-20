@@ -51,6 +51,16 @@ export function ElevationChart({ profile }: { profile: ElevationProfile }) {
   const survole =
     ratio === null ? null : pointAtDistance(profile, ratio * totalDistance)
 
+  /**
+   * Un repère posé d'un clic reste posé.
+   *
+   * Sans cela, quitter le graphique l'effaçait — c'est-à-dire exactement le
+   * geste qu'on fait juste après avoir cliqué : regarder la carte. On
+   * cliquait, on tournait la tête, il n'y avait rien. Le survol, lui, reste
+   * un survol : il prévisualise et s'efface en sortant.
+   */
+  const [epingle, setEpingle] = useState(false)
+
   const deplacer = (nouveau: number | null) => {
     const borne = nouveau === null ? null : Math.min(Math.max(nouveau, 0), 1)
     setRatio(borne)
@@ -62,11 +72,13 @@ export function ElevationChart({ profile }: { profile: ElevationProfile }) {
   const surPointeur = (event: React.PointerEvent<SVGSVGElement>) => {
     const boite = svgRef.current?.getBoundingClientRect()
     if (!boite || boite.width === 0) return
+    if (event.type === 'pointerdown') setEpingle(true)
     deplacer((event.clientX - boite.left) / boite.width)
   }
 
   const surClavier = (event: React.KeyboardEvent<SVGSVGElement>) => {
     const depart = ratio ?? 0
+    setEpingle(true)
     if (event.key === 'ArrowRight') deplacer(depart + PAS_CLAVIER)
     else if (event.key === 'ArrowLeft') deplacer(depart - PAS_CLAVIER)
     else if (event.key === 'Home') deplacer(0)
@@ -104,14 +116,16 @@ export function ElevationChart({ profile }: { profile: ElevationProfile }) {
         onPointerDown={surPointeur}
         onPointerLeave={(event) => {
           // Au doigt, le navigateur détruit le pointeur dès que le contact
-          // cesse : un « pointerleave » suit immédiatement chaque tap. Le
-          // repère posé disparaissait donc aussitôt, et le geste décrit par
-          // la consigne ne servait à rien. Sur téléphone, c'est le tap
-          // suivant — ou la perte du focus — qui efface le curseur.
-          if (event.pointerType === 'touch') return
+          // cesse : un « pointerleave » suit immédiatement chaque tap. Et à
+          // la souris, sortir du graphique est le geste qui suit le clic —
+          // on va regarder la carte. Dans les deux cas, un repère posé
+          // volontairement doit rester : c'est le tap ou le clic suivant, ou
+          // la perte du focus, qui l'efface.
+          if (event.pointerType === 'touch' || epingle) return
           deplacer(null)
         }}
         onBlur={() => {
+          setEpingle(false)
           deplacer(null)
         }}
         onKeyDown={surClavier}
