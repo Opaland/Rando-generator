@@ -70,6 +70,12 @@ test('cliquer un tracé sur la carte ouvre la fiche détail (altimétrie + POI)'
   await expect(poiList).toContainText('Vestige')
   await expect(poiList).toContainText('Croix des Trois Chemins')
   await expect(poiList).toContainText('Croix ou borne')
+
+  // Un profil de montagne se raconte par ses cols : celui-ci est nommé sous
+  // la courbe, avec sa distance depuis le départ et son altitude.
+  const reperes = page.getByTestId('elevation-reperes')
+  await expect(reperes).toContainText('Col de la Croix de Chaubouret')
+  await expect(reperes).toContainText('1 201 m')
   await expect(page.getByTestId('detail-poi-caveat')).toContainText(
     /gestionnaire/i,
   )

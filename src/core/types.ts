@@ -93,6 +93,8 @@ export interface CompletionResult {
 export type PoiKind =
   | 'viewpoint'
   | 'peak'
+  /** Col : le point où l'on bascule, et le repère d'un profil de montagne. */
+  | 'pass'
   /** Refuge gardé (tourism=alpine_hut) : personnel, repas, réservation. */
   | 'hut'
   /** Refuge non gardé, cabane, abri où dormir (wilderness_hut, basic_hut…). */

@@ -126,7 +126,8 @@ export function buildPoiQuery(coords: LonLat[]): string {
       const bbox = `${south.toFixed(5)},${west.toFixed(5)},${north.toFixed(5)},${east.toFixed(5)}`
       return [
         `  nwr["tourism"~"^(viewpoint|alpine_hut|wilderness_hut|picnic_site)$"](${bbox});`,
-        `  nwr["natural"~"^(peak|spring)$"](${bbox});`,
+        `  nwr["natural"~"^(peak|spring|saddle)$"](${bbox});`,
+        `  nwr["mountain_pass"="yes"](${bbox});`,
         `  nwr["amenity"="drinking_water"](${bbox});`,
         `  nwr["amenity"="shelter"]["shelter_type"~"^(basic_hut|lean_to|rock_shelter|weather_shelter)$"](${bbox});`,
         `  nwr["historic"~"^(monument|memorial|ruins|castle|fort|tower|archaeological_site|wayside_cross|wayside_shrine|boundary_stone)$"](${bbox});`,
@@ -168,6 +169,9 @@ function classify(tags: Record<string, string>): PoiKind | null {
       return 'picnic'
   }
   if (tags.natural === 'peak') return 'peak'
+  // Un col porte l'un ou l'autre tag selon les contributeurs — parfois les
+  // deux, parfois seulement `mountain_pass` sur un nœud partagé avec la route.
+  if (tags.natural === 'saddle' || tags.mountain_pass === 'yes') return 'pass'
   if (tags.natural === 'spring' || tags.amenity === 'drinking_water') {
     return 'water'
   }
@@ -253,6 +257,7 @@ const KIND_ORDER: PoiKind[] = [
   'hut',
   'shelter',
   'water',
+  'pass',
   'peak',
   'viewpoint',
   'picnic',
