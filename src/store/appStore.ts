@@ -34,6 +34,7 @@ import { FitError, looksLikeFit, parseFit } from '../core/fit.ts'
 import {
   crossedMilestones,
   DEFAULT_COMPLETION_PCT,
+  franchissementTientEncore,
   normalizeCompletionPct,
 } from '../core/milestones.ts'
 import type { MatchResult } from '../core/matching.ts'
@@ -312,14 +313,23 @@ export const useAppStore = create<AppState>()((set, get) => {
         ? crossedMilestones(pctsPrecedents, result.results)
         : []
       pctsPrecedents = new Map(result.results.map((r) => [r.itineraryId, r.pct]))
+      // Un seul franchissement annoncé à la fois : le plus haut. L'annonce
+      // reste ensuite jusqu'à ce que l'utilisateur la referme — mais pas
+      // au-delà de ce qu'elle raconte. L'effacer à chaque calcul la faisait
+      // disparaître dans la seconde, à cause d'un recalcul de fond qu'on
+      // n'avait pas demandé (démarrage, arrivée des boucles locales).
+      const annonceEnCours = get().celebration
+      const celebration =
+        franchis[0] ??
+        (annonceEnCours &&
+        franchissementTientEncore(annonceEnCours, result.results)
+          ? annonceEnCours
+          : null)
       set({
         matching: result,
         customMatching: customResult,
         matchingBusy: false,
-        // Un seul franchissement annoncé à la fois : le plus haut. Et
-        // l'annonce ne survit pas au calcul suivant : elle porte sur *ce*
-        // calcul-là, la laisser affichée après un autre serait mentir.
-        celebration: franchis[0] ?? null,
+        celebration,
       })
     }
   }
