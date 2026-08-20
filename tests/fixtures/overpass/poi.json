@@ -131,6 +131,26 @@
         "drinking_water": "no",
         "seasonal": "yes"
       }
+    },
+    {
+      "type": "node",
+      "id": 9012,
+      "lat": 45.4008,
+      "lon": 4.5025,
+      "tags": {
+        "historic": "wayside_cross",
+        "name": "Croix des Trois Chemins"
+      }
+    },
+    {
+      "type": "node",
+      "id": 9013,
+      "lat": 45.4012,
+      "lon": 4.5035,
+      "tags": {
+        "historic": "ruins",
+        "name": "Tour des Sarrasins"
+      }
     }
   ]
 }

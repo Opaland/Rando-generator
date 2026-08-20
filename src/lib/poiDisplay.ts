@@ -9,6 +9,8 @@ export const POI_LABELS: Record<PoiKind, string> = {
   shelter: 'Abri (pause)',
   water: "Point d'eau",
   picnic: 'Pique-nique',
+  ruins: 'Vestige',
+  marker: 'Croix ou borne',
   monument: 'Monument',
 }
 
@@ -20,6 +22,8 @@ export const POI_COLORS: Record<PoiKind, string> = {
   shelter: '#4a6b6b',
   water: '#1d6fa5',
   picnic: '#b3801a',
+  ruins: '#8a6f4e',
+  marker: '#7a6a5a',
   monument: '#5a5a7a',
 }
 
