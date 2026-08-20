@@ -1,0 +1,146 @@
+.section {
+  display: grid;
+  gap: 8px;
+}
+
+.title {
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gris-vert);
+}
+
+.hint {
+  margin: 0;
+  font-size: var(--texte-secondaire);
+  color: var(--gris-vert);
+  line-height: 1.45;
+}
+
+.list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--gris-vert-clair);
+  border-radius: 6px;
+}
+
+.entete {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.badge {
+  font-size: var(--texte-etiquette);
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 3px;
+  color: #fff;
+}
+
+.GR {
+  background: var(--rouge-balisage);
+}
+
+.GRP {
+  background: var(--orange-grp);
+}
+
+.PR {
+  background: var(--jaune-pr);
+  color: var(--vert-noir);
+}
+
+.LOCAL {
+  background: var(--bleu-local);
+}
+
+.PERSO {
+  background: var(--gris-vert);
+}
+
+.nom {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+
+.nom:hover {
+  color: var(--rouge-balisage);
+}
+
+.retirer {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--gris-vert);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.retirer:hover {
+  background: rgba(30, 43, 35, 0.06);
+}
+
+.chiffres {
+  margin: 0;
+  font-size: var(--texte-secondaire);
+  font-variant-numeric: tabular-nums;
+}
+
+.fini {
+  margin: 0;
+  font-size: var(--texte-secondaire);
+  color: var(--gris-vert);
+}
+
+.troncons {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.troncon {
+  width: 100%;
+  min-height: 36px;
+  padding: 6px 10px;
+  text-align: left;
+  border: 1px solid var(--gris-vert-clair);
+  border-radius: 4px;
+  background: var(--blanc-papier);
+  font: inherit;
+  font-size: var(--texte-secondaire);
+  font-variant-numeric: tabular-nums;
+  color: inherit;
+  cursor: pointer;
+}
+
+.troncon:hover {
+  border-color: var(--rouge-balisage);
+}
+
+.aller {
+  color: var(--gris-vert);
+}

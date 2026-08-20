@@ -10,6 +10,7 @@ import { ItineraryDetail } from './components/ItineraryDetail.tsx'
 import { ItineraryList } from './components/ItineraryList.tsx'
 import { LocateButton } from './components/LocateButton.tsx'
 import { NextOuting } from './components/NextOuting.tsx'
+import { Objectifs } from './components/Objectifs.tsx'
 import { OfflineBanner } from './components/OfflineBanner.tsx'
 import { RouteDrawer } from './components/RouteDrawer.tsx'
 import { Settings } from './components/Settings.tsx'
@@ -161,6 +162,7 @@ function App() {
           <TrackManager />
           <CustomItineraries />
           <Dashboard />
+          <Objectifs />
           <NextOuting />
           <History />
           <ItineraryList />

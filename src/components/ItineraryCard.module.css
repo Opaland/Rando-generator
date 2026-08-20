@@ -123,3 +123,35 @@
   font-variant-numeric: tabular-nums;
   min-height: 1.1em;
 }
+
+/*
+ * Épingler un itinéraire comme objectif (issue #13). Discret tant qu'il ne
+ * l'est pas : c'est une action de suivi, pas l'action principale de la fiche.
+ */
+.objectif,
+.objectifActif {
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 1px solid var(--gris-vert-clair);
+  border-radius: 4px;
+  background: transparent;
+  font: inherit;
+  font-size: var(--texte-secondaire);
+  text-align: left;
+  cursor: pointer;
+}
+
+.objectif {
+  color: var(--gris-vert);
+}
+
+.objectifActif {
+  color: var(--rouge-balisage);
+  border-color: var(--rouge-balisage);
+  font-weight: 600;
+}
+
+.objectif:hover,
+.objectifActif:hover {
+  background: rgba(30, 43, 35, 0.06);
+}

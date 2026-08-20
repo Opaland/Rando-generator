@@ -20,6 +20,8 @@ export function ItineraryCard() {
   const customMatching = useAppStore((s) => s.customMatching)
   const selectItinerary = useAppStore((s) => s.selectItinerary)
   const openItineraryDetail = useAppStore((s) => s.openItineraryDetail)
+  const objectifs = useAppStore((s) => s.objectifs)
+  const basculerObjectif = useAppStore((s) => s.basculerObjectif)
 
   // La fiche détail (altimétrie, POI, vue 3D) prend le relais : éviter le
   // doublon d'information avec ce résumé flottant.
@@ -38,6 +40,7 @@ export function ItineraryCard() {
   const total = result?.totalMeters ?? itin.totalMeters
   // Un pourcentage qui monte lentement ne dit rien ; un palier à portée, si.
   const restantJalon = metersToNextMilestone(pct, total)
+  const objectif = objectifs.includes(itin.osmRelationId)
 
   return (
     <aside
@@ -82,6 +85,20 @@ export function ItineraryCard() {
             ? `Encore ${formatKm(restantJalon)} pour atteindre ${nextMilestone(pct) ?? 100} %`
             : ''}
       </p>
+      {/*
+        Épingler se décide en regardant l'itinéraire, pas en survolant la
+        liste (issue #13) : c'est ici qu'on voit ce qu'il reste, donc ici
+        qu'on décide d'en faire un objectif.
+      */}
+      <button
+        type="button"
+        className={objectif ? styles.objectifActif : styles.objectif}
+        aria-pressed={objectif}
+        data-testid="itinerary-card-objectif"
+        onClick={() => void basculerObjectif(itin.osmRelationId)}
+      >
+        {objectif ? '★ Objectif suivi' : '☆ Suivre comme objectif'}
+      </button>
       <button
         type="button"
         className={styles.detailLink}
