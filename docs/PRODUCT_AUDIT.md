@@ -285,6 +285,48 @@ données (mi-hauteur à la première visite, repliée au retour). La barre
 d'onglets a été écartée : elle sépare la carte de la progression, alors que le
 produit consiste à regarder les deux ensemble.
 
+## Journal — après-midi et soirée du 20 août 2026
+
+Le fil conducteur de cette série n'est plus l'audit mobile mais
+`docs/PERSONAS.md` : six personnes suivies pas à pas dans l'application, et
+l'endroit exact où chacune s'arrête. Trois constats revenaient chez
+plusieurs d'entre elles ; ils sont devenus #131, #132 et #133.
+
+| PR | Ce qu'elle apporte |
+|---|---|
+| #134 | Les six personas, et l'écart entre les deux chiffres enfin dit (#133) |
+| #135 | Sauvegarde complète exportable et réimportable (#132) |
+| #136 | Recherche par nom de ville, via la BAN (#131) |
+| #138 | Vignette de prévisualisation du lien partagé (#8) |
+| #139 | MapView de 242 à 100 lignes, store testé sans navigateur (#9) |
+| #140 | Objectifs épinglés et tronçons restants (#13) |
+| #141 | Brief, PRD et architecture (#94) |
+
+Trois choses méritent d'être notées, parce qu'elles ont changé une décision :
+
+- **#133 ne corrige aucun calcul.** « Mes sorties » additionne toutes les
+  traces, le tableau de bord ne compte que la zone chargée : les deux chiffres
+  sont justes, et leur écart n'était expliqué nulle part. On rentre de
+  Bretagne, les kilomètres montent d'un côté et le pourcentage ne bouge pas
+  de l'autre. La correction est une phrase, pas une formule.
+- **#140 a changé d'endroit en cours de route.** L'étoile « objectif » était
+  d'abord posée sur chaque ligne de la liste ; chaque entrée portait alors
+  deux boutons contenant le nom de l'itinéraire, et quatorze tests ne savaient
+  plus lequel viser — un lecteur d'écran non plus. Le bouton est passé dans la
+  fiche, qui est de toute façon l'endroit où l'on décide.
+- **#139 a révélé un test qui gagnait par chance.** Le repère épinglé du
+  profil altimétrique était lu juste après le déplacement de souris, sans
+  attente : une course gagnée par marge jusqu'à ce qu'une souscription de plus
+  au store la fasse perdre. Le test attend désormais le marqueur *avant* le
+  geste qu'il mesure — ce qu'il vérifie, c'est la survie du repère, pas sa
+  vitesse d'arrivée.
+
+Quatre sujets restent **bloqués faute d'accès réseau**, et le rester est un
+choix plutôt qu'un oubli : #95 (le facteur de conversion du `hdop` demande de
+vraies traces), #87 et #88 (sources départementales et Geotrek injoignables),
+#20 (demande d'interroger Overpass en vrai). Aucun n'a été « avancé » en
+devinant un schéma.
+
 ## Definition of done retenue
 
 Une fonctionnalité n'est livrée que si : tests unitaires sur `src/core`,
