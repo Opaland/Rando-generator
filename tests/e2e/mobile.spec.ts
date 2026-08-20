@@ -220,3 +220,103 @@ test('rien ne descend sous 13 px sur un écran de téléphone', async ({
     textes.filter((t) => t.px < 14 && !t.badge && !attribution(t.texte)),
   ).toEqual([])
 })
+
+/**
+ * La carte occupait 40 % de l'écran et le panneau 60 %, par héritage de la
+ * disposition bureau (docs/AUDIT_MOBILE.md, constat M1). Sur une application
+ * dont la proposition tient en « voir sa progression sur une carte », le
+ * rapport était inversé — et il l'était par défaut, pas par décision.
+ */
+async function hauteurCarteVisible(
+  page: import('@playwright/test').Page,
+): Promise<number> {
+  return page.evaluate(() => {
+    const carte = document.querySelector('[data-testid="map"]')
+    const feuille = document.querySelector('[data-testid="sidebar"]')
+    if (!carte || !feuille) return 0
+    const cadre = carte.getBoundingClientRect()
+    const dessus = feuille.getBoundingClientRect().top
+    return Math.round(Math.min(cadre.bottom, dessus) - cadre.top)
+  })
+}
+
+test('la carte occupe le cadre, le panneau devient une feuille', async ({
+  page,
+}) => {
+  await mockExternalNetwork(page)
+  await mockTilesOk(page)
+  await page.goto('/')
+
+  const feuille = page.getByTestId('sidebar')
+  // Première visite : rien à voir sur la carte, tout à faire dans le panneau.
+  await expect(feuille).toHaveAttribute('data-position', 'moitie')
+  await page.getByTestId('zone-pilat').click()
+  await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
+    timeout: 15_000,
+  })
+
+  // Même feuille ouverte à mi-hauteur, la carte est plus visible qu'avant
+  // cette disposition, où elle plafonnait à 338 px sur 844.
+  await expect.poll(() => hauteurCarteVisible(page)).toBeGreaterThan(338)
+
+  const poignee = page.getByTestId('sheet-handle')
+  await poignee.click()
+  await expect(feuille).toHaveAttribute('data-position', 'pleine')
+  await poignee.click()
+  await expect(feuille).toHaveAttribute('data-position', 'repliee')
+
+  // Repliée, la feuille ne garde que sa poignée : la carte a l'écran. On
+  // interroge en boucle — la feuille glisse en 0,2 s, et mesurer pendant la
+  // transition ne dit rien de la disposition obtenue.
+  await expect
+    .poll(async () => {
+      const cadre = await page.evaluate(
+        () =>
+          document.querySelector('[data-testid="map"]')?.getBoundingClientRect()
+            .height ?? 1,
+      )
+      return (await hauteurCarteVisible(page)) / cadre
+    })
+    .toBeGreaterThan(0.85)
+
+  // La poignée dit le chiffre qu'on est venu chercher.
+  await expect(poignee).toContainText('%')
+
+  // Et le bouton « où suis-je » reste atteignable dans les trois positions :
+  // ancré en bas, il passait sous la feuille.
+  for (const attendu of ['moitie', 'pleine', 'repliee']) {
+    await expect(page.getByTestId('locate-toggle')).toBeVisible()
+    const couvert = await page.evaluate(() => {
+      const bouton = document
+        .querySelector('[data-testid="locate-toggle"]')
+        ?.getBoundingClientRect()
+      const dessus =
+        document.querySelector('[data-testid="sidebar"]')?.getBoundingClientRect()
+          .top ?? Infinity
+      return bouton ? bouton.bottom > dessus : true
+    })
+    expect(couvert, `position ${attendu}`).toBe(false)
+    await poignee.click()
+  }
+})
+
+test('au retour, la feuille laisse la carte visible', async ({ page }) => {
+  await mockExternalNetwork(page)
+  await mockTilesOk(page)
+  await page.goto('/')
+  await page.getByTestId('zone-pilat').click()
+  await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
+    timeout: 15_000,
+  })
+
+  // On revient sur l'application : la zone est en cache, on vient regarder sa
+  // progression sur la carte — pas rouvrir le sélecteur de zone.
+  await page.reload()
+  await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
+    timeout: 15_000,
+  })
+  await expect(page.getByTestId('sidebar')).toHaveAttribute(
+    'data-position',
+    'repliee',
+  )
+})

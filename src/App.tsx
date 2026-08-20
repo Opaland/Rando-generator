@@ -14,12 +14,32 @@ import { RouteDrawer } from './components/RouteDrawer.tsx'
 import { Settings } from './components/Settings.tsx'
 import { TrackManager } from './components/TrackManager.tsx'
 import { ZonePicker } from './components/ZonePicker.tsx'
+import { formatPct } from './lib/format.ts'
 import { useAppStore } from './store/appStore.ts'
 import styles from './App.module.css'
 
 // La carte (MapLibre, ~900 kB) est chargée à part : le tableau de bord et les
 // listes sont utilisables immédiatement.
 const MapView = lazy(() => import('./components/MapView.tsx'))
+
+/**
+ * Positions de la feuille du panneau sur téléphone (voir .sidebar dans
+ * App.module.css). Sur grand écran la feuille n'existe pas : le panneau est
+ * une colonne, et cet état n'a aucun effet.
+ */
+type PositionFeuille = 'repliee' | 'moitie' | 'pleine'
+
+const SUIVANTE: Record<PositionFeuille, PositionFeuille> = {
+  repliee: 'moitie',
+  moitie: 'pleine',
+  pleine: 'repliee',
+}
+
+const ACTION: Record<PositionFeuille, string> = {
+  repliee: 'Ouvrir le panneau de contrôle',
+  moitie: 'Agrandir le panneau de contrôle',
+  pleine: 'Réduire le panneau de contrôle',
+}
 
 function App() {
   const init = useAppStore((s) => s.init)
@@ -28,7 +48,35 @@ function App() {
   const hasCustomData = useAppStore((s) => s.customItineraries.length > 0)
   const hasTracks = useAppStore((s) => s.tracks.length > 0)
   const zoneLoading = useAppStore((s) => s.zoneLoading)
+  const globalPct = useAppStore((s) => s.matching?.global.pct ?? null)
+  const zoneRestoredAtStartup = useAppStore((s) => s.zoneRestoredAtStartup)
   const [aboutOpen, setAboutOpen] = useState(false)
+  /**
+   * null = suivre l'état des données. Au retour sur l'application, une zone
+   * est déjà en cache : on vient regarder sa carte, la feuille reste basse.
+   * À la première visite il n'y a rien à voir sur la carte, et tout à faire
+   * dans le panneau : elle s'ouvre à mi-hauteur.
+   */
+  const [feuille, setFeuille] = useState<PositionFeuille | null>(null)
+  const position: PositionFeuille =
+    feuille ?? (zoneRestoredAtStartup ? 'repliee' : 'moitie')
+
+  // Choisir un itinéraire dans la liste, c'est demander à le voir sur la
+  // carte. La feuille se replie donc : sinon la fiche résumé qui s'ouvre en
+  // surimpression se retrouve dessous, hors d'atteinte. On s'abonne au store
+  // plutôt que de dériver d'un rendu : c'est le geste qui compte, pas l'état.
+  useEffect(
+    () =>
+      useAppStore.subscribe((etat, precedent) => {
+        if (
+          etat.selectedItineraryId !== null &&
+          etat.selectedItineraryId !== precedent.selectedItineraryId
+        ) {
+          setFeuille('repliee')
+        }
+      }),
+    [],
+  )
 
   useEffect(() => {
     void init()
@@ -80,7 +128,34 @@ function App() {
       )}
 
       <div className={styles.layout}>
-        <aside className={styles.sidebar} aria-label="Panneau de contrôle">
+        <aside
+          className={`${styles.sidebar} ${styles[position]}`}
+          aria-label="Panneau de contrôle"
+          data-testid="sidebar"
+          data-position={position}
+        >
+          {/*
+            Poignée de la feuille : n'existe qu'en dessous de 800 px (masquée
+            en CSS au-dessus). Un seul bouton pour trois positions, dont le
+            libellé annonce ce qu'il va faire plutôt que l'état courant.
+          */}
+          <button
+            type="button"
+            className={styles.poignee}
+            data-testid="sheet-handle"
+            aria-label={ACTION[position]}
+            aria-expanded={position !== 'repliee'}
+            onClick={() => {
+              setFeuille(SUIVANTE[position])
+            }}
+          >
+            <span className={styles.poigneeBarre} aria-hidden="true" />
+            <span className={styles.poigneeTexte}>
+              {globalPct === null
+                ? 'Zones, traces et réglages'
+                : `${formatPct(globalPct)} parcourus`}
+            </span>
+          </button>
           <ZonePicker />
           <TrackManager />
           <CustomItineraries />

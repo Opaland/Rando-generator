@@ -88,6 +88,12 @@
   min-width: 0;
 }
 
+/* Poignée de la feuille mobile : sur grand écran le panneau est une colonne,
+   elle n'a rien à faire là. */
+.poignee {
+  display: none;
+}
+
 .mapLoading {
   margin: 24px;
   color: var(--gris-vert);
@@ -127,17 +133,99 @@
     flex-direction: column;
   }
 
-  .sidebar {
-    width: auto;
-    max-width: none;
-    border-right: none;
-    /* Chaque section est un accordéon repliable (voir .acc-summary global) :
-       l'utilisateur referme ce qui ne l'intéresse pas plutôt que de subir
-       un défilement interne trop serré. */
-    max-height: 60vh;
+  /*
+    La carte occupait 40 % de l'écran et le panneau 60 %, par héritage de la
+    disposition bureau (docs/AUDIT_MOBILE.md, constat M1). Sur une application
+    dont la proposition tient en « voir sa progression sur une carte », le
+    rapport était inversé.
+
+    La carte prend donc tout le cadre, et le panneau devient une feuille
+    glissante à trois positions — comme le fait n'importe quelle application
+    de cartographie. On ne perd rien : tout le panneau reste accessible, à un
+    geste près.
+  */
+  .layout {
+    display: block;
+    position: relative;
   }
 
   .main {
-    min-height: 40vh;
+    position: absolute;
+    inset: 0;
+  }
+
+  .sidebar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    max-width: none;
+    border-right: none;
+    border-top: 1px solid var(--gris-vert-clair);
+    border-radius: 14px 14px 0 0;
+    box-shadow: 0 -4px 18px rgba(30, 43, 35, 0.2);
+    /* Au-dessus des surimpressions de carte : la feuille est un plan à part,
+       pas un calque de la carte (paliers listés dans index.css). */
+    z-index: var(--z-feuille);
+    padding-top: 0;
+    /* Chaque section est un accordéon repliable (voir .acc-summary global) :
+       l'utilisateur referme ce qui ne l'intéresse pas plutôt que de subir
+       un défilement interne trop serré. */
+    transition: max-height 0.2s ease;
+  }
+
+  .repliee {
+    /* Juste la poignée : la carte occupe le reste. */
+    max-height: 52px;
+    overflow: hidden;
+  }
+
+  .moitie {
+    /* Assez pour travailler dans le panneau, en laissant la carte plus
+       visible qu'elle ne l'était avant cette disposition (338 px sur 844). */
+    max-height: 48vh;
+  }
+
+  .pleine {
+    /* Le haut du cadre reste visible : on n'oublie pas qu'il y a une carte
+       dessous, et la feuille se referme sans chercher un bouton. */
+    max-height: calc(100% - 24px);
+  }
+
+  .poignee {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    /* Marges négatives : la poignée occupe toute la largeur de la feuille,
+       par-dessus le padding latéral du panneau. */
+    margin: 0 -16px;
+    padding: 6px 16px 10px;
+    min-height: 52px;
+    border: none;
+    background: var(--blanc-papier);
+    border-radius: 14px 14px 0 0;
+    color: var(--vert-noir);
+    font-weight: 600;
+    font-size: var(--texte-secondaire);
+  }
+
+  .poigneeBarre {
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--gris-vert-clair);
+  }
+
+  .poigneeTexte {
+    margin-top: 6px;
   }
 }
