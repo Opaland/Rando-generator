@@ -62,7 +62,10 @@ existant via `PW_CHROMIUM_PATH=/chemin/vers/chrome npm run e2e`.
    (`public/data/`), aucun appel réseau supplémentaire.
 2. **Importer des GPX** (multi-fichiers, drag & drop). Les traces sont listées
    avec nom, date, distance et D+, persistées localement ; un double import
-   du même fichier est détecté et refusé.
+   du même fichier est détecté et refusé. Sur un lot de fichiers, l'import
+   annonce celui qu'il est en train de lire. **Déplier une trace** montre ce
+   que cette sortie-là a fait avancer : quels itinéraires balisés, et de
+   combien (un simple croisement de sentier, sous 300 m, n'est pas compté).
 3. **Créer « Mes itinéraires »** : importez le GPX d'un parcours *à faire*
    (cartoguide, Visorando, tracé maison…) — il devient un itinéraire local
    avec sa propre progression, hors statistiques des réseaux OSM. Ou
@@ -79,21 +82,42 @@ existant via `PW_CHROMIUM_PATH=/chemin/vers/chrome npm run e2e`.
    balisage = parcouru — une légende compacte rappelle le code couleur par
    réseau), tableau de bord (% global, km faits/restants, répartition
    GR/GRP/PR, top 5), liste triable/filtrable. Sélectionner un itinéraire
-   dans la liste **zoome dessus** sur la carte.
-6. **Fiche détail** : cliquer un tracé sur la carte ouvre un panneau avec son
+   dans la liste **zoome dessus** sur la carte. Un itinéraire parcouru à
+   **95 % ou plus est « bouclé »** — exiger 100 % punirait le randonneur pour
+   des tronçons impraticables ou une géométrie OSM imparfaite ; le seuil est
+   toujours annoncé, jamais présenté comme du 100 %. Les autres affichent ce
+   qu'il reste avant le prochain jalon (25, 50, 75, 90, 100 %).
+6. **Trouver une sortie** : le panneau « Trouver une sortie » filtre par
+   longueur, durée, dénivelé, forme (boucle ou aller simple, déduite de la
+   géométrie du tracé) et proximité de votre position. Aucun filtre ne
+   s'applique à une donnée absente : un dénivelé inconnu n'est pas un
+   dénivelé nul, et l'écarter ferait disparaître en silence la plupart des
+   tracés OSM.
+7. **Prochaine sortie** : l'application propose le plus long tronçon non
+   parcouru d'un seul tenant, pondéré par la distance pour s'y rendre — un
+   tronçon de 12 km à 200 km de chez soi n'est pas une proposition.
+8. **Fiche détail** : cliquer un tracé sur la carte ouvre un panneau avec son
    **profil altimétrique** (service altimétrique IGN, Etalab 2.0 — D+/D−/
-   min/max), les **points d'intérêt** à proximité (via Overpass), et une
-   **vue 3D** — une perspective
+   min/max) — **survolez-le pour voir où l'on est** sur la carte, à la souris
+   comme au clavier —, les **étapes** pour les itinéraires de plus de 30 km
+   (découpage régulier calculé par l'application, ce ne sont pas les étapes
+   d'un topo-guide), les **points d'intérêt** à proximité (via Overpass), et
+   une **vue 3D** — une perspective
    caméra inclinée sur le tracé (pas un relief calculé depuis un modèle
    numérique de terrain). Le relief et les POI sont des bonus : indisponibles,
    la fiche reste utilisable.
-7. **Se localiser** : le bouton « Ma position » affiche l'appareil sur la
+9. **Se localiser** : le bouton « Ma position » affiche l'appareil sur la
    carte et recentre dessus au premier relevé. La position est lue par le
    navigateur et **reste dans l'onglet** — ni enregistrée, ni transmise. La
    précision annoncée est affichée, et signalée quand elle est trop mauvaise
    pour situer quelqu'un sur un sentier.
-8. **Régler la précision de suivi GPS** (tolérance de matching, 25–100 m)
-   selon la précision de votre appareil ; tout est recalculé.
+10. **Régler la précision de suivi GPS** (tolérance de matching, 25–100 m)
+    selon la précision de votre appareil ; tout est recalculé.
+11. **Emporter ou montrer** : chaque itinéraire s'exporte en **GPX** (avec son
+    attribution), et le tableau de bord enregistre un **bilan en image** —
+    pourcentage global, itinéraires les plus avancés, période couverte. L'image
+    est dessinée sur l'appareil et ne contient aucune coordonnée : des totaux
+    et des noms d'itinéraires publics, rien d'autre.
 
 ### Hors connexion
 
@@ -132,13 +156,22 @@ src/
 │  ├─ boucles.ts   # boucles communales open data (Métropole de Lyon, LO 2.0)
 │  ├─ routing.ts   # graphe des sentiers, accroche d'un clic, Dijkstra
 │  ├─ history.ts   # sorties par mois, totaux, cumuls
+│  ├─ discovery.ts # durées et dénivelés publiés, forme du tracé, filtres
+│  ├─ stages.ts    # découpage d'un long itinéraire en étapes régulières
+│  ├─ nextOuting.ts # « prochaine sortie » : plus long tronçon restant, pondéré
+│  ├─ milestones.ts # jalons 25/50/75/90/100 % et seuil « bouclé » (95 %)
+│  ├─ outing.ts    # ce qu'une sortie a fait avancer, ce jour-là
+│  ├─ summary.ts   # bilan partageable (totaux, itinéraires les plus avancés)
+│  ├─ connectivity.ts # état de connexion : navigateur + constat du worker
+│  ├─ animation.ts # interpolations d'animation (compteur qui suit la barre)
 │  ├─ gpxExport.ts # écriture GPX 1.1 + attribution de licence
 │  ├─ geolocation.ts # messages et seuils de la position GPS
 │  └─ mapdata.ts   # GeoJSON des couches carte (base / parcouru / traces)
 ├─ store/       # Zustand + client du worker de matching
 ├─ db/          # IndexedDB (idb), versionnée, TTL 30 jours
 ├─ workers/     # matching.worker.ts (repli synchrone si Worker indisponible)
-└─ components/  # MapView (MapLibre), ZonePicker, TrackManager, Dashboard,
+└─ components/  # MapView (MapLibre) + map/ (style, sources, caméra),
+                # ZonePicker, TrackManager, Dashboard, NextOuting, History,
                 # ItineraryList, ItineraryCard, ItineraryDetail, Settings, About
 tests/
 ├─ unit/        # Vitest — miroir de src/core + db

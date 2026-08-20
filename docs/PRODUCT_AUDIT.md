@@ -4,6 +4,10 @@ Rédigé le 19/08/2026, après lecture de deux audits externes (ChatGPT, Gemini)
 et relecture du code. Volontairement critique : l'objectif n'est pas de
 défendre l'existant.
 
+**Mis à jour le 20/08/2026.** Le constat d'origine est conservé mot pour mot —
+un audit qu'on réécrit après coup ne sert plus à rien. Chaque point porte
+désormais son état, et le journal en fin de document dit ce qui a été livré.
+
 ## Verdict en une phrase
 
 **La direction actuelle est la bonne, mais le produit repose sur un chiffre
@@ -46,15 +50,34 @@ existe en mieux ailleurs et dilue le propos.
    Ce n'est pas un détail d'implémentation : c'est la proposition de valeur.
    *Fichiers : `src/core/matching.ts`, `src/core/sampling.ts`.*
 
+   > **Réglé (PR #52).** Trois garde-fous, chacun corrigeant un faux résultat
+   > mesuré : distance au **segment** GPS (et non au point), continuité
+   > minimale d'un passage, et confirmation de proximité franche. La route
+   > parallèle à 30 m ne crédite plus rien ; la traversée perpendiculaire non
+   > plus ; un GPS qui n'enregistre qu'un point tous les 500 m est désormais
+   > correctement crédité. Les cas sont figés dans
+   > `tests/unit/matchingQuality.test.ts`, avec les chiffres avant/après.
+   > **Reste ouvert** : le champ `hdop` est toujours ignoré.
+
 2. **Aucune position GPS.** L'application est inutilisable en marchant : on
    ne sait pas où l'on est. C'est la première chose que fait n'importe quel
    concurrent. *Aucun fichier existant — à créer.*
+
+   > **Réglé (PR #51).** Bouton « Où suis-je ? », suivi de position, précision
+   > annoncée et signalée quand elle est mauvaise. La position n'est jamais
+   > transmise nulle part.
 
 3. **Rien ne fonctionne hors connexion.** Les tracés sont en IndexedDB, mais
    les **tuiles de carte ne sont pas mises en cache** et il n'y a pas de
    service worker : sans réseau, l'app ne se lance pas et la carte est
    blanche. Or le Pilat, les Monts du Lyonnais et la Loire ont de larges
    zones blanches. *À créer : service worker, cache de tuiles.*
+
+   > **Réglé (PR #53, corrigé en #55).** Service worker écrit à la main,
+   > précache généré au build, cache de tuiles borné à 600 entrées. Le
+   > bandeau hors connexion dit **précisément** ce qui marche et ce qui ne
+   > marche pas — charger une nouvelle zone reste impossible sans réseau, et
+   > l'annoncer autrement se paierait en pleine forêt.
 
 ### P1 — l'usage réel
 
@@ -63,23 +86,44 @@ existe en mieux ailleurs et dilue le propos.
    progression, pas de récapitulatif. Le cœur du positionnement B est donc
    incomplet. *`src/components/Dashboard.tsx`, store.*
 
+   > **Réglé (PR #54, #66).** « Mes sorties » : totaux, histogramme mensuel
+   > (les mois sans sortie sont conservés — un trou dans la pratique est une
+   > information), et le bilan d'une sortie : ce jour-là, quels itinéraires
+   > ont avancé et de combien.
+
 5. **Pas de découverte.** Impossible de demander « une boucle de 2 h près
    d'ici ». La liste ne filtre que par réseau et par texte. Sans proximité
    ni durée ni difficulté, on ne choisit pas une randonnée.
    *`src/components/ItineraryList.tsx`.*
 
+   > **Réglé (PR #56).** Filtres longueur, durée, dénivelé, forme (boucle ou
+   > aller simple, déduite de la géométrie) et proximité de la position GPS.
+   > Règle tenue partout : **on ne filtre jamais sur une donnée absente** — un
+   > dénivelé inconnu n'est pas un dénivelé nul.
+
 6. **Contraste des tracés insuffisant en plein soleil.** Les lignes n'ont pas
    de liseré (casing) : un tracé rouge sur fond IGN devient illisible dehors.
    Seul point concret et juste de l'audit Gemini. *`src/components/MapView.tsx`.*
+
+   > **Réglé (PR #51).** Liseré blanc sous les tracés (deux couches
+   > superposées ; `line-gap-width` ferait tout autre chose).
 
 7. **Profil altimétrique inerte.** Le graphique existe mais ne dialogue pas
    avec la carte : survoler le profil ne montre pas où l'on est.
    *`src/components/ElevationChart.tsx`.*
 
+   > **Réglé (PR #57).** Survoler le graphique pose un marqueur sur le tracé,
+   > au clavier comme à la souris. Le profil porte désormais les coordonnées
+   > alignées sur les distances — elles existaient déjà, elles étaient jetées.
+
 8. **Qualité des données non exposée.** On affiche les itinéraires OSM sans
    dire s'ils sont complets, datés, ou douteux. Une relation à géométrie
    discontinue produit un pourcentage faux sans le signaler.
    *`src/core/overpass.ts`.*
+
+   > **Toujours ouvert.** C'est le dernier P1. Un premier pas existe pourtant :
+   > le découpage en étapes (PR #65) sait reconnaître une relation trouée —
+   > l'information est calculée, elle n'est simplement pas encore montrée.
 
 ### P2 — les limites connues, assumées mais à documenter
 
@@ -113,28 +157,69 @@ Pour ne pas courir après des fantômes :
 
 ## Roadmap
 
-**P0 — sans quoi ce n'est pas une application de randonnée**
-1. Fiabiliser le matching (jeu de fixtures adverses, moteur amélioré,
-   comparaison chiffrée avant remplacement).
-2. Position GPS sur la carte.
-3. Hors-ligne réel : service worker + cache de tuiles, avec un intitulé
-   honnête sur ce qui fonctionne vraiment sans réseau.
+**P0 — sans quoi ce n'est pas une application de randonnée** — ✅ **terminé**
+1. ~~Fiabiliser le matching~~ (PR #52)
+2. ~~Position GPS sur la carte~~ (PR #51)
+3. ~~Hors-ligne réel~~ (PR #53, #55)
 
-**P1 — l'expérience**
-4. Historique des sorties et progression dans le temps.
-5. Découverte : filtres distance / durée / D+ / proximité / boucle.
-6. Liseré des tracés (lisibilité extérieure).
-7. Profil altimétrique synchronisé avec la carte.
+**P1 — l'expérience** — 4 sur 5
+4. ~~Historique des sorties et progression dans le temps~~ (PR #54, #66)
+5. ~~Découverte : filtres distance / durée / D+ / proximité / boucle~~ (PR #56)
+6. ~~Liseré des tracés~~ (PR #51)
+7. ~~Profil altimétrique synchronisé avec la carte~~ (PR #57)
+8. **Qualité des données exposée** (complétude, fraîcheur, anomalies) — à faire.
 
 **P2 — la différenciation**
-8. « Prochaine sortie » : quel tronçon non parcouru, proche, ferait le plus
-   progresser. C'est le seul endroit où l'app peut être meilleure que tout
-   le monde.
-9. Objectifs et collections personnelles.
-10. Qualité des données exposée (complétude, fraîcheur, anomalies).
+9. ~~« Prochaine sortie » : quel tronçon non parcouru, proche, ferait le plus
+   progresser~~ (PR #58) — l'endroit où l'app peut être meilleure que tout
+   le monde, et le premier point où elle l'est.
+10. ~~Jalons de complétion et seuil « bouclé »~~ (PR #60) ; ~~étapes des longs
+    GR~~ (PR #65) ; ~~bilan partageable~~ (PR #62).
+11. **Objectifs et collections personnelles** — à faire (issue #13, en partie
+    couverte par « Prochaine sortie »).
+12. **Le routage n'accroche qu'aux sommets** et ne connaît que les
+    itinéraires chargés — limite assumée, à rouvrir si elle gêne (issue #21).
 
 **P3 — plus tard**
-Tuiles vectorielles, badges, partage, mode « suivi live » complet.
+Tuiles vectorielles (à ne lancer que si la mesure le réclame), import FIT
+(issue #7), `og:image` — suspendue tant que l'usage de la balise blanc/rouge
+n'est pas tranché juridiquement (issue #2).
+
+## Journal — nuit du 19 au 20 août 2026
+
+Dix-neuf PR, chacune avec ses tests, mergée seulement CI verte.
+
+| PR | Ce qu'elle apporte |
+|---|---|
+| #49 | Export GPX d'un itinéraire, avec l'attribution qui va avec |
+| #50 | Cet audit |
+| #51 | Position GPS + liseré des tracés |
+| #52 | **Matching fiabilisé** — les faux positifs mesurés éliminés |
+| #53 | Hors-ligne : service worker, précache, bandeau honnête |
+| #54 | « Mes sorties » : historique et rythme de pratique |
+| #55 | Bandeau hors-ligne fiabilisé — et **CI de `main` réparée** |
+| #56 | Filtres de découverte |
+| #57 | Profil altimétrique lié à la carte |
+| #58 | « Prochaine sortie » |
+| #59 | Finitions P2 design (issues #37 à #40) |
+| #60 | Jalons et itinéraires bouclés (seuil 95 %) |
+| #61 | Fiabilisation des e2e (clic sur canvas) |
+| #62 | Bilan partageable en image, fabriqué sur l'appareil |
+| #63 | Avancement d'import — après **mesure** : 420 ms pour 9 Mo |
+| #64 | Tests unitaires du store |
+| #65 | Étapes des longs GR |
+| #66 | Bilan d'une sortie |
+| #67 | Découpage de `MapView` (644 → 226 lignes) |
+
+Deux décisions valent d'être retenues, parce qu'elles disent non :
+
+- **Pas de parseur GPX dans un worker** (issue #4). La mesure donne 420 ms
+  pour un fichier de 9 Mo, pas « plusieurs secondes ». `DOMParser` n'existant
+  pas dans un worker, il faudrait un second parseur à garder d'accord, qui
+  perdrait la détection des fichiers tronqués. Le compte n'y est pas.
+- **Pas d'`og:image`** tant que #2 n'est pas tranchée : produire un visuel de
+  marque autour de la balise blanc/rouge avant l'avis juridique serait
+  précisément l'erreur que l'issue veut éviter.
 
 ## Definition of done retenue
 
