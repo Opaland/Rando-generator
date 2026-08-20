@@ -23,9 +23,17 @@ export function ZonePicker() {
   const itineraries = useAppStore((s) => s.itineraries)
   const loadZone = useAppStore((s) => s.loadZone)
   const loadRef = useAppStore((s) => s.loadRef)
+  const chercherLieu = useAppStore((s) => s.chercherLieu)
+  const loadAutour = useAppStore((s) => s.loadAutour)
+  const effacerLieux = useAppStore((s) => s.effacerLieux)
+  const lieux = useAppStore((s) => s.lieux)
+  const lieuxLoading = useAppStore((s) => s.lieuxLoading)
+  const lieuError = useAppStore((s) => s.lieuError)
+  const lieuxVides = useAppStore((s) => s.lieuxVides)
   const cancelZoneLoad = useAppStore((s) => s.cancelZoneLoad)
   const zoneRestoredAtStartup = useAppStore((s) => s.zoneRestoredAtStartup)
   const [refInput, setRefInput] = useState('')
+  const [lieuInput, setLieuInput] = useState('')
   /**
    * null = suivre l'état des données ; dès que l'utilisateur ouvre ou ferme
    * la section, c'est son choix qui prime.
@@ -54,6 +62,11 @@ export function ZonePicker() {
   const onRefSubmit = (event: FormEvent) => {
     event.preventDefault()
     if (refInput.trim()) void loadRef(refInput)
+  }
+
+  const onLieuSubmit = (event: FormEvent) => {
+    event.preventDefault()
+    void chercherLieu(lieuInput)
   }
 
   const deplie = ouvert ?? !zoneRestoredAtStartup
@@ -85,7 +98,90 @@ export function ZonePicker() {
             )}
           </h2>
         </summary>
-      <div className={styles.zones} role="group" aria-label="Zones prédéfinies">
+      {/*
+        La recherche par lieu vient en premier : c'est la seule entrée qui ne
+        suppose rien. « GR », « ref », « département » sont justes et
+        supposent tout acquis — quelqu'un qui débute connaît sa ville
+        (issue #131).
+      */}
+      <form className={styles.lieuForm} onSubmit={onLieuSubmit}>
+        <label className={styles.lieuLabel} htmlFor="lieu-input">
+          Des sentiers autour d’une ville
+        </label>
+        <div className={styles.refRow}>
+          <input
+            id="lieu-input"
+            data-testid="lieu-input"
+            type="search"
+            placeholder="ex. Saint-Étienne"
+            value={lieuInput}
+            disabled={zoneLoading}
+            onChange={(e) => {
+              setLieuInput(e.target.value)
+            }}
+          />
+          <button
+            type="submit"
+            className="btn-primary"
+            data-testid="lieu-submit"
+            disabled={zoneLoading || lieuxLoading || !lieuInput.trim()}
+          >
+            {lieuxLoading ? 'Recherche…' : 'Chercher'}
+          </button>
+        </div>
+      </form>
+
+      {lieuError && (
+        <p className={styles.lieuError} role="alert" data-testid="lieu-error">
+          {lieuError}
+        </p>
+      )}
+
+      {lieuxVides && (
+        <p className={styles.lieuHint} role="status" data-testid="lieu-empty">
+          Aucune commune de ce nom. Vérifiez l’orthographe, ou choisissez une
+          zone ci-dessous.
+        </p>
+      )}
+
+      {lieux.length > 0 && (
+        <ul className={styles.lieux} data-testid="lieu-results">
+          {lieux.map((lieu) => (
+            <li key={`${lieu.label}-${lieu.center.join(',')}`}>
+              <button
+                type="button"
+                className={styles.lieu}
+                disabled={zoneLoading}
+                onClick={() => void loadAutour(lieu)}
+              >
+                <span className={styles.lieuNom}>{lieu.label}</span>
+                {lieu.contexte && (
+                  <span className={styles.lieuContexte}>{lieu.contexte}</span>
+                )}
+              </button>
+            </li>
+          ))}
+          <li>
+            <button
+              type="button"
+              className="btn-link"
+              data-testid="lieu-clear"
+              onClick={effacerLieux}
+            >
+              Annuler
+            </button>
+          </li>
+        </ul>
+      )}
+
+      <p className={styles.groupTitle} id="proches-title">
+        Ou une zone entière
+      </p>
+      <div
+        className={styles.zones}
+        role="group"
+        aria-labelledby="proches-title"
+      >
         {ZONES.filter((zone) => zone.group === 'proche').map((zone) => (
           <button
             key={zone.id}

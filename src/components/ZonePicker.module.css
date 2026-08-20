@@ -178,3 +178,64 @@
   display: grid;
   gap: 10px;
 }
+
+/*
+ * Recherche par nom de lieu (issue #131). Elle vient avant les zones
+ * prédéfinies : c'est la seule entrée qui ne suppose ni ref, ni département.
+ */
+.lieuForm {
+  display: grid;
+  gap: 4px;
+}
+
+.lieuLabel {
+  font-size: var(--texte-secondaire);
+  color: var(--gris-vert);
+}
+
+.lieuHint,
+.lieuError {
+  margin: 0;
+  font-size: var(--texte-secondaire);
+  line-height: 1.4;
+}
+
+.lieuError {
+  color: var(--rouge-balisage);
+}
+
+.lieux {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lieu {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  min-height: 44px;
+  padding: 6px 10px;
+  text-align: left;
+  border: 1px solid var(--gris-vert);
+  border-radius: 4px;
+  background: var(--blanc-papier);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.lieu:hover:not(:disabled) {
+  background: rgba(30, 43, 35, 0.06);
+}
+
+.lieuNom {
+  font-weight: 600;
+}
+
+.lieuContexte {
+  font-size: var(--texte-secondaire);
+  color: var(--gris-vert);
+}

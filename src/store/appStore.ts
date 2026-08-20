@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 import {
   buildRefQuery,
+  buildAroundQuery,
+  RAYON_AUTOUR_METERS,
   buildZoneQuery,
   fetchOverpass,
   parseOverpassResponse,
@@ -26,6 +28,11 @@ import {
   BackupError,
 } from '../core/backup.ts'
 import { downloadBlob } from '../lib/download.ts'
+import {
+  GeocodeError,
+  chercherLieux,
+  type Lieu,
+} from '../core/geocode.ts'
 import { polylineLengthMeters } from '../core/sampling.ts'
 import { itineraryCoords } from '../core/mapdata.ts'
 import { parseBouclesGeoJSON } from '../core/boucles.ts'
@@ -123,6 +130,13 @@ export interface AppState {
   zoneLoadBytes: number
   /** Compte rendu du dernier import de sauvegarde, à afficher puis effacer. */
   backupMessage: string | null
+
+  // Recherche par nom de lieu (le premier écran ne demande plus une ref)
+  lieux: Lieu[]
+  lieuxLoading: boolean
+  lieuError: string | null
+  /** Vrai quand la dernière recherche n'a rien trouvé — différent de « pas encore cherché ». */
+  lieuxVides: boolean
   zoneError: string | null
 
   // Traces GPX
@@ -206,6 +220,12 @@ export interface AppState {
   importerSauvegarde: (file: File) => Promise<void>
   /** Efface le compte rendu du dernier import de sauvegarde. */
   clearBackupMessage: () => void
+  /** Cherche des communes par nom (API Adresse de la BAN). */
+  chercherLieu: (query: string) => Promise<void>
+  /** Charge les itinéraires dans un rayon autour d'un lieu trouvé. */
+  loadAutour: (lieu: Lieu) => Promise<void>
+  /** Referme la liste des propositions. */
+  effacerLieux: () => void
   setTolerance: (value: number) => Promise<void>
   setCompletionPct: (value: number) => Promise<void>
   selectItinerary: (id: number | null) => void
@@ -237,6 +257,8 @@ let outingSequence = 0
 let pctsPrecedents: Map<number, number> | null = null
 let detailSequence = 0
 let zoneLoadSequence = 0
+/** Même garde pour la recherche de lieu : une frappe abandonnée ne gagne pas. */
+let lieuSequence = 0
 /**
  * Ouverture d'IndexedDB en cours, s'il y en a une. Sert à faire patienter les
  * écritures lancées pendant le démarrage plutôt qu'à les perdre (baseOuverte).
@@ -664,6 +686,10 @@ export const useAppStore = create<AppState>()((set, get) => {
     tracks: [],
     importErrors: [],
     backupMessage: null,
+    lieux: [],
+    lieuxLoading: false,
+    lieuError: null,
+    lieuxVides: false,
     customItineraries: [],
     toleranceMeters: DEFAULT_TOLERANCE_METERS,
     completionPct: DEFAULT_COMPLETION_PCT,
@@ -1062,6 +1088,51 @@ export const useAppStore = create<AppState>()((set, get) => {
 
     clearBackupMessage() {
       set({ backupMessage: null })
+    },
+
+    async chercherLieu(query) {
+      const terme = query.trim()
+      if (terme === '') {
+        set({ lieux: [], lieuError: null, lieuxVides: false })
+        return
+      }
+      const sequence = ++lieuSequence
+      set({ lieuxLoading: true, lieuError: null, lieuxVides: false })
+      try {
+        const lieux = await chercherLieux(terme)
+        // Une recherche plus récente a pris le relais : ses résultats sont
+        // ceux que l'utilisateur attend, pas ceux d'une frappe abandonnée.
+        if (sequence !== lieuSequence) return
+        set({ lieux, lieuxVides: lieux.length === 0 })
+      } catch (error) {
+        if (sequence !== lieuSequence) return
+        set({
+          lieux: [],
+          lieuError:
+            error instanceof GeocodeError
+              ? error.message
+              : 'La recherche de lieu n’a pas abouti. Choisissez une zone dans la liste.',
+        })
+      } finally {
+        if (sequence === lieuSequence) set({ lieuxLoading: false })
+      }
+    },
+
+    async loadAutour(lieu) {
+      const [lon, lat] = lieu.center
+      const zoneKey = `autour:${lon.toFixed(4)},${lat.toFixed(4)}`
+      set({ lieux: [], lieuError: null, lieuxVides: false })
+      await loadFromOverpass(
+        zoneKey,
+        `Autour de ${lieu.label}`,
+        buildAroundQuery(lieu.center, RAYON_AUTOUR_METERS),
+        false,
+      )
+    },
+
+    effacerLieux() {
+      lieuSequence += 1
+      set({ lieux: [], lieuError: null, lieuxVides: false, lieuxLoading: false })
     },
 
     async setTolerance(value) {

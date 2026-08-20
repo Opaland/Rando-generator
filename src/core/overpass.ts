@@ -150,6 +150,32 @@ relation${ROUTE_FILTER}["ref"~"^${escaped}$",i](area.fr);
 out meta geom;`
 }
 
+/**
+ * Rayon d'une recherche « autour d'un lieu ».
+ *
+ * Une commune n'est pas une zone Overpass, et ses limites administratives ne
+ * disent rien de l'endroit où l'on marche : on part du centre et on prend
+ * douze kilomètres, la portée d'une sortie à la journée depuis chez soi. Plus
+ * large ferait une requête lourde pour des sentiers qu'on n'ira pas voir.
+ */
+export const RAYON_AUTOUR_METERS = 12_000
+
+/**
+ * Requête Overpass : les itinéraires pédestres dans un rayon autour d'un point.
+ *
+ * Attention à l'ordre : Overpass attend `(around:rayon,lat,lon)`, quand le
+ * GeoJSON — et donc `LonLat` — donne la longitude d'abord.
+ */
+export function buildAroundQuery(
+  center: LonLat,
+  radiusMeters: number = RAYON_AUTOUR_METERS,
+): string {
+  const [lon, lat] = center
+  return `[out:json][timeout:180];
+relation${ROUTE_FILTER}(around:${String(Math.round(radiusMeters))},${lat.toFixed(6)},${lon.toFixed(6)});
+out meta geom;`
+}
+
 interface OverpassMember {
   type: string
   ref: number

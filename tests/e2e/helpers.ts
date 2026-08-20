@@ -124,6 +124,8 @@ export interface OverpassMock {
   count: () => number
   /** Remplace la réponse servie aux prochains appels. */
   setFixture: (fixture: unknown) => void
+  /** Dernière requête Overpass QL reçue, décodée (hors requête de POI). */
+  lastQuery: () => string
 }
 
 /**
@@ -139,6 +141,7 @@ export async function mockOverpass(page: Page): Promise<OverpassMock> {
   )
   let calls = 0
   let current: unknown = pilatFixture
+  let derniere = ''
   await page.route('**/api/interpreter', (route) => {
     calls += 1
     // La requête de points d'intérêt (core/poi.ts) cible les mêmes miroirs
@@ -148,6 +151,9 @@ export async function mockOverpass(page: Page): Promise<OverpassMock> {
       void route.fulfill({ json: poiFixture })
       return
     }
+    // Le corps est un formulaire encodé (`data=…`) : on rend la requête QL
+    // telle qu'Overpass la lit, sinon l'assertion porte sur des %5B.
+    derniere = new URLSearchParams(body).get('data') ?? body
     void route.fulfill({ json: current })
   })
   return {
@@ -155,7 +161,56 @@ export async function mockOverpass(page: Page): Promise<OverpassMock> {
     setFixture: (fixture) => {
       current = fixture
     },
+    lastQuery: () => derniere,
   }
+}
+
+/**
+ * Mocke l'API Adresse de la BAN (recherche par nom de lieu, issue #131).
+ *
+ * La réponse suit le format documenté : un GeoJSON de points, `label` et
+ * `context` dans les propriétés. Le service n'est pas joignable depuis
+ * l'environnement de test — comme aucun service externe — donc ce mock ne
+ * prouve pas le contrat, seulement le comportement de l'application face à
+ * une réponse de cette forme.
+ */
+export async function mockGeocode(
+  page: Page,
+  options: { vide?: boolean; erreur?: number } = {},
+): Promise<void> {
+  await page.route('https://api-adresse.data.gouv.fr/search/**', (route) => {
+    if (options.erreur) {
+      void route.fulfill({ status: options.erreur, body: 'nope' })
+      return
+    }
+    void route.fulfill({
+      json: {
+        type: 'FeatureCollection',
+        features: options.vide
+          ? []
+          : [
+              {
+                type: 'Feature',
+                geometry: { type: 'Point', coordinates: [4.502, 45.4] },
+                properties: {
+                  label: 'Saint-Étienne',
+                  context: '42, Loire, Auvergne-Rhône-Alpes',
+                  type: 'municipality',
+                },
+              },
+              {
+                type: 'Feature',
+                geometry: { type: 'Point', coordinates: [5.4, 45.2] },
+                properties: {
+                  label: 'Saint-Étienne-de-Saint-Geoirs',
+                  context: '38, Isère, Auvergne-Rhône-Alpes',
+                  type: 'municipality',
+                },
+              },
+            ],
+      },
+    })
+  })
 }
 
 /**

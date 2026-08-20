@@ -81,6 +81,19 @@ export function About({ open, onClose }: { open: boolean; onClose: () => void })
               , via l’API Overpass.
             </li>
             <li>
+              La <strong>recherche par nom de ville</strong> interroge l’
+              <a
+                href="https://adresse.data.gouv.fr/"
+                target="_blank"
+                rel="noreferrer"
+              >
+                API Adresse
+              </a>{' '}
+              de la Base Adresse Nationale (© Etalab, Licence Ouverte). Seul le
+              texte que vous tapez est transmis&nbsp;: ni vos traces, ni votre
+              position.
+            </li>
+            <li>
               Les <strong>boucles locales</strong> de la Métropole de Lyon
               proviennent du jeu de données ouvert «&nbsp;Boucles communales de
               randonnée&nbsp;» (©&nbsp;
