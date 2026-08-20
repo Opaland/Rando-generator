@@ -113,10 +113,6 @@ function App() {
           Une vraie page, servie telle quelle : un lien partagé doit s'ouvrir
           chez quelqu'un qui n'a rien installé, et être indexable. C'est le
           seul endroit qui explique ce que le produit fait de différent.
-        */}
-        {/*
-          Une vraie page, servie telle quelle : un lien partagé doit s'ouvrir
-          chez quelqu'un qui n'a rien installé, et être indexable.
 
           Sur téléphone il vit dans le pied du panneau, pas ici : mesuré, il
           coûtait 50 px de carte dans l'en-tête, et une page marketing ne
