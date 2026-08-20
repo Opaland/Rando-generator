@@ -188,9 +188,22 @@ Pour ne pas courir après des fantômes :
     itinéraires chargés — limite assumée, à rouvrir si elle gêne (issue #21).
 
 **P3 — plus tard**
-Tuiles vectorielles (à ne lancer que si la mesure le réclame), import FIT
-(issue #7), `og:image` — suspendue tant que l'usage de la balise blanc/rouge
-n'est pas tranché juridiquement (issue #2).
+Tuiles vectorielles (à ne lancer que si la mesure le réclame), ~~import FIT~~
+(issue #7, PR #74), `og:image` — suspendue tant que l'usage de la balise
+blanc/rouge n'est pas tranché juridiquement (issue #2).
+
+**Mobile — ✅ terminé** (audit `docs/AUDIT_MOBILE.md`, constats M0 à M8)
+Cibles tactiles (#100), en-tête (#99), sélecteur de zone (#98), bas de carte
+(#103), textes tactiles (#100), typographie (#104), **part de la carte**
+(#110), **fiche détail** (#113). Le tableau avant/après est dans l'audit.
+
+**Reste du rapport ChatGPT du 19/08** — traité pour l'essentiel : attente
+Overpass (#105), rôle de la carte (#107), `<noscript>` (#108). Restent ouverts
+les sujets de données et de contenu : PDIPR en open data (#87), import
+d'archives Strava/Garmin (#88), TCX (#89), bilan annuel (#90), plus grande
+composante connexe (#91), seuil de complétion réglable (#92), tuiles
+vectorielles (#93), documents BMAD (#94), `hdop` (#95), fraîcheur amont
+OSM (#96).
 
 ## Journal — nuit du 19 au 20 août 2026
 
@@ -230,6 +243,47 @@ Deux décisions valent d'être retenues, parce qu'elles disent non :
 - **Pas d'`og:image`** tant que #2 n'est pas tranchée : produire un visuel de
   marque autour de la balise blanc/rouge avant l'avis juridique serait
   précisément l'erreur que l'issue veut éviter.
+
+## Journal — matinée du 20 août 2026
+
+Douze PR de plus, dans la continuité de l'audit mobile (`docs/AUDIT_MOBILE.md`)
+et du rapport ChatGPT du 19/08.
+
+| PR | Ce qu'elle apporte |
+|---|---|
+| #102 | Le repère du profil altimétrique tient sous le doigt |
+| #103 | Légende, attribution et état d'accueil rendus au bas de la carte |
+| #104 | Plancher typographique : six tailles ramenées à trois paliers, 14 px sur tactile |
+| #105 | Attente Overpass : octets reçus et consigne anti-rechargement |
+| #106 | **Trace importée pendant le démarrage : ne disparaît plus** |
+| #107 | La carte s'annonce comme une région, pas comme une application |
+| #108 | `<noscript>` : le site dit ce qu'il fait sans JavaScript |
+| #109 | **Zone chargée au démarrage : enfin mise en cache** |
+| #110 | **La carte prend l'écran sur téléphone**, panneau en feuille glissante |
+| #112 | Tests : attendre que la carte écoute avant de lui parler |
+| #113 | Fiche détail : le tracé reste visible au-dessus du panneau |
+
+Trois de ces PR ne corrigent pas un défaut d'interface mais un défaut de
+données, trouvé en suivant un test qui échouait plutôt qu'en le relançant :
+
+- **#106** — au démarrage, la restauration d'IndexedDB écrasait une trace
+  déposée pendant la lecture. Elle disparaissait sans un mot, et son doublon
+  n'était même plus détecté. Le test « instable » de `customs.spec` avait
+  raison depuis le début ; personne ne l'avait écouté.
+- **#109** — une zone choisie pendant l'ouverture de la base n'était jamais
+  mise en cache. Chaque visite repartait pour deux minutes d'Overpass avec les
+  données déjà téléchargées. Deux causes distinctes : `db` figé à `null`, puis
+  l'écriture de la dernière zone lancée après l'affichage.
+- **#102** — au doigt, la fin du contact émet un `pointerleave` : le repère
+  posé sur le profil s'effaçait aussitôt. Le geste décrit par la consigne à
+  l'écran ne fonctionnait pas sur le support où il est le plus naturel.
+
+Une décision de produit a été prise plutôt que reportée : **#77 demandait de
+trancher la disposition mobile avant de coder**. Choix retenu — carte plein
+cadre, panneau en feuille à trois positions, position d'ouverture qui suit les
+données (mi-hauteur à la première visite, repliée au retour). La barre
+d'onglets a été écartée : elle sépare la carte de la progression, alors que le
+produit consiste à regarder les deux ensemble.
 
 ## Definition of done retenue
 
