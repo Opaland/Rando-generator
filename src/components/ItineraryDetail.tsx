@@ -1,5 +1,10 @@
 import { useAppStore } from '../store/appStore.ts'
-import { displayName, formatKm, formatPct } from '../lib/format.ts'
+import {
+  displayName,
+  formatAnciennete,
+  formatKm,
+  formatPct,
+} from '../lib/format.ts'
 import { POI_LABELS, POI_OVERNIGHT } from '../lib/poiDisplay.ts'
 import { NETWORK_BADGES } from '../lib/networkDisplay.ts'
 import { elevationStats } from '../core/elevation.ts'
@@ -171,13 +176,24 @@ export function ItineraryDetail() {
         </section>
       )}
 
-      {qualite.warnings.length > 0 && (
+      {(qualite.warnings.length > 0 || itin.osmUpdatedAt) && (
         <section className={styles.section} data-testid="detail-quality">
           <h4 className={styles.sectionTitle}>Qualité de la donnée</h4>
           <ul className={styles.quality}>
             {qualite.warnings.map((avertissement) => (
               <li key={avertissement}>{avertissement}</li>
             ))}
+            {itin.osmUpdatedAt && (
+              <li data-testid="detail-osm-updated">
+                Tracé modifié dans OpenStreetMap le{' '}
+                {new Date(itin.osmUpdatedAt).toLocaleDateString('fr-FR')}
+                {qualite.upstreamAgeDays !== null &&
+                  ` (${formatAnciennete(qualite.upstreamAgeDays)})`}
+                . Un itinéraire balisé qui n’a pas bougé depuis longtemps n’est
+                pas forcément faux — mais le pourcentage affiché dépend de ce
+                tracé-là.
+              </li>
+            )}
           </ul>
         </section>
       )}

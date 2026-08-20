@@ -5,6 +5,7 @@
     {
       "type": "relation",
       "id": 1001,
+      "timestamp": "2019-04-02T08:15:00Z",
       "tags": {
         "type": "route",
         "route": "hiking",
@@ -18,9 +19,18 @@
           "ref": 100,
           "role": "",
           "geometry": [
-            { "lat": 45.4, "lon": 4.5 },
-            { "lat": 45.4, "lon": 4.505 },
-            { "lat": 45.4, "lon": 4.51 }
+            {
+              "lat": 45.4,
+              "lon": 4.5
+            },
+            {
+              "lat": 45.4,
+              "lon": 4.505
+            },
+            {
+              "lat": 45.4,
+              "lon": 4.51
+            }
           ]
         },
         {
@@ -28,9 +38,18 @@
           "ref": 100,
           "role": "",
           "geometry": [
-            { "lat": 45.4, "lon": 4.5 },
-            { "lat": 45.4, "lon": 4.505 },
-            { "lat": 45.4, "lon": 4.51 }
+            {
+              "lat": 45.4,
+              "lon": 4.5
+            },
+            {
+              "lat": 45.4,
+              "lon": 4.505
+            },
+            {
+              "lat": 45.4,
+              "lon": 4.51
+            }
           ]
         },
         {
@@ -38,8 +57,14 @@
           "ref": 101,
           "role": "",
           "geometry": [
-            { "lat": 45.4, "lon": 4.51 },
-            { "lat": 45.4, "lon": 4.52 }
+            {
+              "lat": 45.4,
+              "lon": 4.51
+            },
+            {
+              "lat": 45.4,
+              "lon": 4.52
+            }
           ]
         },
         {
@@ -47,12 +72,26 @@
           "ref": 200,
           "role": "",
           "geometry": [
-            { "lat": 45.4, "lon": 4.52 },
-            { "lat": 45.4, "lon": 4.53 }
+            {
+              "lat": 45.4,
+              "lon": 4.52
+            },
+            {
+              "lat": 45.4,
+              "lon": 4.53
+            }
           ]
         },
-        { "type": "node", "ref": 9001, "role": "guidepost" },
-        { "type": "way", "ref": 999, "role": "" }
+        {
+          "type": "node",
+          "ref": 9001,
+          "role": "guidepost"
+        },
+        {
+          "type": "way",
+          "ref": 999,
+          "role": ""
+        }
       ]
     },
     {
@@ -70,8 +109,14 @@
           "ref": 200,
           "role": "",
           "geometry": [
-            { "lat": 45.4, "lon": 4.52 },
-            { "lat": 45.4, "lon": 4.53 }
+            {
+              "lat": 45.4,
+              "lon": 4.52
+            },
+            {
+              "lat": 45.4,
+              "lon": 4.53
+            }
           ]
         },
         {
@@ -79,8 +124,14 @@
           "ref": 300,
           "role": "",
           "geometry": [
-            { "lat": 45.4, "lon": 4.53 },
-            { "lat": 45.41, "lon": 4.53 }
+            {
+              "lat": 45.4,
+              "lon": 4.53
+            },
+            {
+              "lat": 45.41,
+              "lon": 4.53
+            }
           ]
         }
       ]
@@ -100,8 +151,14 @@
           "ref": 400,
           "role": "",
           "geometry": [
-            { "lat": 45.45, "lon": 4.6 },
-            { "lat": 45.45, "lon": 4.61 }
+            {
+              "lat": 45.45,
+              "lon": 4.6
+            },
+            {
+              "lat": 45.45,
+              "lon": 4.61
+            }
           ]
         }
       ]
@@ -114,7 +171,13 @@
         "route": "hiking",
         "name": "Relation sans géométrie"
       },
-      "members": [{ "type": "node", "ref": 9002, "role": "guidepost" }]
+      "members": [
+        {
+          "type": "node",
+          "ref": 9002,
+          "role": "guidepost"
+        }
+      ]
     }
   ]
 }

@@ -40,6 +40,14 @@ export interface Itinerary {
   totalMeters: number
   /** ISO — pour l'invalidation du cache. */
   fetchedAt: string
+  /**
+   * Dernière modification de la relation dans OpenStreetMap, telle que
+   * rapportée par Overpass. Dit l'âge de la donnée elle-même, là où
+   * `fetchedAt` ne dit que celui de notre copie. Nul pour les itinéraires qui
+   * ne viennent pas d'OSM, et pour les zones mises en cache avant que la
+   * requête ne demande les métadonnées.
+   */
+  osmUpdatedAt?: string | null
   /** Présent uniquement pour les boucles locales open data (network LOCAL). */
   details?: LocalDetails
 }

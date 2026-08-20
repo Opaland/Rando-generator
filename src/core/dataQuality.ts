@@ -34,6 +34,12 @@ export interface DataQuality {
   gapMeters: number
   /** Âge de la donnée en jours, si la date de téléchargement est lisible. */
   ageDays: number | null
+  /**
+   * Âge de la relation dans OpenStreetMap, en jours — l'âge de la donnée
+   * elle-même, là où `ageDays` ne dit que celui de notre copie. Nul quand
+   * Overpass n'a pas donné la date, ou pour un itinéraire hors OSM.
+   */
+  upstreamAgeDays: number | null
   /** Messages prêts à afficher ; vide quand il n'y a rien à signaler. */
   warnings: string[]
 }
@@ -87,6 +93,17 @@ export function assessItinerary(
       ? null
       : Math.floor((maintenant - instant) / 86_400_000)
 
+  // Âge de la relation dans OSM. Volontairement pas un avertissement :
+  // un GR balisé qui n'a pas bougé depuis huit ans n'a probablement pas
+  // bougé sur le terrain non plus. C'est un fait à donner, pas un reproche.
+  const amont = itinerary.osmUpdatedAt
+    ? Date.parse(itinerary.osmUpdatedAt)
+    : Number.NaN
+  const upstreamAgeDays =
+    Number.isNaN(amont) || Number.isNaN(maintenant)
+      ? null
+      : Math.max(0, Math.floor((maintenant - amont) / 86_400_000))
+
   const warnings: string[] = []
   if (pieces === 0) {
     warnings.push(
@@ -105,5 +122,5 @@ export function assessItinerary(
     )
   }
 
-  return { pieces, gaps, gapMeters, ageDays, warnings }
+  return { pieces, gaps, gapMeters, ageDays, upstreamAgeDays, warnings }
 }

@@ -24,7 +24,7 @@ describe('buildZoneQuery', () => {
     expect(q).toContain(
       'relation["route"~"^(hiking|foot|walking|pilgrimage)$"](area.zone)',
     )
-    expect(q).toContain('out geom;')
+    expect(q).toContain('out meta geom;')
   })
 
   it('utilise boundary=protected_area pour le PNR du Pilat', () => {
@@ -80,7 +80,7 @@ describe('FEATURED_ROUTES', () => {
     for (const route of FEATURED_ROUTES) {
       const q = buildRefQuery(route.ref)
       expect(q).toContain('["ISO3166-1"="FR"]')
-      expect(q).toContain('out geom;')
+      expect(q).toContain('out meta geom;')
     }
   })
 })
@@ -181,6 +181,51 @@ describe('parseOverpassResponse', () => {
     expect(res.map((i) => i.osmRelationId)).toEqual([3])
     expect(res[0]!.ref).toBeNull()
     expect(res[0]!.network).toBe('PR')
+  })
+})
+
+describe('fraîcheur amont (out meta)', () => {
+  it('demande les métadonnées dans les deux requêtes', () => {
+    // Sans `meta`, Overpass ne renvoie pas la date de dernière modification :
+    // impossible de dire si un tracé date de 2013 ou de la semaine dernière.
+    expect(buildZoneQuery('pilat')).toContain('out meta geom;')
+    expect(buildRefQuery('GR 7')).toContain('out meta geom;')
+  })
+
+  it('retient la date de dernière modification de la relation', () => {
+    const data = {
+      elements: [
+        {
+          type: 'relation',
+          id: 1,
+          timestamp: '2019-04-02T08:15:00Z',
+          tags: { route: 'hiking', network: 'nwn', ref: 'GR 7' },
+          members: [
+            {
+              type: 'way',
+              ref: 10,
+              geometry: [
+                { lat: 45.4, lon: 4.5 },
+                { lat: 45.41, lon: 4.5 },
+              ],
+            },
+          ],
+        },
+      ],
+    }
+    const [itin] = parseOverpassResponse(data, FETCHED_AT)
+    expect(itin?.osmUpdatedAt).toBe('2019-04-02T08:15:00Z')
+  })
+
+  it('se passe de la date quand Overpass ne la donne pas', () => {
+    // Les miroirs ne répondent pas tous pareil, et le cache d'hier a été
+    // écrit sans elle : son absence ne doit rien casser. Le jeu d'essai ne
+    // date que sa première relation, exprès.
+    const sansDate = parseOverpassResponse(pilatFixture, FETCHED_AT).filter(
+      (i) => i.osmRelationId !== 1001,
+    )
+    expect(sansDate.length).toBeGreaterThan(0)
+    expect(sansDate.every((i) => i.osmUpdatedAt === null)).toBe(true)
   })
 })
 
