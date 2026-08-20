@@ -15,7 +15,7 @@ const PAS_CLAVIER = 0.02
 /**
  * Petit graphique altimétrique SVG — pas de dépendance de graphique externe.
  *
- * Il est *lié à la carte* : survoler une bosse y pose un marqueur. Un profil
+ * Il est *lié à la carte* : parcourir une bosse y pose un marqueur. Un profil
  * altimétrique seul dit qu'il y a 300 m de montée, jamais où — et « où »
  * est précisément ce qu'on cherche quand on prépare une sortie. Le clavier
  * fait la même chose que la souris : les flèches déplacent le curseur.
@@ -130,7 +130,7 @@ export function ElevationChart({ profile }: { profile: ElevationProfile }) {
                 ? 'altitude inconnue'
                 : `${Math.round(survole.elevation)} m`
             }`
-          : 'Survolez le profil pour situer un passage sur la carte.'}
+          : 'Parcourez le profil pour situer un passage sur la carte.'}
       </p>
     </div>
   )

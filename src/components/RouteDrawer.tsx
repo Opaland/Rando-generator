@@ -44,8 +44,8 @@ export function RouteDrawer() {
       </header>
 
       <p className={styles.hint}>
-        Cliquez sur la carte pour poser des étapes : le tracé suit les chemins
-        affichés entre elles.
+        Posez des étapes sur la carte : le tracé suit les chemins affichés
+        entre elles.
       </p>
 
       <p className={styles.stats} data-testid="route-drawer-stats">

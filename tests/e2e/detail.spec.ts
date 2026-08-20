@@ -160,7 +160,7 @@ test('une trace importée met bien la fiche détail à 100 % (altimétrie indisp
   await expect(detail).toContainText(/altimétrique/i, { timeout: 10_000 })
 })
 
-test('survoler le profil altimétrique pose un marqueur sur le tracé', async ({
+test('parcourir le profil altimétrique pose un marqueur sur le tracé', async ({
   page,
 }) => {
   await mockExternalNetwork(page)
@@ -180,7 +180,7 @@ test('survoler le profil altimétrique pose un marqueur sur le tracé', async ({
   })
 
   const readout = page.getByTestId('elevation-readout')
-  await expect(readout).toContainText(/survolez/i)
+  await expect(readout).toContainText(/parcourez/i)
 
   // Combien de points le marqueur porte-t-il sur la carte ?
   const marqueurs = () =>
@@ -216,6 +216,6 @@ test('survoler le profil altimétrique pose un marqueur sur le tracé', async ({
   await expect(readout).not.toContainText('0 km')
   // Quitter le graphique efface le curseur — et le marqueur avec lui.
   await page.keyboard.press('Tab')
-  await expect(readout).toContainText(/survolez/i)
+  await expect(readout).toContainText(/parcourez/i)
   await expect.poll(marqueurs, { timeout: 5_000 }).toBe(0)
 })

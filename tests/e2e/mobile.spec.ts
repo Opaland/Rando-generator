@@ -1,5 +1,10 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork, mockTilesOk, buildGpx } from './helpers.ts'
+import {
+  mockExternalNetwork,
+  mockTilesOk,
+  mockElevation,
+  buildGpx,
+} from './helpers.ts'
 
 /**
  * Cibles tactiles sur téléphone (docs/AUDIT_MOBILE.md, constat M0).
@@ -65,4 +70,33 @@ test('aucune cible tactile sous 24 px sur un écran de téléphone', async ({
   }, MINIMUM)
 
   expect(trop_petites).toEqual([])
+})
+
+test('le profil altimétrique répond au doigt, pas seulement à la souris', async ({
+  page,
+}) => {
+  await mockExternalNetwork(page)
+  await mockTilesOk(page)
+  await mockElevation(page)
+  await page.goto('/')
+
+  await page.getByTestId('zone-pilat').click()
+  await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
+    timeout: 15_000,
+  })
+  await page
+    .getByTestId('itinerary-list')
+    .getByRole('button', { name: /GR 7/ })
+    .click()
+  await page.getByTestId('itinerary-card-detail-link').click()
+  await expect(page.getByTestId('itinerary-detail')).toContainText('D+', {
+    timeout: 10_000,
+  })
+
+  // La consigne ne parle plus de survol — encore faut-il que le geste
+  // qu'elle décrit fonctionne vraiment au doigt.
+  const lecture = page.getByTestId('elevation-readout')
+  await expect(lecture).toContainText(/parcourez/i)
+  await page.getByTestId('elevation-chart').tap()
+  await expect(lecture).toContainText('km')
 })
