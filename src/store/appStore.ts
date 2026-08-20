@@ -29,6 +29,7 @@ import {
 } from '../core/elevation.ts'
 import { fetchPois } from '../core/poi.ts'
 import { outingHighlights, type OutingHighlight } from '../core/outing.ts'
+import { crossedMilestones } from '../core/milestones.ts'
 import type { MatchResult } from '../core/matching.ts'
 import {
   GEO_OPTIONS,
@@ -90,6 +91,8 @@ export interface AppState {
   selectedItineraryId: number | null
   /** Avancement d'un import multi-fichiers, pour que l'attente ait un sujet. */
   importProgress: { done: number; total: number; filename: string } | null
+  /** Jalon franchi lors du dernier recalcul, à annoncer une fois. */
+  celebration: { itineraryId: number; milestone: number } | null
   /** Ce qu'une sortie a apporté, calculé à la demande (trace dépliée). */
   outingDetail: {
     trackId: string
@@ -141,6 +144,7 @@ export interface AppState {
   selectItinerary: (id: number | null) => void
   setElevationHover: (point: ProfilePoint | null) => void
   toggleOutingDetail: (trackId: string) => Promise<void>
+  dismissCelebration: () => void
   clearImportErrors: () => void
   openItineraryDetail: (id: number) => void
   closeItineraryDetail: () => void
@@ -158,6 +162,12 @@ export interface AppState {
 
 let recomputeSequence = 0
 let outingSequence = 0
+/**
+ * Pourcentages du calcul précédent, pour repérer un jalon franchi. Remis à
+ * null au changement de zone : on n'annonce pas comme un exploit ce qu'on
+ * vient simplement de charger.
+ */
+let pctsPrecedents: Map<number, number> | null = null
 let detailSequence = 0
 let zoneLoadSequence = 0
 /**
@@ -247,7 +257,17 @@ export const useAppStore = create<AppState>()((set, get) => {
         : null
     // N'applique que le calcul le plus récent (l'utilisateur a pu re-régler).
     if (sequence === recomputeSequence) {
-      set({ matching: result, customMatching: customResult, matchingBusy: false })
+      const franchis = pctsPrecedents
+        ? crossedMilestones(pctsPrecedents, result.results)
+        : []
+      pctsPrecedents = new Map(result.results.map((r) => [r.itineraryId, r.pct]))
+      set({
+        matching: result,
+        customMatching: customResult,
+        matchingBusy: false,
+        // Un seul franchissement annoncé à la fois : le plus haut.
+        ...(franchis[0] ? { celebration: franchis[0] } : {}),
+      })
     }
   }
 
@@ -257,7 +277,10 @@ export const useAppStore = create<AppState>()((set, get) => {
     itineraries: Itinerary[],
     fetchedAt: string,
   ): void {
+    // Nouvelle zone : les pourcentages précédents ne veulent plus rien dire.
+    pctsPrecedents = null
     set({
+      celebration: null,
       zoneKey,
       zoneLabel,
       itineraries,
@@ -396,6 +419,7 @@ export const useAppStore = create<AppState>()((set, get) => {
     selectedItineraryId: null,
     detailItineraryId: null,
     importProgress: null,
+    celebration: null,
     outingDetail: null,
     elevationProfile: null,
     elevationHover: null,
@@ -706,6 +730,10 @@ export const useAppStore = create<AppState>()((set, get) => {
           loading: false,
         },
       })
+    },
+
+    dismissCelebration() {
+      set({ celebration: null })
     },
 
     clearImportErrors() {

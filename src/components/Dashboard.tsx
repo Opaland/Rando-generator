@@ -25,6 +25,8 @@ export function Dashboard() {
   const itineraries = useAppStore((s) => s.itineraries)
   const matchingBusy = useAppStore((s) => s.matchingBusy)
   const selectItinerary = useAppStore((s) => s.selectItinerary)
+  const celebration = useAppStore((s) => s.celebration)
+  const dismissCelebration = useAppStore((s) => s.dismissCelebration)
 
   // Le chiffre rattrape la barre : les voir bouger séparément donne
   // l'impression qu'ils ne parlent pas du même résultat.
@@ -74,6 +76,9 @@ export function Dashboard() {
   if (itineraries.length === 0) return null
 
   const global = matching?.global
+  const itineraireFete = celebration
+    ? byId.get(celebration.itineraryId)
+    : undefined
 
   return (
     <details className={styles.section} open>
@@ -87,6 +92,25 @@ export function Dashboard() {
           )}
         </h2>
       </summary>
+
+      {celebration && itineraireFete && (
+        <p
+          className={styles.celebration}
+          role="status"
+          data-testid="celebration"
+        >
+          <strong>{displayName(itineraireFete)}</strong>{' '}
+          passe {celebration.milestone} %.
+          <button
+            type="button"
+            className={styles.celebrationClose}
+            aria-label="Masquer cette annonce"
+            onClick={dismissCelebration}
+          >
+            ×
+          </button>
+        </p>
+      )}
 
       {global && (
         <div className={styles.global}>
