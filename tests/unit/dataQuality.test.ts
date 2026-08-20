@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   STALE_DAYS,
   assessItinerary,
+  hasGaps,
 } from '../../src/core/dataQuality.ts'
 import type { Itinerary, LonLat, TrailWay } from '../../src/core/types.ts'
 
@@ -86,6 +87,23 @@ describe('assessItinerary', () => {
     const vide = assessItinerary(itinerary([]), MAINTENANT)
     expect(vide.pieces).toBe(0)
     expect(vide.warnings.join()).toMatch(/aucun tracé/i)
+  })
+
+  it('ne retient que les trous de géométrie pour la liste', () => {
+    // L'âge de la donnée concerne toute la zone d'un coup : répété sur chaque
+    // ligne de la liste, il n'apprendrait rien.
+    const vieuxMaisContinu = assessItinerary(
+      itinerary([way(1, 0, 20)], { fetchedAt: '2026-06-01T00:00:00Z' }),
+      MAINTENANT,
+    )
+    expect(vieuxMaisContinu.warnings).not.toEqual([])
+    expect(hasGaps(vieuxMaisContinu)).toBe(false)
+
+    const troue = assessItinerary(
+      itinerary([way(1, 0, 10), way(2, 20, 30)]),
+      MAINTENANT,
+    )
+    expect(hasGaps(troue)).toBe(true)
   })
 
   it('ne compte pas un chemin fermé comme une interruption', () => {
