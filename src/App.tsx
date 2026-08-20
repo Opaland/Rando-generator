@@ -44,9 +44,20 @@ function App() {
           </span>
           <h1 className={styles.brandName}>Sentiers</h1>
         </div>
+        {/*
+          Deux longueurs pour la même promesse : sur téléphone, la version
+          longue se repliait sur sept lignes et consommait un cinquième de la
+          hauteur d'écran (docs/AUDIT_MOBILE.md, constat M2). Le détail reste
+          dans « À propos », qui l'explique déjà.
+        */}
         <p className={styles.privacy}>
-          Vos traces GPX ne quittent jamais votre navigateur — aucun compte,
-          aucun serveur, aucune télémétrie.
+          <span className={styles.privacyLong}>
+            Vos traces GPX ne quittent jamais votre navigateur — aucun compte,
+            aucun serveur, aucune télémétrie.
+          </span>
+          <span className={styles.privacyShort}>
+            Tout reste sur votre appareil.
+          </span>
         </p>
         <button
           type="button"

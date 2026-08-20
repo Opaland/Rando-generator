@@ -32,6 +32,10 @@
   flex: 1;
 }
 
+.privacyShort {
+  display: none;
+}
+
 .aboutLink {
   border: 1px solid rgba(250, 247, 242, 0.4);
   background: none;
@@ -103,6 +107,22 @@
 }
 
 @media (max-width: 800px) {
+  /* En-tête compact : la phrase longue se repliait sur sept lignes dans une
+     colonne étroite, soit 20 % de la hauteur avant le premier contenu utile. */
+  .header {
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+  }
+
+  .privacyLong {
+    display: none;
+  }
+
+  .privacyShort {
+    display: inline;
+  }
+
   .layout {
     flex-direction: column;
   }
