@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type DragEvent } from 'react'
 import { polylineLengthMeters } from '../core/sampling.ts'
 import { useAppStore } from '../store/appStore.ts'
 import { formatKm, importProgressLabel } from '../lib/format.ts'
+import { outingLabel } from '../core/outing.ts'
 import { ConfirmDeleteButton } from './ConfirmDeleteButton.tsx'
 import styles from './TrackManager.module.css'
 
@@ -12,6 +13,8 @@ export function TrackManager() {
   const importErrors = useAppStore((s) => s.importErrors)
   const importGpxFiles = useAppStore((s) => s.importGpxFiles)
   const importProgress = useAppStore((s) => s.importProgress)
+  const outingDetail = useAppStore((s) => s.outingDetail)
+  const toggleOutingDetail = useAppStore((s) => s.toggleOutingDetail)
   const removeTrack = useAppStore((s) => s.removeTrack)
   const clearImportErrors = useAppStore((s) => s.clearImportErrors)
   const inputRef = useRef<HTMLInputElement | null>(null)
@@ -144,26 +147,59 @@ export function TrackManager() {
         </p>
       ) : (
         <ul className={styles.list} data-testid="tracks-list">
-          {tracks.map((track) => (
-            <li key={track.id} className={styles.item}>
-              <div className={styles.itemInfo}>
-                <span className={styles.filename}>{track.filename}</span>
-                <span className={styles.itemMeta}>
-                  {track.date
-                    ? new Date(track.date).toLocaleDateString('fr-FR')
-                    : 'date inconnue'}
-                  {' · '}
-                  {formatKm(polylineLengthMeters(track.points))}
-                  {typeof track.elevationGain === 'number' &&
-                    ` · D+ ${Math.round(track.elevationGain)} m`}
-                </span>
-              </div>
-              <ConfirmDeleteButton
-                label={`Supprimer la trace ${track.filename}`}
-                onConfirm={() => void removeTrack(track.id)}
-              />
-            </li>
-          ))}
+          {tracks.map((track) => {
+            const ouvert = outingDetail?.trackId === track.id
+            return (
+              <li key={track.id} className={styles.item}>
+                <button
+                  type="button"
+                  className={styles.itemInfo}
+                  aria-expanded={ouvert}
+                  data-testid={`track-toggle-${track.filename}`}
+                  onClick={() => void toggleOutingDetail(track.id)}
+                >
+                  <span className={styles.filename}>{track.filename}</span>
+                  <span className={styles.itemMeta}>
+                    {track.date
+                      ? new Date(track.date).toLocaleDateString('fr-FR')
+                      : 'date inconnue'}
+                    {' · '}
+                    {formatKm(polylineLengthMeters(track.points))}
+                    {typeof track.elevationGain === 'number' &&
+                      ` · D+ ${Math.round(track.elevationGain)} m`}
+                  </span>
+                </button>
+                <ConfirmDeleteButton
+                  label={`Supprimer la trace ${track.filename}`}
+                  onConfirm={() => void removeTrack(track.id)}
+                />
+                {ouvert && (
+                  <div className={styles.outing} data-testid="track-outing">
+                    <p className={styles.outingTitle}>{outingLabel(track)}</p>
+                    {outingDetail.loading ? (
+                      <p className={styles.outingHint} role="status">
+                        Calcul de la sortie…
+                      </p>
+                    ) : outingDetail.highlights.length === 0 ? (
+                      <p className={styles.outingHint}>
+                        Cette sortie n’a fait avancer aucun itinéraire balisé
+                        de la zone chargée.
+                      </p>
+                    ) : (
+                      <ul className={styles.outingList}>
+                        {outingDetail.highlights.map((fait) => (
+                          <li key={fait.itineraryId}>
+                            <strong>{fait.name}</strong> :{' '}
+                            {formatKm(fait.doneMeters)}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
+              </li>
+            )
+          })}
         </ul>
       )}
     </details>

@@ -28,6 +28,7 @@ import {
   type ProfilePoint,
 } from '../core/elevation.ts'
 import { fetchPois } from '../core/poi.ts'
+import { outingHighlights, type OutingHighlight } from '../core/outing.ts'
 import type { MatchResult } from '../core/matching.ts'
 import {
   GEO_OPTIONS,
@@ -89,6 +90,12 @@ export interface AppState {
   selectedItineraryId: number | null
   /** Avancement d'un import multi-fichiers, pour que l'attente ait un sujet. */
   importProgress: { done: number; total: number; filename: string } | null
+  /** Ce qu'une sortie a apporté, calculé à la demande (trace dépliée). */
+  outingDetail: {
+    trackId: string
+    highlights: OutingHighlight[]
+    loading: boolean
+  } | null
 
   // Fiche détail (profil altimétrique + points d'intérêt + vue 3D)
   detailItineraryId: number | null
@@ -133,6 +140,7 @@ export interface AppState {
   setTolerance: (value: number) => Promise<void>
   selectItinerary: (id: number | null) => void
   setElevationHover: (point: ProfilePoint | null) => void
+  toggleOutingDetail: (trackId: string) => Promise<void>
   clearImportErrors: () => void
   openItineraryDetail: (id: number) => void
   closeItineraryDetail: () => void
@@ -149,6 +157,7 @@ export interface AppState {
 }
 
 let recomputeSequence = 0
+let outingSequence = 0
 let detailSequence = 0
 let zoneLoadSequence = 0
 /**
@@ -387,6 +396,7 @@ export const useAppStore = create<AppState>()((set, get) => {
     selectedItineraryId: null,
     detailItineraryId: null,
     importProgress: null,
+    outingDetail: null,
     elevationProfile: null,
     elevationHover: null,
     elevationError: null,
@@ -660,6 +670,42 @@ export const useAppStore = create<AppState>()((set, get) => {
 
     setElevationHover(point) {
       set({ elevationHover: point })
+    },
+
+    /**
+     * Déplie (ou replie) le bilan d'une sortie : quels itinéraires balisés
+     * elle a fait avancer, et de combien. Calculé à la demande — refaire le
+     * matching pour chaque trace à chaque import coûterait cher pour une
+     * information qu'on ne regarde qu'en cliquant.
+     */
+    async toggleOutingDetail(trackId) {
+      if (get().outingDetail?.trackId === trackId) {
+        set({ outingDetail: null })
+        return
+      }
+      const { tracks, itineraries, customItineraries, toleranceMeters } = get()
+      const track = tracks.find((t) => t.id === trackId)
+      if (!track) return
+      const sequence = ++outingSequence
+      set({ outingDetail: { trackId, highlights: [], loading: true } })
+
+      const tous = [...itineraries, ...customItineraries]
+      const computedAt = new Date().toISOString()
+      const resultat = await computeMatching({
+        itineraries: tous,
+        trackPoints: track.points,
+        toleranceMeters,
+        stepMeters: STEP_METERS,
+        computedAt,
+      })
+      if (sequence !== outingSequence) return
+      set({
+        outingDetail: {
+          trackId,
+          highlights: outingHighlights(resultat.results, tous),
+          loading: false,
+        },
+      })
     },
 
     clearImportErrors() {
