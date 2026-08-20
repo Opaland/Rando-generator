@@ -265,8 +265,10 @@ export const useAppStore = create<AppState>()((set, get) => {
         matching: result,
         customMatching: customResult,
         matchingBusy: false,
-        // Un seul franchissement annoncé à la fois : le plus haut.
-        ...(franchis[0] ? { celebration: franchis[0] } : {}),
+        // Un seul franchissement annoncé à la fois : le plus haut. Et
+        // l'annonce ne survit pas au calcul suivant : elle porte sur *ce*
+        // calcul-là, la laisser affichée après un autre serait mentir.
+        celebration: franchis[0] ?? null,
       })
     }
   }
@@ -277,10 +279,12 @@ export const useAppStore = create<AppState>()((set, get) => {
     itineraries: Itinerary[],
     fetchedAt: string,
   ): void {
-    // Nouvelle zone : les pourcentages précédents ne veulent plus rien dire.
+    // Nouvelle zone : les pourcentages précédents ne veulent plus rien dire,
+    // et le bilan de sortie ouvert nomme des itinéraires qui ne sont plus là.
     pctsPrecedents = null
     set({
       celebration: null,
+      outingDetail: null,
       zoneKey,
       zoneLabel,
       itineraries,

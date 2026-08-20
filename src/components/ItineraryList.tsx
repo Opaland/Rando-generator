@@ -112,16 +112,26 @@ export function ItineraryList() {
     filters.maxAwayKm !== null ||
     filters.shape !== 'all'
 
-  // Le GPS bouge en permanence : la position est arrondie à ~100 m pour ne
-  // pas recalculer la distance de chaque itinéraire à chaque relevé. Elle
-  // n'est lue que si le filtre de proximité est utilisé.
-  const depuis = useMemo<LonLat | null>(() => {
-    if (!userPosition || filters.maxAwayKm === null) return null
-    return [
-      Math.round(userPosition.lon * 1_000) / 1_000,
-      Math.round(userPosition.lat * 1_000) / 1_000,
-    ]
-  }, [userPosition, filters.maxAwayKm])
+  // Le GPS bouge en permanence — un relevé par seconde en marchant. Arrondir
+  // la position ne suffisait pas : le tableau était recréé à chaque relevé,
+  // donc les mémoïsations en aval tombaient quand même. On dépend des deux
+  // nombres arrondis, qui eux ne changent que tous les ~100 m parcourus.
+  const proximiteActive = filters.maxAwayKm !== null
+  const lonArrondi =
+    userPosition && proximiteActive
+      ? Math.round(userPosition.lon * 1_000) / 1_000
+      : null
+  const latArrondi =
+    userPosition && proximiteActive
+      ? Math.round(userPosition.lat * 1_000) / 1_000
+      : null
+  const depuis = useMemo<LonLat | null>(
+    () =>
+      lonArrondi !== null && latArrondi !== null
+        ? [lonArrondi, latArrondi]
+        : null,
+    [lonArrondi, latArrondi],
+  )
 
   // Géométrie trouée : le seul défaut de donnée qui mérite d'être vu sans
   // ouvrir la fiche, parce qu'il fausse le pourcentage affiché juste à côté.

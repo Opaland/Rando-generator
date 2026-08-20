@@ -315,3 +315,42 @@ describe('selectItinerary', () => {
     expect(useAppStore.getState().detailItineraryId).toBe(id)
   })
 })
+
+describe('annonces et bilans, cycle de vie', () => {
+  it('l’annonce d’un jalon ne survit pas au calcul suivant', async () => {
+    await useAppStore.getState().init()
+    await useAppStore.getState().loadZone('pilat')
+    // Tolérance serrée : la trace ne crédite rien.
+    await useAppStore.getState().setTolerance(MIN_TOLERANCE)
+    await useAppStore
+      .getState()
+      .importGpxFiles([
+        fichierGpx('gr7.gpx', ligne(40, 45.4 + 15 / 111_195)),
+      ])
+    expect(useAppStore.getState().celebration).toBeNull()
+
+    // On desserre : le GR 7 franchit ses jalons d'un coup.
+    await useAppStore.getState().setTolerance(MAX_TOLERANCE)
+    expect(useAppStore.getState().celebration).not.toBeNull()
+
+    // Un calcul suivant sans franchissement efface l'annonce : elle portait
+    // sur le calcul précédent, la garder affichée serait mentir.
+    await useAppStore.getState().setTolerance(MAX_TOLERANCE - 5)
+    expect(useAppStore.getState().celebration).toBeNull()
+  })
+
+  it('changer de zone referme le bilan d’une sortie', async () => {
+    await useAppStore.getState().init()
+    await useAppStore.getState().loadZone('pilat')
+    await useAppStore
+      .getState()
+      .importGpxFiles([fichierGpx('a.gpx', ligne(40))])
+    const id = useAppStore.getState().tracks[0]?.id ?? ''
+    await useAppStore.getState().toggleOutingDetail(id)
+    expect(useAppStore.getState().outingDetail).not.toBeNull()
+
+    await useAppStore.getState().loadZone('loire')
+    // Le bilan nommait des itinéraires qui ne sont plus chargés.
+    expect(useAppStore.getState().outingDetail).toBeNull()
+  })
+})

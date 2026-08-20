@@ -80,3 +80,39 @@ test('le filtre de proximité ne retire rien tant que la position est inconnue',
   await expect(list).toContainText('Boucle du Vallon')
   await expect(list).toContainText('Grande Traversée')
 })
+
+// Position simulée sur le GR 7 de la fixture Pilat.
+test.describe('avec une position connue', () => {
+  test.use({
+    permissions: ['geolocation'],
+    geolocation: { latitude: 45.4, longitude: 4.505 },
+  })
+
+  test('le filtre de proximité écarte ce qui est loin', async ({ page }) => {
+    await mockExternalNetwork(page)
+    await page.route('**/data/boucles-metropole-lyon.json', (route) =>
+      route.fulfill({ json: decouverteFixture }),
+    )
+    await page.goto('/')
+
+    await page.getByTestId('zone-rhone').click()
+    const list = page.getByTestId('itinerary-list')
+    await expect(list).toContainText('Boucle du Vallon', { timeout: 15_000 })
+    await expect(list).toContainText('GR 7')
+
+    await page.getByTestId('locate-toggle').click()
+    await expect(page.getByTestId('geo-accuracy')).toContainText('±', {
+      timeout: 10_000,
+    })
+
+    await page.getByTestId('discovery-filters').locator('summary').click()
+    await page.getByTestId('list-nearby').selectOption({ label: 'à moins de 5 km' })
+
+    // Le GR 7 passe sous nos pieds ; les boucles de la fixture sont à
+    // plusieurs dizaines de kilomètres de là.
+    await expect(page.getByTestId('nearby-hint')).toHaveCount(0)
+    await expect(list).toContainText('GR 7')
+    await expect(list).not.toContainText('Boucle du Vallon')
+    await expect(list).not.toContainText('Grande Traversée')
+  })
+})
