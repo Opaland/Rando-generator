@@ -4,6 +4,7 @@ import type { PoiDetails, PoiKind } from '../core/types.ts'
 export const POI_LABELS: Record<PoiKind, string> = {
   viewpoint: 'Point de vue',
   peak: 'Sommet',
+  pass: 'Col',
   hut: 'Refuge gardé',
   bivouac: 'Couchage libre',
   shelter: 'Abri (pause)',
@@ -17,6 +18,7 @@ export const POI_LABELS: Record<PoiKind, string> = {
 export const POI_COLORS: Record<PoiKind, string> = {
   viewpoint: '#2f6f4f',
   peak: '#6b4226',
+  pass: '#8c5a2b',
   hut: '#c8102e',
   bivouac: '#7d3c98',
   shelter: '#4a6b6b',

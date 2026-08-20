@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { fillElevationGaps, pointAtDistance } from '../core/elevation.ts'
+import { reperesDuProfil } from '../core/reperes.ts'
 import { useAppStore } from '../store/appStore.ts'
 import { formatKm } from '../lib/format.ts'
 import type { ElevationProfile } from '../core/types.ts'
@@ -22,6 +23,7 @@ const PAS_CLAVIER = 0.02
  */
 export function ElevationChart({ profile }: { profile: ElevationProfile }) {
   const setElevationHover = useAppStore((s) => s.setElevationHover)
+  const pois = useAppStore((s) => s.pois)
   const [ratio, setRatio] = useState<number | null>(null)
   const svgRef = useRef<SVGSVGElement>(null)
 
@@ -30,6 +32,11 @@ export function ElevationChart({ profile }: { profile: ElevationProfile }) {
   const max = Math.max(...elevations)
   const span = Math.max(max - min, 1) // évite une division par 0 (profil plat)
   const totalDistance = profile.distances[profile.distances.length - 1] || 1
+
+  // Cols, sommets et refuges traversés : un profil de montagne sans nom de
+  // col est une courbe sans repère — on voit qu'on monte de 900 mètres, on
+  // ne sait pas vers quoi.
+  const reperes = reperesDuProfil(profile, pois)
 
   const points = profile.distances.map((d, i) => {
     const x = PADDING + (d / totalDistance) * (WIDTH - 2 * PADDING)
@@ -132,6 +139,17 @@ export function ElevationChart({ profile }: { profile: ElevationProfile }) {
       >
         <path className={styles.area} d={areaPath} />
         <path className={styles.line} d={linePath} />
+        {reperes.map((repere) => {
+          const x =
+            PADDING +
+            (repere.distanceMeters / totalDistance) * (WIDTH - 2 * PADDING)
+          return (
+            <g key={repere.id} className={styles.repere}>
+              <line x1={x} y1={PADDING} x2={x} y2={HEIGHT - PADDING} />
+              <circle cx={x} cy={PADDING} r={2} />
+            </g>
+          )
+        })}
         {survole && (
           <g className={styles.cursor}>
             <line x1={curseurX} y1={0} x2={curseurX} y2={HEIGHT} />
@@ -152,6 +170,20 @@ export function ElevationChart({ profile }: { profile: ElevationProfile }) {
             }`
           : 'Parcourez le profil pour situer un passage sur la carte.'}
       </p>
+      {reperes.length > 0 && (
+        <ol className={styles.reperes} data-testid="elevation-reperes">
+          {reperes.map((repere) => (
+            <li key={repere.id}>
+              <span className={styles.repereNom}>{repere.name}</span>
+              <span className={styles.repereDetail}>
+                {formatKm(repere.distanceMeters)}
+                {repere.elevation !== null &&
+                  ` · ${Math.round(repere.elevation).toLocaleString('fr-FR')} m`}
+              </span>
+            </li>
+          ))}
+        </ol>
+      )}
     </div>
   )
 }
