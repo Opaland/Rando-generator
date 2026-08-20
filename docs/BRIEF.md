@@ -43,21 +43,31 @@ premier écran a été refait (#131).
 ## Le marché
 
 Le paysage se divise en deux familles, et Sentiers n'est dans ni l'une ni
-l'autre.
+l'autre. L'analyse détaillée, avec ses sources, est dans l'issue #19 ; on n'en
+reprend ici que ce qui décide.
 
 | Famille | Exemples | Ce qu'ils font | Pourquoi ce n'est pas nous |
 |---|---|---|---|
-| Préparation et navigation | Komoot, AllTrails, Visorando, IGN Rando | trouver un itinéraire, le suivre, l'évaluer | bases éditoriales, équipes, dix ans d'avance. Combat perdu. |
-| Complétion / collection | Wandrer, Statshunters, Squadrats, VeloViewer | « avez-vous parcouru toutes les routes ? » | orientés **vélo** et **réseau routier**, pas sentiers balisés français |
+| Préparation et navigation | Komoot, AllTrails, Visorando, MaRando (FFRandonnée) | trouver un itinéraire, le suivre, l'évaluer | bases éditoriales, équipes, dix ans d'avance. Combat perdu — et MaRando ne fait pas de complétion cumulée |
+| Complétion / collection | Wandrer, CityStrides, Statshunters, Squadrats, VeloViewer | « avez-vous parcouru toutes les routes / toutes les rues ? » | orientés **routes et rues**, via Strava, payants ; le tracé n'y a pas de nom |
+| Longue distance | HiiKER | planifier un trek en étapes | planification, pas suivi cumulé |
 
-Le créneau est **entre les deux et vide** : la complétion appliquée aux
-**itinéraires balisés** (GR, GR de Pays, PR, boucles locales), en France, à
-partir de l'open data.
+**Wandrer est le seul recouvrement réel** : il inclut les sentiers. Ses
+différences sont exactement notre créneau — il est payant, dépendant de
+Strava, centré sur le réseau routier, et **non sémantique** : il compte des
+kilomètres de segments, pas « le GR 7 ».
 
-> Les concurrents listés le sont de mémoire et de lecture du marché ; aucun
-> n'a pu être vérifié en ligne depuis cet environnement. Les fonctionnalités
-> précises, les tarifs et les audiences sont donc à confirmer avant toute
-> communication publique.
+D'où la formule à retenir : ***vos GR par leur nom, vos données chez vous***.
+
+Deux emprunts assumés à ces produits, déjà en place : les **jalons** de
+complétion (Wandrer) et la règle du **« bouclé à ≥ 95 % »** (CityStrides,
+qui pardonne culs-de-sac et tronçons inaccessibles — chez nous le seuil est
+réglable).
+
+> Ces éléments viennent de l'analyse consignée dans #19, avec ses liens. Ils
+> n'ont pas pu être revérifiés en ligne depuis l'environnement de
+> développement : tarifs et fonctionnalités précises sont à reconfirmer avant
+> toute communication publique.
 
 ## Positionnement
 
