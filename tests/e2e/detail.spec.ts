@@ -46,6 +46,16 @@ test('cliquer un tracé sur la carte ouvre la fiche détail (altimétrie + POI)'
 
   // Les couchages libres passent en tête et l'avertissement s'affiche.
   await expect(poiList).toContainText('Cabane des Chèvres')
+  // Chaque point dit ce qu'il coûte : sans distance, « à proximité » était
+  // une promesse que la requête n'avait jamais vérifiée (issue #122).
+  await expect(poiList).toContainText(/\d+ m de détour|\d+,\d+ km de détour/)
+  // Et l'ordre suit la distance : le point de vue est sur le tracé, le
+  // sommet à plus d'un kilomètre.
+  const positions = await poiList.evaluate((liste) =>
+    [...liste.querySelectorAll('li')].map((li) => li.textContent),
+  )
+  const rang = (nom: string) => positions.findIndex((t) => t.includes(nom))
+  expect(rang('Point de vue')).toBeLessThan(rang('Crêt de la Perdrix'))
   await expect(page.getByTestId('detail-poi-caveat')).toContainText(
     /gestionnaire/i,
   )

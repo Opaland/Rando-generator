@@ -2,6 +2,7 @@ import { useAppStore } from '../store/appStore.ts'
 import {
   displayName,
   formatAnciennete,
+  formatDetour,
   formatKm,
   formatPct,
 } from '../lib/format.ts'
@@ -9,6 +10,7 @@ import { POI_LABELS, POI_OVERNIGHT } from '../lib/poiDisplay.ts'
 import { NETWORK_BADGES } from '../lib/networkDisplay.ts'
 import { elevationStats } from '../core/elevation.ts'
 import { itineraryCoords } from '../core/mapdata.ts'
+import { situerPois } from '../core/poiDistance.ts'
 import { DEFAULT_STAGE_METERS, buildStages } from '../core/stages.ts'
 import { assessItinerary } from '../core/dataQuality.ts'
 import {
@@ -36,7 +38,7 @@ export function ItineraryDetail() {
   const elevationProfile = useAppStore((s) => s.elevationProfile)
   const elevationError = useAppStore((s) => s.elevationError)
   const elevationLoading = useAppStore((s) => s.elevationLoading)
-  const pois = useAppStore((s) => s.pois)
+  const poisBruts = useAppStore((s) => s.pois)
   const poisLoading = useAppStore((s) => s.poisLoading)
   const view3D = useAppStore((s) => s.view3D)
   const closeItineraryDetail = useAppStore((s) => s.closeItineraryDetail)
@@ -57,6 +59,13 @@ export function ItineraryDetail() {
   const pct = result?.pct ?? 0
   const done = result?.doneMeters ?? 0
   const total = result?.totalMeters ?? itin.totalMeters
+  // Les POI viennent de boîtes englobantes larges de plusieurs kilomètres :
+  // sans mesure, « à proximité » était une promesse que personne n'avait
+  // vérifiée (issue #122). On les situe, du plus proche au plus lointain, et
+  // on affiche ce qu'ils coûtent — un aller-retour, pas une distance à vol
+  // d'oiseau.
+  const pois = situerPois(poisBruts, itineraryCoords(itin))
+
   const stats = elevationProfile ? elevationStats(elevationProfile.elevations) : null
   const hasSleepingSpot = pois.some((poi) => POI_OVERNIGHT.includes(poi.kind))
   // Un long GR ne se lit pas en un seul pourcentage : on le découpe en
@@ -66,6 +75,7 @@ export function ItineraryDetail() {
   // Une relation trouée produit un pourcentage faux sans le dire : le
   // signaler ne répare rien, mais rend le chiffre lisible.
   const qualite = assessItinerary(itin, new Date().toISOString())
+
 
   return (
     <aside
@@ -276,11 +286,19 @@ export function ItineraryDetail() {
           <p className={styles.hint}>Aucun point d’intérêt répertorié à proximité.</p>
         )}
         {pois.length > 0 && (
+          <p className={styles.hint}>
+            Du plus proche au plus lointain. Le détour indiqué est un
+            aller-retour depuis le tracé, à vol d’oiseau : le chemin réel sera
+            plus long.
+          </p>
+        )}
+        {pois.length > 0 && (
           <ul className={styles.poiList} data-testid="detail-poi-list">
             {pois.map((poi) => {
               const { phone, website, capacity, openingHours, operator, elevation } =
                 poi.details
               const facts = [
+                `${formatDetour(poi.detourMeters)} de détour`,
                 capacity && `${capacity} places`,
                 openingHours && `ouvert ${openingHours}`,
                 elevation && `${elevation} m`,
