@@ -33,6 +33,12 @@ import { outingHighlights, type OutingHighlight } from '../core/outing.ts'
 import { FitError, looksLikeFit, parseFit } from '../core/fit.ts'
 import { TcxError, looksLikeTcx, parseTcx } from '../core/tcx.ts'
 import {
+  GeoJsonError,
+  looksLikeGeoJson,
+  parseGeoJsonTrails,
+  type GeoJsonTrail,
+} from '../core/geojson.ts'
+import {
   ZipError,
   entreesDeTrace,
   listZipEntries,
@@ -312,6 +318,31 @@ async function developperArchives(
     }
   }
   return { fichiers: sortie, erreurs }
+}
+
+/**
+ * Lit un fichier d'itinéraires déposé dans « Mes itinéraires ».
+ *
+ * Un GeoJSON de sentiers — un PDIPR départemental, par exemple — décrit
+ * plusieurs itinéraires d'un coup, là où un GPX n'en porte qu'un. Le format
+ * est reconnu au contenu, pas à l'extension.
+ */
+async function lireItineraires(file: File): Promise<GeoJsonTrail[]> {
+  const buffer = await file.arrayBuffer()
+  if (!looksLikeFit(buffer)) {
+    const texte = new TextDecoder().decode(buffer)
+    if (looksLikeGeoJson(texte)) {
+      let donnees: unknown
+      try {
+        donnees = JSON.parse(texte)
+      } catch {
+        throw new GeoJsonError('Ce fichier n’est pas un JSON valide.')
+      }
+      return parseGeoJsonTrails(donnees)
+    }
+  }
+  const trace = await parseTraceFile(file)
+  return [{ name: null, lines: [trace.points] }]
 }
 
 /** Identifiant du suivi de position en cours (API navigateur). */
@@ -816,7 +847,8 @@ export const useAppStore = create<AppState>()((set, get) => {
           errors.push(
             error instanceof GpxError ||
             error instanceof FitError ||
-            error instanceof TcxError
+            error instanceof TcxError ||
+            error instanceof GeoJsonError
               ? `${file.name} : ${error.message}`
               : `${file.name} : lecture impossible.`,
           )
@@ -850,31 +882,54 @@ export const useAppStore = create<AppState>()((set, get) => {
             },
           })
           await pause()
-          const parsed = await parseTraceFile(file)
-          if (parsed.points.length < 2) {
+          const trails = await lireItineraires(file)
+          const exploitables = trails.filter((trail) =>
+            trail.lines.some((ligne) => ligne.length >= 2),
+          )
+          if (exploitables.length === 0) {
             errors.push(
               `${file.name} : pas assez de points pour en faire un itinéraire.`,
             )
             continue
           }
-          nextId -= 1
-          const itinerary: Itinerary = {
-            osmRelationId: nextId,
-            ref: null,
-            name: file.name.replace(/\.gpx$/i, ''),
-            network: 'PERSO',
-            ways: [{ osmWayId: nextId, coords: parsed.points }],
-            totalMeters: polylineLengthMeters(parsed.points),
-            fetchedAt: new Date().toISOString(),
-          }
+          const nomDeBase = file.name.replace(/\.(gpx|fit|tcx|geojson|json)$/i, '')
           const db = await baseOuverte()
-          if (db) await db.saveCustomItinerary(itinerary)
-          imported.push(itinerary)
+          for (const [rang, trail] of exploitables.entries()) {
+            nextId -= 1
+            const ways = trail.lines
+              .filter((ligne) => ligne.length >= 2)
+              .map((ligne, index) => ({
+                osmWayId: nextId * 1_000 - index,
+                coords: ligne,
+              }))
+            const itinerary: Itinerary = {
+              osmRelationId: nextId,
+              ref: null,
+              // Un GeoJSON peut décrire cent sentiers : chacun garde son nom,
+              // et à défaut le fichier suivi de son rang — sans quoi la liste
+              // afficherait cent fois la même ligne.
+              name:
+                trail.name ??
+                (exploitables.length > 1
+                  ? `${nomDeBase} (${rang + 1})`
+                  : nomDeBase),
+              network: 'PERSO',
+              ways,
+              totalMeters: ways.reduce(
+                (somme, way) => somme + polylineLengthMeters(way.coords),
+                0,
+              ),
+              fetchedAt: new Date().toISOString(),
+            }
+            if (db) await db.saveCustomItinerary(itinerary)
+            imported.push(itinerary)
+          }
         } catch (error) {
           errors.push(
             error instanceof GpxError ||
             error instanceof FitError ||
-            error instanceof TcxError
+            error instanceof TcxError ||
+            error instanceof GeoJsonError
               ? `${file.name} : ${error.message}`
               : `${file.name} : lecture impossible.`,
           )
