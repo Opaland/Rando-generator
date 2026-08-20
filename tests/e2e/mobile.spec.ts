@@ -320,3 +320,50 @@ test('au retour, la feuille laisse la carte visible', async ({ page }) => {
     'repliee',
   )
 })
+
+test('la fiche détail laisse voir le tracé dont elle parle', async ({
+  page,
+}) => {
+  await mockExternalNetwork(page)
+  await mockTilesOk(page)
+  await mockElevation(page)
+  await page.goto('/')
+
+  await page.getByTestId('zone-pilat').click()
+  await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
+    timeout: 15_000,
+  })
+  await page
+    .getByTestId('itinerary-list')
+    .getByRole('button', { name: /GR 7/ })
+    .click()
+  await page.getByTestId('itinerary-card-detail-link').click()
+  await expect(page.getByTestId('itinerary-detail')).toContainText('D+', {
+    timeout: 10_000,
+  })
+
+  // Un point du GR 7 du jeu d'essai. Lire la fiche d'un itinéraire sans voir
+  // où il passe n'a pas de sens — et le marqueur posé en parcourant le profil
+  // altimétrique se retrouvait sous le panneau avec lui (issue #80).
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          const carte = (
+            window as unknown as {
+              __sentiersMap?: {
+                project: (c: [number, number]) => { x: number; y: number }
+                isMoving: () => boolean
+              }
+            }
+          ).__sentiersMap
+          const panneau = document
+            .querySelector('[data-testid="itinerary-detail"]')
+            ?.getBoundingClientRect()
+          if (!carte || !panneau || carte.isMoving()) return null
+          return Math.round(panneau.top - carte.project([4.502, 45.4]).y)
+        }),
+      { timeout: 15_000 },
+    )
+    .toBeGreaterThan(0)
+})

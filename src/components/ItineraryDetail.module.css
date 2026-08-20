@@ -4,7 +4,9 @@
   right: 0;
   bottom: 0;
   z-index: var(--z-overlay-detail);
-  max-height: min(60vh, 480px);
+  /* Sur téléphone, la fiche ne prend pas plus de la moitié du cadre : on lit
+     le détail d'un itinéraire en le gardant sous les yeux (issue #80). */
+  max-height: min(50vh, 480px);
   overflow-y: auto;
   background: var(--blanc-papier);
   border-top: 1px solid var(--gris-vert-clair);
