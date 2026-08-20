@@ -5,6 +5,8 @@ import {
   itineraryCoords,
 } from '../../src/core/mapdata.ts'
 import { buildSamples } from '../../src/core/matching.ts'
+import { polylineLengthMeters, sampleWay } from '../../src/core/sampling.ts'
+import type { Itinerary, LonLat, Sample } from '../../src/core/types.ts'
 import { straightLine, makeItinerary } from '../fixtures/synthetic.ts'
 import type { Track } from '../../src/core/types.ts'
 
@@ -113,5 +115,88 @@ describe('buildTracksGeoJSON', () => {
       },
     ])
     expect(fc.features).toHaveLength(0)
+  })
+})
+
+describe('coloration des tronçons parcourus (issue #142)', () => {
+  /**
+   * Un lacet : on monte plein est sur 100 m, on fait demi-tour, on repart
+   * plein est en décalé. L'épingle fait moins que le pas d'échantillonnage —
+   * c'est précisément le cas où relier deux échantillons coupe le virage.
+   */
+  const EST = 0.00089932 // ~100 m à l'équateur
+  const LACET: LonLat[] = [
+    [0, 0],
+    [EST, 0],
+    [EST, EST / 4],
+    [0, EST / 4],
+    [0, EST / 2],
+  ]
+
+  const itineraire: Itinerary = {
+    osmRelationId: 1,
+    ref: 'GR 1',
+    name: null,
+    network: 'GR',
+    ways: [{ osmWayId: 10, coords: LACET }],
+    totalMeters: 350,
+    fetchedAt: '2026-08-20T00:00:00Z',
+  }
+
+  function echantillons(motif: boolean[]): Sample[] {
+    return sampleWay(LACET, 100).map((point, i) => ({
+      lon: point[0],
+      lat: point[1],
+      wayId: 10,
+      itineraryIds: [1],
+      done: motif[i] ?? false,
+    }))
+  }
+
+  it('épouse le virage au lieu de le couper', () => {
+    const tousFaits = echantillons(sampleWay(LACET, 100).map(() => true))
+    const { done } = buildTrailGeoJSON([itineraire], tousFaits, 100)
+    expect(done.features).toHaveLength(1)
+    const portion = done.features[0]?.geometry.coordinates ?? []
+
+    // Les sommets du chemin sont dans la portion. C'est le point du test :
+    // relier les échantillons entre eux ne les produit jamais, puisqu'un
+    // échantillon tombe où il tombe, jamais sur un sommet.
+    const contient = (point: LonLat) =>
+      portion.some(
+        ([lon, lat]) =>
+          Math.abs(lon - point[0]) < 1e-9 && Math.abs(lat - point[1]) < 1e-9,
+      )
+    expect(contient([EST, 0])).toBe(true)
+    expect(contient([EST, EST / 4])).toBe(true)
+
+    // Et la longueur colorée est celle du chemin réellement parcouru
+    // (trois échantillons à cent mètres d'intervalle = 200 m de sentier),
+    // pas celle des cordes qui coupent l'épingle — 179 m avant ce correctif.
+    expect(polylineLengthMeters(portion)).toBeCloseTo(200, 0)
+  })
+
+  it('ne colore que ce qui est parcouru', () => {
+    const moitie = echantillons([true, true, false, false, false])
+    const { done } = buildTrailGeoJSON([itineraire], moitie, 100)
+    const portion = done.features[0]?.geometry.coordinates ?? []
+    // Deux échantillons consécutifs faits : cent mètres de chemin, pas plus.
+    expect(polylineLengthMeters(portion)).toBeCloseTo(100, 0)
+  })
+
+  it('ne colore rien quand rien n’est parcouru', () => {
+    const rien = echantillons([])
+    expect(buildTrailGeoJSON([itineraire], rien, 100).done.features).toEqual([])
+  })
+
+  it('coupe la portion à la fin du way plutôt que d’inventer du chemin', () => {
+    // Le dernier échantillon peut tomber au-delà de la longueur réelle si le
+    // way ne fait pas un multiple entier du pas.
+    const tous = echantillons(sampleWay(LACET, 100).map(() => true))
+    const { done } = buildTrailGeoJSON([itineraire], tous, 100)
+    const portion = done.features[0]?.geometry.coordinates ?? []
+    expect(polylineLengthMeters(portion)).toBeLessThanOrEqual(
+      polylineLengthMeters(LACET) + 1,
+    )
   })
 })

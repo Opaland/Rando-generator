@@ -1,4 +1,6 @@
+import { slicePolyline } from './sampling.ts'
 import type { Itinerary, LonLat, Network, Sample, Track } from './types.ts'
+import { STEP_METERS } from './types.ts'
 
 /**
  * Concatène les coordonnées de tous les ways d'un itinéraire, dans l'ordre
@@ -63,6 +65,7 @@ export interface TrailGeoJSON {
 export function buildTrailGeoJSON(
   itineraries: Itinerary[],
   samples: Sample[],
+  stepMeters: number = STEP_METERS,
 ): TrailGeoJSON {
   // Way → propriétés (réseau prioritaire parmi les itinéraires le partageant).
   const wayProps = new Map<number, TrailProperties>()
@@ -99,19 +102,45 @@ export function buildTrailGeoJSON(
   }
 
   // Tronçons parcourus : suites d'échantillons faits consécutifs par way.
+  //
+  // La portion colorée suit la **géométrie réelle du chemin** entre le
+  // premier et le dernier échantillon de la suite, au lieu de relier les
+  // échantillons entre eux. Le trait droit coupait les lacets : dans une
+  // épingle de montagne, plus courte que le pas d'échantillonnage, il passait
+  // à travers le virage (issue #142).
+  //
+  // Les échantillons d'un way sont posés tous les `stepMeters` depuis son
+  // départ (cf. sampleWay) : le k-ième est donc à k × pas du début, ce qui
+  // suffit à retrouver la portion sans stocker d'index supplémentaire.
   const done: LineFeature<TrailProperties>[] = []
-  let run: LonLat[] = []
+  const rangs = new Map<number, number>()
   let runWayId: number | null = null
+  let runDebut: number | null = null
+  let runFin: number | null = null
   const flush = () => {
-    if (runWayId !== null && run.length >= 2) {
-      done.push(lineFeature(run, wayProps.get(runWayId) as TrailProperties))
+    if (runWayId !== null && runDebut !== null && runFin !== null) {
+      const coords = wayCoords.get(runWayId)
+      const portion = coords
+        ? slicePolyline(coords, runDebut * stepMeters, runFin * stepMeters)
+        : []
+      if (portion.length >= 2) {
+        done.push(
+          lineFeature(portion, wayProps.get(runWayId) as TrailProperties),
+        )
+      }
     }
-    run = []
+    runDebut = null
+    runFin = null
   }
   for (const sample of samples) {
+    const rang = rangs.get(sample.wayId) ?? 0
+    rangs.set(sample.wayId, rang + 1)
     if (!sample.done || sample.wayId !== runWayId) flush()
     runWayId = sample.wayId
-    if (sample.done) run.push([sample.lon, sample.lat])
+    if (sample.done) {
+      runDebut ??= rang
+      runFin = rang
+    }
   }
   flush()
 

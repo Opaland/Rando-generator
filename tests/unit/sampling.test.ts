@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   polylineLengthMeters,
   sampleWay,
+  slicePolyline,
 } from '../../src/core/sampling.ts'
 import { distanceMeters } from '../../src/core/geo.ts'
 import { straightLine } from '../fixtures/synthetic.ts'
@@ -72,5 +73,60 @@ describe('sampleWay', () => {
     const line = straightLine(4.5, LAT, 300, 100)
     const withDup: LonLat[] = [a, a, ...line.slice(1)]
     expect(sampleWay(withDup, 100)).toHaveLength(4)
+  })
+})
+
+describe('slicePolyline', () => {
+  // Un « L » : 100 m vers l'est, puis 100 m vers le nord. Le coin est le
+  // point que tout raccourci fait disparaître.
+  const L: LonLat[] = [
+    [0, 0],
+    [0.00089932, 0],
+    [0.00089932, 0.00089932],
+  ]
+
+  it('rend la portion demandée, avec ses sommets intermédiaires', () => {
+    // De 50 m à 150 m : la portion traverse le coin, qui doit être conservé.
+    const portion = slicePolyline(L, 50, 150)
+    expect(portion.length).toBeGreaterThanOrEqual(3)
+    const coin = portion.find(
+      ([lon, lat]) => Math.abs(lon - 0.00089932) < 1e-7 && Math.abs(lat) < 1e-7,
+    )
+    expect(coin).toBeDefined()
+  })
+
+  it('commence et finit aux distances demandées', () => {
+    const portion = slicePolyline(L, 50, 150)
+    expect(polylineLengthMeters(portion)).toBeCloseTo(100, 0)
+  })
+
+  it('rend la polyligne entière quand on demande tout', () => {
+    const portion = slicePolyline(L, 0, 1_000)
+    expect(polylineLengthMeters(portion)).toBeCloseTo(
+      polylineLengthMeters(L),
+      0,
+    )
+  })
+
+  it('borne aux extrémités plutôt que d’extrapoler', () => {
+    const portion = slicePolyline(L, -50, 10_000)
+    expect(portion[0]).toEqual(L[0])
+    expect(portion[portion.length - 1]).toEqual(L[L.length - 1])
+  })
+
+  it('rend un segment droit quand la portion ne contient aucun sommet', () => {
+    const portion = slicePolyline(L, 10, 40)
+    expect(portion).toHaveLength(2)
+    expect(polylineLengthMeters(portion)).toBeCloseTo(30, 0)
+  })
+
+  it('ne rend rien pour une portion vide ou inversée', () => {
+    expect(slicePolyline(L, 80, 80)).toEqual([])
+    expect(slicePolyline(L, 120, 40)).toEqual([])
+  })
+
+  it('ne rend rien pour une polyligne dégénérée', () => {
+    expect(slicePolyline([[0, 0]], 0, 100)).toEqual([])
+    expect(slicePolyline([], 0, 100)).toEqual([])
   })
 })
