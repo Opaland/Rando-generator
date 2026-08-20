@@ -45,3 +45,55 @@ export function sampleWay(coords: LonLat[], stepMeters: number): LonLat[] {
 
   return samples
 }
+
+/**
+ * Portion d'une polyligne entre deux distances curvilignes, **sommets
+ * intermédiaires compris**.
+ *
+ * Sert à colorer ce qui a été parcouru en épousant la géométrie réelle du
+ * chemin. Relier directement deux échantillons distants de cent mètres coupe
+ * les lacets : dans une épingle de montagne, le trait passe à travers le
+ * virage au lieu de le suivre (issue #142).
+ *
+ * Les bornes sont ramenées dans la polyligne plutôt qu'extrapolées : un
+ * échantillon situé au-delà de la fin d'un way ne doit pas inventer du
+ * chemin.
+ */
+export function slicePolyline(
+  coords: LonLat[],
+  fromMeters: number,
+  toMeters: number,
+): LonLat[] {
+  if (coords.length < 2) return []
+  const total = polylineLengthMeters(coords)
+  const debut = Math.max(0, Math.min(fromMeters, total))
+  const fin = Math.max(0, Math.min(toMeters, total))
+  if (fin <= debut) return []
+
+  const portion: LonLat[] = []
+  let parcouru = 0
+  for (let i = 1; i < coords.length; i++) {
+    const from = coords[i - 1] as LonLat
+    const to = coords[i] as LonLat
+    const segLen = distanceMeters(from, to)
+    if (segLen === 0) continue
+    const segDebut = parcouru
+    const segFin = parcouru + segLen
+    parcouru = segFin
+    if (segFin <= debut || segDebut >= fin) continue
+
+    // Premier point de la portion : soit le début exact demandé, soit le
+    // sommet du chemin déjà atteint.
+    if (portion.length === 0) {
+      portion.push(
+        debut <= segDebut
+          ? from
+          : interpolate(from, to, (debut - segDebut) / segLen),
+      )
+    }
+    portion.push(
+      fin >= segFin ? to : interpolate(from, to, (fin - segDebut) / segLen),
+    )
+  }
+  return portion.length >= 2 ? portion : []
+}
