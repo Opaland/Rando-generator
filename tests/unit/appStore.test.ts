@@ -5,6 +5,7 @@ import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vite
 import { useAppStore, MIN_TOLERANCE, MAX_TOLERANCE } from '../../src/store/appStore.ts'
 import pilat from '../fixtures/overpass/pilat.json' with { type: 'json' }
 import { buildZip, gzip } from '../fixtures/zip.ts'
+import { buildBackup, serialiserBackup } from '../../src/core/backup.ts'
 
 /**
  * Tests du store (issue #9). Sa logique est riche et n'était couverte que par
@@ -547,5 +548,179 @@ describe('archives d’export', () => {
       '1.gpx',
       'a-part.gpx',
     ])
+  })
+})
+
+describe('sauvegarde complète', () => {
+  it('emporte traces, itinéraires perso et réglages, et les rend', async () => {
+    await useAppStore.getState().init()
+    await useAppStore
+      .getState()
+      .importGpxFiles([fichierGpx('sortie.gpx', ligne(12))])
+    await useAppStore.getState().setTolerance(35)
+
+    const backup = buildBackup({
+      tracks: useAppStore.getState().tracks,
+      customItineraries: [],
+      settings: { toleranceMeters: useAppStore.getState().toleranceMeters },
+      exportedAt: '2026-08-20T10:00:00Z',
+    })
+
+    // L'appareil neuf : même magasin, tout est reparti de zéro.
+    vi.stubGlobal('indexedDB', new IDBFactory())
+    useAppStore.setState(etatInitial, true)
+    vi.stubGlobal('fetch', fetchMock)
+    await useAppStore.getState().init()
+    expect(useAppStore.getState().tracks).toEqual([])
+
+    await useAppStore
+      .getState()
+      .importerSauvegarde(
+        new File([serialiserBackup(backup)], 'sauvegarde.json'),
+      )
+
+    expect(useAppStore.getState().tracks.map((t) => t.filename)).toEqual([
+      'sortie.gpx',
+    ])
+    expect(useAppStore.getState().toleranceMeters).toBe(35)
+    expect(useAppStore.getState().backupMessage).toMatch(/1 trace ajoutée/)
+  })
+
+  it('remet les traces restaurées en base, pas seulement en mémoire', async () => {
+    await useAppStore.getState().init()
+    const backup = buildBackup({
+      tracks: [
+        {
+          id: 'venue-dailleurs',
+          filename: 'ailleurs.gpx',
+          points: ligne(9, 45.44),
+          date: null,
+          importedAt: '2026-05-01T20:00:00Z',
+          elevationGain: null,
+        },
+      ],
+      customItineraries: [],
+      settings: {},
+      exportedAt: '2026-08-20T10:00:00Z',
+    })
+    await useAppStore
+      .getState()
+      .importerSauvegarde(new File([serialiserBackup(backup)], 's.json'))
+
+    // Un redémarrage relit la base : si l'écriture avait été oubliée, la
+    // trace disparaîtrait au premier rechargement de page.
+    useAppStore.setState(etatInitial, true)
+    await useAppStore.getState().init()
+    expect(useAppStore.getState().tracks.map((t) => t.filename)).toEqual([
+      'ailleurs.gpx',
+    ])
+  })
+
+  it('refuse un fichier étranger sans toucher aux traces déjà là', async () => {
+    await useAppStore.getState().init()
+    await useAppStore
+      .getState()
+      .importGpxFiles([fichierGpx('sortie.gpx', ligne(12))])
+
+    await useAppStore
+      .getState()
+      .importerSauvegarde(new File(['{"type":"FeatureCollection"}'], 'x.json'))
+
+    expect(useAppStore.getState().tracks).toHaveLength(1)
+    expect(useAppStore.getState().importErrors.join(' ')).toMatch(
+      /pas une sauvegarde/i,
+    )
+    expect(useAppStore.getState().backupMessage).toBeNull()
+  })
+})
+
+describe('recherche de lieu', () => {
+  const reponseBan = (features: unknown[]) =>
+    new Response(JSON.stringify({ type: 'FeatureCollection', features }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    })
+
+  const commune = (label: string, center: [number, number]) => ({
+    type: 'Feature',
+    geometry: { type: 'Point', coordinates: center },
+    properties: { label, context: '42, Loire', type: 'municipality' },
+  })
+
+  it('rend les communes trouvées', async () => {
+    fetchMock.mockImplementation((url) =>
+      url.includes('api-adresse')
+        ? Promise.resolve(reponseBan([commune('Saint-Étienne', [4.38, 45.43])]))
+        : Promise.resolve(reponseOverpass()),
+    )
+    await useAppStore.getState().chercherLieu('Saint-Étienne')
+    expect(useAppStore.getState().lieux.map((l) => l.label)).toEqual([
+      'Saint-Étienne',
+    ])
+    expect(useAppStore.getState().lieuxVides).toBe(false)
+  })
+
+  it('distingue « rien trouvé » de « service en panne »', async () => {
+    fetchMock.mockImplementation((url) =>
+      url.includes('api-adresse')
+        ? Promise.resolve(reponseBan([]))
+        : Promise.resolve(reponseOverpass()),
+    )
+    await useAppStore.getState().chercherLieu('Zzzz')
+    expect(useAppStore.getState().lieuxVides).toBe(true)
+    expect(useAppStore.getState().lieuError).toBeNull()
+
+    fetchMock.mockImplementation(() =>
+      Promise.resolve(new Response('', { status: 503 })),
+    )
+    await useAppStore.getState().chercherLieu('Lyon')
+    expect(useAppStore.getState().lieuError).toMatch(/503/)
+    expect(useAppStore.getState().lieuxVides).toBe(false)
+  })
+
+  it('charge les itinéraires autour du lieu choisi', async () => {
+    fetchMock.mockImplementation((url) =>
+      url.includes('interpreter')
+        ? Promise.resolve(reponseOverpass())
+        : Promise.resolve(new Response('', { status: 404 })),
+    )
+    await useAppStore.getState().init()
+    await useAppStore.getState().loadAutour({
+      label: 'Saint-Étienne',
+      contexte: '42, Loire',
+      center: [4.38, 45.43],
+    })
+
+    expect(useAppStore.getState().zoneLabel).toBe('Autour de Saint-Étienne')
+    expect(useAppStore.getState().itineraries.length).toBeGreaterThan(0)
+    const requetes = fetchMock.mock.calls
+      .map(([, init]) =>
+        // Le corps est un formulaire encodé : décodé, il redevient du QL.
+        new URLSearchParams(init?.body ?? '').get('data') ?? '',
+      )
+      .join(' ')
+    expect(requetes).toContain('around:12000,45.430000,4.380000')
+  })
+
+  it('la dernière recherche demandée gagne, même si elle répond en premier', async () => {
+    // Une frappe abandonnée ne doit pas écraser le résultat de la suivante.
+    let lente: (r: Response) => void = () => undefined
+    fetchMock.mockImplementationOnce(
+      () =>
+        new Promise<Response>((resolve) => {
+          lente = resolve
+        }),
+    )
+    fetchMock.mockImplementationOnce(() =>
+      Promise.resolve(reponseBan([commune('Lyon', [4.83, 45.76])])),
+    )
+
+    const premiere = useAppStore.getState().chercherLieu('Ly')
+    const seconde = useAppStore.getState().chercherLieu('Lyon')
+    await seconde
+    lente(reponseBan([commune('Ly-sur-rien', [1, 1])]))
+    await premiere
+
+    expect(useAppStore.getState().lieux.map((l) => l.label)).toEqual(['Lyon'])
   })
 })

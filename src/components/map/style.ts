@@ -192,10 +192,24 @@ export function emptyCollection(): FeatureCollection {
 }
 
 /** Échappe le HTML — les noms de POI viennent d'OSM, jamais fiables tels quels. */
+/**
+ * Échappe une chaîne destinée à du HTML.
+ *
+ * Écrit à la main plutôt qu'en passant par `textContent`/`innerHTML` : cette
+ * fonction n'a alors plus besoin d'un document, donc elle s'éprouve en test
+ * unitaire — et elle échappe aussi les guillemets, ce que le détour par le
+ * DOM ne faisait pas.
+ */
+const ENTITES: Record<string, string> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
+}
+
 export function escapeHtml(text: string): string {
-  const div = document.createElement('div')
-  div.textContent = text
-  return div.innerHTML
+  return text.replace(/[&<>"']/g, (caractere) => ENTITES[caractere] ?? caractere)
 }
 
 export function poisToGeoJSON(pois: PointOfInterest[]): FeatureCollection {
