@@ -102,7 +102,13 @@ export function ElevationChart({ profile }: { profile: ElevationProfile }) {
         preserveAspectRatio="none"
         onPointerMove={surPointeur}
         onPointerDown={surPointeur}
-        onPointerLeave={() => {
+        onPointerLeave={(event) => {
+          // Au doigt, le navigateur détruit le pointeur dès que le contact
+          // cesse : un « pointerleave » suit immédiatement chaque tap. Le
+          // repère posé disparaissait donc aussitôt, et le geste décrit par
+          // la consigne ne servait à rien. Sur téléphone, c'est le tap
+          // suivant — ou la perte du focus — qui efface le curseur.
+          if (event.pointerType === 'touch') return
           deplacer(null)
         }}
         onBlur={() => {
