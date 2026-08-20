@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { COMPLETION_CHOICES } from '../core/milestones.ts'
 import { MIN_TOLERANCE, MAX_TOLERANCE, useAppStore } from '../store/appStore.ts'
 import styles from './Settings.module.css'
 
@@ -6,6 +7,8 @@ import styles from './Settings.module.css'
 export function Settings() {
   const toleranceMeters = useAppStore((s) => s.toleranceMeters)
   const setTolerance = useAppStore((s) => s.setTolerance)
+  const completionPct = useAppStore((s) => s.completionPct)
+  const setCompletionPct = useAppStore((s) => s.setCompletionPct)
   const aDesDonnees = useAppStore(
     (s) => s.itineraries.length > 0 || s.tracks.length > 0,
   )
@@ -75,6 +78,35 @@ export function Settings() {
         toujours à distance sans jamais serrer le sentier (une route qui le
         longe, par exemple), n’est jamais compté.
       </p>
+
+      <fieldset className={styles.fieldset}>
+        <legend className={styles.legend}>Seuil « bouclé »</legend>
+        <div className={styles.choices} data-testid="completion-choices">
+          {COMPLETION_CHOICES.map((seuil) => (
+            <label key={seuil} className={styles.choice}>
+              <input
+                type="radio"
+                name="completion"
+                value={seuil}
+                checked={completionPct === seuil}
+                data-testid={`completion-${seuil}`}
+                onChange={() => {
+                  void setCompletionPct(seuil)
+                }}
+              />
+              {seuil} %
+            </label>
+          ))}
+        </div>
+        <p className={styles.hint}>
+          À partir de quelle part parcourue un itinéraire est annoncé comme
+          bouclé. 95 % par défaut : exiger 100 % vous punirait pour un tronçon
+          impraticable, une déviation de balisage ou une géométrie
+          OpenStreetMap imparfaite — rien de tout cela ne dépend de vous. 100 %
+          si vous voulez le compte exact. Le seuil retenu est affiché partout
+          où le mot « bouclé » apparaît.
+        </p>
+      </fieldset>
     </details>
   )
 }

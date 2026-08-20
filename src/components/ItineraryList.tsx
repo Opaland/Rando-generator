@@ -75,6 +75,7 @@ export function ItineraryList() {
   const matching = useAppStore((s) => s.matching)
   const selectedItineraryId = useAppStore((s) => s.selectedItineraryId)
   const selectItinerary = useAppStore((s) => s.selectItinerary)
+  const seuilBoucle = useAppStore((s) => s.completionPct)
   const userPosition = useAppStore((s) => s.userPosition)
 
   const [query, setQuery] = useState('')
@@ -435,8 +436,11 @@ export function ItineraryList() {
                 <span className={styles.rowStats}>
                   <span className={styles.rowPct}>
                     {formatPct(pct)}
-                    {isCompleted(pct) && (
-                      <span className={styles.done} title="Itinéraire bouclé">
+                    {isCompleted(pct, seuilBoucle) && (
+                      <span
+                        className={styles.done}
+                        title={`Itinéraire bouclé (au moins ${seuilBoucle} % parcourus)`}
+                      >
                         {' '}
                         ✓
                       </span>

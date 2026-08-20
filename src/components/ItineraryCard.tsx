@@ -1,6 +1,5 @@
 import { useAppStore } from '../store/appStore.ts'
 import {
-  COMPLETION_PCT,
   isCompleted,
   metersToNextMilestone,
   nextMilestone,
@@ -15,6 +14,7 @@ export function ItineraryCard() {
   const selectedItineraryId = useAppStore((s) => s.selectedItineraryId)
   const detailItineraryId = useAppStore((s) => s.detailItineraryId)
   const itineraries = useAppStore((s) => s.itineraries)
+  const seuilBoucle = useAppStore((s) => s.completionPct)
   const customItineraries = useAppStore((s) => s.customItineraries)
   const matching = useAppStore((s) => s.matching)
   const customMatching = useAppStore((s) => s.customMatching)
@@ -76,8 +76,8 @@ export function ItineraryCard() {
         restants
       </p>
       <p className={styles.milestone} data-testid="itinerary-card-milestone">
-        {isCompleted(pct)
-          ? `Itinéraire bouclé (au moins ${COMPLETION_PCT} % parcourus)`
+        {isCompleted(pct, seuilBoucle)
+          ? `Itinéraire bouclé (au moins ${seuilBoucle} % parcourus)`
           : restantJalon !== null
             ? `Encore ${formatKm(restantJalon)} pour atteindre ${nextMilestone(pct) ?? 100} %`
             : ''}

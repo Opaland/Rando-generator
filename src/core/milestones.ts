@@ -12,15 +12,48 @@ import type { CompletionResult } from './types.ts'
 export const MILESTONES: readonly number[] = [25, 50, 75, 90, 100]
 
 /**
- * Seuil à partir duquel un itinéraire est considéré comme bouclé.
+ * Seuils proposés pour considérer un itinéraire comme bouclé.
  *
  * Règle empruntée à CityStrides : exiger 100 % punit l'utilisateur pour des
  * tronçons impraticables, des déviations de balisage ou une géométrie OSM
- * imparfaite — aucun de ces trois n'est de son fait. Le seuil est toujours
- * annoncé tel quel dans l'interface : « bouclé » n'est jamais présenté
- * comme du 100 %.
+ * imparfaite — aucun de ces trois n'est de son fait. Mais l'inverse est vrai
+ * aussi : certains veulent la satisfaction du 100 % exact, et le leur refuser
+ * serait tout aussi arbitraire. Trois seuils, donc, et le choix revient à
+ * celui qui marche.
+ *
+ * Quel que soit le seuil retenu, il est toujours annoncé tel quel dans
+ * l'interface : « bouclé » ne doit jamais devenir un mot dont le sens dépend
+ * d'un réglage caché.
  */
-export const COMPLETION_PCT = 95
+export const COMPLETION_CHOICES: readonly number[] = [90, 95, 100]
+
+export const DEFAULT_COMPLETION_PCT = 95
+
+/** Ancien nom, conservé pour les appels qui n'ont pas à connaître le réglage. */
+export const COMPLETION_PCT = DEFAULT_COMPLETION_PCT
+
+/**
+ * Ramène une valeur quelconque à l'un des seuils proposés.
+ *
+ * Le réglage vient d'IndexedDB, où il a pu être écrit par une version
+ * antérieure — ou à la main. Mieux vaut le plus proche seuil connu qu'un
+ * comportement inventé à partir d'une valeur arbitraire.
+ */
+export function normalizeCompletionPct(valeur: unknown): number {
+  if (typeof valeur !== 'number' || !Number.isFinite(valeur)) {
+    return DEFAULT_COMPLETION_PCT
+  }
+  let plusProche = DEFAULT_COMPLETION_PCT
+  let ecart = Number.POSITIVE_INFINITY
+  for (const choix of COMPLETION_CHOICES) {
+    const distance = Math.abs(choix - valeur)
+    if (distance < ecart) {
+      ecart = distance
+      plusProche = choix
+    }
+  }
+  return plusProche
+}
 
 /** Dernier jalon franchi, ou null si le premier n'est pas encore atteint. */
 export function reachedMilestone(pct: number): number | null {
@@ -44,8 +77,11 @@ export function metersToNextMilestone(
   return ((jalon - pct) / 100) * totalMeters
 }
 
-export function isCompleted(pct: number): boolean {
-  return pct >= COMPLETION_PCT
+export function isCompleted(
+  pct: number,
+  seuil: number = DEFAULT_COMPLETION_PCT,
+): boolean {
+  return pct >= seuil
 }
 
 export interface MilestoneCrossing {

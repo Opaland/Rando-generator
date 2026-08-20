@@ -3,7 +3,7 @@ import { useAppStore } from '../store/appStore.ts'
 import type { Network } from '../core/types.ts'
 import { displayName, formatKm, formatPct } from '../lib/format.ts'
 import { useCountUp } from '../lib/useCountUp.ts'
-import { COMPLETION_PCT, isCompleted } from '../core/milestones.ts'
+import { isCompleted } from '../core/milestones.ts'
 import { buildSummary, summaryFilename } from '../core/summary.ts'
 import { summaryCardBlob } from '../lib/summaryCard.ts'
 import { downloadBlob } from '../lib/download.ts'
@@ -27,6 +27,7 @@ export function Dashboard() {
   const selectItinerary = useAppStore((s) => s.selectItinerary)
   const celebration = useAppStore((s) => s.celebration)
   const dismissCelebration = useAppStore((s) => s.dismissCelebration)
+  const seuilBoucle = useAppStore((s) => s.completionPct)
 
   // Le chiffre rattrape la barre : les voir bouger séparément donne
   // l'impression qu'ils ne parlent pas du même résultat.
@@ -41,8 +42,10 @@ export function Dashboard() {
   // de balisage ou une géométrie OSM imparfaite ne sont pas de la faute du
   // randonneur (cf. src/core/milestones.ts).
   const boucles = useMemo(
-    () => (matching?.results ?? []).filter((r) => isCompleted(r.pct)).length,
-    [matching],
+    () =>
+      (matching?.results ?? []).filter((r) => isCompleted(r.pct, seuilBoucle))
+        .length,
+    [matching, seuilBoucle],
   )
 
   /**
@@ -60,6 +63,7 @@ export function Dashboard() {
       itineraries: etat.itineraries,
       tracks: etat.tracks,
       zoneLabel: etat.zoneLabel,
+      completionPct: etat.completionPct,
     })
     const image = await summaryCardBlob(bilan)
     if (image) downloadBlob(summaryFilename(new Date().toISOString()), image)
@@ -124,7 +128,7 @@ export function Dashboard() {
           {boucles > 0 && (
             <p className={styles.globalDetail} data-testid="global-completed">
               {boucles} itinéraire{boucles > 1 ? 's' : ''} bouclé
-              {boucles > 1 ? 's' : ''} (au moins {COMPLETION_PCT} % parcourus)
+              {boucles > 1 ? 's' : ''} (au moins {seuilBoucle} % parcourus)
             </p>
           )}
           <ProgressBalise pct={global.pct} label="Progression globale" />

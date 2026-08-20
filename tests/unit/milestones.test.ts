@@ -1,7 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import {
+  COMPLETION_CHOICES,
   COMPLETION_PCT,
+  DEFAULT_COMPLETION_PCT,
   MILESTONES,
+  normalizeCompletionPct,
   crossedMilestones,
   isCompleted,
   metersToNextMilestone,
@@ -101,5 +104,36 @@ describe('crossedMilestones', () => {
       [result(1, 30), result(2, 100)],
     )
     expect(franchis.map((f) => f.milestone)).toEqual([100, 25])
+  })
+})
+
+describe('seuil de complétion réglable', () => {
+  it('propose trois seuils, dont celui par défaut', () => {
+    expect(COMPLETION_CHOICES).toEqual([90, 95, 100])
+    expect(COMPLETION_CHOICES).toContain(DEFAULT_COMPLETION_PCT)
+  })
+
+  it('juge « bouclé » selon le seuil retenu', () => {
+    expect(isCompleted(92, 90)).toBe(true)
+    expect(isCompleted(92, 95)).toBe(false)
+    expect(isCompleted(100, 100)).toBe(true)
+    // Le strict est strict : 99,9 % n'est pas 100 %.
+    expect(isCompleted(99.9, 100)).toBe(false)
+  })
+
+  it('retombe sur le seuil par défaut si on ne lui en donne pas', () => {
+    expect(isCompleted(96)).toBe(true)
+    expect(isCompleted(94)).toBe(false)
+  })
+
+  it('ramène un seuil hors liste au plus proche voisin proposé', () => {
+    // Une valeur écrite à la main dans IndexedDB, ou un réglage d'une
+    // version future : mieux vaut un seuil connu qu'un comportement inventé.
+    expect(normalizeCompletionPct(90)).toBe(90)
+    expect(normalizeCompletionPct(93)).toBe(95)
+    expect(normalizeCompletionPct(0)).toBe(90)
+    expect(normalizeCompletionPct(150)).toBe(100)
+    expect(normalizeCompletionPct(Number.NaN)).toBe(DEFAULT_COMPLETION_PCT)
+    expect(normalizeCompletionPct(undefined)).toBe(DEFAULT_COMPLETION_PCT)
   })
 })
