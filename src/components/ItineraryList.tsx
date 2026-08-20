@@ -6,6 +6,7 @@ import {
   matchesFilters,
   type DiscoveryFilters,
 } from '../core/discovery.ts'
+import { assessItinerary, hasGaps } from '../core/dataQuality.ts'
 import { isCompleted } from '../core/milestones.ts'
 import type { LonLat, Network } from '../core/types.ts'
 import {
@@ -121,6 +122,18 @@ export function ItineraryList() {
       Math.round(userPosition.lat * 1_000) / 1_000,
     ]
   }, [userPosition, filters.maxAwayKm])
+
+  // Géométrie trouée : le seul défaut de donnée qui mérite d'être vu sans
+  // ouvrir la fiche, parce qu'il fausse le pourcentage affiché juste à côté.
+  const trouesById = useMemo(() => {
+    const maintenant = new Date().toISOString()
+    return new Map(
+      itineraries.map((itin) => [
+        itin.osmRelationId,
+        hasGaps(assessItinerary(itin, maintenant)),
+      ]),
+    )
+  }, [itineraries])
 
   const factsById = useMemo(
     () =>
@@ -368,7 +381,20 @@ export function ItineraryList() {
                   {NETWORK_BADGES[itin.network]}
                 </span>
                 <span className={styles.rowMain}>
-                  <span className={styles.rowName}>{displayName(itin)}</span>
+                  <span className={styles.rowName}>
+                    {displayName(itin)}
+                    {trouesById.get(itin.osmRelationId) === true && (
+                      <span
+                        className={styles.gap}
+                        role="img"
+                        aria-label="Tracé incomplet dans OpenStreetMap"
+                        title="Tracé incomplet dans OpenStreetMap : la progression ne porte que sur les tronçons présents"
+                      >
+                        {' '}
+                        ⚠
+                      </span>
+                    )}
+                  </span>
                   {itin.ref && itin.name && (
                     <span className={styles.rowSub}>{itin.name}</span>
                   )}

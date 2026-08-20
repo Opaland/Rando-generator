@@ -59,6 +59,24 @@ test('une relation trouée le dit au lieu d’afficher un pourcentage muet', asy
   await expect(qualite).toContainText(/interruptions/)
 })
 
+test('la liste marque les tracés incomplets sans qu’on ouvre leur fiche', async ({
+  page,
+}) => {
+  const overpass = await mockExternalNetwork(page)
+  overpass.setFixture(relationTrouee())
+  await page.goto('/')
+
+  await page.getByTestId('zone-pilat').click()
+  await expect(page.getByTestId('zone-meta')).toContainText('1 itinéraire', {
+    timeout: 15_000,
+  })
+  await expect(
+    page
+      .getByTestId('itinerary-list')
+      .getByRole('img', { name: /incomplet dans OpenStreetMap/i }),
+  ).toBeVisible()
+})
+
 test('une relation continue n’affiche aucun avertissement', async ({ page }) => {
   await mockExternalNetwork(page)
   await mockElevation(page)
@@ -76,4 +94,10 @@ test('une relation continue n’affiche aucun avertissement', async ({ page }) =
 
   await expect(page.getByTestId('itinerary-detail')).toBeVisible()
   await expect(page.getByTestId('detail-quality')).toHaveCount(0)
+  // Et rien ne vient encombrer la liste non plus.
+  await expect(
+    page
+      .getByTestId('itinerary-list')
+      .getByRole('img', { name: /incomplet dans OpenStreetMap/i }),
+  ).toHaveCount(0)
 })

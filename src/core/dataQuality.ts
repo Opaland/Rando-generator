@@ -44,6 +44,15 @@ function formatKm(meters: number): string {
   )} km`
 }
 
+/**
+ * Vrai quand la géométrie est en plusieurs morceaux. C'est le seul défaut
+ * qui mérite d'apparaître dans la liste : l'âge de la donnée concerne toute
+ * la zone d'un coup et n'apprendrait rien, répété sur chaque ligne.
+ */
+export function hasGaps(quality: DataQuality): boolean {
+  return quality.pieces > 1
+}
+
 export function assessItinerary(
   itinerary: Itinerary,
   now: string,

@@ -121,9 +121,15 @@ existe en mieux ailleurs et dilue le propos.
    discontinue produit un pourcentage faux sans le signaler.
    *`src/core/overpass.ts`.*
 
-   > **Toujours ouvert.** C'est le dernier P1. Un premier pas existe pourtant :
-   > le découpage en étapes (PR #65) sait reconnaître une relation trouée —
-   > l'information est calculée, elle n'est simplement pas encore montrée.
+   > **Réglé (PR #69, #70).** `src/core/dataQuality.ts` compte les morceaux
+   > distincts d'une relation et mesure les interruptions, en réutilisant la
+   > mise en chaîne écrite pour les étapes. La fiche détail affiche
+   > l'avertissement quand il y a lieu ; la liste porte un marqueur discret
+   > sur les tracés incomplets, pour ne pas avoir à ouvrir chaque fiche. Un
+   > âge de plus de 30 jours est signalé avec la marche à suivre.
+   > **Reste ouvert** : rien n'est dit sur la *fraîcheur amont* (date de
+   > dernière modification dans OSM), que l'API Overpass sait pourtant
+   > donner — ce serait le prochain pas.
 
 ### P2 — les limites connues, assumées mais à documenter
 
@@ -162,12 +168,13 @@ Pour ne pas courir après des fantômes :
 2. ~~Position GPS sur la carte~~ (PR #51)
 3. ~~Hors-ligne réel~~ (PR #53, #55)
 
-**P1 — l'expérience** — 4 sur 5
+**P1 — l'expérience** — ✅ **terminé**
 4. ~~Historique des sorties et progression dans le temps~~ (PR #54, #66)
 5. ~~Découverte : filtres distance / durée / D+ / proximité / boucle~~ (PR #56)
 6. ~~Liseré des tracés~~ (PR #51)
 7. ~~Profil altimétrique synchronisé avec la carte~~ (PR #57)
-8. **Qualité des données exposée** (complétude, fraîcheur, anomalies) — à faire.
+8. ~~Qualité des données exposée~~ (PR #69, #70) — complétude et fraîcheur du
+   cache. Reste : la date de dernière modification dans OSM.
 
 **P2 — la différenciation**
 9. ~~« Prochaine sortie » : quel tronçon non parcouru, proche, ferait le plus
@@ -187,7 +194,7 @@ n'est pas tranché juridiquement (issue #2).
 
 ## Journal — nuit du 19 au 20 août 2026
 
-Dix-neuf PR, chacune avec ses tests, mergée seulement CI verte.
+Vingt-deux PR, chacune avec ses tests, mergée seulement CI verte.
 
 | PR | Ce qu'elle apporte |
 |---|---|
@@ -210,6 +217,9 @@ Dix-neuf PR, chacune avec ses tests, mergée seulement CI verte.
 | #65 | Étapes des longs GR |
 | #66 | Bilan d'une sortie |
 | #67 | Découpage de `MapView` (644 → 226 lignes) |
+| #68 | Audit et README remis à jour |
+| #69 | Qualité de la donnée : relations trouées signalées |
+| #70 | Marqueur de tracé incomplet dans la liste |
 
 Deux décisions valent d'être retenues, parce qu'elles disent non :
 

@@ -198,3 +198,8 @@
 .done {
   color: var(--rouge-balisage);
 }
+
+.gap {
+  color: var(--orange-grp);
+  font-size: 0.8rem;
+}
