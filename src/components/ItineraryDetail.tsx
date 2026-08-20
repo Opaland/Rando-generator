@@ -6,7 +6,7 @@ import {
   formatKm,
   formatPct,
 } from '../lib/format.ts'
-import { POI_LABELS, POI_OVERNIGHT } from '../lib/poiDisplay.ts'
+import { POI_LABELS, POI_OVERNIGHT, mentionEau } from '../lib/poiDisplay.ts'
 import { NETWORK_BADGES } from '../lib/networkDisplay.ts'
 import { elevationStats } from '../core/elevation.ts'
 import { itineraryCoords } from '../core/mapdata.ts'
@@ -299,6 +299,7 @@ export function ItineraryDetail() {
                 poi.details
               const facts = [
                 `${formatDetour(poi.detourMeters)} de détour`,
+                mentionEau(poi.details),
                 capacity && `${capacity} places`,
                 openingHours && `ouvert ${openingHours}`,
                 elevation && `${elevation} m`,

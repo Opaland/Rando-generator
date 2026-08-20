@@ -198,6 +198,24 @@ function httpUrl(value: string | undefined): string | null {
   return url && /^https?:\/\//i.test(url) ? url : null
 }
 
+/**
+ * Potabilité telle que déclarée. Rend `null` quand rien n'est dit : c'est le
+ * cas le plus fréquent sur les sources, et il ne doit surtout pas être
+ * confondu avec « non potable » — ni avec « potable ».
+ */
+function potabilite(tags: Record<string, string>): PoiDetails['drinkingWater'] {
+  switch (tags.drinking_water) {
+    case 'yes':
+      return 'oui'
+    case 'no':
+      return 'non'
+    case 'treated':
+      return 'traitee'
+    default:
+      return null
+  }
+}
+
 function detailsOf(tags: Record<string, string>): PoiDetails {
   return {
     phone: trimmed(tags.phone ?? tags['contact:phone']),
@@ -206,6 +224,9 @@ function detailsOf(tags: Record<string, string>): PoiDetails {
     openingHours: trimmed(tags.opening_hours),
     operator: trimmed(tags.operator),
     elevation: trimmed(tags.ele),
+    drinkingWater: potabilite(tags),
+    seasonal: tags.seasonal === 'yes' || tags.intermittent === 'yes',
+    spring: tags.natural === 'spring',
   }
 }
 

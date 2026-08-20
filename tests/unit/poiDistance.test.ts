@@ -29,6 +29,9 @@ function poi(id: string, lon: number, lat: number): PointOfInterest {
       openingHours: null,
       operator: null,
       elevation: null,
+      drinkingWater: null,
+      seasonal: false,
+      spring: false,
     },
   }
 }

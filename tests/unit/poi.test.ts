@@ -123,6 +123,9 @@ describe('parsePoiResponse', () => {
       openingHours: 'Jun-Sep',
       operator: 'FFCAM',
       elevation: '1350',
+      drinkingWater: null,
+      seasonal: false,
+      spring: false,
     })
   })
 
