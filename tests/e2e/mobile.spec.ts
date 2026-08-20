@@ -107,3 +107,62 @@ test('le profil altimétrique répond au doigt, pas seulement à la souris', asy
   await page.waitForTimeout(400)
   await expect(lecture).toHaveText(apres ?? '')
 })
+
+test('la légende et l’attribution ne se recouvrent pas sur téléphone', async ({
+  page,
+}) => {
+  await mockExternalNetwork(page)
+  await mockTilesOk(page)
+  await page.goto('/')
+
+  // L'état d'accueil s'affiche avant tout chargement : il doit tenir dans la
+  // zone carte, sinon sa dernière étape est coupée (constat M5).
+  await expect(page.getByTestId('onboarding')).toBeVisible()
+  const debordement = await page.evaluate(() => {
+    const zone = document.querySelector('[data-testid="onboarding"]')
+    const panneau = zone?.firstElementChild
+    if (!zone || !panneau) return null
+    const dehors = zone.getBoundingClientRect()
+    const dedans = panneau.getBoundingClientRect()
+    return {
+      haut: Math.round(dehors.top - dedans.top),
+      bas: Math.round(dedans.bottom - dehors.bottom),
+    }
+  })
+  expect(debordement).not.toBeNull()
+  expect(debordement?.haut).toBeLessThanOrEqual(0)
+  expect(debordement?.bas).toBeLessThanOrEqual(0)
+
+  await page.getByTestId('zone-pilat').click()
+  await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
+    timeout: 15_000,
+  })
+  await expect(page.getByTestId('map-legend')).toBeVisible()
+
+  // L'attribution est une obligation ODbL et Licence Ouverte : elle doit
+  // rester lisible, donc la légende ne peut pas s'installer par-dessus
+  // (constat M7). Les commandes de zoom non plus : le premier essai de
+  // correctif étalait la légende jusqu'au bord droit, sur le bouton « + ».
+  const chevauchements = await page.evaluate(() => {
+    const boite = (selecteur: string) =>
+      document.querySelector(selecteur)?.getBoundingClientRect() ?? null
+    const legende = boite('[data-testid="map-legend"]')
+    const voisins = {
+      attribution: boite('.maplibregl-ctrl-attrib'),
+      zoom: boite('.maplibregl-ctrl-top-right'),
+    }
+    if (!legende) return null
+    return Object.entries(voisins)
+      .filter(([, autre]) => {
+        if (!autre) return false
+        return !(
+          legende.bottom <= autre.top ||
+          legende.top >= autre.bottom ||
+          legende.right <= autre.left ||
+          legende.left >= autre.right
+        )
+      })
+      .map(([nom]) => nom)
+  })
+  expect(chevauchements).toEqual([])
+})
