@@ -13,7 +13,8 @@
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",
     "e2e": "playwright test",
-    "monkey": "MONKEY=1 playwright test tests/e2e/monkey.spec.ts --workers=2"
+    "monkey": "MONKEY=1 playwright test tests/e2e/monkey.spec.ts --workers=2",
+    "og-image": "node scripts/og-image.mjs"
   },
   "dependencies": {
     "idb": "^8.0.3",
