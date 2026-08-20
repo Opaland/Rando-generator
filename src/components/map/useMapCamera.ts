@@ -61,6 +61,49 @@ export function useMapCamera(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapRef, selectedItineraryId, ready])
 
+  /**
+   * Fiche détail ouverte : recadre l'itinéraire au-dessus du panneau.
+   *
+   * Sur téléphone, la fiche occupe le bas de la carte. Sans marge, le tracé
+   * dont on lit la fiche se retrouvait dessous — et le marqueur posé en
+   * parcourant le profil altimétrique avec lui, ce qui vidait ce geste de son
+   * sens (issue #80). La hauteur est mesurée sur le panneau réel plutôt que
+   * devinée : elle dépend du contenu de la fiche.
+   */
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !ready || detailItineraryId === null) return
+    const itin =
+      itineraries.find((i) => i.osmRelationId === detailItineraryId) ??
+      customItineraries.find((i) => i.osmRelationId === detailItineraryId)
+    if (!itin) return
+    const bounds = new LngLatBounds()
+    for (const [lon, lat] of itineraryCoords(itin)) bounds.extend([lon, lat])
+    if (bounds.isEmpty()) return
+    const cadre = map.getContainer().getBoundingClientRect()
+    const panneau = document
+      .querySelector('[data-testid="itinerary-detail"]')
+      ?.getBoundingClientRect()
+    // Ce que la fiche recouvre réellement du bas de la carte : sur grand
+    // écran elle flotte dans un coin et ne mord presque rien.
+    const recouvre = panneau
+      ? Math.max(0, cadre.bottom - Math.max(panneau.top, cadre.top))
+      : 0
+    map.fitBounds(bounds, {
+      padding: {
+        top: 48,
+        left: 48,
+        right: 48,
+        bottom: 48 + recouvre,
+      },
+      duration: 500,
+      maxZoom: 15,
+    })
+    // Volontairement limité à l'ouverture de la fiche : recadrer à chaque
+    // recalcul de matching reprendrait la carte des mains de l'utilisateur.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapRef, detailItineraryId, ready])
+
   // Vue 3D : incline la caméra sur l'itinéraire en fiche détail, dans le sens
   // du premier tronçon. Reste une perspective (pitch/bearing MapLibre), pas
   // un relief calculé à partir d'un modèle numérique de terrain.
