@@ -224,3 +224,50 @@ test('parcourir le profil altimétrique pose un marqueur sur le tracé', async (
   await expect(readout).toContainText(/parcourez/i)
   await expect.poll(marqueurs, { timeout: 5_000 }).toBe(0)
 })
+
+test('le repère posé sur le profil reste quand on regarde la carte', async ({
+  page,
+}) => {
+  await mockExternalNetwork(page)
+  await mockElevation(page)
+  await page.goto('/')
+
+  test.skip(!(await hasMap(page)), 'WebGL indisponible dans ce navigateur headless')
+
+  await page.getByTestId('zone-pilat').click()
+  await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
+    timeout: 15_000,
+  })
+  await page
+    .getByTestId('itinerary-list')
+    .getByRole('button', { name: /GR 7/ })
+    .click()
+  await page.getByTestId('itinerary-card-detail-link').click()
+  await expect(page.getByTestId('itinerary-detail')).toContainText('D+', {
+    timeout: 10_000,
+  })
+
+  await page.getByTestId('elevation-chart').click()
+  await expect(page.getByTestId('elevation-readout')).toContainText('km')
+
+  // Le geste qui suit le clic, c'est de regarder la carte — donc de sortir
+  // du graphique. Le repère disparaissait à cet instant précis : on cliquait,
+  // on tournait la tête, il n'y avait rien.
+  await page.mouse.move(10, 10)
+  await expect(page.getByTestId('elevation-readout')).toContainText('km')
+
+  // Et le marqueur est bien posé sur la carte, pas seulement dans le texte.
+  const marqueurs = await page.evaluate(() => {
+    const source = (
+      window as unknown as {
+        __sentiersMap?: {
+          getSource: (id: string) => { serialize: () => unknown } | undefined
+        }
+      }
+    ).__sentiersMap?.getSource('elevation-hover')
+    if (!source) return -1
+    const data = (source.serialize() as { data?: { features?: unknown[] } }).data
+    return data?.features?.length ?? -1
+  })
+  expect(marqueurs).toBe(1)
+})
