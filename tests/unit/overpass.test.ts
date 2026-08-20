@@ -4,6 +4,8 @@ import {
   FEATURED_ROUTES,
   buildZoneQuery,
   buildRefQuery,
+  buildAroundQuery,
+  RAYON_AUTOUR_METERS,
   parseOverpassResponse,
   fetchOverpass,
   OverpassError,
@@ -374,5 +376,32 @@ describe('fetchOverpass', () => {
     const init = fetchFn.mock.calls[0]![1] as RequestInit
     expect(init.method).toBe('POST')
     expect(init.body as string).toContain('data=')
+  })
+})
+
+describe('buildAroundQuery', () => {
+  it('cherche les itinéraires dans un rayon autour d’un point', () => {
+    // Une commune n'est pas une zone Overpass : « autour de Saint-Étienne »
+    // se traduit par un rayon, pas par les limites administratives — on
+    // marche rarement à l'intérieur du panneau d'entrée de ville.
+    const query = buildAroundQuery([4.387178, 45.439695], 12_000)
+    expect(query).toContain('[out:json]')
+    // Overpass attend (around:rayon,lat,lon) — l'ordre inverse du GeoJSON,
+    // et l'inverser silencieusement enverrait la requête au large de la Somalie.
+    expect(query).toContain('(around:12000,45.439695,4.387178)')
+    expect(query).toContain('route')
+    expect(query).toContain('out meta geom')
+  })
+
+  it('arrondit les coordonnées sans les tronquer au point de déplacer le centre', () => {
+    const query = buildAroundQuery([4.3871784321, 45.4396951234], 5_000)
+    expect(query).toMatch(/around:5000,45\.43969\d*,4\.38717\d*/)
+  })
+})
+
+describe('RAYON_AUTOUR_METERS', () => {
+  it('couvre une sortie à la journée sans faire exploser la requête', () => {
+    expect(RAYON_AUTOUR_METERS).toBeGreaterThanOrEqual(5_000)
+    expect(RAYON_AUTOUR_METERS).toBeLessThanOrEqual(25_000)
   })
 })
