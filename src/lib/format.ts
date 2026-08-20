@@ -43,6 +43,19 @@ export function formatAnciennete(jours: number): string {
   return `il y a ${Math.round(sain / 365)} ans`
 }
 
+/**
+ * « 120 m », « 1,2 km » — distance courte, arrondie à ce qui se lit.
+ *
+ * Sous le kilomètre, la dizaine de mètres suffit : personne ne décide d'un
+ * détour à cinq mètres près, et un chiffre trop précis ferait croire à une
+ * exactitude que la donnée OSM n'a pas.
+ */
+export function formatDetour(meters: number): string {
+  const sain = Number.isFinite(meters) && meters > 0 ? meters : 0
+  if (sain < 1_000) return `${Math.round(sain / 10) * 10} m`
+  return `${kmFormat.format(sain / 1000)} km`
+}
+
 /** « 2 h 30 », « 45 min » — durée lisible à partir de minutes. */
 export function formatDuration(minutes: number): string {
   const arrondi = Math.max(0, Math.round(minutes))
