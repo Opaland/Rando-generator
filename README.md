@@ -313,6 +313,7 @@ aucun ne recopie les autres.
 | [`docs/PRODUCT_AUDIT.md`](./docs/PRODUCT_AUDIT.md) | Le constat critique daté du 19/08, avec l'état de chaque point |
 | [`docs/AUDIT_MOBILE.md`](./docs/AUDIT_MOBILE.md) | L'audit téléphone M0–M8, mesures avant/après |
 | [`docs/RELEASE.md`](./docs/RELEASE.md) | Ce qu'on vérifie à la main avant de publier |
+| [`docs/PROTOCOLE_TEST.md`](./docs/PROTOCOLE_TEST.md) | Comment on décide sans mesurer en douce — et pourquoi l'A/B classique est écarté |
 
 ## Déploiement (GitHub Pages)
 
