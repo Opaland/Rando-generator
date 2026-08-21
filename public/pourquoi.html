@@ -303,7 +303,7 @@
         <li>
           <strong>Pas de compte, pas de serveur, pas de synchronisation.</strong>
           Vos traces sont lues et analysées dans votre navigateur, et stockées
-          là. Aucune ne part nulle part.
+          là. Aucune trace ne part nulle part.
         </li>
         <li>
           <strong>Pas de guidage ni de navigation vocale.</strong> Sur le terrain,
@@ -316,9 +316,54 @@
         <li><strong>Pas de météo, pas d’hébergements marchands.</strong></li>
         <li>
           <strong>Pas de mesure d’audience, pas de traceur, pas de police
-          distante.</strong> Le site ne sait pas que vous êtes venu.
+          distante.</strong> Nous ne comptons personne, et nous ne pourrions
+          pas&nbsp;: il n’y a pas de serveur à nous. Des tiers, eux, voient
+          passer des choses — c’est la section suivante, et elle est là parce
+          qu’elle manquait.
         </li>
       </ul>
+
+      <h2>Ce qui sort quand même, et chez qui</h2>
+      <p>
+        Une carte, ce sont des images qu’il faut demander à quelqu’un. Sentiers
+        n’a pas de serveur, mais il interroge des services publics tiers, et
+        ces services voient donc passer quelque chose. Le dire ne fragilise pas
+        la promesse&nbsp;: c’est ce qui permet de la croire.
+      </p>
+      <ul>
+        <li>
+          <strong>Overpass</strong> reçoit la zone que vous chargez, la
+          référence que vous tapez ou un rayon autour d’un lieu. C’est de là
+          que viennent les tracés.
+        </li>
+        <li>
+          La <strong>Géoplateforme IGN</strong> reçoit les coordonnées des
+          tuiles que vous regardez, tant que la carte est affichée —
+          c’est-à-dire, en creux, où vous préparez vos sorties.
+          <strong>OpenStreetMap</strong> reçoit la même chose en repli, si le
+          fond IGN ne répond pas.
+        </li>
+        <li>
+          Le service d’<strong>altimétrie de l’IGN</strong> reçoit jusqu’à cent
+          points de l’itinéraire dont vous ouvrez le profil&nbsp;: assez pour
+          savoir précisément lequel. Cela vaut aussi pour un itinéraire que
+          vous avez importé, et pour un parcours que vous tracez.
+        </li>
+        <li>
+          L’<strong>API Adresse</strong> reçoit le nom de commune que vous
+          tapez, et rien d’autre.
+        </li>
+        <li>
+          <strong>GitHub Pages</strong> sert cette page et les fichiers du
+          site, et voit donc passer la demande, comme tout hébergeur.
+        </li>
+      </ul>
+      <p class="aveu">
+        Ce qui ne sort <em>jamais</em>, en revanche&nbsp;: vos traces GPX, vos
+        réglages, vos objectifs, votre historique, votre position GPS, et le
+        calcul de complétion — qui se fait entièrement chez vous. C’est la
+        partie de la promesse qui compte, et c’est celle-là qui est tenue.
+      </p>
 
       <h2>Ce que ça coûte, et qu’il vaut mieux savoir avant</h2>
       <p class="aveu">

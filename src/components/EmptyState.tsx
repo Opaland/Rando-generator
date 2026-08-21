@@ -22,7 +22,9 @@ export function EmptyState() {
           </li>
         </ol>
         <p className={styles.privacy}>
-          Tout se passe dans votre navigateur : aucune donnée n’est envoyée.
+          Vos traces sont lues et gardées dans votre navigateur : elles ne
+          partent nulle part. Les fonds de carte, eux, viennent de l’IGN —
+          «&nbsp;À propos&nbsp;» dit exactement qui reçoit quoi.
         </p>
       </div>
     </div>
