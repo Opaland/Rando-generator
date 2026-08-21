@@ -16,33 +16,65 @@ import { poisToGeoJSON } from './style.ts'
  * pas encore chargé.
  */
 /**
- * Applique une mise à jour de source dès que le style est prêt, et rend de
- * quoi annuler l'attente.
+ * Applique une mise à jour dès que les sources qu'elle écrit existent, et
+ * rend de quoi annuler l'attente.
  *
- * MapLibre ignore `setData` tant que le style n'est pas chargé, d'où le
- * report sur « idle ». Mais un `apply` laissé en attente ferme sur les
- * données de *son* rendu : si l'effet rejoue avant que la carte ne devienne
- * inactive, le vieil `apply` reprend la main et écrase le nouveau.
+ * `setData` est sans effet sur une source absente — et l'appel passe par un
+ * `?.`, donc en silence. Il faut donc bien attendre quelque chose. Mais
+ * attendre *quoi* a coûté deux corrections.
  *
- * C'est ainsi que le repère du profil altimétrique disparaissait : on
- * ouvrait la fiche (pas de repère, style pas encore chargé, `apply` mis en
- * attente), on cliquait le graphique (repère posé tout de suite, style
- * chargé entre-temps), puis la carte devenait inactive — et le rendu d'avant
- * le clic effaçait le repère.
+ * Un `apply` laissé en attente ferme sur les données de *son* rendu : si
+ * l'effet rejoue avant que l'attente se lève, le vieil `apply` reprend la
+ * main et écrase le nouveau. C'est ainsi que le repère du profil
+ * altimétrique disparaissait (#186), d'où le nettoyage rendu par cette
+ * fonction — que l'appelant doit rendre à React.
+ *
+ * L'attente elle-même portait sur `isStyleLoaded()`, puis sur « idle ».
+ * Or les deux exigent, dans MapLibre, que **toutes** les sources de la
+ * carte soient chargées — le fond raster compris, qui n'a rien à voir avec
+ * les sources GeoJSON écrites ici. Quand le fond boucle en erreur (les e2e
+ * avortent toutes les requêtes de tuiles ; un utilisateur hors ligne est
+ * dans le même cas), « idle » peut ne jamais venir : la mise à jour restait
+ * en attente pour toujours, et le repère n'arrivait jamais. Mesuré : aucun
+ * « idle » en cinq secondes sur les runs en échec, plusieurs dizaines sur
+ * ceux qui passaient.
+ *
+ * La condition porte donc sur ce qu'on veut réellement savoir — la source
+ * visée existe-t-elle — et le réveil sur « styledata », qui se déclenche à
+ * chaque changement du style sans dépendre du chargement des tuiles.
  */
 export function appliquerQuandPret(
   map: MaplibreMap,
+  sources: readonly string[],
   apply: () => void,
 ): (() => void) | undefined {
-  if (map.isStyleLoaded()) {
+  const pretes = () => sources.every((id) => map.getSource(id) !== undefined)
+  if (pretes()) {
     apply()
     return undefined
   }
-  map.once('idle', apply)
+  const reessayer = () => {
+    // « styledata » se déclenche plusieurs fois pendant la mise en place du
+    // style : on ne se désabonne que lorsqu'on a vraiment appliqué.
+    if (!pretes()) return
+    map.off('styledata', reessayer)
+    apply()
+  }
+  map.on('styledata', reessayer)
   return () => {
-    map.off('idle', apply)
+    map.off('styledata', reessayer)
   }
 }
+
+/**
+ * Les sources écrites par chaque effet. Nommées plutôt que recopiées : une
+ * liste en désaccord avec les `setData` qui suivent produirait soit une
+ * attente inutile, soit une écriture silencieusement perdue.
+ */
+const SOURCES_DONNEES = ['trails', 'trails-done', 'tracks', 'pois'] as const
+const SOURCES_DESSIN = ['draw', 'draw-points'] as const
+const SOURCES_POSITION = ['user-position'] as const
+const SOURCES_REPERE = ['elevation-hover'] as const
 
 export function useMapSources(
   mapRef: RefObject<MaplibreMap | null>,
@@ -97,7 +129,7 @@ export function useMapSources(
       }
     }
     // Après un setStyle (repli OSM), les sources se rechargent : on ré-applique.
-    return appliquerQuandPret(map, apply)
+    return appliquerQuandPret(map, SOURCES_DONNEES, apply)
   }, [
     mapRef,
     itineraries,
@@ -137,7 +169,7 @@ export function useMapSources(
         })),
       })
     }
-    return appliquerQuandPret(map, apply)
+    return appliquerQuandPret(map, SOURCES_DESSIN, apply)
   }, [mapRef, drawPath, drawWaypoints, ready, styleEpoch])
 
   // Position de l'utilisateur.
@@ -161,7 +193,7 @@ export function useMapSources(
           : [],
       })
     }
-    return appliquerQuandPret(map, apply)
+    return appliquerQuandPret(map, SOURCES_POSITION, apply)
   }, [mapRef, userPosition, ready, styleEpoch])
 
   // Point survolé sur le profil altimétrique.
@@ -182,7 +214,7 @@ export function useMapSources(
           : [],
       })
     }
-    return appliquerQuandPret(map, apply)
+    return appliquerQuandPret(map, SOURCES_REPERE, apply)
   }, [mapRef, elevationHover, ready, styleEpoch])
 
 }

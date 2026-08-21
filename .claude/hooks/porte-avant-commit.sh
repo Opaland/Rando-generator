@@ -11,6 +11,19 @@
 # Une vérification faite au bon moment vaut mieux qu'une vérification
 # faite consciencieusement au mauvais.
 set -uo pipefail
+
+# Le filtre `if` de settings.json n'est pas honoré partout : on relit la
+# commande nous-mêmes. Sans cela la porte se déclenchait sur CHAQUE commande
+# bash — et une porte qui bloque pendant le rouge rend le TDD impossible,
+# puisque rouge-puis-vert est justement la méthode. Un garde-fou qui gêne
+# tout le temps finit désactivé, et ne garde alors plus rien.
+entree=$(cat 2>/dev/null || echo '{}')
+commande=$(printf '%s' "$entree" | jq -r '.tool_input.command // ""' 2>/dev/null || echo "")
+case "$commande" in
+  *"git commit"*) ;;
+  *) exit 0 ;;
+esac
+
 cd "$(git rev-parse --show-toplevel 2>/dev/null || echo .)" || exit 0
 
 # Pas de package.json : ce dépôt n'est pas concerné, on ne bloque rien.

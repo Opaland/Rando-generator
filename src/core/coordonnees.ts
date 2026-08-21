@@ -39,3 +39,26 @@ export function messagePointsHorsLimites(nombre: number): string | null {
     ? '1 point hors limites a été ignoré.'
     : `${nombre} points hors limites ont été ignorés.`
 }
+
+/**
+ * Le message qui accompagne une trace trop espacée pour être située
+ * (issue #148).
+ *
+ * Il nomme le chiffre plutôt que de rester vague : « un point tous les
+ * 1,4 km » se vérifie et se comprend, là où « trace peu précise » laisse
+ * l'utilisateur devant la même énigme qu'un 0 % muet.
+ *
+ * Il dit « ces portions ne seront pas comptées » et non « le pourcentage
+ * restera à 0 % ». La seconde formule était la mienne, et elle est fausse :
+ * l'avertissement se déclenche sur la médiane des écarts, donc une trace
+ * dont la moitié des points est dense le déclenche aussi. Mesuré sur un
+ * itinéraire de 9,4 km — trace entièrement espacée de 1,6 km : 0 % ; deux
+ * cents points denses suivis de deux cent dix espacés : 34 %. Ce sont bien
+ * les portions espacées qui ne comptent pour rien, pas la trace entière.
+ */
+export function messageTropEspacee(metres: number): string {
+  const km = (metres / 1000).toLocaleString('fr-FR', {
+    maximumFractionDigits: 1,
+  })
+  return `cette trace n’enregistre qu’un point tous les ${km} km — trop espacé pour situer un passage : ces portions ne seront pas comptées comme parcourues.`
+}

@@ -11,6 +11,8 @@
 export interface FitRecord {
   /** Secondes depuis l'époque FIT (31/12/1989). */
   timestamp?: number
+  /** Précision GPS rapportée par la montre, en mètres (champ FIT 31). */
+  gpsAccuracy?: number
   /** Degrés ; convertis en semicircles à l'encodage. */
   lat?: number
   lon?: number
@@ -92,12 +94,13 @@ export function buildFit(
     corps.u32(1_000, le)
   }
 
-  // Définition du message « record » (20) : timestamp, lat, lon, altitude.
+  // Définition du message « record » (20) : timestamp, lat, lon, altitude,
+  // et gps_accuracy — champ 31 du profil FIT, uint8, en mètres (issue #149).
   corps.u8(options.developerField ? 0x60 : 0x40) // définition, type local 0
   corps.u8(0)
   corps.u8(le ? 0 : 1)
   corps.u16(20, le)
-  corps.u8(4)
+  corps.u8(5)
   corps.u8(253)
   corps.u8(4)
   corps.u8(0x86) // uint32
@@ -110,6 +113,9 @@ export function buildFit(
   corps.u8(2)
   corps.u8(2)
   corps.u8(0x84) // uint16
+  corps.u8(31)
+  corps.u8(1)
+  corps.u8(0x02) // uint8
   if (options.developerField) {
     corps.u8(1) // un champ développeur
     corps.u8(0) // numéro
@@ -134,6 +140,8 @@ export function buildFit(
         : Math.round((record.altitude + 500) * 5),
       le,
     )
+    // 0xFF = « invalide » dans le profil FIT.
+    corps.u8(record.gpsAccuracy ?? 0xff)
     if (options.developerField) corps.u16(0, le)
   }
 
