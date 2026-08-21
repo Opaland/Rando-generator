@@ -1,6 +1,6 @@
 .section {
   display: grid;
-  gap: 10px;
+  gap: var(--espace-5);
 }
 
 .title {
@@ -13,13 +13,13 @@
 .zones {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: var(--espace-4);
 }
 
 .zone,
 .zoneActive {
-  padding: 8px 10px;
-  border-radius: 6px;
+  padding: var(--espace-4) var(--espace-5);
+  border-radius: var(--rayon-md);
   border: 1px solid var(--gris-vert);
   background: #fff;
   color: var(--vert-noir);
@@ -40,7 +40,7 @@
 }
 
 .groupTitle {
-  margin: 4px 0 -4px;
+  margin: var(--espace-2) 0 -var(--espace-2);
   font-size: var(--texte-appui);
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -49,13 +49,13 @@
 
 .featured {
   display: grid;
-  gap: 8px;
+  gap: var(--espace-4);
 }
 
 .featured .zone,
 .featured .zoneActive {
   display: grid;
-  gap: 2px;
+  gap: var(--espace-1);
 }
 
 .featuredRef {
@@ -69,7 +69,7 @@
 
 .refForm {
   display: grid;
-  gap: 4px;
+  gap: var(--espace-2);
 }
 
 .refLabel {
@@ -79,28 +79,28 @@
 
 .refRow {
   display: flex;
-  gap: 8px;
+  gap: var(--espace-4);
 }
 
 .refRow input {
   flex: 1;
   min-width: 0;
-  padding: 7px 9px;
+  padding: var(--espace-4) var(--espace-5);
   border: 1px solid var(--gris-vert);
-  border-radius: 6px;
+  border-radius: var(--rayon-md);
   background: #fff;
 }
 
 .waiting {
   margin: 0;
-  padding: 8px 10px;
+  padding: var(--espace-4) var(--espace-5);
   border-left: 4px solid var(--jaune-pr);
-  background: #fdf6e3;
+  background: var(--alerte-fond);
   font-size: 0.9rem;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--espace-4);
 }
 
 /* Octets reçus : sur sa propre ligne, c'est le seul élément qui bouge
@@ -147,7 +147,7 @@
 
 .error {
   margin: 0;
-  padding: 8px 10px;
+  padding: var(--espace-4) var(--espace-5);
   border-left: 4px solid var(--erreur-bord);
   background: var(--erreur-fond);
   font-size: 0.9rem;
@@ -157,7 +157,7 @@
   margin: 0;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--espace-5);
   flex-wrap: wrap;
   font-size: var(--texte-secondaire);
   color: var(--gris-vert);
@@ -176,7 +176,7 @@
    d'itinéraires, actualisation) reste dehors, toujours visible. */
 .picker {
   display: grid;
-  gap: 10px;
+  gap: var(--espace-5);
 }
 
 /*
@@ -185,7 +185,7 @@
  */
 .lieuForm {
   display: grid;
-  gap: 4px;
+  gap: var(--espace-2);
 }
 
 .lieuLabel {
@@ -206,7 +206,7 @@
 
 .lieux {
   display: grid;
-  gap: 4px;
+  gap: var(--espace-2);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -214,13 +214,13 @@
 
 .lieu {
   display: grid;
-  gap: 2px;
+  gap: var(--espace-1);
   width: 100%;
   min-height: 44px;
-  padding: 6px 10px;
+  padding: var(--espace-3) var(--espace-5);
   text-align: left;
   border: 1px solid var(--gris-vert);
-  border-radius: 4px;
+  border-radius: var(--rayon-sm);
   background: var(--blanc-papier);
   color: inherit;
   font: inherit;

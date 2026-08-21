@@ -1,6 +1,6 @@
 .section {
   display: grid;
-  gap: 8px;
+  gap: var(--espace-4);
 }
 
 .title {
@@ -18,21 +18,21 @@
 
 .addRow {
   display: flex;
-  gap: 8px;
+  gap: var(--espace-4);
   flex-wrap: wrap;
 }
 
 .importing {
   margin: 0;
-  padding: 6px 10px;
+  padding: var(--espace-3) var(--espace-5);
   border-left: 4px solid var(--jaune-pr);
-  background: #fdf6e3;
+  background: var(--alerte-fond);
   font-size: var(--texte-secondaire);
 }
 
 .success {
   margin: 0;
-  padding: 6px 10px;
+  padding: var(--espace-3) var(--espace-5);
   border-left: 4px solid var(--vert-noir);
   background: var(--gris-vert-clair);
   font-size: var(--texte-secondaire);
@@ -43,13 +43,13 @@
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 6px;
+  gap: var(--espace-3);
 }
 
 .item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--espace-4);
 }
 
 .row,
@@ -58,12 +58,12 @@
   min-width: 0;
   display: grid;
   grid-template-columns: minmax(90px, 1fr) 1fr auto;
-  gap: 10px;
+  gap: var(--espace-5);
   align-items: center;
-  padding: 8px 10px;
+  padding: var(--espace-4) var(--espace-5);
   border: 1px solid var(--gris-vert-clair);
   border-left: 4px solid var(--vert-noir);
-  border-radius: 6px;
+  border-radius: var(--rayon-md);
   background: #fff;
   text-align: left;
 }
@@ -74,7 +74,7 @@
 }
 
 .rowSelected {
-  box-shadow: 0 0 0 1px var(--rouge-balisage);
+  box-shadow: var(--anneau-focus);
 }
 
 .name {
@@ -87,7 +87,7 @@
 
 .stats {
   display: grid;
-  gap: 2px;
+  gap: var(--espace-1);
   text-align: right;
 }
 

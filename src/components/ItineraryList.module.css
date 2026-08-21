@@ -1,6 +1,6 @@
 .section {
   display: grid;
-  gap: 10px;
+  gap: var(--espace-5);
 }
 
 .title {
@@ -12,25 +12,25 @@
 
 .filters {
   display: grid;
-  gap: 8px;
+  gap: var(--espace-4);
 }
 
 .search {
-  padding: 7px 9px;
+  padding: var(--espace-4) var(--espace-5);
   border: 1px solid var(--gris-vert);
-  border-radius: 6px;
+  border-radius: var(--rayon-md);
   background: #fff;
 }
 
 .networkFilters {
   display: flex;
-  gap: 12px;
+  gap: var(--espace-6);
 }
 
 .networkToggle {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--espace-3);
   font-size: 0.9rem;
 }
 
@@ -40,8 +40,8 @@
 }
 
 .sort select {
-  padding: 3px 6px;
-  border-radius: 4px;
+  padding: var(--espace-2) var(--espace-3);
+  border-radius: var(--rayon-sm);
   border: 1px solid var(--gris-vert);
   background: #fff;
   color: var(--vert-noir);
@@ -52,7 +52,7 @@
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 6px;
+  gap: var(--espace-3);
 }
 
 .row,
@@ -60,11 +60,11 @@
   width: 100%;
   display: grid;
   grid-template-columns: auto 1fr auto;
-  gap: 10px;
+  gap: var(--espace-5);
   align-items: center;
-  padding: 8px 10px;
+  padding: var(--espace-4) var(--espace-5);
   border: 1px solid var(--gris-vert-clair);
-  border-radius: 6px;
+  border-radius: var(--rayon-md);
   background: #fff;
   text-align: left;
 }
@@ -75,14 +75,14 @@
 }
 
 .rowSelected {
-  box-shadow: 0 0 0 1px var(--rouge-balisage);
+  box-shadow: var(--anneau-focus);
 }
 
 .badge {
   font-size: var(--texte-etiquette);
   font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 3px;
+  padding: var(--espace-1) var(--espace-3);
+  border-radius: var(--rayon-sm);
   color: #fff;
   align-self: start;
 }
@@ -106,7 +106,7 @@
 
 .rowMain {
   display: grid;
-  gap: 3px;
+  gap: var(--espace-2);
   min-width: 0;
 }
 
@@ -125,7 +125,7 @@
 
 .rowStats {
   display: grid;
-  gap: 2px;
+  gap: var(--espace-1);
   text-align: right;
 }
 
@@ -142,8 +142,8 @@
 
 .discovery {
   border: 1px solid var(--gris-vert-clair);
-  border-radius: 6px;
-  padding: 6px 9px;
+  border-radius: var(--rayon-md);
+  padding: var(--espace-3) var(--espace-5);
   background: #fff;
 }
 
@@ -156,15 +156,15 @@
 
 .discoveryGrid {
   display: grid;
-  gap: 6px;
-  margin-top: 8px;
+  gap: var(--espace-3);
+  margin-top: var(--espace-4);
 }
 
 .discoveryGrid label {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 8px;
+  gap: var(--espace-4);
 }
 
 .discoveryGrid select {
@@ -175,15 +175,15 @@
 .hint {
   font-size: var(--texte-appui);
   color: var(--gris-vert);
-  margin: 8px 0 0;
+  margin: var(--espace-4) 0 0;
 }
 
 .reset {
-  margin-top: 8px;
-  padding: 4px 8px;
+  margin-top: var(--espace-4);
+  padding: var(--espace-2) var(--espace-4);
   font-size: var(--texte-appui);
   border: 1px solid var(--gris-vert);
-  border-radius: 4px;
+  border-radius: var(--rayon-sm);
   background: #fff;
   color: var(--vert-noir);
   cursor: pointer;

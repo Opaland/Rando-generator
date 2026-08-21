@@ -1,9 +1,9 @@
 .installer {
   justify-self: start;
   min-height: 44px;
-  padding: 4px 14px;
+  padding: var(--espace-2) var(--espace-7);
   border: 1px solid var(--vert-noir);
-  border-radius: 4px;
+  border-radius: var(--rayon-sm);
   background: var(--blanc-papier);
   font: inherit;
   font-size: var(--texte-secondaire);

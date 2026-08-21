@@ -3,9 +3,9 @@
      erreur, c'est un état dans lequel on est entré volontairement. */
   border-left: 4px solid var(--attention-bord);
   background: var(--attention-fond);
-  padding: 10px 12px;
+  padding: var(--espace-5) var(--espace-6);
   display: grid;
-  gap: 8px;
+  gap: var(--espace-4);
 }
 
 .texte {
@@ -16,9 +16,9 @@
 .quitter {
   justify-self: start;
   min-height: 44px;
-  padding: 4px 14px;
+  padding: var(--espace-2) var(--espace-7);
   border: 1px solid var(--vert-noir);
-  border-radius: 4px;
+  border-radius: var(--rayon-sm);
   background: #fff;
   font: inherit;
   cursor: pointer;

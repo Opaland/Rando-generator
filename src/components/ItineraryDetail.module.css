@@ -11,26 +11,26 @@
   background: var(--blanc-papier);
   border-top: 1px solid var(--gris-vert-clair);
   border-top: 5px solid var(--rouge-balisage);
-  box-shadow: 0 -3px 16px rgba(30, 43, 35, 0.22);
-  padding: 14px 16px 18px;
+  box-shadow: var(--ombre-feuille);
+  padding: var(--espace-7) var(--espace-7) var(--espace-7);
   display: grid;
-  gap: 14px;
+  gap: var(--espace-7);
 }
 
 .header {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: var(--espace-5);
 }
 
 .badge {
   font-size: var(--texte-etiquette);
   font-weight: 700;
-  padding: 3px 7px;
-  border-radius: 3px;
+  padding: var(--espace-2) var(--espace-4);
+  border-radius: var(--rayon-sm);
   color: #fff;
   flex: none;
-  margin-top: 2px;
+  margin-top: var(--espace-1);
 }
 
 .GR {
@@ -67,7 +67,7 @@
 }
 
 .sub {
-  margin: 2px 0 0;
+  margin: var(--espace-1) 0 0;
   font-size: var(--texte-secondaire);
   color: var(--gris-vert);
 }
@@ -76,8 +76,8 @@
 .view3dActive {
   flex: none;
   border: 1px solid var(--vert-noir);
-  border-radius: 6px;
-  padding: 10px 12px;
+  border-radius: var(--rayon-md);
+  padding: var(--espace-5) var(--espace-6);
   min-height: 44px;
   background: #fff;
   color: var(--vert-noir);
@@ -92,7 +92,7 @@
 
 .stats {
   display: grid;
-  gap: 6px;
+  gap: var(--espace-3);
   justify-items: start;
 }
 
@@ -112,9 +112,9 @@
 
 .section {
   display: grid;
-  gap: 6px;
+  gap: var(--espace-3);
   border-top: 1px solid var(--gris-vert-clair);
-  padding-top: 12px;
+  padding-top: var(--espace-6);
 }
 
 .sectionTitle {
@@ -165,18 +165,18 @@
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 6px;
+  gap: var(--espace-3);
 }
 
 .poiItem {
   width: 100%;
   display: flex;
   align-items: baseline;
-  gap: 8px;
+  gap: var(--espace-4);
   min-height: 44px;
-  padding: 6px 10px;
+  padding: var(--espace-3) var(--espace-5);
   border: 1px solid var(--gris-vert-clair);
-  border-radius: 6px;
+  border-radius: var(--rayon-md);
   background: #fff;
   text-align: left;
 }
@@ -187,11 +187,11 @@
 
 .poiEntry {
   display: grid;
-  gap: 2px;
+  gap: var(--espace-1);
 }
 
 .poiFacts {
-  margin: 0 0 0 10px;
+  margin: 0 0 0 var(--espace-5);
   font-size: var(--texte-appui);
   color: var(--gris-vert);
 }
@@ -202,9 +202,9 @@
 
 .poiCaveat {
   margin: 0;
-  padding: 8px 10px;
+  padding: var(--espace-4) var(--espace-5);
   border-left: 4px solid var(--jaune-pr);
-  background: #fdf6e3;
+  background: var(--alerte-fond);
   font-size: var(--texte-appui);
 }
 
@@ -228,7 +228,7 @@
     right: 12px;
     bottom: 12px;
     width: min(380px, calc(100% - 24px));
-    border-radius: 10px;
+    border-radius: var(--rayon-lg);
     border-top-width: 1px;
     border-left: 5px solid var(--rouge-balisage);
   }
@@ -239,18 +239,18 @@
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 4px;
+  gap: var(--espace-2);
 }
 
 .stage {
   width: 100%;
   display: grid;
   grid-template-columns: 1fr 70px auto;
-  gap: 8px;
+  gap: var(--espace-4);
   align-items: center;
-  padding: 5px 8px;
+  padding: var(--espace-3) var(--espace-4);
   border: 1px solid var(--gris-vert-clair);
-  border-radius: 5px;
+  border-radius: var(--rayon-md);
   background: #fff;
   text-align: left;
   cursor: pointer;
@@ -281,9 +281,9 @@
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 4px;
+  gap: var(--espace-2);
   font-size: var(--texte-appui);
   color: var(--gris-vert);
   border-left: 3px solid var(--jaune-pr);
-  padding-left: 8px;
+  padding-left: var(--espace-4);
 }

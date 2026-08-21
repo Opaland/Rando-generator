@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import indexCss from '../../src/index.css?raw'
-import { NETWORK_COLORS } from '../../src/lib/networkDisplay.ts'
+import {
+  NETWORK_COLORS,
+  POSITION_COLOR,
+} from '../../src/lib/networkDisplay.ts'
 import type { Network } from '../../src/core/types.ts'
 
 /**
@@ -34,4 +37,14 @@ describe('couleurs de réseau', () => {
       expect(trouve?.[1]?.trim().toLowerCase()).toBe(attendu)
     },
   )
+})
+
+describe('couleur de position', () => {
+  it('le point sur la carte et le bouton « où suis-je » sont du même bleu', () => {
+    // MapLibre peint le point, le CSS peint le bouton : ni l'un ni l'autre ne
+    // peut lire la valeur de l'autre. Un décalage entre les deux ne se
+    // remarquerait qu'en les regardant côte à côte, c'est-à-dire jamais.
+    const trouve = /--bleu-position:\s*([^;]+);/.exec(indexCss)
+    expect(trouve?.[1]?.trim().toLowerCase()).toBe(POSITION_COLOR.toLowerCase())
+  })
 })

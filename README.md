@@ -314,6 +314,7 @@ aucun ne recopie les autres.
 | [`docs/AUDIT_MOBILE.md`](./docs/AUDIT_MOBILE.md) | L'audit téléphone M0–M8, mesures avant/après |
 | [`docs/RELEASE.md`](./docs/RELEASE.md) | Ce qu'on vérifie à la main avant de publier |
 | [`docs/PROTOCOLE_TEST.md`](./docs/PROTOCOLE_TEST.md) | Comment on décide sans mesurer en douce — et pourquoi l'A/B classique est écarté |
+| [`docs/DESIGN_SYSTEM.md`](./docs/DESIGN_SYSTEM.md) | Couleurs, espacement, boutons — et **pourquoi la duplication JS/CSS ne doit pas être « corrigée »** |
 
 ## Déploiement (GitHub Pages)
 

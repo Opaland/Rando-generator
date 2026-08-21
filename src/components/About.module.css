@@ -1,6 +1,6 @@
 .dialog {
   border: none;
-  border-radius: 10px;
+  border-radius: var(--rayon-lg);
   padding: 0;
   max-width: 560px;
   width: calc(100% - 32px);
@@ -14,14 +14,14 @@
 }
 
 .content {
-  padding: 18px 22px 22px;
+  padding: var(--espace-7) var(--espace-8) var(--espace-8);
   display: grid;
-  gap: 14px;
+  gap: var(--espace-7);
 }
 
 .content h3 {
   font-size: 1rem;
-  margin: 0 0 4px;
+  margin: 0 0 var(--espace-2);
 }
 
 .content p,
@@ -31,9 +31,9 @@
 }
 
 .content ul {
-  padding-left: 18px;
+  padding-left: var(--espace-7);
   display: grid;
-  gap: 6px;
+  gap: var(--espace-3);
 }
 
 .content a {
@@ -43,7 +43,7 @@
 .header {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--espace-5);
 }
 
 .header h2 {

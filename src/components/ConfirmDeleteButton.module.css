@@ -3,7 +3,7 @@
   background: none;
   color: var(--rouge-balisage);
   text-decoration: underline;
-  padding: 0 4px;
+  padding: 0 var(--espace-2);
   min-height: 44px;
   min-width: 44px;
   font-size: var(--texte-secondaire);
@@ -11,7 +11,7 @@
 }
 
 .delete:hover {
-  color: #8e0c22;
+  color: var(--danger-texte);
 }
 
 .confirm {
@@ -19,13 +19,13 @@
   border: 1px solid var(--erreur-bord);
   background: var(--erreur-fond);
   color: var(--erreur-bord);
-  border-radius: 6px;
-  padding: 0 12px;
+  border-radius: var(--rayon-md);
+  padding: 0 var(--espace-6);
   min-height: 44px;
   font-size: var(--texte-secondaire);
   font-weight: 700;
 }
 
 .confirm:hover {
-  background: #fbd8d8;
+  background: var(--danger-fond-fort);
 }

@@ -4,12 +4,12 @@
 }
 
 .mapError {
-  margin: 24px auto;
+  margin: var(--espace-8) auto;
   max-width: 420px;
-  padding: 12px 16px;
+  padding: var(--espace-6) var(--espace-7);
   background: var(--erreur-fond);
   border-left: 4px solid var(--erreur-bord);
-  border-radius: 4px;
+  border-radius: var(--rayon-sm);
 }
 
 .map :global(.maplibregl-ctrl-attrib) {

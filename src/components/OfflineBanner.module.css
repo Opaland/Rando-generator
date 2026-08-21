@@ -1,7 +1,7 @@
 .banner {
   margin: 0;
-  padding: 8px 16px;
-  background: #fdf6e3;
+  padding: var(--espace-4) var(--espace-7);
+  background: var(--alerte-fond);
   border-bottom: 2px solid var(--jaune-pr);
   font-size: 0.9rem;
 }

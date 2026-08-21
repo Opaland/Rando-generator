@@ -1,6 +1,6 @@
 .section {
   display: grid;
-  gap: 8px;
+  gap: var(--espace-4);
 }
 
 .title {
@@ -13,7 +13,7 @@
 .row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--espace-6);
 }
 
 .row input[type='range'] {
@@ -37,13 +37,13 @@
 /* Seuil « bouclé » : un réglage à trois valeurs, pas un curseur — entre 90 et
    100 % il n'y a pas de continuum, il y a trois manières de compter. */
 .fieldset {
-  margin: 14px 0 0;
+  margin: var(--espace-7) 0 0;
   padding: 0;
   border: none;
   border-top: 1px solid var(--gris-vert-clair);
-  padding-top: 12px;
+  padding-top: var(--espace-6);
   display: grid;
-  gap: 8px;
+  gap: var(--espace-4);
 }
 
 .legend {
@@ -54,12 +54,12 @@
 .choices {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 18px;
+  gap: var(--espace-3) var(--espace-7);
 }
 
 .choice {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--espace-3);
   cursor: pointer;
 }

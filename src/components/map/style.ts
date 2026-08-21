@@ -4,7 +4,10 @@ import type {
   StyleSpecification,
 } from '@maplibre/maplibre-gl-style-spec'
 import { POI_COLORS } from '../../lib/poiDisplay.ts'
-import { NETWORK_COLORS } from '../../lib/networkDisplay.ts'
+import {
+  NETWORK_COLORS,
+  POSITION_COLOR,
+} from '../../lib/networkDisplay.ts'
 import type { PointOfInterest } from '../../core/types.ts'
 
 /**
@@ -178,7 +181,7 @@ export function baseStyle(tiles: string, attribution: string): StyleSpecificatio
         source: 'user-position',
         paint: {
           'circle-radius': 7,
-          'circle-color': '#1d6fa5',
+          'circle-color': POSITION_COLOR,
           'circle-stroke-width': 3,
           'circle-stroke-color': '#ffffff',
         },

@@ -1,6 +1,6 @@
 .section {
   display: grid;
-  gap: 10px;
+  gap: var(--espace-5);
 }
 
 .title {
@@ -13,8 +13,8 @@
 .dropzone,
 .dropzoneActive {
   border: 2px dashed var(--gris-vert);
-  border-radius: 8px;
-  padding: 14px;
+  border-radius: var(--rayon-lg);
+  padding: var(--espace-7);
   text-align: center;
   background: #fff;
   transition: border-color 0.15s, background 0.15s;
@@ -22,7 +22,7 @@
 
 .dropzoneActive {
   border-color: var(--rouge-balisage);
-  background: #fff5f6;
+  background: var(--danger-fond);
 }
 
 .dropText {
@@ -30,55 +30,55 @@
 }
 
 .dropHint {
-  margin: 6px 0 0;
+  margin: var(--espace-3) 0 0;
   font-size: var(--texte-appui);
   color: var(--gris-vert);
 }
 
 .importing {
   margin: 0;
-  padding: 6px 10px;
+  padding: var(--espace-3) var(--espace-5);
   border-left: 4px solid var(--jaune-pr);
-  background: #fdf6e3;
+  background: var(--alerte-fond);
   font-size: var(--texte-secondaire);
 }
 
 .success {
   margin: 0;
-  padding: 6px 10px;
+  padding: var(--espace-3) var(--espace-5);
   border-left: 4px solid var(--vert-noir);
   background: var(--gris-vert-clair);
   font-size: var(--texte-secondaire);
 }
 
 .errors {
-  padding: 8px 10px;
+  padding: var(--espace-4) var(--espace-5);
   border-left: 4px solid var(--erreur-bord);
   background: var(--erreur-fond);
   font-size: 0.9rem;
 }
 
 .errors ul {
-  margin: 0 0 6px;
-  padding-left: 18px;
+  margin: 0 0 var(--espace-3);
+  padding-left: var(--espace-7);
 }
 
 .errors button {
   border: 1px solid var(--vert-noir);
   background: #fff;
-  border-radius: 4px;
-  padding: 2px 10px;
+  border-radius: var(--rayon-sm);
+  padding: var(--espace-1) var(--espace-5);
 }
 
 .doublons {
-  padding: 8px 10px;
+  padding: var(--espace-4) var(--espace-5);
   border-left: 4px solid var(--attention-bord);
   background: var(--attention-fond);
   font-size: 0.9rem;
 }
 
 .doublons p {
-  margin: 0 0 6px;
+  margin: 0 0 var(--espace-3);
 }
 
 .doublons ul {
@@ -87,7 +87,7 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--espace-4);
 }
 
 .doublonNom {
@@ -99,17 +99,17 @@
 .doublonActions {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 4px;
+  gap: var(--espace-3);
+  margin-top: var(--espace-2);
 }
 
 .doublonActions button {
   border: 1px solid var(--vert-noir);
   background: #fff;
-  border-radius: 4px;
+  border-radius: var(--rayon-sm);
   /* 44 px de haut : la cible se touche en marchant, avec des gants. */
   min-height: 44px;
-  padding: 2px 12px;
+  padding: var(--espace-1) var(--espace-6);
 }
 
 .empty {
@@ -123,7 +123,7 @@
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 6px;
+  gap: var(--espace-3);
 }
 
 .item {
@@ -132,11 +132,11 @@
   display: grid;
   grid-template-columns: 1fr auto;
   align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
+  gap: var(--espace-4);
+  padding: var(--espace-4) var(--espace-5);
   background: #fff;
   border: 1px solid var(--gris-vert-clair);
-  border-radius: 6px;
+  border-radius: var(--rayon-md);
 }
 
 .itemInfo {
@@ -163,15 +163,15 @@
 
 .outing {
   grid-column: 1 / -1;
-  margin-top: 6px;
-  padding: 6px 8px;
+  margin-top: var(--espace-3);
+  padding: var(--espace-3) var(--espace-4);
   border-left: 3px solid var(--rouge-balisage);
   background: var(--gris-vert-clair);
   border-radius: 0 4px 4px 0;
 }
 
 .outingTitle {
-  margin: 0 0 4px;
+  margin: 0 0 var(--espace-2);
   font-size: var(--texte-secondaire);
   font-weight: 600;
 }
@@ -187,7 +187,7 @@
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 2px;
+  gap: var(--espace-1);
   font-size: var(--texte-appui);
   font-variant-numeric: tabular-nums;
 }
