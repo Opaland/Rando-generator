@@ -243,6 +243,24 @@ describe('parseGpx — bornes WGS84 (issue #167)', () => {
     expect(res.pointsHorsLimites).toBe(0)
   })
 
+  it('bascule sur le <rte> même si le <trk> était entièrement hors bornes', () => {
+    // Régression introduite par le premier correctif de #167 : le repli sur
+    // <rtept> avait été conditionné à « rien n'a été écarté », pour ne pas
+    // perdre le compte. Cela troquait des données réelles contre un
+    // compteur — le mauvais échange. Les deux comptes s'additionnent.
+    const xml = `<?xml version="1.0"?><gpx version="1.1">
+<trk><trkseg><trkpt lat="95" lon="200"/></trkseg></trk>
+<rte><rtept lat="45.4" lon="4.5"/><rtept lat="45.41" lon="4.51"/><rtept lat="99" lon="4.5"/></rte>
+</gpx>`
+    const res = parseGpx(xml, parser)
+    expect(res.points).toEqual([
+      [4.5, 45.4],
+      [4.51, 45.41],
+    ])
+    // Un point écarté dans le trk, un dans le rte.
+    expect(res.pointsHorsLimites).toBe(2)
+  })
+
   it('ne compte rien sur un fichier sain', () => {
     expect(parseGpx(GPX_SIMPLE, parser).pointsHorsLimites).toBe(0)
   })

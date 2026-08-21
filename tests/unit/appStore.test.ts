@@ -383,6 +383,25 @@ describe('importGpxFiles', () => {
       expect(useAppStore.getState().importDoublons).toHaveLength(1)
     })
 
+    it('« tout ignorer » vide le mur d’un réimport d’archive', async () => {
+      // Redéposer une archive entière produit autant de propositions que de
+      // sorties : les écarter une par une n'est pas une réponse.
+      await useAppStore.getState().init()
+      const lot = [
+        fichierGpx('a.gpx', ligne(20)),
+        fichierGpx('b.gpx', ligne(20, 45.5)),
+        fichierGpx('c.gpx', ligne(20, 45.6)),
+      ]
+      await useAppStore.getState().importGpxFiles(lot)
+      expect(useAppStore.getState().tracks).toHaveLength(3)
+      await useAppStore.getState().importGpxFiles(lot)
+      expect(useAppStore.getState().importDoublons).toHaveLength(3)
+
+      useAppStore.getState().ignorerTousDoublons()
+      expect(useAppStore.getState().importDoublons).toEqual([])
+      expect(useAppStore.getState().tracks).toHaveLength(3)
+    })
+
     it('ne met rien de côté quand les traces diffèrent au milieu', async () => {
       // Deux boucles au départ du même parking : l'empreinte enrichie les
       // sépare, elles s'importent toutes les deux sans rien demander.
