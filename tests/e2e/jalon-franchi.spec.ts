@@ -16,8 +16,8 @@ test('franchir un jalon est annoncé une fois, sobrement', async ({ page }) => {
   })
 
   // Tolérance serrée : la trace ne crédite rien.
-  await page.getByTestId('tolerance-slider').fill('25')
-  await expect(page.getByTestId('tolerance-value')).toHaveText('25 m')
+  await page.getByTestId('tolerance-precis').check()
+  await expect(page.getByTestId('tolerance-detail')).toContainText('25 m')
   await page.getByTestId('gpx-input').setInputFiles({
     name: 'gr7.gpx',
     mimeType: 'application/gpx+xml',
@@ -28,7 +28,7 @@ test('franchir un jalon est annoncé une fois, sobrement', async ({ page }) => {
   await expect(page.getByTestId('celebration')).toHaveCount(0)
 
   // On desserre : le GR 7 passe d'un coup à 100 %.
-  await page.getByTestId('tolerance-slider').fill('50')
+  await page.getByTestId('tolerance-normal').check()
   await expect(page.getByTestId('global-pct')).toHaveText('54,5 %')
 
   const annonce = page.getByTestId('celebration')
@@ -39,6 +39,9 @@ test('franchir un jalon est annoncé une fois, sobrement', async ({ page }) => {
   // Elle tient : un recalcul de fond — démarrage, arrivée des boucles
   // locales — l'effaçait dans la seconde, et le franchissement passait
   // inaperçu. Tant que le jalon reste atteint, l'annonce reste.
+  // 60 m ne correspond à aucun cran nommé : c'est le réglage fin, en second
+  // rideau, qui reste accessible pour qui le veut.
+  await page.getByTestId('tolerance-detail').click()
   await page.getByTestId('tolerance-slider').fill('60')
   await expect(page.getByTestId('global-pct')).toHaveText('54,5 %')
   await expect(annonce).toBeVisible()

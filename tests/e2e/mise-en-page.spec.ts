@@ -18,7 +18,9 @@ test('la précision de suivi GPS reste repliée tant qu’il n’y a rien à ré
   await expect(reglages).toHaveAttribute('open', /.*/)
 
   // Et le choix de l'utilisateur prime ensuite sur l'automatisme.
-  await reglages.locator('summary').click()
+  // Depuis l'issue #174 la section contient un second <details> (la
+  // distance exacte) : on vise le sommaire de la section, pas le sien.
+  await reglages.locator(':scope > summary').click()
   await expect(reglages).not.toHaveAttribute('open', /.*/)
 })
 

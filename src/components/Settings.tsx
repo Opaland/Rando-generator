@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { COMPLETION_CHOICES } from '../core/milestones.ts'
+import {
+  NIVEAUX_TOLERANCE,
+  niveauDesMetres,
+  type NiveauTolerance,
+} from '../core/tolerance.ts'
 import { MIN_TOLERANCE, MAX_TOLERANCE, useAppStore } from '../store/appStore.ts'
 import styles from './Settings.module.css'
 
@@ -28,6 +33,7 @@ export function Settings() {
   )
 
   const shown = draft ?? toleranceMeters
+  const niveauActuel: NiveauTolerance | null = niveauDesMetres(shown)
 
   const onChange = (next: number) => {
     setDraft(next)
@@ -54,30 +60,67 @@ export function Settings() {
           Précision de suivi GPS
         </h2>
       </summary>
-      <div className={styles.row}>
-        <input
-          type="range"
-          min={MIN_TOLERANCE}
-          max={MAX_TOLERANCE}
-          step={5}
-          value={shown}
-          data-testid="tolerance-slider"
-          aria-label="Précision de suivi GPS en mètres"
-          onChange={(e) => {
-            onChange(Number(e.target.value))
-          }}
-        />
-        <output className={styles.value} data-testid="tolerance-value">
-          {shown} m
-        </output>
-      </div>
-      <p className={styles.hint}>
-        Un tronçon est compté « parcouru » si votre trace passe à moins de
-        cette distance — augmentez-la si votre GPS est imprécis, réduisez-la
-        pour être plus exigeant. Un passage isolé, ou une trace qui reste
-        toujours à distance sans jamais serrer le sentier (une route qui le
-        longe, par exemple), n’est jamais compté.
-      </p>
+      <fieldset className={styles.fieldset}>
+        <legend className={styles.legend}>
+          Quand compter un sentier comme parcouru
+        </legend>
+        <div className={styles.niveaux} data-testid="tolerance-niveaux">
+          {NIVEAUX_TOLERANCE.map((niveau) => (
+            <label key={niveau.id} className={styles.niveau}>
+              <input
+                type="radio"
+                name="tolerance"
+                value={niveau.id}
+                checked={niveauActuel === niveau.id}
+                data-testid={`tolerance-${niveau.id}`}
+                onChange={() => {
+                  onChange(niveau.metres)
+                }}
+              />
+              <span>
+                <span className={styles.niveauNom}>{niveau.libelle}</span>
+                <span className={styles.niveauTexte}>
+                  {niveau.explication}
+                </span>
+              </span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      {/* La valeur en mètres reste consultable pour qui la veut, en second
+          rideau — et c'est le seul endroit qui dit la vérité quand une
+          sauvegarde ancienne porte une valeur intermédiaire. */}
+      <details className={styles.detail}>
+        <summary className={styles.detailTitre} data-testid="tolerance-detail">
+          {niveauActuel === null
+            ? `Réglage personnalisé : ${String(shown)} m`
+            : `La distance exacte : ${String(shown)} m`}
+        </summary>
+        <p className={styles.hint}>
+          Un tronçon est compté « parcouru » si votre trace passe à moins de
+          cette distance. Un passage isolé, ou une trace qui reste toujours à
+          distance sans jamais serrer le sentier (une route qui le longe, par
+          exemple), n’est jamais compté.
+        </p>
+        <div className={styles.row}>
+          <input
+            type="range"
+            min={MIN_TOLERANCE}
+            max={MAX_TOLERANCE}
+            step={5}
+            value={shown}
+            data-testid="tolerance-slider"
+            aria-label="Distance exacte, en mètres"
+            onChange={(e) => {
+              onChange(Number(e.target.value))
+            }}
+          />
+          <output className={styles.value} data-testid="tolerance-value">
+            {shown} m
+          </output>
+        </div>
+      </details>
 
       <fieldset className={styles.fieldset}>
         <legend className={styles.legend}>Seuil « bouclé »</legend>

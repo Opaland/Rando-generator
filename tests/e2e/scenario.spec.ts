@@ -56,8 +56,9 @@ test('charge une zone, importe un GPX, recalcule et persiste', async ({
   await expect(page.getByTestId('top5')).toContainText('GR 7')
 
   // 4. Resserrer la tolérance à 25 m → recalcul → plus rien ne matche.
-  await page.getByTestId('tolerance-slider').fill('25')
-  await expect(page.getByTestId('tolerance-value')).toHaveText('25 m')
+  // Le chemin normal depuis l'issue #174 : un cran nommé, pas un curseur.
+  await page.getByTestId('tolerance-precis').check()
+  await expect(page.getByTestId('tolerance-detail')).toContainText('25 m')
   await expect(page.getByTestId('global-pct')).toHaveText('0 %')
   await expect(page.getByTestId('itinerary-card-pct')).toHaveText('0 %')
 
@@ -70,7 +71,7 @@ test('charge une zone, importe un GPX, recalcule et persiste', async ({
   await expect(page.getByTestId('tracks-list')).toContainText(
     'sortie-pilat.gpx',
   )
-  await expect(page.getByTestId('tolerance-value')).toHaveText('25 m')
+  await expect(page.getByTestId('tolerance-detail')).toContainText('25 m')
   await expect(page.getByTestId('global-pct')).toHaveText('0 %')
   expect(overpass.count()).toBe(1)
 })
