@@ -133,10 +133,19 @@ export function Dashboard() {
           <p className={styles.bigPct} data-testid="global-pct">
             {formatPct(pctAnime)}
           </p>
-          <p className={styles.globalDetail} data-testid="global-km">
-            {formatKm(global.doneMeters)} parcourus ·{' '}
-            {formatKm(global.totalMeters - global.doneMeters)} restants
-          </p>
+          {tracks.length === 0 ? (
+            // Un zéro nu se lit comme un calcul en panne. Il dit ici d'où il
+            // vient, et ce qu'il y a à gagner (issue #172).
+            <p className={styles.globalDetail} data-testid="global-vide">
+              Aucune sortie importée pour l’instant —{' '}
+              {formatKm(global.totalMeters)} à découvrir dans cette zone.
+            </p>
+          ) : (
+            <p className={styles.globalDetail} data-testid="global-km">
+              {formatKm(global.doneMeters)} parcourus ·{' '}
+              {formatKm(global.totalMeters - global.doneMeters)} restants
+            </p>
+          )}
           {boucles > 0 && (
             <p className={styles.globalDetail} data-testid="global-completed">
               {boucles} itinéraire{boucles > 1 ? 's' : ''} bouclé

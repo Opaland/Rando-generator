@@ -55,6 +55,7 @@ import { fetchPois } from '../core/poi.ts'
 import { outingHighlights, type OutingHighlight } from '../core/outing.ts'
 import { FitError, looksLikeFit, parseFit } from '../core/fit.ts'
 import { messagePointsHorsLimites } from '../core/coordonnees.ts'
+import { construireDemonstration } from '../core/demonstration.ts'
 import { TcxError, looksLikeTcx, parseTcx } from '../core/tcx.ts'
 import {
   GeoJsonError,
@@ -174,6 +175,15 @@ export interface AppState {
    * refuser sans recours (issue #165).
    */
   importDoublons: DoublonEnAttente[]
+  /**
+   * Une démonstration est en cours (issue #172).
+   *
+   * Elle ne touche jamais la base : ses itinéraires et ses sorties vivent en
+   * mémoire, le temps de montrer à quoi ressemble un tableau de bord rempli.
+   * Un rechargement n'en laisse rien, et une sauvegarde ne peut pas
+   * l'emporter par mégarde.
+   */
+  demonstration: boolean
 
   // Itinéraires créés par l'utilisateur (réseau PERSO, ids négatifs)
   customItineraries: Itinerary[]
@@ -284,6 +294,10 @@ export interface AppState {
   ignorerDoublon: (id: string) => void
   /** Retire toutes les propositions d'un coup (réimport d'une archive entière). */
   ignorerTousDoublons: () => void
+  /** Montre un tableau de bord rempli, sans rien demander à l'utilisateur. */
+  demarrerDemonstration: () => Promise<void>
+  /** Efface la démonstration et rend l'application à son état réel. */
+  quitterDemonstration: () => Promise<void>
   openItineraryDetail: (id: number) => void
   closeItineraryDetail: () => void
   toggleView3D: () => void
@@ -486,6 +500,13 @@ function fetchLocalBoucles(): Promise<Itinerary[]> {
     .then((response) => (response.ok ? response.json() : null))
     .then((data: unknown) => parseBouclesGeoJSON(data, new Date().toISOString()))
     .catch(() => [])
+    .then((boucles) => {
+      // Un échec ne se mémorise pas. Hors ligne au premier chargement, les
+      // boucles seraient sinon absentes pour toute la session, alors qu'un
+      // simple changement de zone suffirait à les retrouver.
+      if (boucles.length === 0) bouclesPromise = null
+      return boucles
+    })
   return bouclesPromise
 }
 
@@ -796,6 +817,7 @@ export const useAppStore = create<AppState>()((set, get) => {
     tracks: [],
     importErrors: [],
     importDoublons: [],
+    demonstration: false,
     backupMessage: null,
     lieux: [],
     lieuxLoading: false,
@@ -882,9 +904,13 @@ export const useAppStore = create<AppState>()((set, get) => {
       // pas été écrit, faute de base à ce moment-là. Sans cela la trace
       // survivrait à l'affichage mais pas au rechargement suivant.
       const idsEnBase = new Set(tracks.map((trace) => trace.id))
-      for (const trace of get().tracks.filter(
-        (candidate) => !idsEnBase.has(candidate.id),
-      )) {
+      // Une démonstration lancée pendant l'ouverture de la base n'a rien à
+      // faire en base : ce rattrapage écrit ce qui a été importé, pas ce qui
+      // a été montré (issue #172).
+      const aEcrire = get().demonstration
+        ? []
+        : get().tracks.filter((candidate) => !idsEnBase.has(candidate.id))
+      for (const trace of aEcrire) {
         try {
           await db.saveTrack(trace)
         } catch {
@@ -957,6 +983,9 @@ export const useAppStore = create<AppState>()((set, get) => {
     },
 
     async importGpxFiles(files) {
+      // « Maintenant, importez les vôtres » : la démonstration s'efface au
+      // premier vrai fichier, pour ne jamais se mêler aux données réelles.
+      if (get().demonstration) await get().quitterDemonstration()
       const errors: string[] = []
       const imported: Track[] = []
       const developpement = await developperArchives(
@@ -1051,6 +1080,9 @@ export const useAppStore = create<AppState>()((set, get) => {
     },
 
     async importCustomGpx(files) {
+      // « Maintenant, importez les vôtres » : la démonstration s'efface au
+      // premier vrai fichier, pour ne jamais se mêler aux données réelles.
+      if (get().demonstration) await get().quitterDemonstration()
       const errors: string[] = []
       const imported: Itinerary[] = []
       let nextId = Math.min(
@@ -1157,6 +1189,9 @@ export const useAppStore = create<AppState>()((set, get) => {
     },
 
     async exporterSauvegarde() {
+      // Une sauvegarde de démonstration n'aurait aucun sens, et rapporterait
+      // des sorties fictives dans les vraies données au moment de la relire.
+      if (get().demonstration) await get().quitterDemonstration()
       const etat = get()
       const backup = buildBackup({
         tracks: etat.tracks,
@@ -1430,6 +1465,64 @@ export const useAppStore = create<AppState>()((set, get) => {
       set((state) => ({
         importDoublons: state.importDoublons.filter((d) => d.id !== id),
       }))
+    },
+
+    async demarrerDemonstration() {
+      // Les boucles locales sont embarquées avec le site : la démonstration
+      // fonctionne hors ligne, sur des données réelles et licenciées, sans
+      // faire attendre Overpass au tout premier écran.
+      const boucles = await fetchLocalBoucles()
+      const sorties = construireDemonstration(boucles)
+      if (sorties.length === 0) {
+        set({
+          zoneError:
+            'La démonstration n’a pas pu être préparée. Choisissez une zone pour commencer.',
+        })
+        return
+      }
+      const maintenant = new Date().toISOString()
+      set({
+        demonstration: true,
+        itineraries: boucles,
+        zoneKey: 'demonstration',
+        zoneLabel: 'Démonstration — Métropole de Lyon',
+        zoneError: null,
+        zoneLoading: false,
+        tracks: sorties.map((sortie) => ({
+          id: `demo-${String(sortie.itineraire)}`,
+          filename: sortie.nom,
+          points: sortie.points,
+          date: maintenant,
+          importedAt: maintenant,
+          elevationGain: null,
+        })),
+      })
+      await recompute()
+    },
+
+    async quitterDemonstration() {
+      if (!get().demonstration) return
+      set({
+        demonstration: false,
+        itineraries: [],
+        tracks: [],
+        zoneKey: null,
+        zoneLabel: null,
+        selectedItineraryId: null,
+        detailItineraryId: null,
+        celebration: null,
+      })
+      // La base n'a jamais rien reçu de la démonstration : il n'y a rien à
+      // défaire, seulement à relire ce qui existait vraiment.
+      const db = await baseOuverte()
+      if (db) {
+        const [tracks, customItineraries] = await Promise.all([
+          db.listTracks(),
+          db.listCustomItineraries(),
+        ])
+        set({ tracks, customItineraries })
+      }
+      await recompute()
     },
 
     ignorerTousDoublons() {

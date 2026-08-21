@@ -1,0 +1,11 @@
+.installer {
+  justify-self: start;
+  min-height: 44px;
+  padding: 4px 14px;
+  border: 1px solid var(--vert-noir);
+  border-radius: 4px;
+  background: var(--blanc-papier);
+  font: inherit;
+  font-size: var(--texte-secondaire);
+  cursor: pointer;
+}

@@ -1,0 +1,30 @@
+.bandeau {
+  /* Le jaune « à vous de voir » plutôt que le rouge : ce n'est pas une
+     erreur, c'est un état dans lequel on est entré volontairement. */
+  border-left: 4px solid var(--attention-bord);
+  background: var(--attention-fond);
+  padding: 10px 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.texte {
+  margin: 0;
+  font-size: var(--texte-secondaire);
+}
+
+.quitter {
+  justify-self: start;
+  min-height: 44px;
+  padding: 4px 14px;
+  border: 1px solid var(--vert-noir);
+  border-radius: 4px;
+  background: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+
+.quitter:disabled {
+  opacity: 0.7;
+  cursor: default;
+}

@@ -474,6 +474,110 @@ describe('importGpxFiles', () => {
   })
 })
 
+/** Boucles locales minimales, au format du jeu Métropole de Lyon. */
+function boucleFeature(gid: number, decalage: number) {
+  return {
+    type: 'Feature',
+    properties: { gid, nom: `Boucle ${String(gid)}`, commune_depart: 'Lyon' },
+    geometry: {
+      type: 'MultiLineString',
+      coordinates: [
+        Array.from({ length: 30 }, (_, i) => [
+          4.8 + i * 0.001,
+          45.7 + decalage,
+        ]),
+      ],
+    },
+  }
+}
+
+const BOUCLES_LOCALES = JSON.stringify({
+  type: 'FeatureCollection',
+  features: [1, 2, 3, 4, 5].map((gid) => boucleFeature(gid, gid * 0.02)),
+})
+
+describe('démonstration (issue #172)', () => {
+  /**
+   * La démonstration montre un tableau de bord rempli sans rien demander.
+   * Sa promesse tient à une seule chose : ne jamais toucher aux vraies
+   * données. Ces tests attaquent exactement cela.
+   */
+  beforeEach(() => {
+    fetchMock.mockImplementation((url) => {
+      if (url.includes('interpreter')) return Promise.resolve(reponseOverpass())
+      if (url.includes('boucles-metropole-lyon')) {
+        return Promise.resolve(new Response(BOUCLES_LOCALES, { status: 200 }))
+      }
+      return Promise.resolve(new Response('', { status: 404 }))
+    })
+  })
+
+  async function demarrer() {
+    await useAppStore.getState().init()
+    await useAppStore.getState().demarrerDemonstration()
+  }
+
+  it('remplit la carte et le tableau de bord', async () => {
+    await demarrer()
+    const etat = useAppStore.getState()
+    expect(etat.demonstration).toBe(true)
+    expect(etat.itineraries.length).toBeGreaterThan(0)
+    expect(etat.tracks.length).toBeGreaterThan(0)
+    expect(etat.zoneLabel).toMatch(/démonstration/i)
+  })
+
+  it('n’écrit rien en base', async () => {
+    await demarrer()
+    // Le contrôle qui compte : rechargement complet, et il ne doit rien
+    // rester. Une démonstration persistée serait une pollution silencieuse.
+    useAppStore.setState({ ...etatInitial })
+    await useAppStore.getState().init()
+    expect(useAppStore.getState().tracks).toEqual([])
+    expect(useAppStore.getState().demonstration).toBe(false)
+  })
+
+  it('s’efface au premier vrai import, sans emporter la trace importée', async () => {
+    await demarrer()
+    await useAppStore
+      .getState()
+      .importGpxFiles([fichierGpx('vraie-sortie.gpx', ligne(20))])
+    const etat = useAppStore.getState()
+    expect(etat.demonstration).toBe(false)
+    expect(etat.tracks.map((t) => t.filename)).toEqual(['vraie-sortie.gpx'])
+  })
+
+  it('la vraie sortie importée après une démonstration survit au rechargement', async () => {
+    await demarrer()
+    await useAppStore
+      .getState()
+      .importGpxFiles([fichierGpx('vraie-sortie.gpx', ligne(20))])
+    useAppStore.setState({ ...etatInitial })
+    await useAppStore.getState().init()
+    expect(useAppStore.getState().tracks.map((t) => t.filename)).toEqual([
+      'vraie-sortie.gpx',
+    ])
+  })
+
+  it('quitter rend l’application à ce qui existait vraiment', async () => {
+    await useAppStore.getState().init()
+    await useAppStore.getState().importGpxFiles([fichierGpx('a.gpx', ligne(20))])
+    await useAppStore.getState().demarrerDemonstration()
+    expect(useAppStore.getState().tracks[0]?.filename).toMatch(/démonstration/i)
+
+    await useAppStore.getState().quitterDemonstration()
+    const etat = useAppStore.getState()
+    expect(etat.demonstration).toBe(false)
+    expect(etat.tracks.map((t) => t.filename)).toEqual(['a.gpx'])
+  })
+
+  it('quitter deux fois ne casse rien', async () => {
+    await demarrer()
+    await useAppStore.getState().quitterDemonstration()
+    await useAppStore.getState().quitterDemonstration()
+    expect(useAppStore.getState().tracks).toEqual([])
+  })
+})
+
 describe('setTolerance', () => {
   it('borne la valeur au lieu de la refuser', async () => {
     await useAppStore.getState().init()

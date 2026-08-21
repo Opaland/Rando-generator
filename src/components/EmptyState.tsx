@@ -1,7 +1,12 @@
+import { useState } from 'react'
+import { useAppStore } from '../store/appStore.ts'
 import styles from './EmptyState.module.css'
 
 /** Guide de premier lancement, affiché tant qu'aucune donnée n'est chargée. */
 export function EmptyState() {
+  const demarrerDemonstration = useAppStore((s) => s.demarrerDemonstration)
+  const [prepare, setPrepare] = useState(false)
+
   return (
     <div className={styles.overlay} data-testid="onboarding">
       <div className={styles.card}>
@@ -21,6 +26,25 @@ export function EmptyState() {
             pourcentages, kilomètres restants.
           </li>
         </ol>
+        <button
+          type="button"
+          className={styles.demo}
+          data-testid="voir-un-exemple"
+          disabled={prepare}
+          onClick={() => {
+            setPrepare(true)
+            void demarrerDemonstration().finally(() => {
+              setPrepare(false)
+            })
+          }}
+        >
+          {prepare ? 'Préparation…' : 'Voir un exemple'}
+        </button>
+        <p className={styles.demoAide}>
+          Des boucles réelles de la Métropole de Lyon et trois sorties
+          fictives, pour voir à quoi ressemblent les chiffres. Rien n’est
+          enregistré.
+        </p>
         <p className={styles.privacy}>
           Vos traces sont lues et gardées dans votre navigateur : elles ne
           partent nulle part. Les fonds de carte, eux, viennent de l’IGN —
