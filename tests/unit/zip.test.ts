@@ -5,6 +5,8 @@ import {
   listZipEntries,
   looksLikeZip,
   readZipEntry,
+  TAILLE_MAX_ENTREE,
+  type ZipEntry,
 } from '../../src/core/zip.ts'
 import { buildZip, buildZipTropGrand, gzip } from '../fixtures/zip.ts'
 
@@ -116,5 +118,48 @@ describe('entreesDeTrace', () => {
     ])
     const noms = entreesDeTrace(listZipEntries(archive)).map((e) => e.name)
     expect(noms).toEqual(['activities/1.gpx'])
+  })
+})
+
+describe('bombe de décompression (issue #163)', () => {
+  it('refuse sans rien allouer une entrée qui annonce une taille démesurée', async () => {
+    // Le cas facile : l'en-tête est honnête. On doit refuser *avant* de
+    // décompresser quoi que ce soit — le plafond se lit, il ne se subit pas.
+    const archive = await buildZip([{ nom: 'piege.gpx', contenu: 'court' }])
+    const [vraie] = listZipEntries(archive)
+    const annonceEnorme: ZipEntry = {
+      ...(vraie as ZipEntry),
+      uncompressedSize: TAILLE_MAX_ENTREE + 1,
+    }
+
+    await expect(readZipEntry(archive, annonceEnorme)).rejects.toThrow(ZipError)
+    // Le message nomme le fichier : un refus muet passerait pour un bug.
+    await expect(readZipEntry(archive, annonceEnorme)).rejects.toThrow(
+      /piege\.gpx/,
+    )
+  })
+
+  it('interrompt la lecture d’une entrée qui ment sur sa taille', async () => {
+    // Le cas qui compte vraiment : l'en-tête *est* l'attaque. Deux mégaoctets
+    // de zéros tiennent en quelques kilo-octets compressés ; seul un compteur
+    // pendant la lecture peut les arrêter.
+    const deuxMo = new Uint8Array(2 * 1024 * 1024)
+    const archive = await buildZip([{ nom: 'menteur.gpx', contenu: deuxMo }])
+    const [vraie] = listZipEntries(archive)
+    const menteuse: ZipEntry = { ...(vraie as ZipEntry), uncompressedSize: 10 }
+
+    await expect(
+      readZipEntry(archive, menteuse, { tailleMax: 1024 * 1024 }),
+    ).rejects.toThrow(ZipError)
+  })
+
+  it('laisse passer une trace de taille ordinaire', async () => {
+    // Le garde-fou ne doit pas gêner l'usage réel : le GPX d'une longue
+    // sortie fait quelques mégaoctets et n'a rien de suspect.
+    const normal = new Uint8Array(1024 * 1024).fill(65)
+    const archive = await buildZip([{ nom: 'sortie.gpx', contenu: normal }])
+    const [entree] = listZipEntries(archive)
+    const lu = await readZipEntry(archive, entree as ZipEntry)
+    expect(lu.byteLength).toBe(normal.byteLength)
   })
 })

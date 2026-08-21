@@ -32,6 +32,21 @@ const TAILLE_FIN = 22
 /** Longueur maximale du commentaire d'archive, à balayer pour trouver la fin. */
 const COMMENTAIRE_MAX = 0xffff
 
+/**
+ * Plafond de décompression, par entrée (issue #163).
+ *
+ * Ce n'est pas une mesure, c'est une décision : une trace GPX d'une longue
+ * sortie pèse quelques mégaoctets, jamais soixante-quatre. Au-delà, il s'agit
+ * d'un fichier qui ne nous concerne pas — ou d'une archive taillée pour faire
+ * tomber l'onglet, ce que quelques kilo-octets de zéros bien compressés
+ * suffisent à obtenir.
+ *
+ * Le plafond est vérifié **deux fois** : sur la taille annoncée, pour refuser
+ * sans rien allouer ; puis pendant la lecture, parce que l'en-tête d'une
+ * archive hostile est précisément l'endroit où elle ment.
+ */
+export const TAILLE_MAX_ENTREE = 64 * 1024 * 1024
+
 export interface ZipEntry {
   name: string
   /** 0 = stocké tel quel, 8 = deflate brut. */
@@ -102,9 +117,18 @@ export function listZipEntries(buffer: ArrayBuffer): ZipEntry[] {
   return entrees
 }
 
-/** Rassemble les morceaux d'un flux en un seul tableau d'octets. */
+/**
+ * Rassemble les morceaux d'un flux en un seul tableau d'octets, sans jamais
+ * dépasser `tailleMax`.
+ *
+ * Le compteur est la seule défense contre une entrée qui ment sur sa taille :
+ * on abandonne dès le dépassement, au lieu de découvrir le problème une fois
+ * la mémoire épuisée.
+ */
 async function collecter(
   flux: ReadableStream<Uint8Array>,
+  tailleMax: number,
+  nom: string,
 ): Promise<Uint8Array> {
   const lecteur = flux.getReader()
   const morceaux: Uint8Array[] = []
@@ -112,8 +136,15 @@ async function collecter(
   for (;;) {
     const { done, value } = await lecteur.read()
     if (done) break
-    morceaux.push(value)
     taille += value.byteLength
+    if (taille > tailleMax) {
+      await lecteur.cancel()
+      throw new ZipError(
+        `« ${nom} » se décompresse au-delà de ${Math.round(tailleMax / (1024 * 1024))} Mo : ` +
+          'le fichier n’a pas été ouvert.',
+      )
+    }
+    morceaux.push(value)
   }
   const entier = new Uint8Array(taille)
   let position = 0
@@ -127,6 +158,8 @@ async function collecter(
 async function decompresser(
   source: Uint8Array,
   format: 'deflate-raw' | 'gzip',
+  tailleMax: number,
+  nom: string,
 ): Promise<Uint8Array> {
   // Un ReadableStream construit à la main plutôt qu'un Blob : jsdom, où
   // tournent les tests du store, ne fournit pas `Blob.stream()`.
@@ -138,13 +171,32 @@ async function decompresser(
       controller.close()
     },
   })
-  return collecter(entree.pipeThrough(new DecompressionStream(format)))
+  return collecter(
+    entree.pipeThrough(new DecompressionStream(format)),
+    tailleMax,
+    nom,
+  )
+}
+
+export interface LectureOptions {
+  /** Plafond de décompression pour cette entrée. Injectable pour les tests. */
+  tailleMax?: number
 }
 
 export async function readZipEntry(
   buffer: ArrayBuffer,
   entry: ZipEntry,
+  options: LectureOptions = {},
 ): Promise<Uint8Array> {
+  const tailleMax = options.tailleMax ?? TAILLE_MAX_ENTREE
+  // Première vérification : ce que l'archive annonce. Elle évite d'allouer
+  // quoi que ce soit quand l'en-tête est honnête.
+  if (entry.uncompressedSize > tailleMax) {
+    throw new ZipError(
+      `« ${entry.name} » annonce ${Math.round(entry.uncompressedSize / (1024 * 1024))} Mo ` +
+        'une fois décompressé : le fichier n’a pas été ouvert.',
+    )
+  }
   const vue = new DataView(buffer)
   const debut = entry.localHeaderOffset
   if (debut + 30 > buffer.byteLength) {
@@ -166,7 +218,8 @@ export async function readZipEntry(
 
   let contenu: Uint8Array
   if (entry.method === 0) contenu = new Uint8Array(brut)
-  else if (entry.method === 8) contenu = await decompresser(brut, 'deflate-raw')
+  else if (entry.method === 8)
+    contenu = await decompresser(brut, 'deflate-raw', tailleMax, entry.name)
   else {
     throw new ZipError(
       `« ${entry.name} » utilise une compression non prise en charge.`,
@@ -176,7 +229,7 @@ export async function readZipEntry(
   // Les archives Strava contiennent des `.gpx.gz` : le ZIP les stocke tels
   // quels, la compression est à l'intérieur.
   return entry.name.toLowerCase().endsWith('.gz')
-    ? decompresser(contenu, 'gzip')
+    ? decompresser(contenu, 'gzip', tailleMax, entry.name)
     : contenu
 }
 
