@@ -6,8 +6,16 @@ Sentiers compare vos traces GPX aux tracés d'itinéraires (GR, GR de Pays, PR)
 issus d'OpenStreetMap et affiche votre complétion sur une carte et en
 statistiques : « j'ai parcouru 34 % du GR 7, 61 % des sentiers du Pilat ».
 
-- **100 % local** : vos GPX ne quittent jamais votre navigateur. Aucun compte,
-  aucun backend, aucune télémétrie. La persistance se fait en IndexedDB.
+- **Vos traces restent chez vous** : vos GPX ne quittent jamais votre
+  navigateur, et le calcul de complétion s'y fait de bout en bout. Aucun
+  compte, aucun backend, aucune télémétrie. La persistance se fait en
+  IndexedDB.
+- **Ce qui sort quand même** : afficher une carte, c'est demander des images à
+  quelqu'un. Overpass reçoit la zone ou la référence cherchée, la
+  Géoplateforme IGN les tuiles regardées et jusqu'à cent points de
+  l'itinéraire dont on ouvre le profil, l'API Adresse le nom de commune tapé,
+  et l'hébergeur la demande de la page. « À propos » le détaille dans
+  l'application (issue #168).
 - **Données ouvertes uniquement** : itinéraires © les contributeurs
   OpenStreetMap (ODbL) via l'API Overpass ; boucles locales de la Métropole
   de Lyon © Métropole de Lyon (Licence Ouverte 2.0, jeu « Boucles communales
