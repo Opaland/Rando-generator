@@ -605,6 +605,96 @@ describe('démonstration (issue #172)', () => {
     ])
   })
 
+  it('charger une vraie zone quitte la démonstration (cinquième chemin)', async () => {
+    // Trouvé par le relecteur adverse, après trois revues qui l'avaient
+    // manqué. La PR #192 affirmait avoir nommé la garde « plutôt que de la
+    // recopier » — elle l'avait posée sur l'import, l'export et la
+    // restauration, et oubliée sur le chargement de zone.
+    //
+    // Sans elle : la zone devient réelle, les itinéraires aussi, et les
+    // trois sorties fictives restent dans la liste, sous un bandeau qui
+    // annonce toujours une démonstration.
+    await useAppStore.getState().init()
+    await useAppStore.getState().demarrerDemonstration()
+    expect(useAppStore.getState().demonstration).toBe(true)
+
+    await useAppStore.getState().loadZone('pilat')
+
+    const etat = useAppStore.getState()
+    expect(etat.demonstration).toBe(false)
+    expect(etat.zoneKey).toBe('pilat')
+    // Aucune sortie fictive ne survit au passage sur de vraies données.
+    expect(etat.tracks.filter((t) => t.id.startsWith('demo-'))).toEqual([])
+  })
+
+  it('une vraie zone chargée pendant la démo survit à l’import suivant', async () => {
+    // Le scénario complet de la sonde : démo → vraie zone → vrai import.
+    // Sans la garde dans l'entonnoir, quitterDemonstration se déclenchait à
+    // l'import et emportait la zone réelle avec les données fictives.
+    await useAppStore.getState().init()
+    await useAppStore.getState().demarrerDemonstration()
+    await useAppStore.getState().loadZone('pilat')
+    expect(useAppStore.getState().itineraries.length).toBeGreaterThan(0)
+
+    await useAppStore
+      .getState()
+      .importGpxFiles([fichierGpx('vraie.gpx', ligne(20))])
+
+    const etat = useAppStore.getState()
+    expect(etat.zoneKey).toBe('pilat')
+    expect(etat.itineraries.length).toBeGreaterThan(0)
+    expect(etat.tracks.map((t) => t.filename)).toEqual(['vraie.gpx'])
+  })
+
+  it('importer pendant la démo garde les boucles, qui sont réelles', async () => {
+    // Trouvaille du relecteur adverse. Les itinéraires affichés pendant une
+    // démonstration ne sont pas fictifs : ce sont les boucles open data de
+    // la Métropole. Les effacer avec le drapeau détruisait des données
+    // réelles — et le bandeau promet « importez vos propres traces pour
+    // voir vos vrais chiffres », ce qui rendait zéro itinéraire et zéro
+    // chiffre à qui obéissait.
+    await demarrer()
+    const boucles = useAppStore.getState().itineraries.length
+    expect(boucles).toBeGreaterThan(0)
+
+    await useAppStore
+      .getState()
+      .importGpxFiles([fichierGpx('vraie.gpx', ligne(20, 45.72))])
+
+    const etat = useAppStore.getState()
+    expect(etat.demonstration).toBe(false)
+    expect(etat.itineraries).toHaveLength(boucles)
+    expect(etat.tracks.map((t) => t.filename)).toEqual(['vraie.gpx'])
+    // Et la zone ne se présente plus comme une démonstration.
+    expect(etat.zoneLabel).not.toMatch(/démonstration/i)
+  })
+
+  it('un retour de visiteur ne mêle pas ses vraies sorties aux fictives', async () => {
+    // Le chemin le plus vicieux : il ne demande aucune action. EmptyState
+    // reste visible tant qu'init() n'a pas fini ; le visiteur clique
+    // « Voir un exemple » et la base rend ses vraies données par-dessus.
+    await useAppStore.getState().init()
+    await useAppStore
+      .getState()
+      .importGpxFiles([fichierGpx('ma-sortie.gpx', ligne(20))])
+
+    useAppStore.setState({ ...etatInitial })
+    const demarrage = useAppStore.getState().init()
+    await useAppStore.getState().demarrerDemonstration()
+    await demarrage
+
+    const etat = useAppStore.getState()
+    expect(etat.demonstration).toBe(true)
+    // Aucune vraie sortie ne s'invite dans la démonstration.
+    expect(etat.tracks.every((t) => t.id.startsWith('demo-'))).toBe(true)
+
+    // Et rien n'est perdu : quitter la rend.
+    await useAppStore.getState().quitterDemonstration()
+    expect(useAppStore.getState().tracks.map((t) => t.filename)).toEqual([
+      'ma-sortie.gpx',
+    ])
+  })
+
   it('quitter deux fois ne casse rien', async () => {
     await demarrer()
     await useAppStore.getState().quitterDemonstration()

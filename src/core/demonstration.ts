@@ -44,10 +44,18 @@ export function construireDemonstration(
     .filter((itineraire) => pointsDe(itineraire).length >= POINTS_MINIMUM)
     .sort((a, b) => a.osmRelationId - b.osmRelationId)
 
-  // Il faut au moins un itinéraire de plus que de sorties : sans un
-  // itinéraire intact, le tableau de bord afficherait 100 %, et « ce qu'il
-  // reste à faire » — la raison d'être du produit — n'aurait rien à dire.
-  if (utilisables.length <= SORTIES) return []
+  // Il faut de quoi fabriquer les sorties, et rien de plus.
+  //
+  // Cette garde exigeait un itinéraire de PLUS que de sorties, au motif que
+  // le tableau de bord afficherait sinon 100 %. C'était faux, et mesuré
+  // depuis : avec exactement trois itinéraires, le global vaut 91 % — la
+  // dernière sortie est partielle par construction (PART_PARTIELLE), donc
+  // le cas que la garde prétendait éviter ne peut pas se produire.
+  //
+  // La conséquence n'était pas théorique : un jeu de trois itinéraires
+  // exploitables rendait [], et l'utilisateur recevait « la démonstration
+  // n'a pas pu être préparée » alors qu'elle aurait très bien fonctionné.
+  if (utilisables.length < SORTIES) return []
 
   const sorties: SortieDeDemonstration[] = []
   for (const [rang, itineraire] of utilisables.slice(0, SORTIES).entries()) {

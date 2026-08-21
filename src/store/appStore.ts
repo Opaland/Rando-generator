@@ -321,6 +321,16 @@ export interface AppState {
   demarrerDemonstration: () => Promise<void>
   /** Efface la démonstration et rend l'application à son état réel. */
   quitterDemonstration: () => Promise<void>
+  /**
+   * Arrête la démonstration sans détruire ce qui est réel.
+   *
+   * Les itinéraires affichés pendant une démonstration ne sont pas fictifs :
+   * ce sont les boucles open data de la Métropole. Seules les sorties le
+   * sont. Les effacer en même temps que le drapeau détruisait des données
+   * réelles — et l'utilisateur qui suivait le bandeau (« importez vos
+   * propres traces ») se retrouvait devant un écran muet.
+   */
+  arreterDemonstration: () => Promise<void>
   /** Mesure l'espace occupé et le mode de stockage obtenu. */
   rafraichirStockage: () => Promise<void>
   setModeAffichage: (mode: ModeAffichage) => Promise<void>
@@ -534,9 +544,9 @@ async function protegerLeStockage(): Promise<void> {
  * à chaque appel finit toujours par manquer quelque part.
  */
 async function sortirDeLaDemonstration(
-  get: () => Pick<AppState, 'demonstration' | 'quitterDemonstration'>,
+  get: () => Pick<AppState, 'demonstration' | 'arreterDemonstration'>,
 ): Promise<void> {
-  if (get().demonstration) await get().quitterDemonstration()
+  if (get().demonstration) await get().arreterDemonstration()
 }
 
 /** Identifiant du suivi de position en cours (API navigateur). */
@@ -709,7 +719,24 @@ export const useAppStore = create<AppState>()((set, get) => {
     query: string,
     force: boolean,
   ): Promise<void> {
+    // Le numéro de séquence se prend AVANT tout `await`, sans exception.
+    //
+    // Ma première version sortait de la démonstration d'abord : un `await`
+    // s'intercalait donc entre le clic et la prise du numéro, et deux
+    // chargements lancés coup sur coup pouvaient franchir cette frontière
+    // avant qu'aucun n'ait réservé le sien. Un test de recherche de ville a
+    // échoué une fois sur la suite complète, et c'était la vraie cause —
+    // pas une instabilité.
     const sequence = ++zoneLoadSequence
+    // Entonnoir unique des trois chemins de zone (loadZone, loadRef,
+    // loadAutour) : la garde vit ici plutôt qu'en trois exemplaires.
+    //
+    // Sans elle, charger une vraie zone pendant une démonstration laissait
+    // les trois sorties fictives dans la liste, sur des itinéraires réels,
+    // sous un bandeau annonçant toujours une démonstration. C'était le
+    // cinquième chemin de contamination — après ceux que la revue du sprint
+    // 2 avait fermés, et que sa PR déclarait exhaustifs.
+    await sortirDeLaDemonstration(get)
     // Si l'utilisateur a annulé (ou relancé un autre chargement) entre-temps,
     // ce chargement ne doit plus toucher l'UI — mais on le laisse quand même
     // se terminer normalement : parsing et cache restent utiles en arrière-plan.
@@ -954,9 +981,17 @@ export const useAppStore = create<AppState>()((set, get) => {
       // de millisecondes, et l'utilisateur peut avoir déposé un fichier
       // entre-temps. Écraser la liste faisait disparaître sa trace sans un
       // mot — et le même fichier redéposé n'était même plus vu comme doublon.
+      // Une démonstration lancée pendant l'ouverture de la base ne doit pas
+      // recevoir les vraies données par-dessus : le visiteur qui revient
+      // verrait ses sorties réelles et les trois fictives dans la même
+      // liste et le même pourcentage, sans avoir rien fait pour cela.
+      // `quitterDemonstration` relit la base, donc rien n'est perdu.
+      const enDemonstration = get().demonstration
       set((etat) => ({
-        tracks: fusionner(tracks, etat.tracks),
-        customItineraries: fusionner(customItineraries, etat.customItineraries),
+        tracks: enDemonstration ? etat.tracks : fusionner(tracks, etat.tracks),
+        customItineraries: enDemonstration
+          ? etat.customItineraries
+          : fusionner(customItineraries, etat.customItineraries),
         toleranceMeters:
           typeof tolerance === 'number' ? tolerance : DEFAULT_TOLERANCE_METERS,
         completionPct: normalizeCompletionPct(completion),
@@ -1000,7 +1035,9 @@ export const useAppStore = create<AppState>()((set, get) => {
       // Au démarrage, on restaure la dernière zone depuis le cache uniquement
       // (jamais d'appel réseau externe sans action de l'utilisateur — les
       // boucles locales sont un fichier du site, pas un service tiers).
-      if (typeof lastZoneKey === 'string') {
+      // Même raison : restaurer la zone en cache par-dessus une
+      // démonstration mêlerait de vrais itinéraires à des sorties fictives.
+      if (typeof lastZoneKey === 'string' && !get().demonstration) {
         const cached = await db.getZone(lastZoneKey)
         if (cached) {
           setItineraries(
@@ -1013,7 +1050,7 @@ export const useAppStore = create<AppState>()((set, get) => {
         }
       }
       await recompute()
-      if (typeof lastZoneKey === 'string') {
+      if (typeof lastZoneKey === 'string' && !get().demonstration) {
         await mergeLocalBoucles(lastZoneKey)
       }
     },
@@ -1386,6 +1423,9 @@ export const useAppStore = create<AppState>()((set, get) => {
     async rafraichirZone() {
       const { zoneKey, zoneLabel } = get()
       if (!zoneKey) return
+      // Une démonstration n'a pas de source à rafraîchir : elle se rejoue
+      // ou se quitte, elle ne se recharge pas.
+      if (get().demonstration) return
       if (zoneKey.startsWith('ref:')) {
         if (zoneLabel) await get().loadRef(zoneLabel, { force: true })
         return
@@ -1588,6 +1628,23 @@ export const useAppStore = create<AppState>()((set, get) => {
 
     async rafraichirStockage() {
       set({ stockage: await etatDuStockage(apiDuNavigateur()) })
+    },
+
+    async arreterDemonstration() {
+      if (!get().demonstration) return
+      set((etat) => ({
+        demonstration: false,
+        // Les sorties fictives partent ; les boucles restent, elles sont
+        // réelles. La zone est renommée pour ce qu'elle est vraiment.
+        tracks: etat.tracks.filter((t) => !t.id.startsWith('demo-')),
+        zoneKey: etat.zoneKey === 'demonstration' ? 'boucles-lyon' : etat.zoneKey,
+        zoneLabel:
+          etat.zoneKey === 'demonstration'
+            ? 'Boucles communales — Métropole de Lyon'
+            : etat.zoneLabel,
+        celebration: null,
+      }))
+      await recompute()
     },
 
     async quitterDemonstration() {

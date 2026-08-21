@@ -86,6 +86,25 @@ describe('construireDemonstration', () => {
   it('ne fabrique rien s’il n’y a pas de quoi', () => {
     expect(construireDemonstration([])).toEqual([])
     expect(construireDemonstration([boucle(1, 1)])).toEqual([])
+    // Deux itinéraires ne font pas trois sorties.
+    expect(construireDemonstration([boucle(1, 40), boucle(2, 40, 0.1)])).toEqual(
+      [],
+    )
+  })
+
+  it('se contente d’exactement trois itinéraires', () => {
+    // La garde en exigeait quatre, au motif que le tableau de bord
+    // afficherait sinon 100 %. Mesuré : avec trois, le global vaut 91 % —
+    // la dernière sortie est partielle par construction. Refuser ce cas
+    // affichait « la démonstration n'a pas pu être préparée » à quelqu'un
+    // dont le jeu de données convenait parfaitement.
+    const trois = [boucle(1, 40), boucle(2, 60, 0.1), boucle(3, 50, 0.2)]
+    const sorties = construireDemonstration(trois)
+    expect(sorties).toHaveLength(3)
+    // Et la dernière reste partielle : il y a bien « ce qu'il reste à faire ».
+    const derniere = sorties[2]!
+    const source = trois.find((b) => b.osmRelationId === derniere.itineraire)!
+    expect(derniere.points.length).toBeLessThan(source.ways[0]!.coords.length)
   })
 
   it('reste raisonnable sur un très grand jeu d’itinéraires', () => {
