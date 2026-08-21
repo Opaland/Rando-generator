@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# Porte rapide avant tout commit (voir CLAUDE.md).
+#
+# Ne contient QUE ce qui tient en moins d'une minute : lint, typecheck,
+# tests unitaires. Le build, les e2e et le monkey restent dans /porte —
+# les mettre ici rendrait chaque commit insupportable, et un garde-fou
+# qu'on désactive ne garde rien.
+#
+# Motif : un commit de cette session est parti avec une erreur de lint,
+# parce que le lint avait été lancé AVANT l'écriture du dernier fichier.
+# Une vérification faite au bon moment vaut mieux qu'une vérification
+# faite consciencieusement au mauvais.
+set -uo pipefail
+cd "$(git rev-parse --show-toplevel 2>/dev/null || echo .)" || exit 0
+
+# Pas de package.json : ce dépôt n'est pas concerné, on ne bloque rien.
+[ -f package.json ] || exit 0
+
+echecs=""
+sortie=""
+
+lancer() {
+  local nom="$1"; shift
+  local log
+  log=$("$@" 2>&1) || { echecs="${echecs}${nom} "; sortie="${sortie}
+=== ${nom} ===
+$(printf '%s' "$log" | tail -25)"; }
+}
+
+lancer "lint"      npm run lint --silent
+# `tsc -b` et non `tsc --noEmit` : ce dépôt utilise les références de
+# projet, et `tsc --noEmit` seul rend 0 sans rien vérifier. Mesuré : un
+# fichier délibérément cassé passait la première commande et échouait la
+# seconde. J'ai utilisé la mauvaise pendant toute une session sans le voir.
+lancer "typecheck" npx tsc -b --noEmit
+lancer "tests"     npx vitest run --silent
+
+if [ -n "$echecs" ]; then
+  raison="Porte avant commit : ${echecs}en échec. Corriger avant de committer.${sortie}"
+  jq -nc --arg r "$raison" \
+    '{hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"deny",permissionDecisionReason:$r}}'
+  exit 0
+fi
+
+jq -nc '{systemMessage:"Porte avant commit : lint, typecheck et tests unitaires au vert."}'
