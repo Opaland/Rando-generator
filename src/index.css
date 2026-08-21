@@ -14,11 +14,16 @@
   --erreur-fond: #fdecec;
   --erreur-bord: #c8102e;
   /* « À vous de voir » : ni une erreur ni une réussite. Le rouge de l'erreur
-     dirait qu'on a échoué, alors qu'on demande simplement à trancher. */
-  --attention-fond: #fdf5e3;
-  /* Fond d'information, présent à sept exemplaires en dur avant l'issue
-     #176 : c'est exactement la fuite qu'une échelle nommée évite. */
-  --alerte-fond: #fdf6e3;
+     dirait qu'on a échoué, alors qu'on demande simplement à trancher.
+
+     Un seul jeton pour ce registre. Le sprint 1 avait introduit
+     --attention-fond, le sprint 3 --alerte-fond : deux noms pour deux jaunes
+     distants d'un chiffre hexadécimal, employés tous les deux dans
+     TrackManager. Chaque revue de sprint n'en voyait que la moitié — c'est
+     exactement la dérive qu'un système de design est censé empêcher (revue
+     globale du cycle 2). La valeur retenue est celle qui préexistait aux
+     deux, pour ne rien déplacer là où elle servait déjà. */
+  --attention-fond: #fdf6e3;
   /* Suppression : deux fonds et un texte, pour la confirmation à deux temps. */
   --danger-fond: #fff5f6;
   --danger-fond-fort: #fbd8d8;

@@ -53,7 +53,7 @@
 }
 
 .poor {
-  background: var(--alerte-fond);
+  background: var(--attention-fond);
   color: var(--vert-noir);
 }
 

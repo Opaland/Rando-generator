@@ -50,7 +50,39 @@ test.describe('service worker', () => {
     ).toBeVisible({ timeout: 15_000 })
     await expect(page.getByTestId('offline-banner')).toBeVisible()
   })
-})
+
+  test('les boucles de la démonstration sont précachées (revue globale)', async ({
+    page,
+  }) => {
+    // J'avais affirmé dans la PR #190 que la démonstration fonctionnait hors
+    // ligne, sans l'avoir vérifié — et c'était faux : le jeu de boucles
+    // n'était pas précaché.
+    //
+    // Ce test interroge le cache directement, et non une coupure simulée :
+    // `context.setOffline` de Playwright ne s'applique pas aux requêtes
+    // émises par le service worker, si bien qu'un test « hors ligne » les
+    // laisse passer sur le réseau et ne prouve rien. Mesuré : sans l'entrée
+    // de précache, la requête partait quand même et aboutissait.
+    await mockExternalNetwork(page)
+    await page.goto('/')
+    await page.waitForFunction(
+      () => navigator.serviceWorker.controller !== null,
+      undefined,
+      { timeout: 15_000 },
+    )
+
+    const precachee = await page.evaluate(async () => {
+      for (const nom of await caches.keys()) {
+        const cache = await caches.open(nom)
+        const trouve = await cache.match('./data/boucles-metropole-lyon.json', {
+          ignoreSearch: true,
+        })
+        if (trouve) return trouve.headers.get('content-length') !== '0'
+      }
+      return false
+    })
+    expect(precachee).toBe(true)
+  })})
 
 test('le manifeste déclare des icônes exploitables pour l’installation', async ({
   request,
