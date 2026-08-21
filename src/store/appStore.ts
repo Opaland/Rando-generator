@@ -1172,7 +1172,22 @@ export const useAppStore = create<AppState>()((set, get) => {
           // démarrage, un `db` figé à null aurait laissé la trace en mémoire
           // seulement.
           const db = await baseOuverte()
-          if (db) await db.saveTrack(track)
+          if (db) {
+            try {
+              await db.saveTrack(track)
+            } catch {
+              // Quota de stockage dépassé. La lecture, elle, a parfaitement
+              // réussi : la trace compte pour cette session, et seul le
+              // rechargement suivant la perdra. Avant la revue du sprint 4,
+              // cette erreur remontait dans le `catch` du fichier et
+              // ressortait en « lecture impossible » — un reproche fait au
+              // fichier pour une place qui manque. La trace était perdue
+              // pour la session entière, sans que rien ne l'explique.
+              errors.push(
+                `${file.name} : plus de place pour enregistrer cette trace. Elle est comptée maintenant, mais elle aura disparu au prochain démarrage — exportez une sauvegarde ou supprimez des sorties.`,
+              )
+            }
+          }
           imported.push(track)
         } catch (error) {
           errors.push(

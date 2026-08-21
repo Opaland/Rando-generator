@@ -1168,3 +1168,40 @@ describe('actualiser la zone affichée', () => {
     expect(fetchMock.mock.calls.length).toBe(avant)
   })
 })
+
+describe('quand la base refuse d’écrire', () => {
+  beforeEach(() => {
+    vi.stubGlobal('indexedDB', new IDBFactory())
+    useAppStore.setState({ ...etatInitial }, true)
+  })
+
+  /**
+   * Trouvé à la revue du sprint 4. `db.saveTrack` était dans le même `try`
+   * que la lecture du fichier : un quota de stockage dépassé produisait
+   * « lecture impossible », ce qui est faux — le fichier a été lu
+   * parfaitement, c'est la place qui manque. Et la trace était perdue pour
+   * la session entière, pas seulement pour le rechargement suivant.
+   *
+   * Le sprint 4 rend ce chemin nettement plus atteignable : conserver
+   * l'horodatage de chaque point double ce qu'on écrit par trace.
+   */
+  it('garde la trace en mémoire et dit la vérité sur la cause', async () => {
+    await useAppStore.getState().init()
+    const db = useAppStore.getState().db
+    expect(db).not.toBeNull()
+    const quota = new DOMException('quota', 'QuotaExceededError')
+    vi.spyOn(db!, 'saveTrack').mockRejectedValue(quota)
+
+    await useAppStore
+      .getState()
+      .importGpxFiles([fichierGpx('sortie.gpx', ligne(20))])
+
+    // La trace compte pour cette session.
+    expect(useAppStore.getState().tracks).toHaveLength(1)
+    const message = useAppStore.getState().importErrors.join(' ')
+    expect(message).toMatch(/sortie\.gpx/)
+    // Ni « lecture impossible », ni un silence.
+    expect(message).not.toMatch(/lecture impossible/)
+    expect(message).toMatch(/enregistrée|place|stockage/i)
+  })
+})

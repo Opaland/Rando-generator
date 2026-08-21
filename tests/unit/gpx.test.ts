@@ -282,10 +282,12 @@ describe('horodatage et précision par point (issue #149)', () => {
       ),
       parser,
     )
+    // Millisecondes depuis l'époque Unix, et non la chaîne ISO du fichier :
+    // mesuré, une trace de 10 000 points passe de 254 ko à 88 ko en base.
     expect(res.times).toEqual([
-      '2026-06-15T08:00:00Z',
-      '2026-06-15T08:05:00Z',
-      '2026-06-15T08:10:00Z',
+      Date.parse('2026-06-15T08:00:00Z'),
+      Date.parse('2026-06-15T08:05:00Z'),
+      Date.parse('2026-06-15T08:10:00Z'),
     ])
   })
 
@@ -336,8 +338,8 @@ describe('horodatage et précision par point (issue #149)', () => {
     )
     expect(res.points).toHaveLength(2)
     expect(res.times).toEqual([
-      '2026-06-15T08:00:00Z',
-      '2026-06-15T08:10:00Z',
+      Date.parse('2026-06-15T08:00:00Z'),
+      Date.parse('2026-06-15T08:10:00Z'),
     ])
     expect(res.times).toHaveLength(res.points.length)
     expect(res.hdops).toHaveLength(res.points.length)
@@ -348,7 +350,34 @@ describe('horodatage et précision par point (issue #149)', () => {
 <rtept lat="45.4" lon="4.5"><time>2026-06-15T08:00:00Z</time><hdop>3</hdop></rtept>
 <rtept lat="45.41" lon="4.51"/></rte></gpx>`
     const res = parseGpx(xml, parser)
-    expect(res.times).toEqual(['2026-06-15T08:00:00Z', null])
+    expect(res.times).toEqual([Date.parse('2026-06-15T08:00:00Z'), null])
     expect(res.hdops).toEqual([3, null])
+  })
+})
+
+describe('ce qu’un format ne porte pas', () => {
+  const parser = new DOMParser()
+
+  /**
+   * Trouvé à la revue du sprint 4. Chaque lecteur remplissait d'un tableau
+   * de `null` les mesures que son format ne connaît pas — 10 000 `null`
+   * pour une trace de 10 000 points, écrits en base et dans la sauvegarde,
+   * pour ne rien dire.
+   *
+   * `null` à la place du tableau dit quelque chose de plus juste : « ce
+   * format ne rapporte pas cette mesure ». Un tableau de `null`, lui, garde
+   * son sens propre : « le format la rapporte, ce fichier ne l'a pas
+   * renseignée » — et le GPX sans <hdop> est exactement ce cas.
+   */
+  it('le GPX ne rapporte pas de précision en mètres', () => {
+    const res = parseGpx(
+      '<?xml version="1.0"?><gpx version="1.1"><trk><trkseg>' +
+        '<trkpt lat="45.4" lon="4.5"/></trkseg></trk></gpx>',
+      parser,
+    )
+    expect(res.precisionsMetres).toBeNull()
+    // Le hdop, lui, existe dans le format : absent du fichier, il vaut null
+    // point par point.
+    expect(res.hdops).toEqual([null])
   })
 })

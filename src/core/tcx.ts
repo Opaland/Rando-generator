@@ -67,12 +67,7 @@ export function parseTcx(xmlText: string, parser: XmlParser): ParsedGpx {
 
   const points: LonLat[] = []
   const elevations: (number | null)[] = []
-  const times: (string | null)[] = []
-  // Le schéma TCX ne porte aucune mesure de précision horizontale (vérifié
-  // sur TrainingCenterDatabase v2 : Trackpoint a Time, Position,
-  // AltitudeMeters, DistanceMeters, HeartRateBpm, Cadence, SensorState).
-  // Le tableau existe pour rester aligné sur les autres formats (#149).
-  const hdops: (number | null)[] = []
+  const times: (number | null)[] = []
   let premiereDate: string | null = null
   let pointsHorsLimites = 0
 
@@ -97,8 +92,8 @@ export function parseTcx(xmlText: string, parser: XmlParser): ParsedGpx {
     elevations.push(Number.isFinite(altitude) ? altitude : null)
     // Poussé ici et non plus haut : un point horodaté mais non localisé ne
     // doit pas décaler le temps du premier point qui l'est.
-    times.push(time ?? null)
-    hdops.push(null)
+    const instant = time ? Date.parse(time) : Number.NaN
+    times.push(Number.isFinite(instant) ? instant : null)
   }
 
   // <Id> porte l'heure de début déclarée de l'activité : plus fiable que
@@ -109,8 +104,12 @@ export function parseTcx(xmlText: string, parser: XmlParser): ParsedGpx {
     points,
     elevations,
     times,
-    hdops,
-    precisionsMetres: points.map(() => null),
+    // Le schéma TCX ne porte aucune mesure de précision horizontale —
+    // vérifié sur TrainingCenterDatabase v2, dont Trackpoint déclare Time,
+    // Position, AltitudeMeters, DistanceMeters, HeartRateBpm, Cadence et
+    // SensorState. Ni l'une ni l'autre : `null` des deux côtés (#149).
+    hdops: null,
+    precisionsMetres: null,
     date: idActivite ?? premiereDate,
     pointsHorsLimites,
   }
