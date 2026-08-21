@@ -199,3 +199,73 @@
   color: var(--jaune-pr);
   letter-spacing: 2px;
 }
+
+/* Barre d'outils de l'historique (issue #175) : elle n'apparaît qu'au-delà
+   du seuil de groupement — l'afficher sur quatre sorties ajouterait du
+   mobilier autour d'une liste qui tient sous le pouce. */
+.outils {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--espace-2);
+  align-items: center;
+  margin-bottom: var(--espace-3);
+}
+
+.chercher {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+.trier select {
+  width: 100%;
+  min-width: 0;
+}
+
+.compte {
+  margin: 0;
+  font-size: var(--texte-appui);
+  color: var(--gris-vert);
+  text-align: right;
+  justify-self: end;
+}
+
+.annee + .annee {
+  margin-top: var(--espace-2);
+}
+
+.anneeTitre {
+  display: flex;
+  width: 100%;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--espace-2);
+  padding: var(--espace-2) var(--espace-3);
+  border: 1px solid var(--gris-vert-clair);
+  border-radius: var(--rayon-sm);
+  background: var(--gris-vert-clair);
+  color: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.anneeTitre:focus-visible {
+  outline: var(--anneau-focus);
+}
+
+.anneeCompte {
+  font-weight: 400;
+  font-size: var(--texte-appui);
+  color: var(--gris-vert);
+}
+
+.plus {
+  display: block;
+  width: 100%;
+  margin-top: var(--espace-2);
+  padding: var(--espace-2);
+  border: 1px dashed var(--gris-vert-clair);
+  border-radius: var(--rayon-sm);
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
