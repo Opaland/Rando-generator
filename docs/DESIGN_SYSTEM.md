@@ -33,10 +33,15 @@ changement de palette.
 | Token | Ce que ça dit |
 |---|---|
 | `--erreur-fond` / `--erreur-bord` | Quelque chose a échoué |
-| `--attention-fond` / `--attention-bord` | **À vous de voir** — ni échec, ni réussite |
-| `--alerte-fond` | Une information à connaître |
+| `--attention-fond` / `--attention-bord` | **À vous de voir** — ni échec, ni réussite, ou une information à connaître |
 | `--danger-fond` / `--danger-fond-fort` / `--danger-texte` | Suppression, confirmation à deux temps |
 | `--bleu-position` | Où vous êtes |
+
+Il n'y a **qu'un** jeton pour le registre « à vous de voir ». Deux ont
+cohabité un temps — `--attention-fond` et `--alerte-fond`, deux jaunes
+distants d'un chiffre hexadécimal — parce qu'ils avaient été introduits par
+deux sprints différents, chacun ne voyant que sa moitié. Si vous êtes tenté
+d'ajouter un troisième jaune, c'est probablement celui-ci que vous cherchez.
 
 La distinction entre `--erreur-*` et `--attention-*` n'est pas cosmétique.
 Le rouge dit « on a raté » ; un doublon supposé ou une démonstration en cours

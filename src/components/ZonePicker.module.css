@@ -98,7 +98,7 @@
   margin: 0;
   padding: var(--espace-4) var(--espace-5);
   border-left: 4px solid var(--jaune-pr);
-  background: var(--alerte-fond);
+  background: var(--attention-fond);
   font-size: 0.9rem;
   display: flex;
   align-items: center;

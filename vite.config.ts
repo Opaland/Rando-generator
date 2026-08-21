@@ -34,6 +34,11 @@ function precacheServiceWorker(): Plugin {
         './icon.svg',
         './icon-192.png',
         './icon-512.png',
+        // Boucles locales open data. Elles servent la démonstration du
+        // premier lancement et les zones du Rhône : sans elles ici, une
+        // application installée les perdait hors ligne, alors que c'est
+        // précisément dehors qu'on en a besoin (revue globale du cycle 2).
+        './data/boucles-metropole-lyon.json',
         ...assets.map((nom) => `./assets/${nom}`),
       ]
       const source = await readFile(swPath, 'utf-8')
