@@ -20,6 +20,7 @@ export function TrackManager() {
   const importDoublons = useAppStore((s) => s.importDoublons)
   const importerDoublon = useAppStore((s) => s.importerDoublon)
   const ignorerDoublon = useAppStore((s) => s.ignorerDoublon)
+  const ignorerTousDoublons = useAppStore((s) => s.ignorerTousDoublons)
   const inputRef = useRef<HTMLInputElement | null>(null)
   const [dragOver, setDragOver] = useState(false)
   const [importing, setImporting] = useState(false)
@@ -180,6 +181,16 @@ export function TrackManager() {
               </li>
             ))}
           </ul>
+          {importDoublons.length > 1 && (
+            <span className={styles.doublonActions}>
+              <button
+                type="button"
+                onClick={ignorerTousDoublons}
+              >
+                Tout ignorer
+              </button>
+            </span>
+          )}
         </div>
       )}
 

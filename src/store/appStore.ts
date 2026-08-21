@@ -282,6 +282,8 @@ export interface AppState {
   importerDoublon: (id: string) => Promise<void>
   /** Retire la proposition sans rien importer. */
   ignorerDoublon: (id: string) => void
+  /** Retire toutes les propositions d'un coup (réimport d'une archive entière). */
+  ignorerTousDoublons: () => void
   openItineraryDetail: (id: number) => void
   closeItineraryDetail: () => void
   toggleView3D: () => void
@@ -1428,6 +1430,12 @@ export const useAppStore = create<AppState>()((set, get) => {
       set((state) => ({
         importDoublons: state.importDoublons.filter((d) => d.id !== id),
       }))
+    },
+
+    ignorerTousDoublons() {
+      // Redéposer une archive entière produit autant de propositions que de
+      // sorties : sans ce geste, il faudrait les écarter une par une.
+      set({ importDoublons: [] })
     },
 
     openItineraryDetail(id) {

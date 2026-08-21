@@ -136,3 +136,31 @@ test('un doublon écarté disparaît sans rien importer', async ({ page }) => {
   await expect(doublons).toHaveCount(0)
   await expect(page.getByTestId('tracks-list')).not.toContainText('mardi.gpx')
 })
+
+test('un réimport d’archive s’écarte d’un seul geste (revue sprint 1)', async ({
+  page,
+}) => {
+  await mockExternalNetwork(page)
+  await page.goto('/')
+
+  const lot = [15, 40, 70].map((offset, index) => ({
+    name: `sortie-${String(index)}.gpx`,
+    mimeType: 'application/gpx+xml',
+    buffer: Buffer.from(buildGpx(offset), 'utf-8'),
+  }))
+  await page.getByTestId('gpx-input').setInputFiles(lot)
+  await expect(
+    page.getByTestId('tracks-list').getByRole('listitem'),
+  ).toHaveCount(3)
+
+  // Le même lot redéposé : trois propositions, et un seul geste pour les
+  // écarter — sans quoi une archive Strava en produirait des centaines.
+  await page.getByTestId('gpx-input').setInputFiles(lot)
+  const doublons = page.getByTestId('gpx-doublons')
+  await expect(doublons.getByRole('listitem')).toHaveCount(3)
+  await doublons.getByRole('button', { name: 'Tout ignorer' }).click()
+  await expect(doublons).toHaveCount(0)
+  await expect(
+    page.getByTestId('tracks-list').getByRole('listitem'),
+  ).toHaveCount(3)
+})

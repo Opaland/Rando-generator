@@ -55,19 +55,16 @@ export function parseGpx(xmlText: string, parser: XmlParser): ParsedGpx {
   // parcours planifié/exporté (<rte><rtept>) — les deux sont valides côté
   // schéma GPX 1.1 et partagent la même structure de point. Certains exports
   // (ex. Suunto app pour un « parcours ») ne produisent que des <rtept>.
-  let { points, elevations, firstPointDate, pointsHorsLimites } = extractPoints(
-    doc,
-    'trkpt',
-  )
-  // Un <trk> dont tous les points sont hors bornes n'est pas un fichier sans
-  // <trkpt> : on ne va pas chercher un <rte> qui n'existe pas, et surtout on
-  // ne perd pas le compte de ce qui vient d'être écarté.
-  if (points.length === 0 && pointsHorsLimites === 0) {
-    ;({ points, elevations, firstPointDate, pointsHorsLimites } = extractPoints(
-      doc,
-      'rtept',
-    ))
-  }
+  const trace = extractPoints(doc, 'trkpt')
+  // Un <trk> vide — ou dont tous les points ont été écartés — ne doit pas
+  // empêcher de lire le <rte> qui l'accompagne : c'est là que se trouvent
+  // les points exploitables. Les deux comptes s'additionnent, pour ne
+  // sacrifier ni les données ni ce qu'on doit dire à leur sujet.
+  const parcours =
+    trace.points.length === 0 ? extractPoints(doc, 'rtept') : null
+  const { points, elevations, firstPointDate } = parcours ?? trace
+  const pointsHorsLimites =
+    trace.pointsHorsLimites + (parcours?.pointsHorsLimites ?? 0)
 
   const metadataTime = doc
     .getElementsByTagName('metadata')[0]
