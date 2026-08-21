@@ -41,13 +41,20 @@ export function About({ open, onClose }: { open: boolean; onClose: () => void })
           </button>
         </header>
 
-        <section>
-          <h3>Vos données restent chez vous</h3>
+        <section data-testid="about-local">
+          <h3>Vos traces restent chez vous</h3>
           <p>
             Vos traces GPX sont lues et analysées <strong>uniquement dans
-            votre navigateur</strong>, et stockées localement (IndexedDB).
-            Aucune trace, aucun identifiant, aucune mesure d’audience ne quitte
-            votre appareil. Il n’y a ni compte, ni serveur applicatif.
+            votre navigateur</strong>, et stockées localement (IndexedDB). Le
+            calcul de complétion se fait chez vous, de bout en bout. Aucune
+            trace, aucun identifiant, aucune mesure d’audience ne quitte votre
+            appareil. Il n’y a ni compte, ni serveur applicatif.
+          </p>
+          <p>
+            C’est vrai de vos traces, de vos réglages, de vos objectifs et de
+            votre historique. Ce n’est pas vrai de tout&nbsp;: afficher une
+            carte, c’est demander des images à quelqu’un. Le détail est
+            juste en&nbsp;dessous, et il vaut mieux le lire que le deviner.
           </p>
           <p>
             Ce choix a un prix, et il est juste de l’annoncer :{' '}
@@ -55,6 +62,64 @@ export function About({ open, onClose }: { open: boolean; onClose: () => void })
             et vider les données du site les efface définitivement. La section
             «&nbsp;Sauvegarde&nbsp;» écrit un fichier que vous gardez où vous
             voulez, et qui se relit ici ou sur un autre appareil.
+          </p>
+        </section>
+
+        <section data-testid="about-sortant">
+          <h3>Ce qui sort de votre appareil, et pour qui</h3>
+          <p>
+            Sentiers n’a pas de serveur, mais il interroge des services
+            publics tiers pour faire son travail. Ces services voient donc
+            passer quelque chose. Ce n’est pas un aveu&nbsp;: c’est le
+            fonctionnement normal d’une application cartographique sans
+            serveur, et il vaut mieux le nommer que le laisser supposer.
+          </p>
+          <ul>
+            <li>
+              <strong>Overpass</strong> (overpass-api.de, avec un miroir chez
+              kumi.systems) reçoit la <strong>zone demandée</strong>, la{' '}
+              <strong>référence tapée</strong> («&nbsp;GR&nbsp;7&nbsp;») ou un{' '}
+              <strong>rayon autour d’un point</strong>, quand vous chargez une
+              zone ou lancez une recherche. C’est de là que viennent les
+              tracés.
+            </li>
+            <li>
+              La <strong>Géoplateforme IGN</strong> reçoit les{' '}
+              <strong>coordonnées des tuiles que vous regardez</strong>, en
+              continu tant que la carte est affichée. Autrement dit&nbsp;: où
+              vous préparez vos sorties.
+            </li>
+            <li>
+              <strong>OpenStreetMap</strong> reçoit la même chose, mais
+              seulement en <strong>repli</strong>, si le fond IGN ne répond
+              pas.
+            </li>
+            <li>
+              Le service d’<strong>altimétrie</strong> de la Géoplateforme IGN
+              reçoit <strong>jusqu’à cent points de l’itinéraire dont vous
+              ouvrez le profil</strong> — assez pour savoir précisément lequel
+              c’est. Cela vaut aussi pour un itinéraire que vous avez{' '}
+              <strong>importé</strong> dans «&nbsp;Mes itinéraires&nbsp;», et
+              pour un parcours que vous tracez à la main. Vos{' '}
+              <strong>sorties</strong>, elles, ne partent jamais.
+            </li>
+            <li>
+              L’<strong>API Adresse</strong> (Base Adresse Nationale) reçoit le{' '}
+              <strong>nom de commune que vous tapez</strong>, et rien d’autre —
+              ni vos traces, ni votre position.
+            </li>
+            <li>
+              Enfin, le site est servi par <strong>GitHub Pages</strong>, qui
+              voit passer la demande de la page et de ses fichiers, comme tout
+              hébergeur. Nous n’y avons ni compte utilisateur ni mesure
+              d’audience, mais nous ne pouvons pas prétendre que personne ne
+              sait que vous êtes venu.
+            </li>
+          </ul>
+          <p>
+            Votre <strong>position GPS</strong>, quand vous l’activez, reste
+            dans le navigateur&nbsp;: elle sert à vous placer sur la carte et
+            n’est envoyée à aucun de ces services.
           </p>
         </section>
 
