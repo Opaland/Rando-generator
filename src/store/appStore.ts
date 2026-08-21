@@ -410,6 +410,9 @@ async function parseTraceFile(file: File): Promise<ParsedGpx> {
       elevations: fit.elevations,
       date: fit.date,
       pointsHorsLimites: fit.pointsHorsLimites,
+      times: fit.times,
+      hdops: fit.hdops,
+      precisionsMetres: fit.precisionsMetres,
     }
   }
   // Le format est reconnu au contenu, pas à l'extension : un fichier renommé
@@ -1134,6 +1137,9 @@ export const useAppStore = create<AppState>()((set, get) => {
             date: parsed.date,
             importedAt: new Date().toISOString(),
             elevationGain: elevationGainMeters(parsed.elevations),
+            times: parsed.times,
+            hdops: parsed.hdops,
+            precisionsMetres: parsed.precisionsMetres,
           }
           const fingerprint = trackFingerprint(parsed.points)
           const ressembleA = knownFingerprints.get(fingerprint)

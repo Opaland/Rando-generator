@@ -37,6 +37,12 @@ export interface ParsedFit {
   date: string | null
   /** Nombre de positions écartées parce qu'elles tombaient hors du monde (issue #167). */
   pointsHorsLimites: number
+  /** Horodatage de chaque point, aligné sur `points` (issue #149). */
+  times: (string | null)[]
+  /** Toujours null : le FIT ne rapporte pas de HDOP. Aligné sur `points`. */
+  hdops: (number | null)[]
+  /** Précision GPS en mètres, alignée sur `points`. */
+  precisionsMetres: (number | null)[]
 }
 
 /** L'époque FIT : 31 décembre 1989 à minuit UTC, en secondes Unix. */
@@ -51,6 +57,15 @@ const FIELD_POSITION_LONG = 1
 const FIELD_ALTITUDE = 2
 const FIELD_TIMESTAMP = 253
 const FIELD_ENHANCED_ALTITUDE = 78
+/**
+ * Précision GPS du profil FIT, en **mètres** — et non un HDOP, qui est sans
+ * dimension. L'issue #149 supposait que le FIT portait un hdop ; il porte
+ * autre chose, et convertir l'un en l'autre demanderait un facteur que
+ * personne n'a mesuré ici (issue #149).
+ */
+const FIELD_GPS_ACCURACY = 31
+/** Valeur « champ absent » du profil FIT pour un entier 8 bits non signé. */
+const UINT8_ABSENT = 0xff
 
 /** Un semicircle vaut 180 / 2^31 degrés. */
 const SEMICIRCLE_TO_DEGREES = 180 / 2 ** 31
@@ -217,6 +232,8 @@ export function parseFit(buffer: ArrayBuffer): ParsedFit {
 
   const definitions = new Map<number, MessageDefinition>()
   const points: LonLat[] = []
+  const times: (string | null)[] = []
+  const precisionsMetres: (number | null)[] = []
   let pointsHorsLimites = 0
   const elevations: (number | null)[] = []
   let date: string | null = null
@@ -240,7 +257,7 @@ export function parseFit(buffer: ArrayBuffer): ParsedFit {
       offset += 5
       const fields: FieldDefinition[] = []
       for (let i = 0; i < fieldCount; i++) {
-        if (offset + 3 > fin) return finish(points, elevations, date, pointsHorsLimites)
+        if (offset + 3 > fin) return finish(points, elevations, date, pointsHorsLimites, times, precisionsMetres)
         fields.push({
           number: view.getUint8(offset),
           size: view.getUint8(offset + 1),
@@ -256,7 +273,7 @@ export function parseFit(buffer: ArrayBuffer): ParsedFit {
         const devCount = view.getUint8(offset)
         offset += 1
         for (let i = 0; i < devCount; i++) {
-          if (offset + 3 > fin) return finish(points, elevations, date, pointsHorsLimites)
+          if (offset + 3 > fin) return finish(points, elevations, date, pointsHorsLimites, times, precisionsMetres)
           developerBytes += view.getUint8(offset + 1)
           offset += 3
         }
@@ -281,9 +298,11 @@ export function parseFit(buffer: ArrayBuffer): ParsedFit {
     let lat: number | null = null
     let lon: number | null = null
     let altitude: number | null = null
+    let horodatage: string | null = null
+    let precision: number | null = null
     let champOffset = offset
     for (const field of def.fields) {
-      if (champOffset + field.size > fin) return finish(points, elevations, date, pointsHorsLimites)
+      if (champOffset + field.size > fin) return finish(points, elevations, date, pointsHorsLimites, times, precisionsMetres)
       if (def.globalNumber === RECORD_MESSAGE) {
         const taille = BASE_TYPE_SIZES[field.baseType & 0x1f] ?? field.size
         // Un champ peut contenir un tableau : on ne lit que la première
@@ -299,10 +318,13 @@ export function parseFit(buffer: ArrayBuffer): ParsedFit {
             altitude = altitudeFrom(valeur)
           } else if (field.number === FIELD_ENHANCED_ALTITUDE) {
             altitude = altitudeFrom(valeur)
-          } else if (field.number === FIELD_TIMESTAMP && date === null) {
-            date = new Date(
+          } else if (field.number === FIELD_TIMESTAMP) {
+            horodatage = new Date(
               (valeur + FIT_EPOCH_SECONDS) * 1_000,
             ).toISOString()
+            date ??= horodatage
+          } else if (field.number === FIELD_GPS_ACCURACY) {
+            precision = valeur === UINT8_ABSENT ? null : valeur
           }
         }
       }
@@ -326,6 +348,10 @@ export function parseFit(buffer: ArrayBuffer): ParsedFit {
       if (estDansLeMonde(lonDeg, latDeg)) {
         points.push([lonDeg, latDeg])
         elevations.push(altitude)
+        // Les quatre tableaux avancent ensemble : un enregistrement sans fix
+        // ne doit pas décaler l'horodatage du premier point localisé.
+        times.push(horodatage)
+        precisionsMetres.push(precision)
       } else {
         // Une position hors bornes qui n'est pas une sentinelle connue : le
         // fichier est abîmé, et l'utilisateur mérite de l'apprendre.
@@ -334,7 +360,7 @@ export function parseFit(buffer: ArrayBuffer): ParsedFit {
     }
   }
 
-  return finish(points, elevations, date, pointsHorsLimites)
+  return finish(points, elevations, date, pointsHorsLimites, times, precisionsMetres)
 }
 
 function finish(
@@ -342,6 +368,18 @@ function finish(
   elevations: (number | null)[],
   date: string | null,
   pointsHorsLimites: number,
+  times: (string | null)[],
+  precisionsMetres: (number | null)[],
 ): ParsedFit {
-  return { points, elevations, date, pointsHorsLimites }
+  return {
+    points,
+    elevations,
+    date,
+    pointsHorsLimites,
+    times,
+    // Le FIT ne rapporte pas de HDOP : le tableau existe pour rester aligné
+    // sur les autres formats.
+    hdops: points.map(() => null),
+    precisionsMetres,
+  }
 }

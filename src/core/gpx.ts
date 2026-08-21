@@ -22,6 +22,37 @@ export interface ParsedGpx {
   date: string | null
   /** Nombre de points écartés parce qu'ils tombaient hors du monde (issue #167). */
   pointsHorsLimites: number
+  /**
+   * Horodatage de chaque point, aligné sur `points` (issue #149).
+   *
+   * Le temps n'était lu que pour le premier point, afin de dater la trace,
+   * puis oublié. C'est pourtant la seule information qui distingue une
+   * marche d'un trajet en voiture : des points espacés de 470 m le long
+   * d'un sentier créditent plus de 90 % sans qu'aucun contrôle soit
+   * possible.
+   */
+  times: (string | null)[]
+  /**
+   * Précision horizontale rapportée par l'appareil (HDOP), alignée sur
+   * `points`. Sans elle, un bruit de ±60 m autour du sentier crédite 100 %
+   * exactement comme une trace propre — le moteur ne voit aucune
+   * différence, et ne peut pas en voir.
+   *
+   * Jamais obligatoire : un GPX exporté d'un logiciel de tracé n'en a pas,
+   * et reste un itinéraire cible parfaitement valide.
+   */
+  hdops: (number | null)[]
+  /**
+   * Précision horizontale en **mètres**, alignée sur `points`. C'est ce que
+   * rapporte le FIT (`gps_accuracy`), et le GPX ne la porte pas.
+   *
+   * Volontairement séparée de `hdops` : un HDOP est sans dimension, une
+   * précision est en mètres, et passer de l'un à l'autre demande un facteur
+   * que personne n'a mesuré ici. Les fusionner reviendrait à inventer ce
+   * facteur en le cachant — l'issue #149 supposait que le FIT portait un
+   * hdop ; il porte autre chose.
+   */
+  precisionsMetres: (number | null)[]
 }
 
 /**
@@ -62,7 +93,8 @@ export function parseGpx(xmlText: string, parser: XmlParser): ParsedGpx {
   // sacrifier ni les données ni ce qu'on doit dire à leur sujet.
   const parcours =
     trace.points.length === 0 ? extractPoints(doc, 'rtept') : null
-  const { points, elevations, firstPointDate } = parcours ?? trace
+  const { points, elevations, times, hdops, firstPointDate } =
+    parcours ?? trace
   const pointsHorsLimites =
     trace.pointsHorsLimites + (parcours?.pointsHorsLimites ?? 0)
 
@@ -74,6 +106,10 @@ export function parseGpx(xmlText: string, parser: XmlParser): ParsedGpx {
   return {
     points,
     elevations,
+    times,
+    hdops,
+    // Le GPX rapporte un HDOP, jamais une précision en mètres.
+    precisionsMetres: points.map(() => null),
     date: metadataTime ?? firstPointDate,
     pointsHorsLimites,
   }
@@ -82,14 +118,21 @@ export function parseGpx(xmlText: string, parser: XmlParser): ParsedGpx {
 interface ExtractedPoints {
   points: LonLat[]
   elevations: (number | null)[]
+  times: (string | null)[]
+  hdops: (number | null)[]
   firstPointDate: string | null
   pointsHorsLimites: number
 }
 
-/** Extrait points/altitudes/première date d'horodatage pour un tag donné (trkpt ou rtept). */
+/**
+ * Extrait points, altitudes, horodatages et HDOP pour un tag donné (trkpt
+ * ou rtept), plus la première date rencontrée.
+ */
 function extractPoints(doc: Document, tagName: 'trkpt' | 'rtept'): ExtractedPoints {
   const points: LonLat[] = []
   const elevations: (number | null)[] = []
+  const times: (string | null)[] = []
+  const hdops: (number | null)[] = []
   let firstPointDate: string | null = null
   let pointsHorsLimites = 0
   for (const pt of Array.from(doc.getElementsByTagName(tagName))) {
@@ -107,12 +150,26 @@ function extractPoints(doc: Document, tagName: 'trkpt' | 'rtept'): ExtractedPoin
       pt.getElementsByTagName('ele')[0]?.textContent.trim() ?? NaN,
     )
     elevations.push(Number.isFinite(ele) ? ele : null)
-    if (firstPointDate === null) {
-      const time = pt.getElementsByTagName('time')[0]?.textContent.trim()
-      if (time) firstPointDate = time
-    }
+
+    // Les quatre tableaux avancent ensemble, y compris quand un point est
+    // écarté : un décalage d'un cran rendrait la vitesse calculée absurde.
+    const time = pt.getElementsByTagName('time')[0]?.textContent.trim()
+    times.push(time ?? null)
+    if (firstPointDate === null && time) firstPointDate = time
+
+    const hdop = Number(
+      pt.getElementsByTagName('hdop')[0]?.textContent.trim() ?? NaN,
+    )
+    hdops.push(Number.isFinite(hdop) ? hdop : null)
   }
-  return { points, elevations, firstPointDate, pointsHorsLimites }
+  return {
+    points,
+    elevations,
+    times,
+    hdops,
+    firstPointDate,
+    pointsHorsLimites,
+  }
 }
 
 /**

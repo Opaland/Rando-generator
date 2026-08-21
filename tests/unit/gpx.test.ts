@@ -265,3 +265,90 @@ describe('parseGpx — bornes WGS84 (issue #167)', () => {
     expect(parseGpx(GPX_SIMPLE, parser).pointsHorsLimites).toBe(0)
   })
 })
+
+describe('horodatage et précision par point (issue #149)', () => {
+  const gpx = (trkpts: string) => `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="test"><trk><trkseg>${trkpts}</trkseg></trk></gpx>`
+
+  it('conserve le temps de chaque point, pas seulement du premier', () => {
+    // extractPoints lisait <time> uniquement pour dater la trace, puis
+    // l'oubliait. C'est la seule information qui distingue une marche d'un
+    // trajet en voiture — sans elle, le matching v3 est impossible.
+    const res = parseGpx(
+      gpx(
+        '<trkpt lat="45.4" lon="4.5"><time>2026-06-15T08:00:00Z</time></trkpt>' +
+          '<trkpt lat="45.41" lon="4.51"><time>2026-06-15T08:05:00Z</time></trkpt>' +
+          '<trkpt lat="45.42" lon="4.52"><time>2026-06-15T08:10:00Z</time></trkpt>',
+      ),
+      parser,
+    )
+    expect(res.times).toEqual([
+      '2026-06-15T08:00:00Z',
+      '2026-06-15T08:05:00Z',
+      '2026-06-15T08:10:00Z',
+    ])
+  })
+
+  it('conserve le hdop de chaque point', () => {
+    const res = parseGpx(
+      gpx(
+        '<trkpt lat="45.4" lon="4.5"><hdop>1.2</hdop></trkpt>' +
+          '<trkpt lat="45.41" lon="4.51"><hdop>18</hdop></trkpt>',
+      ),
+      parser,
+    )
+    expect(res.hdops).toEqual([1.2, 18])
+  })
+
+  it('note l’absence plutôt que d’inventer une valeur', () => {
+    // Un GPX exporté d'un logiciel de tracé n'a ni l'un ni l'autre, et
+    // reste un itinéraire cible parfaitement valide : les champs ne
+    // deviennent pas obligatoires.
+    const res = parseGpx(
+      gpx('<trkpt lat="45.4" lon="4.5"/><trkpt lat="45.41" lon="4.51"/>'),
+      parser,
+    )
+    expect(res.times).toEqual([null, null])
+    expect(res.hdops).toEqual([null, null])
+  })
+
+  it('refuse un hdop illisible sans décaler les tableaux', () => {
+    const res = parseGpx(
+      gpx(
+        '<trkpt lat="45.4" lon="4.5"><hdop>bof</hdop></trkpt>' +
+          '<trkpt lat="45.41" lon="4.51"><hdop>2</hdop></trkpt>',
+      ),
+      parser,
+    )
+    expect(res.hdops).toEqual([null, 2])
+  })
+
+  it('garde les tableaux alignés quand un point est écarté', () => {
+    // Le piège : un point hors bornes ne doit pas décaler le temps des
+    // suivants, sinon la vitesse calculée devient absurde.
+    const res = parseGpx(
+      gpx(
+        '<trkpt lat="45.4" lon="4.5"><time>2026-06-15T08:00:00Z</time></trkpt>' +
+          '<trkpt lat="95" lon="200"><time>2026-06-15T08:05:00Z</time></trkpt>' +
+          '<trkpt lat="45.42" lon="4.52"><time>2026-06-15T08:10:00Z</time></trkpt>',
+      ),
+      parser,
+    )
+    expect(res.points).toHaveLength(2)
+    expect(res.times).toEqual([
+      '2026-06-15T08:00:00Z',
+      '2026-06-15T08:10:00Z',
+    ])
+    expect(res.times).toHaveLength(res.points.length)
+    expect(res.hdops).toHaveLength(res.points.length)
+  })
+
+  it('lit aussi les <rtept>', () => {
+    const xml = `<?xml version="1.0"?><gpx version="1.1"><rte>
+<rtept lat="45.4" lon="4.5"><time>2026-06-15T08:00:00Z</time><hdop>3</hdop></rtept>
+<rtept lat="45.41" lon="4.51"/></rte></gpx>`
+    const res = parseGpx(xml, parser)
+    expect(res.times).toEqual(['2026-06-15T08:00:00Z', null])
+    expect(res.hdops).toEqual([3, null])
+  })
+})
