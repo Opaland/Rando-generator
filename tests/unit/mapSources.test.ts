@@ -22,7 +22,12 @@ function carteFactice(styleCharge: boolean) {
       if (index >= 0) enAttente.splice(index, 1)
     },
   } as unknown as MaplibreMap
-  return { map, devenirInactive: () => enAttente.slice().forEach((fn) => fn()) }
+  return {
+    map,
+    devenirInactive: () => {
+      for (const fn of enAttente.slice()) fn()
+    },
+  }
 }
 
 describe('appliquerQuandPret', () => {
