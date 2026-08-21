@@ -130,7 +130,7 @@
   /* Deux colonnes (infos, suppression) et une ligne pleine largeur pour le
      bilan de sortie déplié. */
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--espace-4);
   padding: var(--espace-4) var(--espace-5);
@@ -190,4 +190,12 @@
   gap: var(--espace-1);
   font-size: var(--texte-appui);
   font-variant-numeric: tabular-nums;
+}
+
+.etoiles {
+  margin: 0 0 var(--espace-3);
+  font-size: 1.3rem;
+  line-height: 1;
+  color: var(--jaune-pr);
+  letter-spacing: 2px;
 }

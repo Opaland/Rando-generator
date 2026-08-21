@@ -1,0 +1,104 @@
+/**
+ * Deux registres d'affichage, pas deux applications (issue #173).
+ *
+ * Sur quatorze personas parcourus, deux échouent totalement en autonomie :
+ * un enfant de neuf ans et une femme de soixante-seize ans. Ce n'est pas un
+ * défaut de code — les cibles font 44 px sous `pointer: coarse`, le plancher
+ * typographique tient à 14 px en extérieur, `axe-core` tourne en intégration
+ * continue. C'est un défaut de **mode** : l'interface n'a qu'un seul
+ * registre, celui de l'utilisateur moyen outillé.
+ *
+ * Mêmes données, même calcul, même code métier. Le mode simple ne retire
+ * rien : il **cache** ce qui n'est pas nécessaire pour répondre à « montre
+ * où on a marché ».
+ */
+
+export type ModeAffichage = 'complet' | 'simple'
+
+export interface Mode {
+  id: ModeAffichage
+  libelle: string
+  explication: string
+}
+
+export const MODES_AFFICHAGE: readonly Mode[] = [
+  {
+    id: 'complet',
+    libelle: 'Complet',
+    explication:
+      'Toutes les sections : itinéraires, objectifs, historique, réglages et sauvegarde.',
+  },
+  {
+    id: 'simple',
+    libelle: 'Simple',
+    explication:
+      'Une carte, un grand chiffre, et vos sorties. Rien d’autre à l’écran, et rien de perdu — le mode se change quand vous voulez.',
+  },
+]
+
+/** La valeur relue en base est-elle un mode connu ? */
+export function estModeAffichage(valeur: unknown): valeur is ModeAffichage {
+  return MODES_AFFICHAGE.some((mode) => mode.id === valeur)
+}
+
+/**
+ * Relit le réglage « gros texte », stocké en 0/1 faute de booléen en base.
+ *
+ * Tout ce qui n'est pas exactement 1 vaut faux : une valeur écrite par une
+ * version future, ou abîmée, ne doit pas imposer un affichage que personne
+ * n'a demandé.
+ */
+export function lireGrosTexte(valeur: unknown): boolean {
+  return valeur === 1
+}
+
+/** Ce que chaque mode laisse voir. */
+export interface Sections {
+  zone: boolean
+  traces: boolean
+  tableauDeBord: boolean
+  itineraires: boolean
+  objectifs: boolean
+  prochaineSortie: boolean
+  historique: boolean
+  reglages: boolean
+  sauvegarde: boolean
+}
+
+/**
+ * Les sections visibles dans un mode donné.
+ *
+ * La carte, les traces et le tableau de bord ne disparaissent jamais : ce
+ * sont eux qui répondent à la question que tout le monde vient poser. Charger
+ * une zone et déposer une trace restent possibles en mode simple, sans quoi
+ * il n'y aurait rien à montrer.
+ */
+export function sectionsVisibles(mode: ModeAffichage): Sections {
+  const complet = mode === 'complet'
+  return {
+    zone: true,
+    traces: true,
+    tableauDeBord: true,
+    itineraires: complet,
+    objectifs: complet,
+    prochaineSortie: complet,
+    historique: complet,
+    reglages: complet,
+    sauvegarde: complet,
+  }
+}
+
+/**
+ * Étoiles d'une sortie, d'après la part d'itinéraires balisés qu'elle couvre.
+ *
+ * Ce n'est **pas un score**. Pas de notification, pas de classement, pas de
+ * comparaison entre personnes : Théo doit pouvoir regarder ce qu'il a marché,
+ * pas courir après un chiffre. Une étoile dit « ça a compté », trois disent
+ * « ça a bien compté », et c'est tout ce que cela dit.
+ */
+export function etoilesDeSortie(pourcentage: number): 0 | 1 | 2 | 3 {
+  if (!Number.isFinite(pourcentage) || pourcentage <= 0) return 0
+  if (pourcentage >= 75) return 3
+  if (pourcentage >= 40) return 2
+  return 1
+}

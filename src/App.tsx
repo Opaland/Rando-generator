@@ -17,6 +17,8 @@ import { Settings } from './components/Settings.tsx'
 import { TrackManager } from './components/TrackManager.tsx'
 import { DemoBanner } from './components/DemoBanner.tsx'
 import { InstallButton } from './components/InstallButton.tsx'
+import { ModeSwitch } from './components/ModeSwitch.tsx'
+import { sectionsVisibles } from './core/affichage.ts'
 import { ZonePicker } from './components/ZonePicker.tsx'
 import { formatPct } from './lib/format.ts'
 import { useAppStore } from './store/appStore.ts'
@@ -54,6 +56,18 @@ function App() {
   const zoneLoading = useAppStore((s) => s.zoneLoading)
   const globalPct = useAppStore((s) => s.matching?.global.pct ?? null)
   const zoneRestoredAtStartup = useAppStore((s) => s.zoneRestoredAtStartup)
+  const modeAffichage = useAppStore((s) => s.modeAffichage)
+  const grosTexte = useAppStore((s) => s.grosTexte)
+  const sections = sectionsVisibles(modeAffichage)
+
+  // Les deux modes se posent sur la racine du document plutôt que sur un
+  // conteneur : le gros texte doit atteindre les dialogues et les surcouches
+  // de carte, qui sortent de l'arbre du panneau (issue #173).
+  useEffect(() => {
+    const racine = document.documentElement
+    racine.dataset['mode'] = modeAffichage
+    racine.dataset['grosTexte'] = grosTexte ? 'oui' : 'non'
+  }, [modeAffichage, grosTexte])
   const [aboutOpen, setAboutOpen] = useState(false)
   /**
    * null = suivre l'état des données. Au retour sur l'application, une zone
@@ -177,16 +191,19 @@ function App() {
             </span>
           </button>
           <DemoBanner />
+          {/* Le mode simple cache, il n'enlève pas : la carte, les traces et
+              le tableau de bord restent, tout le reste se replie (#173). */}
           <ZonePicker />
           <TrackManager />
-          <CustomItineraries />
+          {sections.itineraires && <CustomItineraries />}
           <Dashboard />
-          <Objectifs />
-          <NextOuting />
-          <History />
-          <ItineraryList />
-          <Settings />
-          <Backup />
+          {sections.objectifs && <Objectifs />}
+          {sections.prochaineSortie && <NextOuting />}
+          {sections.historique && <History />}
+          {sections.itineraires && <ItineraryList />}
+          {sections.reglages && <Settings />}
+          {sections.sauvegarde && <Backup />}
+          <ModeSwitch />
           <InstallButton />
           <footer className={styles.footer}>
             <a

@@ -245,7 +245,7 @@
 .stage {
   width: 100%;
   display: grid;
-  grid-template-columns: 1fr 70px auto;
+  grid-template-columns: minmax(0, 1fr) 70px auto;
   gap: var(--espace-4);
   align-items: center;
   padding: var(--espace-3) var(--espace-4);

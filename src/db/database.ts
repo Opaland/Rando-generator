@@ -29,6 +29,10 @@ export type SettingKey =
   | 'lastZoneKey'
   /** Itinéraires épinglés comme objectifs, en JSON (liste d'identifiants). */
   | 'objectifs'
+  /** « complet » ou « simple » — deux registres, pas deux applications. */
+  | 'modeAffichage'
+  /** 0 ou 1, faute de booléen dans le magasin des réglages. */
+  | 'grosTexte'
 
 interface SentiersSchema extends DBSchema {
   zones: { key: string; value: CachedZone }

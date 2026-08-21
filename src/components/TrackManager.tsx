@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type DragEvent } from 'react'
 import { polylineLengthMeters } from '../core/sampling.ts'
 import { useAppStore } from '../store/appStore.ts'
+import { etoilesDeSortie } from '../core/affichage.ts'
 import { formatKm, importProgressLabel } from '../lib/format.ts'
 import { outingLabel } from '../core/outing.ts'
 import { ConfirmDeleteButton } from './ConfirmDeleteButton.tsx'
@@ -239,14 +240,42 @@ export function TrackManager() {
                         de la zone chargée.
                       </p>
                     ) : (
-                      <ul className={styles.outingList}>
-                        {outingDetail.highlights.map((fait) => (
-                          <li key={fait.itineraryId}>
-                            <strong>{fait.name}</strong> :{' '}
-                            {formatKm(fait.doneMeters)}
-                          </li>
-                        ))}
-                      </ul>
+                      <>
+                        {/* Trois étoiles au plus, d'après le meilleur
+                            itinéraire avancé. Ce n'est pas un score : pas de
+                            classement, pas de comparaison entre personnes.
+                            Une étoile dit « ça a compté » (issue #173). */}
+                        {(() => {
+                          const etoiles = etoilesDeSortie(
+                            Math.max(
+                              ...outingDetail.highlights.map((f) => f.pct),
+                            ),
+                          )
+                          return (
+                            <p
+                              className={styles.etoiles}
+                              data-testid="outing-etoiles"
+                              data-etoiles={etoiles}
+                            >
+                              <span aria-hidden="true">
+                                {'★'.repeat(etoiles)}
+                                {'☆'.repeat(3 - etoiles)}
+                              </span>
+                              <span className="sr-only">
+                                {etoiles} étoile{etoiles > 1 ? 's' : ''} sur 3
+                              </span>
+                            </p>
+                          )
+                        })()}
+                        <ul className={styles.outingList}>
+                          {outingDetail.highlights.map((fait) => (
+                            <li key={fait.itineraryId}>
+                              <strong>{fait.name}</strong> :{' '}
+                              {formatKm(fait.doneMeters)}
+                            </li>
+                          ))}
+                        </ul>
+                      </>
                     )}
                   </div>
                 )}

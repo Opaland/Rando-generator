@@ -104,7 +104,12 @@ body,
 body {
   margin: 0;
   font-family: var(--font-sans);
-  font-size: 15px;
+  /* En rem, et non en pixels. En dur, cette ligne annulait à elle seule tout
+     agrandissement — celui du navigateur comme celui du mode gros texte : la
+     racine grandissait, le corps restait à quinze pixels, et l'interface avec
+     lui (issue #173). 0,9375 rem vaut exactement 15 px sur une racine par
+     défaut : l'affichage habituel ne bouge pas d'un pixel. */
+  font-size: 0.9375rem;
   line-height: 1.45;
   background: var(--blanc-papier);
   color: var(--vert-noir);
@@ -318,7 +323,7 @@ details[open] > .acc-summary::after {
      pas une information qu'on relit en marchant. */
   .maplibregl-map .maplibregl-ctrl-attrib,
   .maplibregl-map .maplibregl-ctrl-attrib-inner {
-    font-size: 12px;
+    font-size: 0.75rem;
   }
 
   .acc-summary {
@@ -360,4 +365,85 @@ details[open] > .acc-summary::after {
     width: 44px;
     height: 44px;
   }
+}
+
+
+/* Un champ de saisie garde par défaut la largeur de vingt caractères, quelle
+   que soit la place disponible. À 200 % de texte sur un écran de 360 px,
+   cette largeur intrinsèque passait à 395 px et forçait tout le panneau à
+   580 px : le tableau de bord se retrouvait coupé, à faire défiler
+   latéralement. C'est le genre de débordement qui rend une page inutilisable
+   en grossissement bien avant qu'elle ne devienne illisible (issue #173). */
+input[type='text'],
+input[type='search'],
+input[type='number'],
+select {
+  min-width: 0;
+  max-width: 100%;
+  /* Un champ garde sinon la largeur de vingt caractères, quelle que soit la
+     place. À 200 % de texte sur 360 px, cette largeur intrinsèque poussait
+     le panneau à déborder. */
+  width: 100%;
+}
+
+/* Le panneau doit pouvoir rétrécir, quelle que soit la taille du texte.
+
+   Un élément de grille ou de flex a par défaut un plancher égal à la largeur
+   minimale de son contenu : il refuse donc de descendre en dessous, et c'est
+   le conteneur qui déborde. Un long nom de zone, un libellé de bouton ou un
+   nom de fichier suffisent alors à rendre le panneau plus large que l'écran,
+   à faire défiler latéralement — ce qui rend une page inutilisable en
+   grossissement bien avant qu'elle ne devienne illisible (issue #173). */
+aside :is(button, label, p, li, h2, h3, span, output) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Réservé aux lecteurs d'écran : visible pour eux, absent de l'écran.
+   Un `display: none` les priverait aussi de l'information. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Gros texte et contrastes (issue #173).
+
+   La bascule se pose sur la racine du document, et non sur un conteneur :
+   les dialogues et les surcouches de carte sortent de l'arbre du panneau, et
+   un agrandissement qui les oublierait laisserait justement les endroits les
+   plus denses en petit.
+
+   L'agrandissement passe par la taille de police racine plutôt que par un
+   `zoom` ou un `transform` : les rem suivent, les media queries continuent
+   de décrire des pixels réels, et rien ne se retrouve tronqué hors du cadre
+   sur un écran de 360 px. */
+:root[data-gros-texte='oui'] {
+  font-size: 125%;
+
+  /* Les trois paliers de texte secondaire montent d'autant : à 200 %, un
+     libellé à 0,72 rem redevient illisible si seul le corps grandit. */
+  --texte-etiquette: 0.85rem;
+  --texte-appui: 0.9rem;
+  --texte-secondaire: 1rem;
+
+  /* Contrastes renforcés. Le gris-vert passait tout juste le seuil AA sur du
+     papier blanc ; ici il ne suffit plus, puisque c'est précisément une
+     difficulté de lecture qu'on cherche à compenser. */
+  --gris-vert: #3d4a40;
+  --gris-vert-clair: #d6dad2;
+  --orange-grp: #8f3a06;
+  --jaune-pr: #8a6800;
+}
+
+/* Les bordures d'un pixel disparaissent quand on a du mal à voir : elles
+   passent à deux, sans toucher à la mise en page (les paddings restent). */
+:root[data-gros-texte='oui'] :is(button, input, select, textarea, summary):focus-visible {
+  outline-width: 3px;
 }

@@ -71,7 +71,7 @@
 
 .niveau {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr);
   gap: var(--espace-4);
   align-items: start;
   /* 44 px : le réglage se touche avec des doigts qui ne visent pas bien —
