@@ -17,6 +17,9 @@ export function TrackManager() {
   const toggleOutingDetail = useAppStore((s) => s.toggleOutingDetail)
   const removeTrack = useAppStore((s) => s.removeTrack)
   const clearImportErrors = useAppStore((s) => s.clearImportErrors)
+  const importDoublons = useAppStore((s) => s.importDoublons)
+  const importerDoublon = useAppStore((s) => s.importerDoublon)
+  const ignorerDoublon = useAppStore((s) => s.ignorerDoublon)
   const inputRef = useRef<HTMLInputElement | null>(null)
   const [dragOver, setDragOver] = useState(false)
   const [importing, setImporting] = useState(false)
@@ -33,11 +36,13 @@ export function TrackManager() {
   const runImport = async (files: File[]) => {
     setImporting(true)
     setSuccessMsg(null)
-    const errorsBefore = useAppStore.getState().importErrors.length
+    // Compter les traces ajoutées, et non les fichiers moins les erreurs :
+    // une archive en contient plusieurs, un fichier peut être importé tout
+    // en signalant quelque chose, et un doublon n'est plus une erreur.
+    const avant = useAppStore.getState().tracks.length
     await importGpxFiles(files)
     setImporting(false)
-    const newErrors = useAppStore.getState().importErrors.length - errorsBefore
-    const imported = files.length - newErrors
+    const imported = useAppStore.getState().tracks.length - avant
     if (imported > 0) {
       setSuccessMsg(
         imported === 1 ? '1 trace importée.' : `${imported} traces importées.`,
@@ -140,6 +145,41 @@ export function TrackManager() {
           <button type="button" onClick={clearImportErrors}>
             OK
           </button>
+        </div>
+      )}
+
+      {importDoublons.length > 0 && (
+        <div className={styles.doublons} data-testid="gpx-doublons">
+          <p>
+            {importDoublons.length === 1
+              ? 'Une trace ressemble à une sortie déjà importée.'
+              : `${importDoublons.length} traces ressemblent à des sorties déjà importées.`}{' '}
+            À vous de voir.
+          </p>
+          <ul>
+            {importDoublons.map((doublon) => (
+              <li key={doublon.id}>
+                <span className={styles.doublonNom}>{doublon.filename}</span>
+                <span>ressemble à « {doublon.ressembleA} »</span>
+                <span className={styles.doublonActions}>
+                  <button
+                    type="button"
+                    onClick={() => void importerDoublon(doublon.id)}
+                  >
+                    Importer quand même
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      ignorerDoublon(doublon.id)
+                    }}
+                  >
+                    Ignorer
+                  </button>
+                </span>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 

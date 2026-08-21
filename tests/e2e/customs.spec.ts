@@ -60,7 +60,7 @@ test('itinéraire perso : import GPX cible, progression, suppression, persistanc
   await expect(page.getByTestId('custom-list')).toHaveCount(0)
 })
 
-test('double import du même GPX : la trace dupliquée est refusée', async ({
+test('double import du même GPX : la trace dupliquée est mise de côté', async ({
   page,
 }) => {
   await mockExternalNetwork(page)
@@ -78,7 +78,11 @@ test('double import du même GPX : la trace dupliquée est refusée', async ({
     ...file,
     name: 'sortie-copie.gpx',
   })
-  await expect(page.getByTestId('gpx-errors')).toContainText('identique')
+  // Depuis l'issue #165, le doublon n'est plus refusé mais proposé : ce que
+  // ce test garde, c'est qu'il n'entre pas tout seul dans la liste.
+  await expect(page.getByTestId('gpx-doublons')).toContainText(
+    'sortie-copie.gpx',
+  )
   // Une seule trace dans la liste.
   await expect(
     page.getByTestId('tracks-list').getByRole('listitem'),

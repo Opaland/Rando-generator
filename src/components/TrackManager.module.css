@@ -70,6 +70,48 @@
   padding: 2px 10px;
 }
 
+.doublons {
+  padding: 8px 10px;
+  border-left: 4px solid var(--attention-bord);
+  background: var(--attention-fond);
+  font-size: 0.9rem;
+}
+
+.doublons p {
+  margin: 0 0 6px;
+}
+
+.doublons ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.doublonNom {
+  display: block;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.doublonActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.doublonActions button {
+  border: 1px solid var(--vert-noir);
+  background: #fff;
+  border-radius: 4px;
+  /* 44 px de haut : la cible se touche en marchant, avec des gants. */
+  min-height: 44px;
+  padding: 2px 12px;
+}
+
 .empty {
   margin: 0;
   font-size: 0.9rem;
