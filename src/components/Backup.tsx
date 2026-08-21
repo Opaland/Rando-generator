@@ -1,5 +1,7 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAppStore } from '../store/appStore.ts'
+import { estSafari } from '../core/stockage.ts'
+import { formatOctets } from '../lib/format.ts'
 import styles from './Backup.module.css'
 
 /**
@@ -19,6 +21,17 @@ export function Backup() {
   const clearBackupMessage = useAppStore((s) => s.clearBackupMessage)
   const inputRef = useRef<HTMLInputElement | null>(null)
   const [enCours, setEnCours] = useState(false)
+  const stockage = useAppStore((s) => s.stockage)
+  const rafraichirStockage = useAppStore((s) => s.rafraichirStockage)
+
+  // Mesuré à l'ouverture de la section, et non au chargement de la page :
+  // c'est ici que le chiffre a une raison d'être lu.
+  useEffect(() => {
+    void rafraichirStockage()
+  }, [rafraichirStockage, tracks.length])
+
+  const webkit =
+    typeof navigator === 'undefined' ? false : estSafari(navigator.userAgent)
 
   const aQuelqueChose = tracks.length > 0 || customItineraries.length > 0
 
@@ -36,6 +49,27 @@ export function Backup() {
         les efface. Un fichier de sauvegarde est la seule copie qui vous
         appartienne — gardez-le où vous voulez.
       </p>
+
+      {stockage && (
+        <p className={styles.stockage} data-testid="stockage-etat">
+          {stockage.octetsUtilises === null
+            ? 'Ce navigateur ne dit pas combien de place vos données occupent.'
+            : `${formatOctets(stockage.octetsUtilises)} occupés par vos données.`}{' '}
+          {stockage.persistant === true
+            ? 'Le navigateur s’est engagé à ne pas les effacer pour faire de la place.'
+            : stockage.persistant === false
+              ? 'Le navigateur ne s’est pas engagé à les conserver : il peut les effacer pour faire de la place.'
+              : 'Ce navigateur ne dit pas s’il s’engage à les conserver.'}
+        </p>
+      )}
+
+      {webkit && (
+        <p className={styles.avertissement} data-testid="stockage-webkit">
+          Sur iPhone, iPad et Safari, les données d’un site peuvent être
+          effacées après sept jours sans visite. Exportez une sauvegarde&nbsp;:
+          c’est la seule copie qui ne dépende pas du navigateur.
+        </p>
+      )}
 
       <div className={styles.actions}>
         <button

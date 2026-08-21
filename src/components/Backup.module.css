@@ -54,3 +54,19 @@
   background: rgba(30, 43, 35, 0.06);
   font-size: var(--texte-secondaire);
 }
+
+.stockage {
+  margin: 0;
+  font-size: var(--texte-appui);
+  color: var(--gris-vert);
+}
+
+.avertissement {
+  /* Une information à connaître, pas une erreur : le jeton « à vous de
+     voir » plutôt que le rouge (issue #169). */
+  margin: 0;
+  border-left: 4px solid var(--attention-bord);
+  background: var(--attention-fond);
+  padding: 8px 10px;
+  font-size: var(--texte-secondaire);
+}
