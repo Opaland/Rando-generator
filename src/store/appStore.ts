@@ -56,6 +56,12 @@ import { outingHighlights, type OutingHighlight } from '../core/outing.ts'
 import { FitError, looksLikeFit, parseFit } from '../core/fit.ts'
 import { messagePointsHorsLimites } from '../core/coordonnees.ts'
 import { construireDemonstration } from '../core/demonstration.ts'
+import {
+  apiDuNavigateur,
+  demanderPersistance,
+  etatDuStockage,
+  type EtatDuStockage,
+} from '../core/stockage.ts'
 import { TcxError, looksLikeTcx, parseTcx } from '../core/tcx.ts'
 import {
   GeoJsonError,
@@ -184,6 +190,11 @@ export interface AppState {
    * l'emporter par mégarde.
    */
   demonstration: boolean
+  /**
+   * État du stockage : mode persistant obtenu, espace utilisé (issue #169).
+   * Null tant que rien n'a été mesuré.
+   */
+  stockage: EtatDuStockage | null
 
   // Itinéraires créés par l'utilisateur (réseau PERSO, ids négatifs)
   customItineraries: Itinerary[]
@@ -298,6 +309,8 @@ export interface AppState {
   demarrerDemonstration: () => Promise<void>
   /** Efface la démonstration et rend l'application à son état réel. */
   quitterDemonstration: () => Promise<void>
+  /** Mesure l'espace occupé et le mode de stockage obtenu. */
+  rafraichirStockage: () => Promise<void>
   openItineraryDetail: (id: number) => void
   closeItineraryDetail: () => void
   toggleView3D: () => void
@@ -481,6 +494,21 @@ async function lireItineraires(
     trails: [{ name: null, lines: [trace.points] }],
     pointsHorsLimites: trace.pointsHorsLimites,
   }
+}
+
+/**
+ * La persistance n'est demandée qu'une fois par session, et seulement
+ * lorsqu'il y a quelque chose à protéger (issue #169).
+ *
+ * La demander à l'ouverture n'aurait aucun sens pour un visiteur qui n'a
+ * rien déposé : elle serait refusée ou ignorée, et l'occasion perdue — le
+ * critère d'octroi tient à l'engagement avec le site.
+ */
+let persistanceDemandee = false
+async function protegerLeStockage(): Promise<void> {
+  if (persistanceDemandee) return
+  persistanceDemandee = true
+  await demanderPersistance(apiDuNavigateur())
 }
 
 /** Identifiant du suivi de position en cours (API navigateur). */
@@ -818,6 +846,7 @@ export const useAppStore = create<AppState>()((set, get) => {
     importErrors: [],
     importDoublons: [],
     demonstration: false,
+    stockage: null,
     backupMessage: null,
     lieux: [],
     lieuxLoading: false,
@@ -1077,6 +1106,7 @@ export const useAppStore = create<AppState>()((set, get) => {
           importDoublons: [...state.importDoublons, ...doublons],
         }))
       }
+      if (imported.length > 0) await protegerLeStockage()
     },
 
     async importCustomGpx(files) {
@@ -1498,6 +1528,10 @@ export const useAppStore = create<AppState>()((set, get) => {
         })),
       })
       await recompute()
+    },
+
+    async rafraichirStockage() {
+      set({ stockage: await etatDuStockage(apiDuNavigateur()) })
     },
 
     async quitterDemonstration() {
