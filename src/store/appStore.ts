@@ -511,6 +511,20 @@ async function protegerLeStockage(): Promise<void> {
   await demanderPersistance(apiDuNavigateur())
 }
 
+/**
+ * Quitte la démonstration avant toute opération qui touche aux données
+ * réelles — import, export, restauration.
+ *
+ * Nommé plutôt que recopié : le premier passage avait couvert l'import et
+ * l'export mais oublié la restauration, et une garde qu'on récrit à la main
+ * à chaque appel finit toujours par manquer quelque part.
+ */
+async function sortirDeLaDemonstration(
+  get: () => Pick<AppState, 'demonstration' | 'quitterDemonstration'>,
+): Promise<void> {
+  if (get().demonstration) await get().quitterDemonstration()
+}
+
 /** Identifiant du suivi de position en cours (API navigateur). */
 let geoWatchId: number | null = null
 
@@ -1013,8 +1027,8 @@ export const useAppStore = create<AppState>()((set, get) => {
 
     async importGpxFiles(files) {
       // « Maintenant, importez les vôtres » : la démonstration s'efface au
-      // premier vrai fichier, pour ne jamais se mêler aux données réelles.
-      if (get().demonstration) await get().quitterDemonstration()
+      // premier vrai fichier.
+      await sortirDeLaDemonstration(get)
       const errors: string[] = []
       const imported: Track[] = []
       const developpement = await developperArchives(
@@ -1111,8 +1125,8 @@ export const useAppStore = create<AppState>()((set, get) => {
 
     async importCustomGpx(files) {
       // « Maintenant, importez les vôtres » : la démonstration s'efface au
-      // premier vrai fichier, pour ne jamais se mêler aux données réelles.
-      if (get().demonstration) await get().quitterDemonstration()
+      // premier vrai fichier.
+      await sortirDeLaDemonstration(get)
       const errors: string[] = []
       const imported: Itinerary[] = []
       let nextId = Math.min(
@@ -1221,7 +1235,7 @@ export const useAppStore = create<AppState>()((set, get) => {
     async exporterSauvegarde() {
       // Une sauvegarde de démonstration n'aurait aucun sens, et rapporterait
       // des sorties fictives dans les vraies données au moment de la relire.
-      if (get().demonstration) await get().quitterDemonstration()
+      await sortirDeLaDemonstration(get)
       const etat = get()
       const backup = buildBackup({
         tracks: etat.tracks,
@@ -1240,6 +1254,10 @@ export const useAppStore = create<AppState>()((set, get) => {
     },
 
     async importerSauvegarde(file) {
+      // Fusionner une sauvegarde avec des sorties fictives les laisserait en
+      // mémoire, comptées dans les statistiques, jusqu'au rechargement
+      // suivant (trouvé à la revue du sprint 2).
+      await sortirDeLaDemonstration(get)
       let backup
       try {
         backup = await lireArchiveBackup(await file.arrayBuffer())

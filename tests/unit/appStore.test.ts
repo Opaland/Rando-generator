@@ -570,6 +570,41 @@ describe('démonstration (issue #172)', () => {
     expect(etat.tracks.map((t) => t.filename)).toEqual(['a.gpx'])
   })
 
+  it('restaurer une sauvegarde ne mélange pas les sorties fictives', async () => {
+    // Trou trouvé à la revue du sprint 2 : exporterSauvegarde quittait bien
+    // la démonstration, mais pas importerSauvegarde. Les trois sorties
+    // fictives restaient en mémoire, comptées dans les statistiques de
+    // l'utilisateur, jusqu'au rechargement suivant.
+    await useAppStore.getState().init()
+    await useAppStore
+      .getState()
+      .importGpxFiles([fichierGpx('vraie.gpx', ligne(12))])
+    const backup = buildBackup({
+      tracks: useAppStore.getState().tracks,
+      customItineraries: [],
+      settings: { toleranceMeters: useAppStore.getState().toleranceMeters },
+      exportedAt: '2026-08-20T10:00:00Z',
+    })
+
+    vi.stubGlobal('indexedDB', new IDBFactory())
+    useAppStore.setState(etatInitial, true)
+    vi.stubGlobal('fetch', fetchMock)
+    await useAppStore.getState().init()
+    await useAppStore.getState().demarrerDemonstration()
+    expect(useAppStore.getState().demonstration).toBe(true)
+
+    await useAppStore
+      .getState()
+      .importerSauvegarde(
+        new File([serialiserBackup(backup)], 'sauvegarde.json'),
+      )
+
+    expect(useAppStore.getState().demonstration).toBe(false)
+    expect(useAppStore.getState().tracks.map((t) => t.filename)).toEqual([
+      'vraie.gpx',
+    ])
+  })
+
   it('quitter deux fois ne casse rien', async () => {
     await demarrer()
     await useAppStore.getState().quitterDemonstration()
