@@ -112,7 +112,7 @@ describe('init', () => {
     )
   })
 
-  it('refuse encore le doublon d’une trace déposée au démarrage', async () => {
+  it('repère encore le doublon d’une trace déposée au démarrage', async () => {
     const demarrage = useAppStore.getState().init()
     await useAppStore
       .getState()
@@ -122,7 +122,10 @@ describe('init', () => {
       .getState()
       .importGpxFiles([fichierGpx('sortie-copie.gpx', ligne(10))])
 
-    expect(useAppStore.getState().importErrors.join(' ')).toMatch(/identique/)
+    // Depuis l'issue #165 le doublon n'est plus refusé mais mis de côté :
+    // ce que ce test garde, c'est qu'il est toujours repéré malgré la
+    // course avec l'ouverture de la base.
+    expect(useAppStore.getState().importDoublons).toHaveLength(1)
     expect(useAppStore.getState().tracks).toHaveLength(1)
   })
 
@@ -311,12 +314,99 @@ describe('importGpxFiles', () => {
     expect(trace?.elevationGain).toBe(0)
   })
 
-  it('refuse une trace identique à une trace déjà importée', async () => {
+  it('met de côté une trace identique à une trace déjà importée', async () => {
     await useAppStore.getState().init()
     await useAppStore.getState().importGpxFiles([fichierGpx('a.gpx', ligne(20))])
     await useAppStore.getState().importGpxFiles([fichierGpx('copie.gpx', ligne(20))])
     expect(useAppStore.getState().tracks).toHaveLength(1)
-    expect(useAppStore.getState().importErrors.join()).toMatch(/identique à/)
+    const [doublon] = useAppStore.getState().importDoublons
+    expect(doublon?.filename).toBe('copie.gpx')
+    expect(doublon?.ressembleA).toBe('a.gpx')
+    // Ce n'est pas une erreur de lecture : le fichier est bon, c'est nous
+    // qui hésitons. Il n'a rien à faire dans le bandeau d'erreurs.
+    expect(useAppStore.getState().importErrors).toEqual([])
+  })
+
+  describe('doublons mis de côté (issue #165)', () => {
+    async function deuxFois() {
+      await useAppStore.getState().init()
+      await useAppStore.getState().importGpxFiles([fichierGpx('a.gpx', ligne(20))])
+      await useAppStore
+        .getState()
+        .importGpxFiles([fichierGpx('copie.gpx', ligne(20))])
+      return useAppStore.getState().importDoublons[0]!
+    }
+
+    it('« importer quand même » ajoute vraiment la trace', async () => {
+      // L'empreinte est une heuristique : quand elle se trompe, la personne
+      // doit pouvoir passer outre, sans quoi la sortie est perdue.
+      const doublon = await deuxFois()
+      await useAppStore.getState().importerDoublon(doublon.id)
+      expect(useAppStore.getState().tracks.map((t) => t.filename)).toEqual([
+        'a.gpx',
+        'copie.gpx',
+      ])
+      expect(useAppStore.getState().importDoublons).toEqual([])
+    })
+
+    it('la trace forcée survit au rechargement', async () => {
+      const doublon = await deuxFois()
+      await useAppStore.getState().importerDoublon(doublon.id)
+      useAppStore.setState({ ...etatInitial })
+      await useAppStore.getState().init()
+      expect(useAppStore.getState().tracks).toHaveLength(2)
+    })
+
+    it('« ignorer » retire la proposition sans rien importer', async () => {
+      const doublon = await deuxFois()
+      useAppStore.getState().ignorerDoublon(doublon.id)
+      expect(useAppStore.getState().tracks).toHaveLength(1)
+      expect(useAppStore.getState().importDoublons).toEqual([])
+    })
+
+    it('un identifiant inconnu ne casse rien', async () => {
+      await deuxFois()
+      await useAppStore.getState().importerDoublon('inexistant')
+      expect(useAppStore.getState().tracks).toHaveLength(1)
+      expect(useAppStore.getState().importDoublons).toHaveLength(1)
+    })
+
+    it('deux fichiers identiques dans le même lot ne passent qu’une fois', async () => {
+      await useAppStore.getState().init()
+      await useAppStore
+        .getState()
+        .importGpxFiles([
+          fichierGpx('a.gpx', ligne(20)),
+          fichierGpx('b.gpx', ligne(20)),
+        ])
+      expect(useAppStore.getState().tracks).toHaveLength(1)
+      expect(useAppStore.getState().importDoublons).toHaveLength(1)
+    })
+
+    it('ne met rien de côté quand les traces diffèrent au milieu', async () => {
+      // Deux boucles au départ du même parking : l'empreinte enrichie les
+      // sépare, elles s'importent toutes les deux sans rien demander.
+      await useAppStore.getState().init()
+      const nord: [number, number][] = [
+        [4.5, 45.4],
+        [4.52, 45.45],
+        [4.54, 45.5],
+        [4.52, 45.45],
+        [4.5, 45.4],
+      ]
+      const sud: [number, number][] = [
+        [4.5, 45.4],
+        [4.52, 45.35],
+        [4.54, 45.3],
+        [4.52, 45.35],
+        [4.5, 45.4],
+      ]
+      await useAppStore
+        .getState()
+        .importGpxFiles([fichierGpx('nord.gpx', nord), fichierGpx('sud.gpx', sud)])
+      expect(useAppStore.getState().tracks).toHaveLength(2)
+      expect(useAppStore.getState().importDoublons).toEqual([])
+    })
   })
 
   it('signale un fichier sans point exploitable sans perdre les autres', async () => {

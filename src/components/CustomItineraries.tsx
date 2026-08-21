@@ -44,11 +44,13 @@ export function CustomItineraries() {
   const runImport = async (files: File[]) => {
     setImporting(true)
     setSuccessMsg(null)
-    const errorsBefore = useAppStore.getState().importErrors.length
+    // Compter les itinéraires ajoutés, et non les fichiers moins les
+    // erreurs : un GeoJSON en décrit plusieurs, et un fichier peut être
+    // importé tout en signalant quelque chose.
+    const avant = useAppStore.getState().customItineraries.length
     await importCustomGpx(files)
     setImporting(false)
-    const newErrors = useAppStore.getState().importErrors.length - errorsBefore
-    const imported = files.length - newErrors
+    const imported = useAppStore.getState().customItineraries.length - avant
     if (imported > 0) {
       setSuccessMsg(
         imported === 1

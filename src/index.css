@@ -13,6 +13,10 @@
   --gris-vert-clair: #e7e9e4;
   --erreur-fond: #fdecec;
   --erreur-bord: #c8102e;
+  /* « À vous de voir » : ni une erreur ni une réussite. Le rouge de l'erreur
+     dirait qu'on a échoué, alors qu'on demande simplement à trancher. */
+  --attention-fond: #fdf5e3;
+  --attention-bord: #d9a400;
 
   /* Typographie : pas de police distante (les données ne quittent pas le
      navigateur, les requêtes de polices non plus). */

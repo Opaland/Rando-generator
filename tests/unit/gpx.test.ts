@@ -118,6 +118,74 @@ describe('trackFingerprint', () => {
     expect(trackFingerprint(a)).toBe(trackFingerprint(same))
     expect(trackFingerprint(a)).not.toBe(trackFingerprint(other))
   })
+
+  it('sépare deux trajets qui partagent leurs extrémités (issue #165)', () => {
+    // Même départ, même arrivée, même nombre de points — et deux vallées
+    // opposées. L'empreinte ne regardait que les bouts : la seconde sortie
+    // était refusée comme un doublon de la première.
+    const parLeNord: [number, number][] = [
+      [4.5, 45.4],
+      [4.55, 45.45],
+      [4.6, 45.4],
+    ]
+    const parLeSud: [number, number][] = [
+      [4.5, 45.4],
+      [4.55, 45.35],
+      [4.6, 45.4],
+    ]
+    expect(trackFingerprint(parLeNord)).not.toBe(trackFingerprint(parLeSud))
+  })
+
+  it('sépare deux boucles qui repartent du même parking', () => {
+    // Le cas que le complétiste enchaîne : le parking est aux deux bouts,
+    // donc les extrémités sont identiques. Seul le milieu les sépare.
+    const versLeNord: [number, number][] = [
+      [4.5, 45.4],
+      [4.52, 45.42],
+      [4.54, 45.46],
+      [4.56, 45.5],
+      [4.54, 45.46],
+      [4.52, 45.42],
+      [4.5, 45.4],
+    ]
+    const versLeSud: [number, number][] = [
+      [4.5, 45.4],
+      [4.52, 45.38],
+      [4.54, 45.34],
+      [4.56, 45.3],
+      [4.54, 45.34],
+      [4.52, 45.38],
+      [4.5, 45.4],
+    ]
+    expect(trackFingerprint(versLeNord)).not.toBe(trackFingerprint(versLeSud))
+  })
+
+  it('reconnaît toujours le même fichier importé deux fois', () => {
+    const trace: [number, number][] = Array.from({ length: 500 }, (_, i) => [
+      4.5 + i * 0.0007,
+      45.4 + Math.sin(i / 40) * 0.01,
+    ])
+    expect(trackFingerprint(trace)).toBe(trackFingerprint([...trace]))
+  })
+
+  it('sépare deux longues traces qui ne diffèrent qu’au milieu', () => {
+    const base: [number, number][] = Array.from({ length: 500 }, (_, i) => [
+      4.5 + i * 0.0007,
+      45.4,
+    ])
+    const detour: [number, number][] = base.map((p, i) =>
+      i > 200 && i < 300 ? [p[0], 45.42] : p,
+    )
+    expect(trackFingerprint(base)).not.toBe(trackFingerprint(detour))
+  })
+
+  it('ne bronche pas sur les traces trop courtes pour être échantillonnées', () => {
+    expect(trackFingerprint([])).toBe(trackFingerprint([]))
+    expect(trackFingerprint([[4.5, 45.4]])).not.toBe(trackFingerprint([]))
+    expect(trackFingerprint([[4.5, 45.4]])).toBe(
+      trackFingerprint([[4.5, 45.4]]),
+    )
+  })
 })
 
 describe('parseGpx — bornes WGS84 (issue #167)', () => {

@@ -148,16 +148,43 @@ export function elevationGainMeters(
 }
 
 /**
+ * Nombre de points intermédiaires retenus dans l'empreinte d'une trace.
+ *
+ * L'empreinte ne regardait que le nombre de points et les deux extrémités
+ * (issue #165) : deux boucles parties du même parking, de même longueur et
+ * passant par des vallées opposées étaient indiscernables — et la seconde
+ * refusée. Huit relevés répartis le long du tracé les séparent, sans faire
+ * de l'empreinte une copie de la trace.
+ */
+const RELEVES_INTERMEDIAIRES = 8
+
+/**
  * Empreinte du contenu d'une trace, pour détecter un double import du même
- * fichier (nombre de points + extrémités arrondies).
+ * fichier : nombre de points, extrémités, et quelques relevés intermédiaires.
+ *
+ * L'échantillonnage se fait par indice, pas par distance : deux fois le même
+ * fichier donnent exactement les mêmes indices, donc exactement la même
+ * empreinte — ce que le dédoublonnage doit avant tout garantir.
+ *
+ * Elle reste une heuristique, et le restera : elle ne lit pas tous les
+ * points. C'est pourquoi un refus de doublon doit rester rattrapable par la
+ * personne (« importer quand même »), plutôt que d'affirmer une identité
+ * qu'elle ne peut pas prouver.
  */
 export function trackFingerprint(points: LonLat[]): string {
   const round = (value: number) => value.toFixed(6)
-  const first = points[0]
-  const last = points[points.length - 1]
-  return [
-    points.length,
-    first ? `${round(first[0])},${round(first[1])}` : '∅',
-    last ? `${round(last[0])},${round(last[1])}` : '∅',
-  ].join('|')
+  const releve = (point: LonLat | undefined) =>
+    point ? `${round(point[0])},${round(point[1])}` : '∅'
+
+  const morceaux = [String(points.length), releve(points[0])]
+  // Bornes exclues : les extrémités sont déjà là, et les redoubler
+  // gaspillerait des relevés sur une trace courte.
+  for (let i = 1; i <= RELEVES_INTERMEDIAIRES; i += 1) {
+    const indice = Math.floor(
+      (points.length * i) / (RELEVES_INTERMEDIAIRES + 1),
+    )
+    morceaux.push(releve(points[indice]))
+  }
+  morceaux.push(releve(points[points.length - 1]))
+  return morceaux.join('|')
 }

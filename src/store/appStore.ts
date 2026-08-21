@@ -118,6 +118,21 @@ export const MAX_TOLERANCE = 100
 /** Étape affichée pendant zoneLoading, pour un retour visuel non figé. */
 export type ZoneLoadStage = 'requesting' | 'retrying' | 'processing' | null
 
+/**
+ * Une trace mise de côté parce qu'elle ressemble à une autre déjà importée.
+ *
+ * On garde la trace toute prête plutôt que le fichier : « importer quand
+ * même » n'a alors plus rien à relire, ni à risquer d'échouer une seconde
+ * fois.
+ */
+export interface DoublonEnAttente {
+  id: string
+  filename: string
+  /** Nom du fichier dont l'empreinte coïncide. */
+  ressembleA: string
+  track: Track
+}
+
 export interface AppState {
   // Persistance
   db: SentiersDb | null
@@ -153,6 +168,12 @@ export interface AppState {
   // Traces GPX
   tracks: Track[]
   importErrors: string[]
+  /**
+   * Traces écartées comme doublons, gardées le temps que la personne
+   * tranche. L'empreinte est une heuristique : elle n'a pas le droit de
+   * refuser sans recours (issue #165).
+   */
+  importDoublons: DoublonEnAttente[]
 
   // Itinéraires créés par l'utilisateur (réseau PERSO, ids négatifs)
   customItineraries: Itinerary[]
@@ -257,6 +278,10 @@ export interface AppState {
   toggleOutingDetail: (trackId: string) => Promise<void>
   dismissCelebration: () => void
   clearImportErrors: () => void
+  /** Passe outre le dédoublonnage et ajoute la trace pour de bon. */
+  importerDoublon: (id: string) => Promise<void>
+  /** Retire la proposition sans rien importer. */
+  ignorerDoublon: (id: string) => void
   openItineraryDetail: (id: number) => void
   closeItineraryDetail: () => void
   toggleView3D: () => void
@@ -768,6 +793,7 @@ export const useAppStore = create<AppState>()((set, get) => {
     zoneError: null,
     tracks: [],
     importErrors: [],
+    importDoublons: [],
     backupMessage: null,
     lieux: [],
     lieuxLoading: false,
@@ -942,6 +968,7 @@ export const useAppStore = create<AppState>()((set, get) => {
       const knownFingerprints = new Map(
         get().tracks.map((t) => [trackFingerprint(t.points), t.filename]),
       )
+      const doublons: DoublonEnAttente[] = []
       for (const [index, file] of liste.entries()) {
         try {
           set({
@@ -965,15 +992,6 @@ export const useAppStore = create<AppState>()((set, get) => {
             )
             continue
           }
-          const fingerprint = trackFingerprint(parsed.points)
-          const duplicateOf = knownFingerprints.get(fingerprint)
-          if (duplicateOf) {
-            errors.push(
-              `${file.name} : identique à « ${duplicateOf} » déjà importée — ignorée.`,
-            )
-            continue
-          }
-          knownFingerprints.set(fingerprint, file.name)
           const track: Track = {
             id: crypto.randomUUID(),
             filename: file.name,
@@ -982,6 +1000,22 @@ export const useAppStore = create<AppState>()((set, get) => {
             importedAt: new Date().toISOString(),
             elevationGain: elevationGainMeters(parsed.elevations),
           }
+          const fingerprint = trackFingerprint(parsed.points)
+          const ressembleA = knownFingerprints.get(fingerprint)
+          if (ressembleA) {
+            // L'empreinte ne lit pas tous les points : elle ne peut pas
+            // affirmer l'identité, seulement la ressemblance. La trace est
+            // mise de côté, prête à être ajoutée si la personne le dit
+            // (issue #165) — pas jetée.
+            doublons.push({
+              id: track.id,
+              filename: file.name,
+              ressembleA,
+              track,
+            })
+            continue
+          }
+          knownFingerprints.set(fingerprint, file.name)
           // La base est attendue si elle s'ouvre encore : pendant le
           // démarrage, un `db` figé à null aurait laissé la trace en mémoire
           // seulement.
@@ -1006,6 +1040,11 @@ export const useAppStore = create<AppState>()((set, get) => {
       }
       if (errors.length > 0) {
         set((state) => ({ importErrors: [...state.importErrors, ...errors] }))
+      }
+      if (doublons.length > 0) {
+        set((state) => ({
+          importDoublons: [...state.importDoublons, ...doublons],
+        }))
       }
     },
 
@@ -1371,6 +1410,24 @@ export const useAppStore = create<AppState>()((set, get) => {
 
     clearImportErrors() {
       set({ importErrors: [] })
+    },
+
+    async importerDoublon(id) {
+      const doublon = get().importDoublons.find((d) => d.id === id)
+      if (!doublon) return
+      set((state) => ({
+        importDoublons: state.importDoublons.filter((d) => d.id !== id),
+      }))
+      const db = await baseOuverte()
+      if (db) await db.saveTrack(doublon.track)
+      set((state) => ({ tracks: [...state.tracks, doublon.track] }))
+      await recompute()
+    },
+
+    ignorerDoublon(id) {
+      set((state) => ({
+        importDoublons: state.importDoublons.filter((d) => d.id !== id),
+      }))
     },
 
     openItineraryDetail(id) {
