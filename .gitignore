@@ -5,3 +5,6 @@ playwright-report/
 test-results/
 *.local
 .DS_Store
+
+# Réglages personnels de Claude Code (les réglages d'équipe sont versionnés)
+.claude/settings.local.json
