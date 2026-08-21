@@ -1,6 +1,6 @@
 .section {
   display: grid;
-  gap: 8px;
+  gap: var(--espace-4);
 }
 
 .title {
@@ -21,7 +21,7 @@
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 6px;
+  gap: var(--espace-3);
   counter-reset: sortie;
 }
 
@@ -29,11 +29,11 @@
   width: 100%;
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 10px;
+  gap: var(--espace-5);
   align-items: center;
-  padding: 8px 10px;
+  padding: var(--espace-4) var(--espace-5);
   border: 1px solid var(--gris-vert-clair);
-  border-radius: 6px;
+  border-radius: var(--rayon-md);
   background: #fff;
   text-align: left;
   cursor: pointer;
@@ -46,8 +46,8 @@
 .badge {
   font-size: var(--texte-etiquette);
   font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 3px;
+  padding: var(--espace-1) var(--espace-3);
+  border-radius: var(--rayon-sm);
   color: #fff;
   align-self: start;
 }
@@ -75,7 +75,7 @@
 
 .main {
   display: grid;
-  gap: 2px;
+  gap: var(--espace-1);
   min-width: 0;
 }
 

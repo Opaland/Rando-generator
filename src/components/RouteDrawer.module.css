@@ -8,16 +8,16 @@
   overflow-y: auto;
   background: var(--blanc-papier);
   border-top: 5px solid var(--vert-noir);
-  box-shadow: 0 -3px 16px rgba(30, 43, 35, 0.22);
-  padding: 14px 16px 18px;
+  box-shadow: var(--ombre-feuille);
+  padding: var(--espace-7) var(--espace-7) var(--espace-7);
   display: grid;
-  gap: 10px;
+  gap: var(--espace-5);
 }
 
 .header {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--espace-5);
 }
 
 .title {
@@ -39,7 +39,7 @@
 
 .error {
   margin: 0;
-  padding: 8px 10px;
+  padding: var(--espace-4) var(--espace-5);
   border-left: 4px solid var(--erreur-bord);
   background: var(--erreur-fond);
   font-size: var(--texte-secondaire);
@@ -47,7 +47,7 @@
 
 .actions {
   display: flex;
-  gap: 8px;
+  gap: var(--espace-4);
   flex-wrap: wrap;
 }
 
@@ -58,15 +58,15 @@
 
 .saveRow {
   display: flex;
-  gap: 8px;
+  gap: var(--espace-4);
 }
 
 .nameInput {
   flex: 1;
   min-width: 0;
-  padding: 7px 9px;
+  padding: var(--espace-4) var(--espace-5);
   border: 1px solid var(--gris-vert);
-  border-radius: 6px;
+  border-radius: var(--rayon-md);
   background: #fff;
 }
 
@@ -82,7 +82,7 @@
     right: 12px;
     bottom: 12px;
     width: min(340px, calc(100% - 24px));
-    border-radius: 10px;
+    border-radius: var(--rayon-lg);
     border-top-width: 1px;
     border-left: 5px solid var(--vert-noir);
   }

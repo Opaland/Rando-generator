@@ -1,6 +1,6 @@
 .section {
   display: grid;
-  gap: 8px;
+  gap: var(--espace-4);
 }
 
 .title {
@@ -20,15 +20,15 @@
 .actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--espace-4);
 }
 
 .action {
   flex: 1 1 auto;
   min-height: 44px;
-  padding: 8px 12px;
+  padding: var(--espace-4) var(--espace-6);
   border: 1px solid var(--gris-vert);
-  border-radius: 4px;
+  border-radius: var(--rayon-sm);
   background: var(--blanc-papier);
   color: var(--vert-foret);
   font: inherit;
@@ -47,10 +47,10 @@
 .message {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--espace-4);
   margin: 0;
-  padding: 6px 8px;
-  border-radius: 4px;
+  padding: var(--espace-3) var(--espace-4);
+  border-radius: var(--rayon-sm);
   background: rgba(30, 43, 35, 0.06);
   font-size: var(--texte-secondaire);
 }
@@ -67,6 +67,6 @@
   margin: 0;
   border-left: 4px solid var(--attention-bord);
   background: var(--attention-fond);
-  padding: 8px 10px;
+  padding: var(--espace-4) var(--espace-5);
   font-size: var(--texte-secondaire);
 }

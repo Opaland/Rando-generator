@@ -4,7 +4,7 @@
   z-index: var(--z-overlay-guide);
   display: grid;
   place-items: center;
-  padding: 16px;
+  padding: var(--espace-7);
   pointer-events: none;
 }
 
@@ -19,11 +19,11 @@
   background: var(--blanc-papier);
   border: 1px solid var(--gris-vert-clair);
   border-top: 6px solid var(--rouge-balisage);
-  border-radius: 10px;
-  box-shadow: 0 4px 18px rgba(30, 43, 35, 0.25);
-  padding: 18px 22px;
+  border-radius: var(--rayon-lg);
+  box-shadow: var(--ombre-panneau);
+  padding: var(--espace-7) var(--espace-8);
   display: grid;
-  gap: 10px;
+  gap: var(--espace-5);
 }
 
 .title {
@@ -32,9 +32,9 @@
 
 .steps {
   margin: 0;
-  padding-left: 20px;
+  padding-left: var(--espace-8);
   display: grid;
-  gap: 8px;
+  gap: var(--espace-4);
   font-size: 0.92rem;
 }
 
@@ -43,7 +43,7 @@
   font-size: var(--texte-secondaire);
   color: var(--gris-vert);
   border-top: 1px solid var(--gris-vert-clair);
-  padding-top: 8px;
+  padding-top: var(--espace-4);
 }
 
 .demo {
@@ -51,9 +51,9 @@
      bouton de cette carte, il n'a pas à se disputer l'attention. */
   justify-self: start;
   min-height: 44px;
-  padding: 8px 18px;
+  padding: var(--espace-4) var(--espace-7);
   border: 1px solid var(--vert-noir);
-  border-radius: 6px;
+  border-radius: var(--rayon-md);
   background: var(--vert-noir);
   color: var(--blanc-papier);
   font: inherit;

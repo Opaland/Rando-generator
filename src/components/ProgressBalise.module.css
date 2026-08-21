@@ -1,7 +1,7 @@
 .track {
   width: 100%;
   height: 12px;
-  border-radius: 3px;
+  border-radius: var(--rayon-sm);
   background: var(--gris-vert-clair);
   overflow: hidden;
 }

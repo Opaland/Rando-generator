@@ -4,14 +4,14 @@
   bottom: 12px;
   z-index: var(--z-overlay-legend);
   display: grid;
-  gap: 6px;
-  padding: 8px 10px;
+  gap: var(--espace-3);
+  padding: var(--espace-4) var(--espace-5);
   background: rgba(250, 247, 242, 0.92);
   border: 1px solid var(--gris-vert-clair);
-  border-radius: 8px;
+  border-radius: var(--rayon-lg);
   font-size: var(--texte-appui);
   color: var(--vert-noir);
-  box-shadow: 0 2px 8px rgba(30, 43, 35, 0.18);
+  box-shadow: var(--ombre-flottante);
 }
 
 .networks,
@@ -21,25 +21,25 @@
   padding: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 10px;
+  gap: var(--espace-2) var(--espace-5);
 }
 
 .states {
   display: flex;
   border-top: 1px solid var(--gris-vert-clair);
-  padding-top: 5px;
+  padding-top: var(--espace-3);
 }
 
 .item {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--espace-3);
 }
 
 .swatch {
   width: 10px;
   height: 10px;
-  border-radius: 2px;
+  border-radius: var(--rayon-xs);
   flex: none;
 }
 
@@ -47,7 +47,7 @@
 .lineTodo {
   width: 14px;
   height: 3px;
-  border-radius: 2px;
+  border-radius: var(--rayon-xs);
   flex: none;
 }
 

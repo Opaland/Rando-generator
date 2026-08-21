@@ -1,6 +1,6 @@
 .section {
   display: grid;
-  gap: 8px;
+  gap: var(--espace-4);
 }
 
 .title {
@@ -19,7 +19,7 @@
 
 .list {
   display: grid;
-  gap: 10px;
+  gap: var(--espace-5);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -27,23 +27,23 @@
 
 .item {
   display: grid;
-  gap: 6px;
-  padding: 10px;
+  gap: var(--espace-3);
+  padding: var(--espace-5);
   border: 1px solid var(--gris-vert-clair);
-  border-radius: 6px;
+  border-radius: var(--rayon-md);
 }
 
 .entete {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--espace-4);
 }
 
 .badge {
   font-size: var(--texte-etiquette);
   font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 3px;
+  padding: var(--espace-1) var(--espace-3);
+  border-radius: var(--rayon-sm);
   color: #fff;
 }
 
@@ -90,7 +90,7 @@
   height: 32px;
   flex: none;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--rayon-sm);
   background: transparent;
   color: var(--gris-vert);
   font-size: 1.1rem;
@@ -116,7 +116,7 @@
 
 .troncons {
   display: grid;
-  gap: 4px;
+  gap: var(--espace-2);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -125,10 +125,10 @@
 .troncon {
   width: 100%;
   min-height: 36px;
-  padding: 6px 10px;
+  padding: var(--espace-3) var(--espace-5);
   text-align: left;
   border: 1px solid var(--gris-vert-clair);
-  border-radius: 4px;
+  border-radius: var(--rayon-sm);
   background: var(--blanc-papier);
   font: inherit;
   font-size: var(--texte-secondaire);

@@ -18,7 +18,7 @@
 
 .wrapper {
   display: grid;
-  gap: 2px;
+  gap: var(--espace-1);
 }
 
 .chart:focus-visible {
@@ -62,10 +62,10 @@
 
 .reperes {
   list-style: none;
-  margin: 6px 0 0;
+  margin: var(--espace-3) 0 0;
   padding: 0;
   display: grid;
-  gap: 2px;
+  gap: var(--espace-1);
   font-size: var(--texte-appui);
   color: var(--gris-vert);
 }
@@ -73,7 +73,7 @@
 .reperes li {
   display: flex;
   justify-content: space-between;
-  gap: 10px;
+  gap: var(--espace-5);
 }
 
 .repereNom {

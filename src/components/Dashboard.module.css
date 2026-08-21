@@ -1,6 +1,6 @@
 .section {
   display: grid;
-  gap: 12px;
+  gap: var(--espace-6);
 }
 
 /* Le tableau de bord est le résultat, pas un réglage : son titre porte plus
@@ -14,7 +14,7 @@
   color: var(--vert-noir);
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--espace-5);
 }
 
 .busy {
@@ -26,10 +26,10 @@
 
 .global {
   display: grid;
-  gap: 6px;
-  padding: 12px;
+  gap: var(--espace-3);
+  padding: var(--espace-6);
   background: var(--vert-noir);
-  border-radius: 8px;
+  border-radius: var(--rayon-lg);
   color: var(--blanc-papier);
 }
 
@@ -51,13 +51,13 @@
 .networks {
   margin: 0;
   display: grid;
-  gap: 10px;
+  gap: var(--espace-5);
 }
 
 .network {
   display: grid;
   grid-template-columns: 90px 1fr;
-  gap: 10px;
+  gap: var(--espace-5);
   align-items: center;
 }
 
@@ -69,7 +69,7 @@
 .network dd {
   margin: 0;
   display: grid;
-  gap: 3px;
+  gap: var(--espace-2);
 }
 
 .networkDetail {
@@ -79,7 +79,7 @@
 
 .subtitle {
   font-size: 0.92rem;
-  margin: 0 0 6px;
+  margin: 0 0 var(--espace-3);
 }
 
 .top {
@@ -91,7 +91,7 @@
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 6px;
+  gap: var(--espace-3);
   counter-reset: top;
 }
 
@@ -99,11 +99,11 @@
   width: 100%;
   display: grid;
   grid-template-columns: minmax(90px, auto) 1fr auto;
-  gap: 10px;
+  gap: var(--espace-5);
   align-items: center;
-  padding: 7px 10px;
+  padding: var(--espace-4) var(--espace-5);
   border: 1px solid var(--gris-vert-clair);
-  border-radius: 6px;
+  border-radius: var(--rayon-md);
   background: #fff;
   text-align: left;
 }
@@ -126,11 +126,11 @@
 }
 
 .share {
-  margin-top: 10px;
-  padding: 6px 10px;
+  margin-top: var(--espace-5);
+  padding: var(--espace-3) var(--espace-5);
   font-size: var(--texte-secondaire);
   border: 1px solid rgba(255, 255, 255, 0.6);
-  border-radius: 4px;
+  border-radius: var(--rayon-sm);
   background: transparent;
   color: #fff;
   cursor: pointer;
@@ -144,9 +144,9 @@
 .celebration {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin: 0 0 8px;
-  padding: 6px 8px;
+  gap: var(--espace-4);
+  margin: 0 0 var(--espace-4);
+  padding: var(--espace-3) var(--espace-4);
   font-size: var(--texte-secondaire);
   border-left: 3px solid var(--rouge-balisage);
   background: var(--gris-vert-clair);

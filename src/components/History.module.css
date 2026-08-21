@@ -1,6 +1,6 @@
 .section {
   display: grid;
-  gap: 8px;
+  gap: var(--espace-4);
 }
 
 .title {
@@ -17,7 +17,7 @@
 
 .chart {
   display: grid;
-  gap: 2px;
+  gap: var(--espace-1);
 }
 
 .svg {

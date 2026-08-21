@@ -52,3 +52,13 @@ export const NETWORK_EXPLANATIONS: Record<Network, string> = {
     'Boucle communale publiée en open data par une collectivité (Métropole de Lyon, par exemple).',
   PERSO: 'Itinéraire que vous avez importé ou tracé vous-même.',
 }
+
+/**
+ * Bleu de la position de l'utilisateur.
+ *
+ * Le point sur la carte est peint par MapLibre, qui ne lit pas les
+ * propriétés personnalisées CSS ; le bouton « où suis-je », lui, ne peut pas
+ * lire une constante JavaScript. La valeur existe donc forcément deux fois,
+ * et `tests/unit/couleurs.test.ts` empêche les deux de diverger.
+ */
+export const POSITION_COLOR = '#1d6fa5'
