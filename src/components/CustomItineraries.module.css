@@ -57,7 +57,7 @@
   flex: 1;
   min-width: 0;
   display: grid;
-  grid-template-columns: minmax(90px, 1fr) 1fr auto;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
   gap: var(--espace-5);
   align-items: center;
   padding: var(--espace-4) var(--espace-5);

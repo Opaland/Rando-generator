@@ -28,7 +28,7 @@
 .row {
   width: 100%;
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr);
   gap: var(--espace-5);
   align-items: center;
   padding: var(--espace-4) var(--espace-5);

@@ -38,7 +38,11 @@
   font-family: var(--font-display);
   font-size: 2.6rem;
   font-weight: 700;
-  line-height: 1;
+  /* 1,1 et non 1 : à 200 %, les hampes de la police d'affichage sortaient de
+     la boîte de ligne, qui réservait donc moins de place que le chiffre n'en
+     occupait. Rien n'était rogné — il n'y a pas d'overflow caché — mais la
+     ligne suivante venait à sa rencontre (issue #173). */
+  line-height: 1.1;
   color: #fff;
 }
 
@@ -56,7 +60,7 @@
 
 .network {
   display: grid;
-  grid-template-columns: 90px 1fr;
+  grid-template-columns: 90px minmax(0, 1fr);
   gap: var(--espace-5);
   align-items: center;
 }
@@ -98,7 +102,7 @@
 .topItem {
   width: 100%;
   display: grid;
-  grid-template-columns: minmax(90px, auto) 1fr auto;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto;
   gap: var(--espace-5);
   align-items: center;
   padding: var(--espace-4) var(--espace-5);

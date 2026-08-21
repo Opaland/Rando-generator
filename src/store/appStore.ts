@@ -57,6 +57,11 @@ import { FitError, looksLikeFit, parseFit } from '../core/fit.ts'
 import { messagePointsHorsLimites } from '../core/coordonnees.ts'
 import { construireDemonstration } from '../core/demonstration.ts'
 import {
+  estModeAffichage,
+  lireGrosTexte,
+  type ModeAffichage,
+} from '../core/affichage.ts'
+import {
   apiDuNavigateur,
   demanderPersistance,
   etatDuStockage,
@@ -195,6 +200,13 @@ export interface AppState {
    * Null tant que rien n'a été mesuré.
    */
   stockage: EtatDuStockage | null
+  /**
+   * Registre d'affichage (issue #173). Deux modes, mêmes données, même
+   * calcul : le mode simple cache, il n'enlève pas.
+   */
+  modeAffichage: ModeAffichage
+  /** Tout agrandi et contrasté, y compris les libellés portés par la carte. */
+  grosTexte: boolean
 
   // Itinéraires créés par l'utilisateur (réseau PERSO, ids négatifs)
   customItineraries: Itinerary[]
@@ -311,6 +323,8 @@ export interface AppState {
   quitterDemonstration: () => Promise<void>
   /** Mesure l'espace occupé et le mode de stockage obtenu. */
   rafraichirStockage: () => Promise<void>
+  setModeAffichage: (mode: ModeAffichage) => Promise<void>
+  setGrosTexte: (actif: boolean) => Promise<void>
   openItineraryDetail: (id: number) => void
   closeItineraryDetail: () => void
   toggleView3D: () => void
@@ -861,6 +875,8 @@ export const useAppStore = create<AppState>()((set, get) => {
     importDoublons: [],
     demonstration: false,
     stockage: null,
+    modeAffichage: 'complet',
+    grosTexte: false,
     backupMessage: null,
     lieux: [],
     lieuxLoading: false,
@@ -922,6 +938,8 @@ export const useAppStore = create<AppState>()((set, get) => {
         completion,
         lastZoneKey,
         objectifsBruts,
+        modeBrut,
+        grosTexteBrut,
       ] = await Promise.all([
         db.listTracks(),
         db.listCustomItineraries(),
@@ -929,6 +947,8 @@ export const useAppStore = create<AppState>()((set, get) => {
         db.getSetting('completionPct'),
         db.getSetting('lastZoneKey'),
         db.getSetting('objectifs'),
+        db.getSetting('modeAffichage'),
+        db.getSetting('grosTexte'),
       ])
       // Fusion, jamais remplacement : lire IndexedDB prend quelques centaines
       // de millisecondes, et l'utilisateur peut avoir déposé un fichier
@@ -941,6 +961,10 @@ export const useAppStore = create<AppState>()((set, get) => {
           typeof tolerance === 'number' ? tolerance : DEFAULT_TOLERANCE_METERS,
         completionPct: normalizeCompletionPct(completion),
         objectifs: lireObjectifs(objectifsBruts),
+        // Un réglage abîmé ou écrit par une version future ne doit pas
+        // imposer un affichage que personne n'a demandé (issue #173).
+        modeAffichage: estModeAffichage(modeBrut) ? modeBrut : 'complet',
+        grosTexte: lireGrosTexte(grosTexteBrut),
       }))
 
       // Rattrapage : ce qui a été importé pendant l'ouverture de la base n'y a
@@ -1546,6 +1570,20 @@ export const useAppStore = create<AppState>()((set, get) => {
         })),
       })
       await recompute()
+    },
+
+    async setModeAffichage(mode) {
+      set({ modeAffichage: mode })
+      const db = await baseOuverte()
+      if (db) await db.setSetting('modeAffichage', mode)
+    },
+
+    async setGrosTexte(actif) {
+      set({ grosTexte: actif })
+      const db = await baseOuverte()
+      // Pas de booléen dans le magasin des réglages : 0/1, relu par
+      // lireGrosTexte qui n'accepte que 1.
+      if (db) await db.setSetting('grosTexte', actif ? 1 : 0)
     },
 
     async rafraichirStockage() {
