@@ -1,3 +1,4 @@
+import { estDansLeMonde } from './coordonnees.ts'
 import type { LonLat } from './types.ts'
 
 /**
@@ -34,6 +35,8 @@ export interface ParsedFit {
   elevations: (number | null)[]
   /** Date du premier enregistrement horodaté (ISO), sinon null. */
   date: string | null
+  /** Nombre de positions écartées parce qu'elles tombaient hors du monde (issue #167). */
+  pointsHorsLimites: number
 }
 
 /** L'époque FIT : 31 décembre 1989 à minuit UTC, en secondes Unix. */
@@ -51,6 +54,14 @@ const FIELD_ENHANCED_ALTITUDE = 78
 
 /** Un semicircle vaut 180 / 2^31 degrés. */
 const SEMICIRCLE_TO_DEGREES = 180 / 2 ** 31
+
+/**
+ * Valeur « champ absent » du FIT pour un entier 32 bits signé. Une montre
+ * qui enregistre avant d'avoir fixé les satellites écrit ceci plutôt que
+ * d'omettre le champ : ce n'est pas une position aberrante, c'est une
+ * absence de position, et elle ne se signale pas à l'utilisateur.
+ */
+const SEMICIRCLE_ABSENT = 0x7fffffff
 
 /** Les altitudes FIT sont stockées en (mètres + 500) × 5. */
 const ALTITUDE_SCALE = 5
@@ -206,6 +217,7 @@ export function parseFit(buffer: ArrayBuffer): ParsedFit {
 
   const definitions = new Map<number, MessageDefinition>()
   const points: LonLat[] = []
+  let pointsHorsLimites = 0
   const elevations: (number | null)[] = []
   let date: string | null = null
 
@@ -228,7 +240,7 @@ export function parseFit(buffer: ArrayBuffer): ParsedFit {
       offset += 5
       const fields: FieldDefinition[] = []
       for (let i = 0; i < fieldCount; i++) {
-        if (offset + 3 > fin) return finish(points, elevations, date)
+        if (offset + 3 > fin) return finish(points, elevations, date, pointsHorsLimites)
         fields.push({
           number: view.getUint8(offset),
           size: view.getUint8(offset + 1),
@@ -244,7 +256,7 @@ export function parseFit(buffer: ArrayBuffer): ParsedFit {
         const devCount = view.getUint8(offset)
         offset += 1
         for (let i = 0; i < devCount; i++) {
-          if (offset + 3 > fin) return finish(points, elevations, date)
+          if (offset + 3 > fin) return finish(points, elevations, date, pointsHorsLimites)
           developerBytes += view.getUint8(offset + 1)
           offset += 3
         }
@@ -271,7 +283,7 @@ export function parseFit(buffer: ArrayBuffer): ParsedFit {
     let altitude: number | null = null
     let champOffset = offset
     for (const field of def.fields) {
-      if (champOffset + field.size > fin) return finish(points, elevations, date)
+      if (champOffset + field.size > fin) return finish(points, elevations, date, pointsHorsLimites)
       if (def.globalNumber === RECORD_MESSAGE) {
         const taille = BASE_TYPE_SIZES[field.baseType & 0x1f] ?? field.size
         // Un champ peut contenir un tableau : on ne lit que la première
@@ -298,32 +310,38 @@ export function parseFit(buffer: ArrayBuffer): ParsedFit {
     }
     offset = champOffset + def.developerBytes
 
-    if (def.globalNumber === RECORD_MESSAGE && lat !== null && lon !== null) {
+    if (
+      def.globalNumber === RECORD_MESSAGE &&
+      lat !== null &&
+      lon !== null &&
+      // Les deux façons dont une montre dit « je ne savais pas où j'étais » :
+      // le champ marqué absent, et le 0/0 du premier enregistrement. Aucune
+      // des deux n'est une anomalie à rapporter (issue #167).
+      lat !== SEMICIRCLE_ABSENT &&
+      lon !== SEMICIRCLE_ABSENT &&
+      !(lat === 0 && lon === 0)
+    ) {
       const latDeg = lat * SEMICIRCLE_TO_DEGREES
       const lonDeg = lon * SEMICIRCLE_TO_DEGREES
-      // Un enregistrement sans fix GPS porte une valeur sentinelle : plutôt
-      // que de parier sur sa convention exacte, on écarte tout ce qui ne
-      // tombe pas sur Terre.
-      if (
-        latDeg >= -90 &&
-        latDeg <= 90 &&
-        lonDeg >= -180 &&
-        lonDeg <= 180 &&
-        !(latDeg === 0 && lonDeg === 0)
-      ) {
+      if (estDansLeMonde(lonDeg, latDeg)) {
         points.push([lonDeg, latDeg])
         elevations.push(altitude)
+      } else {
+        // Une position hors bornes qui n'est pas une sentinelle connue : le
+        // fichier est abîmé, et l'utilisateur mérite de l'apprendre.
+        pointsHorsLimites += 1
       }
     }
   }
 
-  return finish(points, elevations, date)
+  return finish(points, elevations, date, pointsHorsLimites)
 }
 
 function finish(
   points: LonLat[],
   elevations: (number | null)[],
   date: string | null,
+  pointsHorsLimites: number,
 ): ParsedFit {
-  return { points, elevations, date }
+  return { points, elevations, date, pointsHorsLimites }
 }

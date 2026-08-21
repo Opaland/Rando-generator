@@ -336,6 +336,25 @@ describe('importGpxFiles', () => {
     expect(useAppStore.getState().importErrors.join()).toMatch(/casse\.gpx/)
   })
 
+  it('dit combien de points hors limites ont été écartés (issue #167)', async () => {
+    await useAppStore.getState().init()
+    // Une trace correcte à laquelle un outil buggé a ajouté deux points
+    // impossibles : la trace reste importable, et l'utilisateur l'apprend.
+    const points: [number, number][] = [...ligne(20), [200, 95], [201, 96]]
+    await useAppStore.getState().importGpxFiles([fichierGpx('sortie.gpx', points)])
+    expect(useAppStore.getState().tracks).toHaveLength(1)
+    expect(useAppStore.getState().tracks[0]?.points).toHaveLength(20)
+    expect(useAppStore.getState().importErrors).toContain(
+      'sortie.gpx : 2 points hors limites ont été ignorés.',
+    )
+  })
+
+  it('ne dit rien sur un fichier dont tous les points tombent sur Terre', async () => {
+    await useAppStore.getState().init()
+    await useAppStore.getState().importGpxFiles([fichierGpx('propre.gpx', ligne(20))])
+    expect(useAppStore.getState().importErrors).toEqual([])
+  })
+
   it('remet l’avancement à zéro une fois le lot terminé', async () => {
     await useAppStore.getState().init()
     await useAppStore

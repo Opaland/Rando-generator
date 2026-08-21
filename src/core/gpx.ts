@@ -1,3 +1,4 @@
+import { estDansLeMonde } from './coordonnees.ts'
 import type { LonLat } from './types.ts'
 
 /** Erreur de lecture d'un fichier GPX, message affichable tel quel à l'utilisateur. */
@@ -19,6 +20,8 @@ export interface ParsedGpx {
   elevations: (number | null)[]
   /** Date de la trace (métadonnées, sinon premier point horodaté), sinon null. */
   date: string | null
+  /** Nombre de points écartés parce qu'ils tombaient hors du monde (issue #167). */
+  pointsHorsLimites: number
 }
 
 /**
@@ -52,9 +55,18 @@ export function parseGpx(xmlText: string, parser: XmlParser): ParsedGpx {
   // parcours planifié/exporté (<rte><rtept>) — les deux sont valides côté
   // schéma GPX 1.1 et partagent la même structure de point. Certains exports
   // (ex. Suunto app pour un « parcours ») ne produisent que des <rtept>.
-  let { points, elevations, firstPointDate } = extractPoints(doc, 'trkpt')
-  if (points.length === 0) {
-    ;({ points, elevations, firstPointDate } = extractPoints(doc, 'rtept'))
+  let { points, elevations, firstPointDate, pointsHorsLimites } = extractPoints(
+    doc,
+    'trkpt',
+  )
+  // Un <trk> dont tous les points sont hors bornes n'est pas un fichier sans
+  // <trkpt> : on ne va pas chercher un <rte> qui n'existe pas, et surtout on
+  // ne perd pas le compte de ce qui vient d'être écarté.
+  if (points.length === 0 && pointsHorsLimites === 0) {
+    ;({ points, elevations, firstPointDate, pointsHorsLimites } = extractPoints(
+      doc,
+      'rtept',
+    ))
   }
 
   const metadataTime = doc
@@ -62,13 +74,19 @@ export function parseGpx(xmlText: string, parser: XmlParser): ParsedGpx {
     ?.getElementsByTagName('time')[0]
     ?.textContent.trim()
 
-  return { points, elevations, date: metadataTime ?? firstPointDate }
+  return {
+    points,
+    elevations,
+    date: metadataTime ?? firstPointDate,
+    pointsHorsLimites,
+  }
 }
 
 interface ExtractedPoints {
   points: LonLat[]
   elevations: (number | null)[]
   firstPointDate: string | null
+  pointsHorsLimites: number
 }
 
 /** Extrait points/altitudes/première date d'horodatage pour un tag donné (trkpt ou rtept). */
@@ -76,10 +94,17 @@ function extractPoints(doc: Document, tagName: 'trkpt' | 'rtept'): ExtractedPoin
   const points: LonLat[] = []
   const elevations: (number | null)[] = []
   let firstPointDate: string | null = null
+  let pointsHorsLimites = 0
   for (const pt of Array.from(doc.getElementsByTagName(tagName))) {
     const lat = Number(pt.getAttribute('lat'))
     const lon = Number(pt.getAttribute('lon'))
+    // Une coordonnée illisible (`lat="nord"`) est un fichier cassé, pas un
+    // point mal placé : la compter fausserait le message rendu à l'utilisateur.
     if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue
+    if (!estDansLeMonde(lon, lat)) {
+      pointsHorsLimites += 1
+      continue
+    }
     points.push([lon, lat])
     const ele = Number(
       pt.getElementsByTagName('ele')[0]?.textContent.trim() ?? NaN,
@@ -90,7 +115,7 @@ function extractPoints(doc: Document, tagName: 'trkpt' | 'rtept'): ExtractedPoin
       if (time) firstPointDate = time
     }
   }
-  return { points, elevations, firstPointDate }
+  return { points, elevations, firstPointDate, pointsHorsLimites }
 }
 
 /**

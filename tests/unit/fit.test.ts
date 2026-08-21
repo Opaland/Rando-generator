@@ -108,3 +108,32 @@ describe('parseFit', () => {
     expect(fit.date).toBeNull()
   })
 })
+
+describe('parseFit — bornes WGS84 (issue #167)', () => {
+  it('compte les positions hors bornes au lieu de les écarter en silence', () => {
+    // Les semicircles couvrent ±180° sur les deux axes : une latitude de
+    // 120° est représentable, et n'a aucun sens.
+    const fit = parseFit(
+      buildFit([
+        { timestamp: 1, lat: 45.4, lon: 4.5 },
+        { timestamp: 2, lat: 120, lon: 4.5 },
+      ]),
+    )
+    expect(fit.points).toHaveLength(1)
+    expect(fit.pointsHorsLimites).toBe(1)
+  })
+
+  it('ne compte pas la position sentinelle d’un enregistrement sans fix', () => {
+    // 0/0 est dans les bornes et attendu au démarrage d'une montre : le
+    // signaler à l'utilisateur serait du bruit, pas une information.
+    const fit = parseFit(
+      buildFit([
+        { timestamp: 1 },
+        { timestamp: 2, lat: 0, lon: 0 },
+        { timestamp: 3, lat: 45.4, lon: 4.5 },
+      ]),
+    )
+    expect(fit.points).toHaveLength(1)
+    expect(fit.pointsHorsLimites).toBe(0)
+  })
+})
