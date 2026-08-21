@@ -27,6 +27,11 @@ export function InstallButton() {
       // Sans preventDefault, Chrome affiche sa propre bannière au moment qui
       // lui convient — souvent le pire.
       event.preventDefault()
+      // L'événement n'est pas standardisé : rien ne garantit qu'il porte la
+      // méthode qu'on s'apprête à appeler. Un bouton qui échoue au clic est
+      // pire que pas de bouton du tout.
+      const candidat = event as Partial<EvenementInstallation>
+      if (typeof candidat.prompt !== 'function') return
       setInvite(event as EvenementInstallation)
     }
     const installee = () => {

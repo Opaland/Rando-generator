@@ -154,3 +154,16 @@ test('la proposition d’installation n’apparaît que si le navigateur la prop
   await page.getByTestId('installer').click()
   await expect(page.getByTestId('installer')).toHaveCount(0)
 })
+
+test('un événement d’installation sans méthode n’affiche pas de bouton', async ({
+  page,
+}) => {
+  // L'événement n'est pas standardisé : un bouton qui échouerait au clic
+  // serait pire que pas de bouton (revue du sprint 2).
+  await mockExternalNetwork(page)
+  await page.goto('/')
+  await page.evaluate(() => {
+    window.dispatchEvent(new Event('beforeinstallprompt'))
+  })
+  await expect(page.getByTestId('installer')).toHaveCount(0)
+})
