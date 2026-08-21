@@ -57,16 +57,16 @@ export interface MatchResult {
  * le conserve pas), la distance est le seul critère disponible — un contrôle
  * de vitesse serait plus juste et reste à faire.
  */
-export const MAX_GAP_METERS = 1_000
+const MAX_GAP_METERS = 1_000
 
 /** Échantillons consécutifs minimum pour créditer un passage (~300 m). */
-export const MIN_RUN_SAMPLES = 3
+const MIN_RUN_SAMPLES = 3
 
 /** Part de la tolérance en deçà de laquelle un échantillon est « confirmé ». */
-export const CONFIRM_FACTOR = 0.4
+const CONFIRM_FACTOR = 0.4
 
 /** Part minimale d'échantillons confirmés pour créditer un passage. */
-export const CONFIRM_RATIO = 0.25
+const CONFIRM_RATIO = 0.25
 
 export interface MatchOptions {
   toleranceMeters: number
@@ -112,13 +112,13 @@ export function buildSamples(
 }
 
 /** Segment de trace GPS ; a === b pour un point isolé. */
-export interface TrackSegment {
+interface TrackSegment {
   a: LonLat
   b: LonLat
 }
 
 /** Segments de la trace indexés par cellule de hachage spatial. */
-export type TrackIndex = Map<string, TrackSegment[]>
+type TrackIndex = Map<string, TrackSegment[]>
 
 function addToCells(index: TrackIndex, segment: TrackSegment): void {
   const [ax, ay] = cellIndices(segment.a[0], segment.a[1])
@@ -138,7 +138,7 @@ function addToCells(index: TrackIndex, segment: TrackSegment): void {
  * MAX_GAP_METERS sont conservés comme deux points isolés plutôt que comme un
  * segment : rien ne dit que l'utilisateur a marché entre les deux.
  */
-export function buildTrackIndex(points: LonLat[]): TrackIndex {
+function buildTrackIndex(points: LonLat[]): TrackIndex {
   const index: TrackIndex = new Map()
   if (points.length === 0) return index
   if (points.length === 1) {
@@ -160,7 +160,7 @@ export function buildTrackIndex(points: LonLat[]): TrackIndex {
 }
 
 /** Distance du point à la trace, en ne testant que les 9 cellules voisines. */
-export function distanceToTrack(index: TrackIndex, point: LonLat): number {
+function distanceToTrack(index: TrackIndex, point: LonLat): number {
   const [cx, cy] = cellIndices(point[0], point[1])
   let best = Infinity
   for (let dx = -1; dx <= 1; dx++) {
@@ -177,7 +177,7 @@ export function distanceToTrack(index: TrackIndex, point: LonLat): number {
 }
 
 /** Renseigne la distance de chaque échantillon à la trace, et un premier `done`. */
-export function matchSamples(
+function matchSamples(
   samples: Sample[],
   index: TrackIndex,
   toleranceMeters: number,
@@ -189,7 +189,7 @@ export function matchSamples(
   }
 }
 
-export interface ContinuityOptions {
+interface ContinuityOptions {
   minRunSamples: number
   confirmMeters: number
   confirmRatio: number
@@ -200,7 +200,7 @@ export interface ContinuityOptions {
  * Les échantillons d'un même way sont contigus et ordonnés (cf. buildSamples),
  * ce qui permet de raisonner par suites consécutives.
  */
-export function applyContinuity(
+function applyContinuity(
   samples: Sample[],
   options: ContinuityOptions,
 ): void {
@@ -252,7 +252,7 @@ function finalizePct(stats: AggregateStats): void {
  * Agrège les échantillons matés en résultats : par itinéraire, globaux
  * (way partagé compté une fois) et par réseau.
  */
-export function computeCompletion(
+function computeCompletion(
   samples: Sample[],
   itineraries: Itinerary[],
   stepMeters: number,
@@ -318,6 +318,18 @@ export function computeCompletion(
 }
 
 /** Pipeline complet : échantillonnage, index de segments, matching, continuité. */
+/**
+ * La seule porte d'entrée du calcul de complétion.
+ *
+ * Les étapes intermédiaires (index, échantillonnage, continuité) et les
+ * quatre constantes de réglage sont volontairement privées : ce sont elles
+ * qui décident de ce qui est « parcouru », et les exposer en ferait une API
+ * dont tout changement devient une rupture. Les trois fichiers de tests du
+ * matching passent déjà par ici, ce qui est la bonne façon de le tester.
+ *
+ * `buildSamples` reste exporté : deux tests de modules voisins l'utilisent
+ * comme fabrique de données, sans rien décider du calcul.
+ */
 export function runMatching(
   itineraries: Itinerary[],
   trackPoints: LonLat[],
