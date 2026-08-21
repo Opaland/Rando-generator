@@ -1,0 +1,73 @@
+.bloc {
+  margin-top: var(--espace-7);
+}
+
+.chiffre {
+  margin: var(--espace-3) 0;
+  font-size: 1rem;
+}
+
+.chiffre strong {
+  font-size: 1.35rem;
+  font-family: var(--font-display);
+}
+
+.rien {
+  margin: 0;
+  color: var(--gris-vert);
+  font-size: var(--texte-secondaire);
+}
+
+.liste {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--gris-vert-clair);
+}
+
+.liste li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0 var(--espace-4);
+  align-items: baseline;
+  padding: var(--espace-3) 0;
+  border-bottom: 1px solid var(--gris-vert-clair);
+}
+
+.nom {
+  font-weight: 600;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.nombre {
+  grid-row: 1;
+  grid-column: 2;
+  font-variant-numeric: tabular-nums;
+}
+
+.hotes {
+  grid-column: 1 / -1;
+  color: var(--gris-vert);
+  font-size: var(--texte-appui);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Volontairement voyant : si cette ligne apparaît, l'inventaire de la page
+   est en retard sur ce que fait l'application. C'est un défaut à voir, pas
+   une information à ranger discrètement. */
+.inconnue {
+  margin: var(--espace-4) 0 0;
+  padding: var(--espace-4);
+  border: 1px solid var(--attention-bord);
+  border-radius: var(--rayon-sm);
+  background: var(--attention-fond);
+  font-size: var(--texte-secondaire);
+}
+
+.note {
+  margin: var(--espace-4) 0 0;
+  color: var(--gris-vert);
+  font-size: var(--texte-appui);
+}

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import styles from './About.module.css'
+import { SortiesReseau } from './SortiesReseau.tsx'
 
 /** Page À propos : licences, marques, engagement privacy. */
 export function About({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -64,6 +65,8 @@ export function About({ open, onClose }: { open: boolean; onClose: () => void })
             voulez, et qui se relit ici ou sur un autre appareil.
           </p>
         </section>
+
+        <SortiesReseau />
 
         <section data-testid="about-sortant">
           <h3>Ce qui sort de votre appareil, et pour qui</h3>

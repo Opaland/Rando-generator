@@ -1,7 +1,16 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
+import { observerReseau } from './lib/observerReseau.ts'
+import { useAppStore } from './store/appStore.ts'
 import './index.css'
+
+// Posé avant le premier rendu : une requête partie pendant le démarrage
+// compte autant que les autres, et un compteur qui commencerait après coup
+// afficherait un chiffre plus flatteur que la réalité (issue #178).
+observerReseau((url) => {
+  useAppStore.getState().noterSortieReseau(url)
+})
 
 const rootElement = document.getElementById('root')
 if (!rootElement) {
