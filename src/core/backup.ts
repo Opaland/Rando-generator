@@ -178,7 +178,13 @@ function estItineraire(valeur: unknown): valeur is Itinerary {
     typeof i['osmRelationId'] === 'number' &&
     Array.isArray(ways) &&
     ways.length > 0 &&
-    ways.every((way) => Array.isArray(champs(way)?.['coords']))
+    ways.every((way) => {
+      const coords = champs(way)?.['coords']
+      // Vérifier chaque coordonnée, pas seulement que `coords` est un
+      // tableau : un `null` glissé là se propageait jusqu'au calcul de
+      // longueur et au rendu de la carte, très loin d'ici (issue #166).
+      return Array.isArray(coords) && coords.length > 0 && coords.every(estPoint)
+    })
   )
 }
 
