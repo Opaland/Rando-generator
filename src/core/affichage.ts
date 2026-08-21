@@ -89,6 +89,25 @@ export function sectionsVisibles(mode: ModeAffichage): Sections {
 }
 
 /**
+ * Seuils des deuxième et troisième étoiles, en pourcentage d'itinéraire
+ * couvert par la sortie.
+ *
+ * **Ces deux nombres sont un jugement, pas une mesure**, et il faut le dire
+ * plutôt que de le laisser deviner. J'ai refusé d'inventer les valeurs de
+ * tolérance (issue #174) et la même honnêteté s'applique ici — avec une
+ * différence qui justifie de trancher quand même : la tolérance décide de
+ * **ce qui est compté**, et l'inventer aurait silencieusement changé le
+ * pourcentage de chaque utilisateur. Ces seuils-ci ne décident que de la
+ * façon dont un résultat déjà calculé est décoré. Rien de calculé ne bouge
+ * si on les change.
+ *
+ * Les ancrer au seuil « bouclé » (90–100 %) a été envisagé et écarté : une
+ * seule sortie boucle rarement 95 % d'un GR, la troisième étoile serait
+ * inatteignable et ne dirait plus rien.
+ */
+const ETOILES_SEUILS = { troisieme: 75, deuxieme: 40 } as const
+
+/**
  * Étoiles d'une sortie, d'après la part d'itinéraires balisés qu'elle couvre.
  *
  * Ce n'est **pas un score**. Pas de notification, pas de classement, pas de
@@ -98,7 +117,7 @@ export function sectionsVisibles(mode: ModeAffichage): Sections {
  */
 export function etoilesDeSortie(pourcentage: number): 0 | 1 | 2 | 3 {
   if (!Number.isFinite(pourcentage) || pourcentage <= 0) return 0
-  if (pourcentage >= 75) return 3
-  if (pourcentage >= 40) return 2
+  if (pourcentage >= ETOILES_SEUILS.troisieme) return 3
+  if (pourcentage >= ETOILES_SEUILS.deuxieme) return 2
   return 1
 }
