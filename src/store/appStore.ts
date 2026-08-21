@@ -54,6 +54,7 @@ import {
 import { fetchPois } from '../core/poi.ts'
 import { outingHighlights, type OutingHighlight } from '../core/outing.ts'
 import { FitError, looksLikeFit, parseFit } from '../core/fit.ts'
+import { messagePointsHorsLimites } from '../core/coordonnees.ts'
 import { TcxError, looksLikeTcx, parseTcx } from '../core/tcx.ts'
 import {
   GeoJsonError,
@@ -326,7 +327,12 @@ async function parseTraceFile(file: File): Promise<ParsedGpx> {
   const buffer = await file.arrayBuffer()
   if (looksLikeFit(buffer)) {
     const fit = parseFit(buffer)
-    return { points: fit.points, elevations: fit.elevations, date: fit.date }
+    return {
+      points: fit.points,
+      elevations: fit.elevations,
+      date: fit.date,
+      pointsHorsLimites: fit.pointsHorsLimites,
+    }
   }
   // Le format est reconnu au contenu, pas à l'extension : un fichier renommé
   // reste lisible, et un fichier mal nommé ne fait pas échouer l'import.
@@ -413,7 +419,9 @@ async function developperArchives(
  * plusieurs itinéraires d'un coup, là où un GPX n'en porte qu'un. Le format
  * est reconnu au contenu, pas à l'extension.
  */
-async function lireItineraires(file: File): Promise<GeoJsonTrail[]> {
+async function lireItineraires(
+  file: File,
+): Promise<{ trails: GeoJsonTrail[]; pointsHorsLimites: number }> {
   const buffer = await file.arrayBuffer()
   if (!looksLikeFit(buffer)) {
     const texte = new TextDecoder().decode(buffer)
@@ -424,11 +432,14 @@ async function lireItineraires(file: File): Promise<GeoJsonTrail[]> {
       } catch {
         throw new GeoJsonError('Ce fichier n’est pas un JSON valide.')
       }
-      return parseGeoJsonTrails(donnees)
+      return { trails: parseGeoJsonTrails(donnees), pointsHorsLimites: 0 }
     }
   }
   const trace = await parseTraceFile(file)
-  return [{ name: null, lines: [trace.points] }]
+  return {
+    trails: [{ name: null, lines: [trace.points] }],
+    pointsHorsLimites: trace.pointsHorsLimites,
+  }
 }
 
 /** Identifiant du suivi de position en cours (API navigateur). */
@@ -944,6 +955,10 @@ export const useAppStore = create<AppState>()((set, get) => {
           // bloque le fil principal (mesuré : ~320 ms pour un GPX de 9 Mo).
           await pause()
           const parsed = await parseTraceFile(file)
+          // Signalé avant tout le reste : même une trace importée avec succès
+          // doit dire ce qu'elle a perdu en chemin (issue #167).
+          const horsLimites = messagePointsHorsLimites(parsed.pointsHorsLimites)
+          if (horsLimites) errors.push(`${file.name} : ${horsLimites}`)
           if (parsed.points.length === 0) {
             errors.push(
               `${file.name} : aucun point de trace exploitable dans ce fichier.`,
@@ -1012,8 +1027,10 @@ export const useAppStore = create<AppState>()((set, get) => {
             },
           })
           await pause()
-          const trails = await lireItineraires(file)
-          const exploitables = trails.filter((trail) =>
+          const lecture = await lireItineraires(file)
+          const horsLimites = messagePointsHorsLimites(lecture.pointsHorsLimites)
+          if (horsLimites) errors.push(`${file.name} : ${horsLimites}`)
+          const exploitables = lecture.trails.filter((trail) =>
             trail.lines.some((ligne) => ligne.length >= 2),
           )
           if (exploitables.length === 0) {

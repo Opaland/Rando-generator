@@ -112,3 +112,29 @@ describe('parseTcx', () => {
     ])
   })
 })
+
+describe('parseTcx — bornes WGS84 (issue #167)', () => {
+  it('écarte et compte les positions hors du référentiel terrestre', () => {
+    // Le TCX partageait mot pour mot le trou du GPX (issue #167) : seul
+    // `Number.isFinite` filtrait les degrés.
+    const res = parseTcx(
+      tcx(point(45.4, 4.5, { ele: 800 }) + point(95, 200, { ele: 900 }) + point(45.41, 4.51, { ele: 810 })),
+      parser,
+    )
+    expect(res.points).toEqual([
+      [4.5, 45.4],
+      [4.51, 45.41],
+    ])
+    expect(res.elevations).toEqual([800, 810])
+    expect(res.pointsHorsLimites).toBe(1)
+  })
+
+  it('accepte les bornes exactes et ne compte rien', () => {
+    const res = parseTcx(tcx(point(90, 180) + point(-90, -180)), parser)
+    expect(res.points).toEqual([
+      [180, 90],
+      [-180, -90],
+    ])
+    expect(res.pointsHorsLimites).toBe(0)
+  })
+})

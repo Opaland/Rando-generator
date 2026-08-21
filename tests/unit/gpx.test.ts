@@ -119,3 +119,63 @@ describe('trackFingerprint', () => {
     expect(trackFingerprint(a)).not.toBe(trackFingerprint(other))
   })
 })
+
+describe('parseGpx — bornes WGS84 (issue #167)', () => {
+  const gpx = (trkpts: string) => `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="test"><trk><trkseg>${trkpts}</trkseg></trk></gpx>`
+  const pt = (lat: string, lon: string, ele?: number) =>
+    `<trkpt lat="${lat}" lon="${lon}">${ele === undefined ? '' : `<ele>${ele}</ele>`}</trkpt>`
+
+  it('n’accepte pas un point hors du référentiel terrestre', () => {
+    // Le cas exact rapporté : lat=95 lon=200 était accepté tel quel.
+    const res = parseGpx(gpx(pt('95', '200') + pt('96', '201')), parser)
+    expect(res.points).toEqual([])
+    expect(res.pointsHorsLimites).toBe(2)
+  })
+
+  it('garde les points valides et compte ceux qu’il écarte', () => {
+    const res = parseGpx(
+      gpx(pt('45.4', '4.5', 800) + pt('95', '200', 900) + pt('45.41', '4.51', 810)),
+      parser,
+    )
+    expect(res.points).toEqual([
+      [4.5, 45.4],
+      [4.51, 45.41],
+    ])
+    // L'altitude du point écarté part avec lui : les deux tableaux doivent
+    // rester alignés, sinon le dénivelé se décale d'un cran.
+    expect(res.elevations).toEqual([800, 810])
+    expect(res.pointsHorsLimites).toBe(1)
+  })
+
+  it('accepte les bornes exactes', () => {
+    const res = parseGpx(gpx(pt('90', '180') + pt('-90', '-180')), parser)
+    expect(res.points).toEqual([
+      [180, 90],
+      [-180, -90],
+    ])
+    expect(res.pointsHorsLimites).toBe(0)
+  })
+
+  it('compte aussi les points hors limites d’un parcours <rtept>', () => {
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="test"><rte>
+<rtept lat="45.4" lon="4.5"/><rtept lat="200" lon="95"/>
+</rte></gpx>`
+    const res = parseGpx(xml, parser)
+    expect(res.points).toEqual([[4.5, 45.4]])
+    expect(res.pointsHorsLimites).toBe(1)
+  })
+
+  it('ne compte pas comme « hors limites » une coordonnée illisible', () => {
+    // `lat="nord"` n'est pas un point mal placé, c'est un fichier cassé :
+    // le mélanger au compte des points hors bornes rendrait le message faux.
+    const res = parseGpx(gpx(pt('nord', '4.5') + pt('45.4', '4.5')), parser)
+    expect(res.points).toEqual([[4.5, 45.4]])
+    expect(res.pointsHorsLimites).toBe(0)
+  })
+
+  it('ne compte rien sur un fichier sain', () => {
+    expect(parseGpx(GPX_SIMPLE, parser).pointsHorsLimites).toBe(0)
+  })
+})

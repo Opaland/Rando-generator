@@ -1,3 +1,4 @@
+import { estDansLeMonde } from './coordonnees.ts'
 import type { ParsedGpx, XmlParser } from './gpx.ts'
 import type { LonLat } from './types.ts'
 
@@ -67,6 +68,7 @@ export function parseTcx(xmlText: string, parser: XmlParser): ParsedGpx {
   const points: LonLat[] = []
   const elevations: (number | null)[] = []
   let premiereDate: string | null = null
+  let pointsHorsLimites = 0
 
   for (const trackpoint of enfants(doc, 'Trackpoint')) {
     // L'heure est relevée avant la position : un point non localisé dit quand
@@ -80,6 +82,12 @@ export function parseTcx(xmlText: string, parser: XmlParser): ParsedGpx {
     const lat = nombre(enfants(position, 'LatitudeDegrees')[0])
     const lon = nombre(enfants(position, 'LongitudeDegrees')[0])
     if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue
+    // Le TCX partageait mot pour mot le trou du GPX : seul `Number.isFinite`
+    // filtrait des degrés (issue #167).
+    if (!estDansLeMonde(lon, lat)) {
+      pointsHorsLimites += 1
+      continue
+    }
     points.push([lon, lat])
     const altitude = nombre(enfants(trackpoint, 'AltitudeMeters')[0])
     elevations.push(Number.isFinite(altitude) ? altitude : null)
@@ -89,5 +97,10 @@ export function parseTcx(xmlText: string, parser: XmlParser): ParsedGpx {
   // l'horodatage du premier point, qui peut précéder ou suivre le départ.
   const idActivite = enfants(doc, 'Id')[0]?.textContent.trim()
 
-  return { points, elevations, date: idActivite ?? premiereDate }
+  return {
+    points,
+    elevations,
+    date: idActivite ?? premiereDate,
+    pointsHorsLimites,
+  }
 }
