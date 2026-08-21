@@ -193,10 +193,10 @@ function App() {
           <DemoBanner />
           {/* Le mode simple cache, il n'enlève pas : la carte, les traces et
               le tableau de bord restent, tout le reste se replie (#173). */}
-          <ZonePicker />
-          <TrackManager />
+          {sections.zone && <ZonePicker />}
+          {sections.traces && <TrackManager />}
           {sections.itineraires && <CustomItineraries />}
-          <Dashboard />
+          {sections.tableauDeBord && <Dashboard />}
           {sections.objectifs && <Objectifs />}
           {sections.prochaineSortie && <NextOuting />}
           {sections.historique && <History />}

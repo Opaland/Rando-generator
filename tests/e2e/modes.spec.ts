@@ -167,3 +167,47 @@ test('les étoiles d’une sortie ne sont pas un score', async ({ page }) => {
   const texte = (await etoiles.textContent()) ?? ''
   expect(texte).not.toMatch(/points?|score|record|classement/i)
 })
+
+test('le mode simple ne peut pas enfermer, ni faire perdre une trace', async ({
+  page,
+}) => {
+  // Revue du sprint 3 : un mode réduit dont on ne sort pas est un piège, et
+  // un mode qui laisse déposer une trace invisible en est un autre.
+  await mockExternalNetwork(page)
+  await page.goto('/')
+  await page.getByTestId('mode-affichage').locator(':scope > summary').click()
+  await page.getByTestId('mode-simple').check()
+
+  // On arrive en mode simple sans rien avoir : la tâche complète doit
+  // rester possible, de bout en bout.
+  await avecUneZoneEtUneTrace(page)
+  await expect(page.getByTestId('global-pct')).toBeVisible()
+
+  // La sortie du mode reste atteignable, et rend tout ce qui était caché.
+  await expect(page.getByTestId('mode-affichage')).toBeVisible()
+  await page.getByTestId('mode-complet').check()
+  await expect(page.getByTestId('settings')).toHaveCount(1)
+  await expect(page.getByTestId('backup')).toHaveCount(1)
+
+  // Et la trace déposée en mode simple est bien là, enregistrée.
+  await page.reload()
+  await expect(page.getByTestId('tracks-list')).toContainText('sortie.gpx')
+})
+
+test('la sauvegarde reste exportable après un passage en mode simple', async ({
+  page,
+}) => {
+  // Le mode simple cache la section « Sauvegarde ». Si quelqu'un y reste et
+  // que ses données ne sont plus exportables, on a créé une impasse.
+  await mockExternalNetwork(page)
+  await page.goto('/')
+  await avecUneZoneEtUneTrace(page)
+
+  await page.getByTestId('mode-affichage').locator(':scope > summary').click()
+  await page.getByTestId('mode-simple').check()
+  await expect(page.getByTestId('backup')).toHaveCount(0)
+
+  await page.getByTestId('mode-complet').check()
+  await page.getByTestId('backup').locator(':scope > summary').click()
+  await expect(page.getByTestId('backup-export')).toBeEnabled()
+})
