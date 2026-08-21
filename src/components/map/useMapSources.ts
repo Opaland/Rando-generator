@@ -15,6 +15,35 @@ import { poisToGeoJSON } from './style.ts'
  * `styleEpoch` en dépendance et le report sur « idle » quand le style n'est
  * pas encore chargé.
  */
+/**
+ * Applique une mise à jour de source dès que le style est prêt, et rend de
+ * quoi annuler l'attente.
+ *
+ * MapLibre ignore `setData` tant que le style n'est pas chargé, d'où le
+ * report sur « idle ». Mais un `apply` laissé en attente ferme sur les
+ * données de *son* rendu : si l'effet rejoue avant que la carte ne devienne
+ * inactive, le vieil `apply` reprend la main et écrase le nouveau.
+ *
+ * C'est ainsi que le repère du profil altimétrique disparaissait : on
+ * ouvrait la fiche (pas de repère, style pas encore chargé, `apply` mis en
+ * attente), on cliquait le graphique (repère posé tout de suite, style
+ * chargé entre-temps), puis la carte devenait inactive — et le rendu d'avant
+ * le clic effaçait le repère.
+ */
+export function appliquerQuandPret(
+  map: MaplibreMap,
+  apply: () => void,
+): (() => void) | undefined {
+  if (map.isStyleLoaded()) {
+    apply()
+    return undefined
+  }
+  map.once('idle', apply)
+  return () => {
+    map.off('idle', apply)
+  }
+}
+
 export function useMapSources(
   mapRef: RefObject<MaplibreMap | null>,
   ready: boolean,
@@ -68,8 +97,7 @@ export function useMapSources(
       }
     }
     // Après un setStyle (repli OSM), les sources se rechargent : on ré-applique.
-    if (map.isStyleLoaded()) apply()
-    else map.once('idle', apply)
+    return appliquerQuandPret(map, apply)
   }, [
     mapRef,
     itineraries,
@@ -109,8 +137,7 @@ export function useMapSources(
         })),
       })
     }
-    if (map.isStyleLoaded()) apply()
-    else map.once('idle', apply)
+    return appliquerQuandPret(map, apply)
   }, [mapRef, drawPath, drawWaypoints, ready, styleEpoch])
 
   // Position de l'utilisateur.
@@ -134,8 +161,7 @@ export function useMapSources(
           : [],
       })
     }
-    if (map.isStyleLoaded()) apply()
-    else map.once('idle', apply)
+    return appliquerQuandPret(map, apply)
   }, [mapRef, userPosition, ready, styleEpoch])
 
   // Point survolé sur le profil altimétrique.
@@ -156,8 +182,7 @@ export function useMapSources(
           : [],
       })
     }
-    if (map.isStyleLoaded()) apply()
-    else map.once('idle', apply)
+    return appliquerQuandPret(map, apply)
   }, [mapRef, elevationHover, ready, styleEpoch])
 
 }
