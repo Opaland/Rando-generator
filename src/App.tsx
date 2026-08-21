@@ -15,6 +15,8 @@ import { OfflineBanner } from './components/OfflineBanner.tsx'
 import { RouteDrawer } from './components/RouteDrawer.tsx'
 import { Settings } from './components/Settings.tsx'
 import { TrackManager } from './components/TrackManager.tsx'
+import { DemoBanner } from './components/DemoBanner.tsx'
+import { InstallButton } from './components/InstallButton.tsx'
 import { ZonePicker } from './components/ZonePicker.tsx'
 import { formatPct } from './lib/format.ts'
 import { useAppStore } from './store/appStore.ts'
@@ -106,7 +108,7 @@ function App() {
             aucun serveur, aucune télémétrie.
           </span>
           <span className={styles.privacyShort}>
-            Tout reste sur votre appareil.
+            Vos traces restent sur votre appareil.
           </span>
         </p>
         {/*
@@ -174,6 +176,7 @@ function App() {
                 : `${formatPct(globalPct)} parcourus`}
             </span>
           </button>
+          <DemoBanner />
           <ZonePicker />
           <TrackManager />
           <CustomItineraries />
@@ -184,6 +187,7 @@ function App() {
           <ItineraryList />
           <Settings />
           <Backup />
+          <InstallButton />
           <footer className={styles.footer}>
             <a
               className={styles.pourquoiPied}

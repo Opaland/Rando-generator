@@ -45,3 +45,29 @@
   border-top: 1px solid var(--gris-vert-clair);
   padding-top: 8px;
 }
+
+.demo {
+  /* Le premier « aha » avant le premier effort (issue #172) : c'est le seul
+     bouton de cette carte, il n'a pas à se disputer l'attention. */
+  justify-self: start;
+  min-height: 44px;
+  padding: 8px 18px;
+  border: 1px solid var(--vert-noir);
+  border-radius: 6px;
+  background: var(--vert-noir);
+  color: var(--blanc-papier);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.demo:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.demoAide {
+  margin: 0;
+  font-size: var(--texte-appui);
+  color: var(--gris-vert);
+}
