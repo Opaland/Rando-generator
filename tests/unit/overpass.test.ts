@@ -113,6 +113,74 @@ describe('buildRefQuery', () => {
   })
 })
 
+/**
+ * Deux couches d'échappement se superposent dans un filtre Overpass, et les
+ * confondre était le défaut de l'issue #164 : la ref est une expression
+ * régulière (couche interne), elle-même écrite entre guillemets en Overpass
+ * QL (couche externe).
+ *
+ * Plutôt que de vérifier l'orthographe des antislashs — ce qui ne prouve
+ * rien — on refait le trajet d'Overpass : on retire la couche QL comme son
+ * analyseur le fait, on compile l'expression obtenue, et on regarde ce
+ * qu'elle reconnaît.
+ */
+function regexVueParOverpass(query: string): RegExp {
+  const filtre = /\["ref"~"((?:[^"\\]|\\.)*)",i\]/.exec(query)
+  if (!filtre) {
+    throw new Error(
+      `Overpass ne saurait pas lire ce filtre de ref : ${query}`,
+    )
+  }
+  // Overpass QL : `\"` vaut un guillemet, `\\` vaut un antislash.
+  return new RegExp(filtre[1]!.replace(/\\(.)/g, '$1'))
+}
+
+describe('buildRefQuery — échappement Overpass QL (issue #164)', () => {
+  it('ne laisse pas un guillemet fermer la chaîne QL', () => {
+    // Le guillemet n'est pas un métacaractère de regex : il n'était pas
+    // échappé, et fermait la chaîne QL au milieu du filtre.
+    const q = buildRefQuery('GR"5')
+    expect(regexVueParOverpass(q).test('GR"5')).toBe(true)
+  })
+
+  it('transmet un antislash comme un antislash', () => {
+    // Deux couches à traverser : la regex le double, QL redouble le tout.
+    const q = buildRefQuery('GR\\5')
+    expect(regexVueParOverpass(q).test('GR\\5')).toBe(true)
+  })
+
+  it('tient les deux ensemble', () => {
+    const q = buildRefQuery('GR"\\5')
+    expect(regexVueParOverpass(q).test('GR"\\5')).toBe(true)
+  })
+
+  it('ne laisse pas une ref ajouter un filtre à la requête', () => {
+    // La charge de l'audit. Il n'y a ici ni serveur, ni secret, ni autre
+    // utilisateur : ce n'est pas une faille, c'est une entrée mal échappée.
+    const charge = 'GR"]["name"~"pwn'
+    const q = buildRefQuery(charge)
+    // Un seul filtre de ref, et il reconnaît la charge à la lettre.
+    expect(q.match(/\["ref"~/g)).toHaveLength(1)
+    expect(q).not.toContain('["name"~')
+    expect(regexVueParOverpass(q).test(charge)).toBe(true)
+  })
+
+  it('n’abîme pas le cas courant', () => {
+    const regex = regexVueParOverpass(buildRefQuery('GR 20 (Nord)'))
+    expect(regex.test('GR 20 (Nord)')).toBe(true)
+    // L'espace reste optionnel : « GR20 » trouve « GR 20 ».
+    expect(regex.test('GR20 (Nord)')).toBe(true)
+    expect(regex.test('GR 21 (Nord)')).toBe(false)
+  })
+
+  it('ancre toujours la recherche sur la ref entière', () => {
+    const regex = regexVueParOverpass(buildRefQuery('GR 7'))
+    expect(regex.test('GR 7')).toBe(true)
+    expect(regex.test('GR 70')).toBe(false)
+    expect(regex.test('VGR 7')).toBe(false)
+  })
+})
+
 describe('parseOverpassResponse', () => {
   const itineraries = parseOverpassResponse(pilatFixture, FETCHED_AT)
 

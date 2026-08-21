@@ -134,16 +134,40 @@ out meta geom;`
 }
 
 /**
+ * Couche interne : échappe les métacaractères pour que la ref soit cherchée
+ * à la lettre, et non interprétée comme une expression régulière.
+ */
+function echapperRegex(texte: string): string {
+  return texte.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/**
+ * Couche externe : échappe ce qui a un sens dans une chaîne Overpass QL,
+ * c'est-à-dire le guillemet qui la délimite et l'antislash qui échappe.
+ * S'applique en dernier, sur le résultat de la couche interne — dont les
+ * antislashs doivent eux aussi traverser QL intacts.
+ */
+function echapperQL(texte: string): string {
+  return texte.replace(/["\\]/g, '\\$&')
+}
+
+/**
  * Requête Overpass : relations route=hiking par ref (ex. « GR 20 »), en France,
- * insensible à la casse et tolérante sur les espaces. Les métacaractères de
- * regex sont échappés (doublement : une fois pour la regex, une fois pour la
- * chaîne Overpass QL).
+ * insensible à la casse et tolérante sur les espaces. La ref traverse deux
+ * échappements successifs : celui de la regex, puis celui de la chaîne
+ * Overpass QL qui la contient.
  */
 export function buildRefQuery(ref: string): string {
-  const escaped = ref
-    .trim()
-    .replace(/[.*+?^${}()|[\]\\]/g, '\\\\$&')
+  // Deux couches se superposent ici, et les confondre était le défaut de
+  // l'issue #164. La ref devient une expression régulière (couche interne),
+  // et cette expression s'écrit entre guillemets en Overpass QL (couche
+  // externe). Le guillemet double n'est pas un métacaractère de regex : il
+  // n'était pas échappé, et fermait la chaîne QL au milieu du filtre.
+  const litteral = echapperRegex(ref.trim())
+    // Injecté après l'échappement, parce que c'est de la syntaxe voulue :
+    // l'espace de « GR 20 » devient optionnel, pour trouver « GR20 ».
     .replace(/\s+/g, ' ?')
+  const escaped = echapperQL(litteral)
   return `[out:json][timeout:180];
 area["ISO3166-1"="FR"]["admin_level"="2"]->.fr;
 relation${ROUTE_FILTER}["ref"~"^${escaped}$",i](area.fr);
