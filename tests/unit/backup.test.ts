@@ -158,6 +158,60 @@ describe('lireArchiveBackup', () => {
     expect(relu.customItineraries.map((i) => i.name)).toEqual(['Ma boucle'])
   })
 
+  it('écarte un itinéraire dont les coordonnées ne sont pas des nombres', async () => {
+    // Un fichier venu du disque n'est garanti par rien — le module le sait et
+    // le vérifie partout ailleurs. Ce chemin-là y avait échappé : un `null`
+    // ou une chaîne se propageait jusqu'au calcul de longueur et au rendu de
+    // la carte, très loin du point d'entrée (issue #166).
+    const bancal = JSON.stringify({
+      format: BACKUP_FORMAT,
+      version: BACKUP_VERSION,
+      exportedAt: '2026-08-21T10:00:00Z',
+      tracks: [],
+      customItineraries: [
+        {
+          osmRelationId: -9,
+          name: 'Coordonnées piégées',
+          ways: [{ osmWayId: 1, coords: [['a', 'b'], [null, {}]] }],
+        },
+        {
+          osmRelationId: -8,
+          name: 'Un point sur deux',
+          ways: [{ osmWayId: 2, coords: [[4.5, 45.4], [null, 45.5]] }],
+        },
+        perso(-1, 'Saine', [[4.5, 45.4], [4.52, 45.42]]),
+      ],
+      settings: {},
+    })
+    const relu = await lireArchiveBackup(bancal)
+    // Les deux abîmés partent, le sain reste : on récupère quatre-vingt-dix-
+    // neuf itinéraires sur cent plutôt que zéro.
+    expect(relu.customItineraries.map((i) => i.name)).toEqual(['Saine'])
+  })
+
+  it('refuse une coordonnée à trois valeurs', async () => {
+    // `LonLat` vaut exactement deux nombres, et Sentiers n'en écrit jamais
+    // d'autre forme : une coordonnée à trois valeurs signale un fichier qui
+    // n'a pas été produit ici. Être strict là-dessus est un choix, pas un
+    // oubli — accepter [lon, lat, altitude] demanderait de tronquer, donc de
+    // transformer une donnée qu'on prétend seulement relire.
+    const troisValeurs = JSON.stringify({
+      format: BACKUP_FORMAT,
+      version: BACKUP_VERSION,
+      exportedAt: '2026-08-21T10:00:00Z',
+      tracks: [],
+      customItineraries: [
+        {
+          osmRelationId: -1,
+          name: 'Avec altitude',
+          ways: [{ osmWayId: 1, coords: [[4.5, 45.4, 800], [4.52, 45.42, 850]] }],
+        },
+      ],
+      settings: {},
+    })
+    expect((await lireArchiveBackup(troisValeurs)).customItineraries).toEqual([])
+  })
+
   it('ne reprend d’un réglage que ce qui est un nombre', async () => {
     // Une sauvegarde bricolée à la main ne doit pas mettre la tolérance à
     // « beaucoup ».
