@@ -464,6 +464,34 @@ describe('importGpxFiles', () => {
     expect(useAppStore.getState().importErrors).toEqual([])
   })
 
+  it('dit pourquoi une trace trop espacée ne sera pas comptée (issue #148)', async () => {
+    await useAppStore.getState().init()
+    // ~1,7 km entre points : une montre en économie de batterie. La sortie
+    // est réelle et complète ; sans message, l'utilisateur lit un chiffre
+    // très bas — 0 % si toute la trace est ainsi — et conclut que
+    // l'application est cassée.
+    const econome: [number, number][] = Array.from(
+      { length: 12 },
+      (_, i) => [4.5 + i * 0.022, 45.4],
+    )
+    await useAppStore
+      .getState()
+      .importGpxFiles([fichierGpx('montre-economie.gpx', econome)])
+
+    expect(useAppStore.getState().tracks).toHaveLength(1)
+    const message = useAppStore.getState().importErrors.join(' ')
+    expect(message).toMatch(/montre-economie\.gpx/)
+    expect(message).toMatch(/un point tous les/)
+    // Le chiffre est nommé, pas remplacé par un adjectif.
+    expect(message).toMatch(/1,7 km/)
+  })
+
+  it('ne dit rien d’une trace ordinaire', async () => {
+    await useAppStore.getState().init()
+    await useAppStore.getState().importGpxFiles([fichierGpx('normale.gpx', ligne(30))])
+    expect(useAppStore.getState().importErrors).toEqual([])
+  })
+
   it('remet l’avancement à zéro une fois le lot terminé', async () => {
     await useAppStore.getState().init()
     await useAppStore

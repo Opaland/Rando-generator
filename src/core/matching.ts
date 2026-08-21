@@ -319,6 +319,47 @@ function computeCompletion(
 
 /** Pipeline complet : échantillonnage, index de segments, matching, continuité. */
 /**
+ * L'espacement médian de cette trace dépasse-t-il ce que le matching sait
+ * relier ? Rend la médiane en mètres si oui, null sinon (issue #148).
+ *
+ * Ce n'est pas une dégradation, c'est une falaise. Mesuré sur un sentier
+ * droit de 7,8 km entièrement parcouru, tolérance 50 m, en ne faisant varier
+ * que l'espacement : 780 m créditent 100 %, 1,2 km créditent 0 %. Au-delà de
+ * `MAX_GAP_METERS`, le segment est cassé en points isolés, la continuité
+ * minimale n'est plus satisfaite, et plus rien n'est crédité.
+ *
+ * Une montre en économie de batterie, un export « smart recording » ou un
+ * GPX simplifié tombent tous dans ce cas. L'utilisateur importe une sortie
+ * réelle et complète, lit 0 %, et conclut que l'application est cassée.
+ *
+ * **La médiane, et non le maximum** : une trace dense avec une seule pause
+ * de plusieurs kilomètres est précisément ce que `MAX_GAP_METERS` protège —
+ * le trajet en voiture entre deux sorties. Avertir dans ce cas serait un
+ * faux positif, et transformerait une garde utile en bruit.
+ *
+ * Ce que cette fonction ne fait PAS : créditer quand même. Un point tous
+ * les 1,5 km sur une ligne droite reste de l'information, mais savoir si on
+ * peut la créditer sans rouvrir la faille du trajet en voiture demande une
+ * vitesse — donc les horodatages de #149, et un corpus de traces réelles
+ * qui n'existe pas encore. Cette fonction supprime la pire conséquence, le
+ * silence ; elle ne prétend pas résoudre le fond.
+ */
+export function espacementTropGrand(points: LonLat[]): number | null {
+  if (points.length < 2) return null
+  const ecarts: number[] = []
+  for (let i = 1; i < points.length; i += 1) {
+    ecarts.push(distanceMeters(points[i - 1] as LonLat, points[i] as LonLat))
+  }
+  ecarts.sort((a, b) => a - b)
+  const milieu = Math.floor(ecarts.length / 2)
+  const mediane =
+    ecarts.length % 2 === 1
+      ? (ecarts[milieu] as number)
+      : ((ecarts[milieu - 1] as number) + (ecarts[milieu] as number)) / 2
+  return mediane > MAX_GAP_METERS ? mediane : null
+}
+
+/**
  * La seule porte d'entrée du calcul de complétion.
  *
  * Les étapes intermédiaires (index, échantillonnage, continuité) et les

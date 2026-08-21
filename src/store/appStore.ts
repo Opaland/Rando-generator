@@ -54,7 +54,10 @@ import {
 import { fetchPois } from '../core/poi.ts'
 import { outingHighlights, type OutingHighlight } from '../core/outing.ts'
 import { FitError, looksLikeFit, parseFit } from '../core/fit.ts'
-import { messagePointsHorsLimites } from '../core/coordonnees.ts'
+import {
+  messagePointsHorsLimites,
+  messageTropEspacee,
+} from '../core/coordonnees.ts'
 import { construireDemonstration } from '../core/demonstration.ts'
 import {
   estModeAffichage,
@@ -87,6 +90,7 @@ import {
   franchissementTientEncore,
   normalizeCompletionPct,
 } from '../core/milestones.ts'
+import { espacementTropGrand } from '../core/matching.ts'
 import type { MatchResult } from '../core/matching.ts'
 import {
   GEO_OPTIONS,
@@ -1124,6 +1128,13 @@ export const useAppStore = create<AppState>()((set, get) => {
           // doit dire ce qu'elle a perdu en chemin (issue #167).
           const horsLimites = messagePointsHorsLimites(parsed.pointsHorsLimites)
           if (horsLimites) errors.push(`${file.name} : ${horsLimites}`)
+          // Une trace trop espacée ne peut pas être située : le dire à
+          // l'import vaut mieux qu'un chiffre muet que l'utilisateur ne peut
+          // pas comprendre (issue #148).
+          const espacement = espacementTropGrand(parsed.points)
+          if (espacement !== null) {
+            errors.push(`${file.name} : ${messageTropEspacee(espacement)}`)
+          }
           if (parsed.points.length === 0) {
             errors.push(
               `${file.name} : aucun point de trace exploitable dans ce fichier.`,
