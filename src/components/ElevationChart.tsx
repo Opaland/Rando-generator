@@ -1,5 +1,9 @@
 import { useRef, useState } from 'react'
-import { fillElevationGaps, pointAtDistance } from '../core/elevation.ts'
+import {
+  fillElevationGaps,
+  libelleResolution,
+  pointAtDistance,
+} from '../core/elevation.ts'
 import { reperesDuProfil } from '../core/reperes.ts'
 import {
   couvertureRevetement,
@@ -116,6 +120,16 @@ export function ElevationChart({
 
   const survole = curseur === null ? null : pointAtDistance(profile, curseur)
   const couverture = couvertureRevetement(bandes)
+  /**
+   * Retour du 22/08 sur la Via Lugdunum : « km 21.4, l'altitude de 714 m ne
+   * correspond pas à l'altitude du point ». Elle ne le pouvait pas — sur
+   * 200 km, le profil ne porte qu'un relevé tous les deux kilomètres, et ce
+   * qui s'affiche entre deux relevés est la valeur d'une droite. Le chiffre
+   * n'était pas faux par erreur de calcul : il était présenté comme une
+   * mesure alors qu'il est une interpolation. `null` quand les relevés sont
+   * serrés — une mise en garde affichée partout ne se lit plus nulle part.
+   */
+  const resolution = libelleResolution(profile)
 
   /**
    * Un repère posé d'un clic reste posé.
@@ -199,7 +213,7 @@ export function ElevationChart({
           bandes.length > 0
             ? ` Revêtement renseigné sur ${Math.round(couverture.fraction * 100)} % du parcours, déduit du type de voie sur ${Math.round((couverture.deduitMetres / Math.max(couverture.totalMetres, 1)) * 100)} %.`
             : ''
-        } Flèches gauche et droite pour parcourir le tracé.`}
+        }${resolution === null ? '' : ` ${resolution}`} Flèches gauche et droite pour parcourir le tracé.`}
         preserveAspectRatio="none"
         onPointerMove={surPointeur}
         onPointerDown={surPointeur}
@@ -353,6 +367,12 @@ export function ElevationChart({
             }${bandeSurvolee ? ` · ${texteBande(bandeSurvolee)}` : ''}`
           : 'Parcourez le profil pour situer un passage sur la carte.'}
       </p>
+
+      {resolution !== null && (
+        <p className={styles.resolution} data-testid="profil-resolution">
+          {resolution}
+        </p>
+      )}
 
       {bandes.length > 0 && (
         <div className={styles.couverture} data-testid="revetement-couverture">

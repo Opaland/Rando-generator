@@ -21,16 +21,61 @@ export const ELEVATION_RESOURCE = 'ign_rge_alti_wld'
 /** Nombre max de points envoyés au service (au-delà, sous-échantillonnage). */
 export const MAX_ELEVATION_POINTS = 100
 
+/**
+ * Les **indices** retenus par le sous-échantillonnage.
+ *
+ * Nommé, parce que trois choses en dépendent et qu'elles doivent retenir les
+ * mêmes points : la polyligne envoyée au service, les altitudes qui en
+ * reviennent, et les distances qui leur sont associées. L'arithmétique était
+ * écrite une fois et refaite ailleurs ; c'est ainsi que l'axe des distances a
+ * fini par mesurer autre chose que le tracé (CLAUDE.md §4).
+ */
+export function indicesEchantillons(
+  nbPoints: number,
+  maxPoints: number,
+): number[] {
+  if (nbPoints <= maxPoints) {
+    return Array.from({ length: nbPoints }, (_, i) => i)
+  }
+  const step = (nbPoints - 1) / (maxPoints - 1)
+  return Array.from({ length: maxPoints }, (_, i) =>
+    Math.min(Math.round(i * step), nbPoints - 1),
+  )
+}
+
 /** Sous-échantillonne une polyligne à `maxPoints` points (garde 1er et dernier). */
 export function downsample(coords: LonLat[], maxPoints: number): LonLat[] {
-  if (coords.length <= maxPoints) return coords
-  const step = (coords.length - 1) / (maxPoints - 1)
-  const result: LonLat[] = []
-  for (let i = 0; i < maxPoints; i++) {
-    const idx = Math.min(Math.round(i * step), coords.length - 1)
-    result.push(coords[idx] as LonLat)
+  return indicesEchantillons(coords.length, maxPoints).map(
+    (i) => coords[i] as LonLat,
+  )
+}
+
+/**
+ * Distance cumulée en chaque point d'une polyligne, en suivant **chaque
+ * segment**.
+ *
+ * C'est le correctif du retour du 22/08 sur la Via Lugdunum. L'axe des
+ * distances du profil était calculé sur les points *retenus* : il mesurait
+ * les cordes tendues entre deux relevés, et non le sentier qui serpente
+ * entre eux. Mesuré sur la géométrie OSM réelle du « Sentier des Crêtes »,
+ * garder un point sur deux coûte 28,2 % de longueur — et le profil est
+ * plafonné à cent points, soit un taux bien plus sévère sur un long
+ * itinéraire.
+ *
+ * Conséquence pour qui lit : le repère « 21,4 km » ne désignait pas le
+ * kilomètre 21,4 du terrain, et la longueur du profil contredisait celle que
+ * le matching mesure en parcourant la géométrie complète. Deux nombres pour
+ * la même chose.
+ */
+export function distancesCumulees(coords: LonLat[]): number[] {
+  const cumul: number[] = [0]
+  for (let i = 1; i < coords.length; i++) {
+    cumul.push(
+      (cumul[i - 1] as number) +
+        distanceMeters(coords[i - 1] as LonLat, coords[i] as LonLat),
+    )
   }
-  return result
+  return cumul
 }
 
 /** Construit l'URL de la requête altimétrique pour une polyligne. */
@@ -212,12 +257,14 @@ export async function fetchElevationProfile(
   }
   const elevations = parseElevationResponse(data, coords)
 
-  const distances: number[] = [0]
-  for (let i = 1; i < points.length; i++) {
-    const prev = points[i - 1] as LonLat
-    const cur = points[i] as LonLat
-    distances.push((distances[i - 1] as number) + distanceMeters(prev, cur))
-  }
+  // Les distances viennent de la géométrie **complète**, relevées aux
+  // indices retenus : le profil parle donc du même kilométrage que le reste
+  // de l'application.
+  const cumul = distancesCumulees(coords)
+  const distances = indicesEchantillons(
+    coords.length,
+    MAX_ELEVATION_POINTS,
+  ).map((i) => cumul[i] as number)
 
   return { distances, elevations, coords: points }
 }
@@ -268,4 +315,61 @@ export function pointAtDistance(
       pAvant[1] + (pApres[1] - pAvant[1]) * t,
     ],
   }
+}
+
+/**
+ * Espacement moyen entre deux relevés d'altitude, en mètres.
+ *
+ * Le profil est plafonné à `MAX_ELEVATION_POINTS` relevés, quelle que soit
+ * la longueur : 51 m sur un itinéraire de 5 km, 2 020 m sur 200 km,
+ * 4 545 m sur 450 km. Ce nombre décide de ce qu'on peut affirmer d'une
+ * altitude lue entre deux relevés.
+ */
+export function resolutionProfil(profile: ElevationProfile): number | null {
+  const n = profile.distances.length
+  if (n < 2) return null
+  const fin = profile.distances[n - 1] ?? 0
+  return fin / (n - 1)
+}
+
+/**
+ * Au-delà de cet espacement, un col peut se cacher entre deux relevés.
+ *
+ * **Seuil de présentation, tranché au jugement** — il ne change rien à ce
+ * qui est calculé, seulement le moment où l'on prévient (CLAUDE.md §2).
+ * Cinq cents mètres, parce que c'est l'ordre de grandeur auquel le relief
+ * varie : en dessous, un col ou un creux laisse au moins un relevé le
+ * traverser ; au-dessus, il peut passer entre les mailles sans laisser de
+ * trace sur la courbe.
+ *
+ * Écarté : l'accrocher au pas du matching (100 m), qui aurait fait
+ * apparaître l'avertissement sur presque tous les itinéraires et l'aurait
+ * noyé. Écarté aussi : une fraction de la longueur, qui aurait dit la même
+ * chose pour un sentier de 3 km et pour un GR de 400.
+ */
+export const RESOLUTION_GROSSIERE_METRES = 500
+
+/**
+ * Ce qu'on écrit sous le profil quand ses relevés sont trop espacés pour
+ * qu'une altitude lue entre deux d'entre eux veuille dire quelque chose.
+ *
+ * Retour du 22/08 sur la Via Lugdunum : « km 21.4, l'altitude de 714 m ne
+ * correspond pas à l'altitude du point ». Elle ne le pouvait pas — c'était
+ * la valeur d'une droite tendue entre deux relevés distants de deux
+ * kilomètres. Le chiffre n'était pas faux par erreur de calcul : il était
+ * présenté comme une mesure alors qu'il est une interpolation.
+ *
+ * Rendre `null` quand les relevés sont serrés : une mise en garde affichée
+ * partout ne se lit plus nulle part.
+ */
+export function libelleResolution(profile: ElevationProfile): string | null {
+  const espacement = resolutionProfil(profile)
+  if (espacement === null || espacement <= RESOLUTION_GROSSIERE_METRES) {
+    return null
+  }
+  const distance =
+    espacement >= 1000
+      ? `${(espacement / 1000).toFixed(1).replace('.', ',')} km`
+      : `${String(Math.round(espacement))} m`
+  return `altitude relevée tous les ${distance} — entre deux relevés la courbe est une droite, et un col peut s’y cacher.`
 }

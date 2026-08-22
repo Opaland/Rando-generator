@@ -9,11 +9,38 @@ import {
   ElevationError,
   MAX_ELEVATION_POINTS,
   pointAtDistance,
+  libelleResolution,
 } from '../../src/core/elevation.ts'
+import { distanceMeters } from '../../src/core/geo.ts'
+import { sampleWay } from '../../src/core/sampling.ts'
 import { straightLine } from '../fixtures/synthetic.ts'
 import type { LonLat } from '../../src/core/types.ts'
 
 const LAT = 45.4
+
+/** Longueur d'une polyligne, en suivant chaque segment. */
+function longueurPolyligne(coords: LonLat[]): number {
+  let total = 0
+  for (let i = 1; i < coords.length; i++) {
+    total += distanceMeters(coords[i - 1] as LonLat, coords[i] as LonLat)
+  }
+  return total
+}
+
+/** Une réponse du service altimétrique, avec `n` altitudes plausibles. */
+function reponseAltimetrique(n: number) {
+  return () =>
+    Promise.resolve(
+      new Response(
+        JSON.stringify({
+          elevations: Array.from({ length: n }, (_, i) => ({
+            z: 400 + Math.sin(i / 7) * 300,
+          })),
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      ),
+    )
+}
 
 describe('downsample', () => {
   it('laisse une polyligne courte inchangée', () => {
@@ -221,5 +248,127 @@ describe('pointAtDistance', () => {
       ] as LonLat[],
     }
     expect(pointAtDistance(plat, 0)?.elevation).toBe(800)
+  })
+})
+
+/**
+ * Retour utilisateur du 22/08 : « Via Lugdunum, Lyon to Le Puy-en-Velay,
+ * km 21.4, l'altitude de 714 m ne correspond pas à l'altitude du point ».
+ *
+ * Deux causes, toutes deux lues dans le code et mesurées :
+ *
+ * 1. **L'axe des distances était calculé sur les points sous-échantillonnés.**
+ *    Le profil mesurait donc les cordes entre échantillons, pas le sentier.
+ *    Sur la géométrie OSM réelle du « Sentier des Crêtes » de la fixture,
+ *    garder un point sur deux coûte 28,2 % de longueur. Le repère « 21,4 km »
+ *    ne désignait pas le kilomètre 21,4 du terrain.
+ *
+ * 2. **L'altitude est interpolée entre deux échantillons.** Le profil est
+ *    plafonné à cent points : sur 200 km, un relevé tous les 2 020 m. Un col
+ *    entre deux relevés est invisible, et la valeur affichée est celle d'une
+ *    droite tendue au-dessus du relief.
+ *
+ * La première se corrige, et c'est fait ici. La seconde est inhérente au
+ * nombre de relevés : elle se dit, elle ne se cache pas.
+ */
+describe('l’axe des distances suit le sentier, pas les cordes', () => {
+  /**
+   * Un tracé dont les virages sont **plus fins que la résolution du profil**
+   * — le cas réel : des lacets de quelques centaines de mètres sur un
+   * itinéraire de plusieurs dizaines de kilomètres. Un premier essai
+   * oscillait trop lentement (une période tous les 94 points) : le
+   * sous-échantillonnage suivait encore la courbe, et le test ne mesurait
+   * que 123 m d'écart. Il aurait passé sans le correctif.
+   */
+  function tracéSinueux(nbPoints: number): LonLat[] {
+    return Array.from({ length: nbPoints }, (_, i) => {
+      const t = i / (nbPoints - 1)
+      return [4.5 + t * 0.5, 45.4 + Math.sin(i * 0.5) * 0.002] as LonLat
+    })
+  }
+
+  it('rend la vraie longueur, et non celle des cordes entre relevés', async () => {
+    const coords = tracéSinueux(600)
+    const vraie = longueurPolyligne(coords)
+    const cordes = longueurPolyligne(downsample(coords, MAX_ELEVATION_POINTS))
+    // La sonde n'a de sens que si le sous-échantillonnage coupe vraiment
+    // des virages : sans cela, le test passerait sur un tracé droit.
+    expect(vraie - cordes).toBeGreaterThan(1000)
+
+    const profile = await fetchElevationProfile(coords, {
+      fetchFn: reponseAltimetrique(MAX_ELEVATION_POINTS),
+    })
+    const dernier = profile.distances[profile.distances.length - 1] ?? 0
+    expect(dernier).toBeCloseTo(vraie, 0)
+  })
+
+  it('garde des distances croissantes et alignées sur les relevés', async () => {
+    const coords = tracéSinueux(600)
+    const profile = await fetchElevationProfile(coords, {
+      fetchFn: reponseAltimetrique(MAX_ELEVATION_POINTS),
+    })
+    expect(profile.distances).toHaveLength(profile.coords.length)
+    expect(profile.distances[0]).toBe(0)
+    for (let i = 1; i < profile.distances.length; i++) {
+      expect(profile.distances[i]).toBeGreaterThan(profile.distances[i - 1] as number)
+    }
+  })
+
+  /**
+   * L'accord qui manquait : le profil et le matching parlaient de deux
+   * longueurs différentes pour le même itinéraire. Le matching parcourt la
+   * géométrie complète par pas de 100 m ; le profil mesurait des cordes.
+   */
+  it('s’accorde avec la longueur que le matching mesure', async () => {
+    const coords = tracéSinueux(600)
+    const profile = await fetchElevationProfile(coords, {
+      fetchFn: reponseAltimetrique(MAX_ELEVATION_POINTS),
+    })
+    const dernier = profile.distances[profile.distances.length - 1] ?? 0
+    const parLeMatching = sampleWay(coords, 100).length * 100
+    // Le matching quantifie par pas de 100 m : on tolère un pas d'écart.
+    expect(Math.abs(dernier - parLeMatching)).toBeLessThan(200)
+  })
+})
+
+describe('la résolution du profil se dit', () => {
+  it('se tait quand les relevés sont serrés', () => {
+    const profile = {
+      distances: [0, 100, 200, 300],
+      elevations: [800, 810, 820, 830],
+      coords: [
+        [4.5, 45.4],
+        [4.501, 45.4],
+        [4.502, 45.4],
+        [4.503, 45.4],
+      ] as LonLat[],
+    }
+    expect(libelleResolution(profile)).toBeNull()
+  })
+
+  it('annonce l’espacement quand un col peut s’y cacher', () => {
+    const profile = {
+      distances: [0, 2020, 4040],
+      elevations: [400, 714, 900],
+      coords: [
+        [4.5, 45.4],
+        [4.52, 45.4],
+        [4.54, 45.4],
+      ] as LonLat[],
+    }
+    const libelle = libelleResolution(profile)
+    expect(libelle).toContain('2,0 km')
+    expect(libelle).toMatch(/col|entre deux/i)
+  })
+
+  it('ne dit rien d’un profil vide ou d’un point unique', () => {
+    expect(libelleResolution({ distances: [], elevations: [], coords: [] })).toBeNull()
+    expect(
+      libelleResolution({
+        distances: [0],
+        elevations: [800],
+        coords: [[4.5, 45.4]],
+      }),
+    ).toBeNull()
   })
 })
