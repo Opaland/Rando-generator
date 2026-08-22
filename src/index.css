@@ -94,6 +94,9 @@
   --z-overlay-draw: 7; /* RouteDrawer : panneau de tracé d'itinéraire */
   --z-overlay-locate: 8; /* LocateButton : « où suis-je », toujours atteignable */
   --z-feuille: 9; /* Panneau de contrôle en feuille glissante (téléphone) */
+  --z-onglets: 10; /* Prototype #171 : barre d'onglets, au-dessus de la
+                      feuille — une navigation que la feuille dépliée
+                      recouvrirait ne serait plus une navigation. */
 }
 
 * {
