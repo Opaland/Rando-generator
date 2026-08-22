@@ -53,6 +53,45 @@ export function MapView() {
     else map.once('idle', applyFilter)
   }, [selectedItineraryId, ready, styleEpoch, mapRef])
 
+  /**
+   * Réserve, en pixels, la hauteur qu'occupe la ligne d'attribution.
+   *
+   * Elle n'est pas constante et ne peut donc pas être un jeton : mesurée sur
+   * l'application, 64 px sur un téléphone de 390 px (trois lignes), 44 px
+   * entre 800 et 1280 (deux lignes), 24 px à partir de 1600 (une seule).
+   * Elle grandit encore en gros texte (issue #173).
+   *
+   * L'attribution est exigée par l'ODbL et la Licence Ouverte : rien ne se
+   * pose dessus. Les surimpressions ancrées en bas lisent donc cette valeur
+   * au lieu de deviner (AUDIT_UX.md, constat U4).
+   *
+   * Posée sur la racine et non sur le conteneur de la carte : le bouton
+   * « Ma position » est un **frère** de la carte, pas un descendant, et une
+   * propriété personnalisée ne remonte pas. Posée sur le conteneur, elle ne
+   * l'atteignait pas — et le bouton restait sur l'attribution sans que rien
+   * ne le dise. C'est déjà là que vivent `data-mode` et `data-maquette`.
+   */
+  useEffect(() => {
+    const conteneur = containerRef.current
+    if (!conteneur) return
+    const bandeau = conteneur.querySelector('.maplibregl-ctrl-bottom-right')
+    if (!bandeau || typeof ResizeObserver === 'undefined') return
+    const racine = document.documentElement
+    const mesurer = () => {
+      racine.style.setProperty(
+        '--hauteur-attribution',
+        `${String(Math.ceil(bandeau.getBoundingClientRect().height))}px`,
+      )
+    }
+    mesurer()
+    const observateur = new ResizeObserver(mesurer)
+    observateur.observe(bandeau)
+    return () => {
+      observateur.disconnect()
+      racine.style.removeProperty('--hauteur-attribution')
+    }
+  }, [ready])
+
   useEffect(() => {
     // Échap désélectionne l'itinéraire (navigation clavier).
     const onKey = (e: KeyboardEvent) => {
