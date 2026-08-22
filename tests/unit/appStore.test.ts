@@ -2,7 +2,12 @@
 import 'fake-indexeddb/auto'
 import { IDBFactory } from 'fake-indexeddb'
 import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest'
-import { useAppStore, MIN_TOLERANCE, MAX_TOLERANCE } from '../../src/store/appStore.ts'
+import {
+  useAppStore,
+  MIN_TOLERANCE,
+  MAX_TOLERANCE,
+  oublierReglagesTouches,
+} from '../../src/store/appStore.ts'
 import pilat from '../fixtures/overpass/pilat.json' with { type: 'json' }
 import { buildZip, gzip } from '../fixtures/zip.ts'
 import { buildBackup, serialiserBackup } from '../../src/core/backup.ts'
@@ -53,6 +58,11 @@ beforeEach(() => {
   // init() précédent bloque la suppression indéfiniment.
   vi.stubGlobal('indexedDB', new IDBFactory())
   useAppStore.setState(etatInitial, true)
+  // `reglagesTouches` vit à la portée du module, comme la page qui l'héberge :
+  // il survit à `setState`, et donc d'un test au suivant. Le premier test qui
+  // règle la tolérance rendrait tous les autres aveugles à ce que la base
+  // contient — c'est arrivé dès l'écriture de la garde.
+  oublierReglagesTouches()
   fetchMock = vi.fn<FetchMocke>((url) =>
     url.includes('interpreter')
       ? Promise.resolve(reponseOverpass())
@@ -78,6 +88,83 @@ describe('init', () => {
     const db = useAppStore.getState().db
     expect(await db?.getZone('pilat')).toBeTruthy()
     expect(await db?.getSetting('lastZoneKey')).toBe('pilat')
+  })
+
+  /**
+   * Trouvaille de la revue du sprint 6.
+   *
+   * Le piège fermé juste en dessous pour les traces — « fusion, jamais
+   * remplacement » — restait ouvert pour les réglages : `init` appliquait
+   * ce qu'il avait lu en base par-dessus ce que la personne venait de
+   * changer. Mesuré sur l'application : sous la charge de la suite e2e
+   * complète, fermer le guide de démarrage dans la première seconde le
+   * rouvrait tout seul. J'ai ajouté deux drapeaux à ce bloc sans relire le
+   * commentaire écrit trois lignes plus bas.
+   *
+   * Les sept réglages sont éprouvés ensemble : c'est la garde qui est
+   * testée, pas chacun de ses usages, et une garde recopiée est justement
+   * le mode d'échec qu'on essaie d'éviter.
+   */
+  it('ne perd aucun réglage changé pendant le démarrage', async () => {
+    // Une base déjà peuplée par une visite précédente : sans la garde, ce
+    // sont ces valeurs-là qui écrasent les choix faits entre-temps.
+    const precedent = useAppStore.getState()
+    await precedent.init()
+    await useAppStore.getState().setGuideFerme(true)
+    await useAppStore.getState().setPanneauReplie(true)
+    await useAppStore.getState().setGrosTexte(true)
+    await useAppStore.getState().setModeAffichage('simple')
+    await useAppStore.getState().setTolerance(MAX_TOLERANCE)
+    await useAppStore.getState().setCompletionPct(100)
+    await useAppStore.getState().basculerObjectif(42)
+
+    // Nouvelle session : l'état repart à zéro, la base garde tout.
+    useAppStore.setState(etatInitial, true)
+    oublierReglagesTouches()
+
+    const demarrage = useAppStore.getState().init()
+    // Pendant que la base s'ouvre, la personne tranche autrement. Les sept
+    // gestes sont lancés sans `await` : chaque setter change l'état de façon
+    // synchrone avant sa première attente, ce qui les place tous avant que
+    // `init` n'applique ce qu'il a lu. Les enchaîner par `await` laissait
+    // `init` s'intercaler au milieu, et `basculerObjectif` — qui bascule sur
+    // la liste courante — n'aurait plus dit ce qu'on croit.
+    const etat = useAppStore.getState()
+    const gestes = [
+      etat.setGuideFerme(false),
+      etat.setPanneauReplie(false),
+      etat.setGrosTexte(false),
+      etat.setModeAffichage('complet'),
+      etat.setTolerance(MIN_TOLERANCE),
+      // 90 et non 80 : le seuil est ramené à l'un des trois choix proposés.
+      etat.setCompletionPct(90),
+      etat.basculerObjectif(7),
+    ]
+    await demarrage
+    await Promise.all(gestes)
+
+    const apres = useAppStore.getState()
+    expect(apres.guideFerme).toBe(false)
+    expect(apres.panneauReplie).toBe(false)
+    expect(apres.grosTexte).toBe(false)
+    expect(apres.modeAffichage).toBe('complet')
+    expect(apres.toleranceMeters).toBe(MIN_TOLERANCE)
+    expect(apres.completionPct).toBe(90)
+    expect(apres.objectifs).toEqual([7])
+  })
+
+  it('applique ce que la base contient quand personne n’a rien touché', async () => {
+    const precedent = useAppStore.getState()
+    await precedent.init()
+    await useAppStore.getState().setGuideFerme(true)
+    await useAppStore.getState().setModeAffichage('simple')
+
+    useAppStore.setState(etatInitial, true)
+    oublierReglagesTouches()
+    await useAppStore.getState().init()
+
+    expect(useAppStore.getState().guideFerme).toBe(true)
+    expect(useAppStore.getState().modeAffichage).toBe('simple')
   })
 
   it('ne perd pas une trace importée pendant le démarrage', async () => {
@@ -144,7 +231,10 @@ describe('init', () => {
     await useAppStore.getState().importGpxFiles([fichierGpx('a.gpx', ligne(20))])
     await useAppStore.getState().setTolerance(80)
 
+    // Une nouvelle session, c'est un rechargement de page : l'état repart à
+    // zéro *et* le module qui retient les réglages touchés aussi.
     useAppStore.setState(etatInitial, true)
+    oublierReglagesTouches()
     await useAppStore.getState().init()
     expect(useAppStore.getState().tracks).toHaveLength(1)
     expect(useAppStore.getState().toleranceMeters).toBe(80)

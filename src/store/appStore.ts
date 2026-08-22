@@ -108,11 +108,50 @@ import type {
 import { DEFAULT_TOLERANCE_METERS, STEP_METERS } from '../core/types.ts'
 import {
   openSentiersDb,
-  isFresh,
+  zoneUtilisable,
+  SCHEMA_ZONE,
   DbError,
   type SentiersDb,
+  type SettingKey,
 } from '../db/database.ts'
 import { computeMatching } from './matchingClient.ts'
+
+/**
+ * Les réglages que la personne a changés depuis l'ouverture de l'application.
+ *
+ * `init()` relit IndexedDB, ce qui prend quelques centaines de millisecondes,
+ * et applique ensuite ce qu'il y a trouvé. Entre les deux, un clic est
+ * possible — et il était écrasé sans un mot. Mesuré : sous la charge de la
+ * suite e2e complète, fermer le guide de démarrage dans la première seconde
+ * le rouvrait tout seul.
+ *
+ * Le même piège avait déjà été fermé pour les traces, trois lignes plus bas
+ * dans `init` : « fusion, jamais remplacement ». Il restait ouvert pour les
+ * réglages, et je l'ai rouvert d'un cran de plus en y ajoutant deux drapeaux
+ * sans relire ce commentaire (revue du sprint 6).
+ *
+ * Un ensemble nommé, consulté par `init`, plutôt qu'une condition recopiée
+ * sur chacun des sept réglages (CLAUDE.md §4).
+ */
+const reglagesTouches = new Set<SettingKey>()
+
+/** À appeler dans chaque setter, avant d'écrire. */
+function marquerTouche(clef: SettingKey): void {
+  reglagesTouches.add(clef)
+}
+
+/**
+ * Ce qu'il faut retenir au démarrage : la base, sauf si la personne a déjà
+ * tranché entre-temps.
+ */
+function repriseAuDemarrage<T>(clef: SettingKey, deLaBase: T, enMemoire: T): T {
+  return reglagesTouches.has(clef) ? enMemoire : deLaBase
+}
+
+/** Pour les tests : repartir d'une session vierge. */
+export function oublierReglagesTouches(): void {
+  reglagesTouches.clear()
+}
 
 /**
  * Réunit ce qui vient de la base et ce qui est déjà en mémoire, sans doublon.
@@ -797,7 +836,7 @@ export const useAppStore = create<AppState>()((set, get) => {
       }
       if (!isCurrent()) return
       const now = new Date().toISOString()
-      if (cached && !force && isFresh(cached.fetchedAt, now)) {
+      if (cached && !force && zoneUtilisable(cached, now)) {
         setItineraries(zoneKey, cached.label, cached.itineraries, cached.fetchedAt)
         await persistLastZone(zoneKey)
         await recompute()
@@ -826,7 +865,13 @@ export const useAppStore = create<AppState>()((set, get) => {
         const db = await baseOuverte()
         if (db) {
           try {
-            await db.saveZone({ zoneKey, label: zoneLabel, itineraries, fetchedAt: now })
+            await db.saveZone({
+              zoneKey,
+              label: zoneLabel,
+              itineraries,
+              fetchedAt: now,
+              schema: SCHEMA_ZONE,
+            })
           } catch {
             // Quota de stockage dépassé (grosses zones) : on continue en
             // mémoire, le cache sera simplement absent au prochain démarrage.
@@ -1041,16 +1086,47 @@ export const useAppStore = create<AppState>()((set, get) => {
         customItineraries: enDemonstration
           ? etat.customItineraries
           : fusionner(customItineraries, etat.customItineraries),
-        toleranceMeters:
+        // Chaque réglage passe par `repriseAuDemarrage` : ce que la
+        // personne a changé pendant que la base s'ouvrait l'emporte sur ce
+        // que la base contenait. Sans cela, un clic dans la première
+        // seconde était annulé sans un mot (revue du sprint 6).
+        toleranceMeters: repriseAuDemarrage(
+          'toleranceMeters',
           typeof tolerance === 'number' ? tolerance : DEFAULT_TOLERANCE_METERS,
-        completionPct: normalizeCompletionPct(completion),
-        objectifs: lireObjectifs(objectifsBruts),
+          etat.toleranceMeters,
+        ),
+        completionPct: repriseAuDemarrage(
+          'completionPct',
+          normalizeCompletionPct(completion),
+          etat.completionPct,
+        ),
+        objectifs: repriseAuDemarrage(
+          'objectifs',
+          lireObjectifs(objectifsBruts),
+          etat.objectifs,
+        ),
         // Un réglage abîmé ou écrit par une version future ne doit pas
         // imposer un affichage que personne n'a demandé (issue #173).
-        modeAffichage: estModeAffichage(modeBrut) ? modeBrut : 'complet',
-        grosTexte: lireDrapeau(grosTexteBrut),
-        guideFerme: lireDrapeau(guideFermeBrut),
-        panneauReplie: lireDrapeau(panneauReplieBrut),
+        modeAffichage: repriseAuDemarrage(
+          'modeAffichage',
+          estModeAffichage(modeBrut) ? modeBrut : 'complet',
+          etat.modeAffichage,
+        ),
+        grosTexte: repriseAuDemarrage(
+          'grosTexte',
+          lireDrapeau(grosTexteBrut),
+          etat.grosTexte,
+        ),
+        guideFerme: repriseAuDemarrage(
+          'guideFerme',
+          lireDrapeau(guideFermeBrut),
+          etat.guideFerme,
+        ),
+        panneauReplie: repriseAuDemarrage(
+          'panneauReplie',
+          lireDrapeau(panneauReplieBrut),
+          etat.panneauReplie,
+        ),
       }))
 
       // Rattrapage : ce qui a été importé pendant l'ouverture de la base n'y a
@@ -1533,6 +1609,7 @@ export const useAppStore = create<AppState>()((set, get) => {
       const objectifs = actuels.includes(id)
         ? actuels.filter((autre) => autre !== id)
         : [...actuels, id]
+      marquerTouche('objectifs')
       set({ objectifs })
       const db = await baseOuverte()
       if (db) await db.setSetting('objectifs', JSON.stringify(objectifs))
@@ -1554,6 +1631,7 @@ export const useAppStore = create<AppState>()((set, get) => {
 
     async setTolerance(value) {
       const clamped = Math.min(MAX_TOLERANCE, Math.max(MIN_TOLERANCE, value))
+      marquerTouche('toleranceMeters')
       set({ toleranceMeters: clamped })
       const { db } = get()
       if (db) await db.setSetting('toleranceMeters', clamped)
@@ -1564,6 +1642,7 @@ export const useAppStore = create<AppState>()((set, get) => {
       // Aucun recalcul : le seuil ne change pas les pourcentages, seulement
       // le mot qu'on met dessus. Les composants le relisent au rendu.
       const seuil = normalizeCompletionPct(value)
+      marquerTouche('completionPct')
       set({ completionPct: seuil })
       const db = await baseOuverte()
       if (db) await db.setSetting('completionPct', seuil)
@@ -1689,12 +1768,14 @@ export const useAppStore = create<AppState>()((set, get) => {
     },
 
     async setModeAffichage(mode) {
+      marquerTouche('modeAffichage')
       set({ modeAffichage: mode })
       const db = await baseOuverte()
       if (db) await db.setSetting('modeAffichage', mode)
     },
 
     async setGrosTexte(actif) {
+      marquerTouche('grosTexte')
       set({ grosTexte: actif })
       const db = await baseOuverte()
       // Pas de booléen dans le magasin des réglages : 0/1, relu par
@@ -1703,12 +1784,14 @@ export const useAppStore = create<AppState>()((set, get) => {
     },
 
     async setGuideFerme(ferme) {
+      marquerTouche('guideFerme')
       set({ guideFerme: ferme })
       const db = await baseOuverte()
       if (db) await db.setSetting('guideFerme', ferme ? 1 : 0)
     },
 
     async setPanneauReplie(replie) {
+      marquerTouche('panneauReplie')
       set({ panneauReplie: replie })
       const db = await baseOuverte()
       if (db) await db.setSetting('panneauReplie', replie ? 1 : 0)

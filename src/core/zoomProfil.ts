@@ -90,3 +90,39 @@ export function deplacer(
   if (debut + largeur > totalMetres) debut = Math.max(0, totalMetres - largeur)
   return { debut, fin: debut + largeur }
 }
+
+/**
+ * Fait glisser la fenêtre juste assez pour qu'elle contienne un point.
+ *
+ * Trouvaille de la revue du sprint 6. Le curseur du profil est borné au
+ * parcours entier, pas à la fenêtre visible : au clavier, une frappe `End`
+ * sur une fenêtre zoomée sur 0,9–1,5 km portait le curseur à 2,3 km. Mesuré
+ * sur l'application déployée, le cercle était alors dessiné à `cx = 784`
+ * dans un `viewBox` large de 320 — écrêté, invisible — pendant que la
+ * lecture sous le graphique et le marqueur sur la carte continuaient
+ * d'avancer. On naviguait à l'aveugle.
+ *
+ * La fenêtre suit donc le curseur plutôt que l'inverse : borner le curseur
+ * à la fenêtre a été envisagé et écarté, parce que `End` et `Home` doivent
+ * mener aux extrémités du parcours, pas à celles de ce qu'on regarde.
+ *
+ * La largeur est conservée à l'identique : suivre n'est pas un zoom.
+ *
+ * Le point est ramené dans le parcours en entrée, et non la fenêtre en
+ * sortie : les deux butées écrites d'abord sur `debut` étaient inatteignables
+ * — un point déjà dans le parcours ne peut pas en faire sortir une fenêtre
+ * qu'on colle contre lui. Une mutation les a supprimées sans qu'aucun test
+ * ne bronche (CLAUDE.md §6bis) ; les rendre inutiles valait mieux que de les
+ * garder pour la forme.
+ */
+export function suivre(
+  fenetre: Fenetre,
+  totalMetres: number,
+  distanceMetres: number,
+): Fenetre {
+  const point = Math.min(Math.max(distanceMetres, 0), Math.max(totalMetres, 0))
+  if (point >= fenetre.debut && point <= fenetre.fin) return fenetre
+  const largeur = fenetre.fin - fenetre.debut
+  const debut = point < fenetre.debut ? point : point - largeur
+  return { debut, fin: debut + largeur }
+}
