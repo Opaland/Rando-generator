@@ -53,6 +53,33 @@ describe('penteMaximale', () => {
     expect(p!.surMetres).toBe(300)
   })
 
+  it('mesure la longueur, et non la somme des distances', () => {
+    // Trouvé par les tests de mutation : remplacer `distance - precedent`
+    // par `distance + precedent` laissait toute la suite au vert. Les
+    // profils d'essai commençaient tous à zéro — où soustraire et
+    // additionner donnent le même résultat — et leur pente la plus forte
+    // était toujours sur le premier segment, celui qui part de zéro.
+    //
+    // Ici la plus forte pente est au milieu, et rien ne commence à zéro.
+    const p = penteMaximale(
+      profil([1000, 1200, 1400, 1600], [100, 100, 160, 165]),
+    )
+    // 60 m sur 200 m de longueur : 30 %. Une addition rendrait 60 sur
+    // 2 600, soit 2,3 %.
+    expect(p!.pourcent).toBeCloseTo(30, 1)
+    expect(p!.surMetres).toBe(200)
+  })
+
+  it('garde la longueur du segment le plus raide en cas d’égalité', () => {
+    // Trouvé par mutation : `>` remplacé par `>=` survivait. Deux pentes
+    // égales sur des longueurs différentes ne rendaient pas la même
+    // `surMetres`, et rien ne disait laquelle est la bonne. C'est la
+    // première qui compte — la plus courte, donc la plus raide localement.
+    const p = penteMaximale(profil([0, 100, 1100], [100, 110, 210]))
+    expect(p!.pourcent).toBeCloseTo(10, 1)
+    expect(p!.surMetres).toBe(100)
+  })
+
   it('ne rend rien plutôt qu’un zéro trompeur', () => {
     expect(penteMaximale(profil([], []))).toBeNull()
     expect(penteMaximale(profil([0], [100]))).toBeNull()
@@ -72,8 +99,12 @@ describe('libellePente', () => {
   it('nomme la résolution, jamais un pourcentage seul', () => {
     const texte = libellePente({ pourcent: 6.2, surMetres: 204 })
     expect(texte).toMatch(/6/)
-    // La longueur sur laquelle la moyenne est faite doit être dans la phrase.
-    expect(texte).toMatch(/200|204/)
+    // La longueur arrondie à la dizaine, exactement. L'assertion disait
+    // `/200|204/` : les tests de mutation ont montré qu'elle acceptait
+    // « 2040 », c'est-à-dire un arrondi remplacé par une multiplication.
+    // Une expression trop permissive est un test creux qui a l'air plein.
+    expect(texte).toContain('200 m')
+    expect(texte).not.toContain('2040')
   })
 
   it('dit que c’est une moyenne, pas un maximum instantané', () => {

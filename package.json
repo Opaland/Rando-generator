@@ -14,7 +14,8 @@
     "coverage": "vitest run --coverage",
     "e2e": "playwright test",
     "monkey": "MONKEY=1 playwright test tests/e2e/monkey.spec.ts --workers=2",
-    "og-image": "node scripts/og-image.mjs"
+    "og-image": "node scripts/og-image.mjs",
+    "mutation": "stryker run"
   },
   "dependencies": {
     "idb": "^8.0.3",
@@ -27,6 +28,8 @@
     "@axe-core/playwright": "^4.13.0",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.62.1",
+    "@stryker-mutator/core": "^10.0.0",
+    "@stryker-mutator/vitest-runner": "^10.0.0",
     "@types/geojson": "^7946.0.16",
     "@types/node": "^26.2.0",
     "@types/react": "^18.3.31",

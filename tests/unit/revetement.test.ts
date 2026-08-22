@@ -113,6 +113,28 @@ describe('bandesDeRevetement', () => {
     expect(bandes[1]!.debut).toBeCloseTo(bandes[0]!.fin, 6)
   })
 
+  it('fusionne en gardant la fin du second, pas une soustraction', () => {
+    // Trouvé par mutation : `derniere.fin = curseur + longueur` remplacé
+    // par `curseur - longueur` survivait. Les tests comptaient les bandes
+    // et lisaient leur revêtement, jamais leurs bornes — une fusion pouvait
+    // donc rendre une bande qui finit avant de commencer.
+    const bandes = bandesDeRevetement(
+      itineraire([
+        way(1, ligne(4.5, 3), { surface: 'asphalt' }),
+        way(2, ligne(4.52, 3), { surface: 'asphalt' }),
+      ]),
+    )
+    expect(bandes).toHaveLength(1)
+    const seule = bandes[0]!
+    expect(seule.debut).toBe(0)
+    expect(seule.fin).toBeGreaterThan(seule.debut)
+    // La bande fusionnée couvre bien les deux ways, et non l'un moins l'autre.
+    const seul = bandesDeRevetement(
+      itineraire([way(1, ligne(4.5, 3), { surface: 'asphalt' })]),
+    )[0]!
+    expect(seule.fin).toBeCloseTo(seul.fin * 2, 0)
+  })
+
   it('fusionne deux ways voisins de même revêtement', () => {
     // Sans fusion, un long itinéraire rendrait des centaines de bandes
     // identiques — illisible à l'écran, et coûteux à peindre.
