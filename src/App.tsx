@@ -18,7 +18,11 @@ import { TrackManager } from './components/TrackManager.tsx'
 import { DemoBanner } from './components/DemoBanner.tsx'
 import { InstallButton } from './components/InstallButton.tsx'
 import { ModeSwitch } from './components/ModeSwitch.tsx'
-import { sectionsVisibles } from './core/affichage.ts'
+import {
+  guideDemarrageVisible,
+  rappelGuideVisible,
+  sectionsVisibles,
+} from './core/affichage.ts'
 import { BarreOnglets } from './components/BarreOnglets.tsx'
 import {
   dispositionDemandee,
@@ -66,7 +70,17 @@ function App() {
   const zoneRestoredAtStartup = useAppStore((s) => s.zoneRestoredAtStartup)
   const modeAffichage = useAppStore((s) => s.modeAffichage)
   const grosTexte = useAppStore((s) => s.grosTexte)
+  const guideFerme = useAppStore((s) => s.guideFerme)
+  const setGuideFerme = useAppStore((s) => s.setGuideFerme)
+  const panneauReplie = useAppStore((s) => s.panneauReplie)
+  const setPanneauReplie = useAppStore((s) => s.setPanneauReplie)
   const sections = sectionsVisibles(modeAffichage)
+  const donnees = {
+    itineraires: hasZoneData,
+    itinerairesPerso: hasCustomData,
+    traces: hasTracks,
+    chargement: zoneLoading,
+  }
 
   // Navigation par onglets (issue #171), disposition par défaut depuis que
   // la porte de #177 a été levée. Les accordéons restent servis par
@@ -85,6 +99,10 @@ function App() {
   // une seule section visible et aucun moyen d'en changer.
   const compact = useEcranCompact()
   const onglets = maquette && compact
+  // Le repli du panneau ne concerne que la colonne. En dessous du point de
+  // rupture c'est une feuille glissante, qui a déjà ses trois positions :
+  // deux mécanismes concurrents sur la même surface se contrediraient.
+  const panneauLarge = !compact
   // En accordéons, `visible` dit oui à tout : l'empilement d'origine est
   // rendu exactement comme avant, sans une condition de plus à son sujet.
   const visible = (section: SectionApp): boolean =>
@@ -205,7 +223,30 @@ function App() {
           aria-label={onglets ? 'Contenu de l’onglet' : 'Panneau de contrôle'}
           data-testid="sidebar"
           data-position={position}
+          id="panneau-de-controle"
+          hidden={panneauLarge && panneauReplie}
         >
+          {/*
+            Repli du panneau sur grand écran. Sous 800 px la poignée fait
+            déjà ce travail depuis l'audit mobile ; au-dessus, la colonne
+            prenait 390 px de carte sans qu'aucun geste ne puisse la rendre.
+            Ce bouton n'existe qu'au-dessus du point de rupture, et son
+            pendant `.rendrePanneau` n'existe qu'une fois replié : les deux
+            conditions dérivent du même booléen, jamais recopiées.
+          */}
+          <button
+            type="button"
+            className={styles.replier}
+            data-testid="panneau-replier"
+            aria-label="Replier le panneau et agrandir la carte"
+            aria-controls="panneau-de-controle"
+            aria-expanded={true}
+            onClick={() => {
+              void setPanneauReplie(true)
+            }}
+          >
+            ‹
+          </button>
           {/*
             Poignée de la feuille : n'existe qu'en dessous de 800 px (masquée
             en CSS au-dessus). Un seul bouton pour trois positions, dont le
@@ -262,6 +303,21 @@ function App() {
             marques de la FFRandonnée.
           </footer>
         </aside>
+        {panneauLarge && panneauReplie && (
+          <button
+            type="button"
+            className={styles.rendrePanneau}
+            data-testid="panneau-rendre"
+            aria-label="Rouvrir le panneau de contrôle"
+            aria-controls="panneau-de-controle"
+            aria-expanded={false}
+            onClick={() => {
+              void setPanneauReplie(false)
+            }}
+          >
+            ›
+          </button>
+        )}
         <main className={styles.main}>
           <Suspense
             fallback={
@@ -270,8 +326,18 @@ function App() {
           >
             <MapView />
           </Suspense>
-          {!hasZoneData && !hasCustomData && !hasTracks && !zoneLoading && (
-            <EmptyState />
+          {guideDemarrageVisible(donnees, guideFerme) && <EmptyState />}
+          {rappelGuideVisible(donnees, guideFerme) && (
+            <button
+              type="button"
+              className={styles.rappelGuide}
+              data-testid="onboarding-rouvrir"
+              onClick={() => {
+                void setGuideFerme(false)
+              }}
+            >
+              Guide de démarrage
+            </button>
           )}
           <ItineraryCard />
           <ItineraryDetail />

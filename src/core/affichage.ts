@@ -42,14 +42,65 @@ export function estModeAffichage(valeur: unknown): valeur is ModeAffichage {
 }
 
 /**
- * Relit le réglage « gros texte », stocké en 0/1 faute de booléen en base.
+ * Relit un réglage booléen, stocké en 0/1 faute de booléen en base.
  *
  * Tout ce qui n'est pas exactement 1 vaut faux : une valeur écrite par une
  * version future, ou abîmée, ne doit pas imposer un affichage que personne
  * n'a demandé.
+ *
+ * Nommée plutôt que recopiée : trois réglages se relisent maintenant de
+ * cette façon — gros texte, guide fermé, panneau replié. Le troisième aurait
+ * été le moment de la copier une fois de trop (CLAUDE.md §4).
  */
-export function lireGrosTexte(valeur: unknown): boolean {
+export function lireDrapeau(valeur: unknown): boolean {
   return valeur === 1
+}
+
+/** Ce que l'application a en main quand elle décide d'afficher le guide. */
+export interface EtatDonnees {
+  itineraires: boolean
+  itinerairesPerso: boolean
+  traces: boolean
+  chargement: boolean
+}
+
+/**
+ * Le guide de premier lancement a-t-il quelque chose à dire ?
+ *
+ * Cette condition était écrite en ligne dans le rendu de `App`. Elle est
+ * nommée parce qu'un deuxième endroit doit la consulter : le rappel qui
+ * permet de **rouvrir** le guide après l'avoir fermé. Deux conditions
+ * recopiées auraient dérivé, et la dérive se serait vue comme un guide
+ * impossible à retrouver.
+ */
+export function guideDisponible(donnees: EtatDonnees): boolean {
+  return (
+    !donnees.itineraires &&
+    !donnees.itinerairesPerso &&
+    !donnees.traces &&
+    !donnees.chargement
+  )
+}
+
+/** Le guide s'affiche-t-il en pleine surcouche ? */
+export function guideDemarrageVisible(
+  donnees: EtatDonnees,
+  ferme: boolean,
+): boolean {
+  return guideDisponible(donnees) && !ferme
+}
+
+/**
+ * Le rappel discret s'affiche-t-il à la place ?
+ *
+ * Exactement quand le guide serait affiché mais a été fermé : fermer une
+ * chose ne doit jamais faire disparaître le moyen de la rouvrir.
+ */
+export function rappelGuideVisible(
+  donnees: EtatDonnees,
+  ferme: boolean,
+): boolean {
+  return guideDisponible(donnees) && ferme
 }
 
 /** Ce que chaque mode laisse voir. */
