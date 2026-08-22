@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import {
   ZONES,
+  libelleDeZone,
   FEATURED_ROUTES,
   buildZoneQuery,
   buildRefQuery,
@@ -35,7 +36,7 @@ describe('buildZoneQuery', () => {
     expect(q).toContain('Pilat')
   })
 
-  it('« Les trois » réunit toutes les zones', () => {
+  it('« Rhône, Loire et Pilat » réunit les trois zones', () => {
     const q = buildZoneQuery('trois')
     expect(q).toContain('"name"="Rhône"')
     expect(q).toContain('"name"="Loire"')
@@ -618,5 +619,65 @@ describe('les tags de chemin (issue #179)', () => {
     )
     expect(itins).toHaveLength(1)
     expect(itins[0]!.ways[0]!.tags).toBeUndefined()
+  })
+})
+
+/**
+ * AUDIT_UX.md, constat U7 — « Les trois » ne dit pas de quoi il s'agit.
+ *
+ * Ce n'était pas une troncature : il y avait la place de l'afficher en
+ * entier à toutes les largeurs. C'était le libellé lui-même, qui laissait
+ * deviner ce que la zone réunit.
+ *
+ * Le test ne fige pas un texte — il vérifie qu'aucun libellé de zone ne
+ * laisse la question ouverte, ce qui vaut aussi pour les prochains.
+ */
+describe('les libellés de zone se suffisent à eux-mêmes', () => {
+  it('nomme ce que chaque zone contient, sans quantificateur en l’air', () => {
+    const flous = ZONES.filter((zone) =>
+      /^(les|la|le|des|du)\s+(trois|deux|quatre|autres?|zones?)\b/i.test(
+        zone.label,
+      ),
+    ).map((zone) => `${zone.id} → « ${zone.label} »`)
+    expect(flous).toEqual([])
+  })
+
+  it('la zone qui réunit trois territoires les nomme', () => {
+    const trois = ZONES.find((zone) => zone.id === 'trois')
+    expect(trois).toBeDefined()
+    for (const territoire of ['Rhône', 'Loire', 'Pilat']) {
+      expect(trois?.label).toContain(territoire)
+    }
+  })
+
+  /**
+   * L'identifiant, lui, ne bouge pas : il est écrit en base comme
+   * `lastZoneKey` et sert de clé au cache de zone. Le renommer perdrait
+   * silencieusement la zone restaurée au démarrage de qui l'avait choisie.
+   */
+  it('garde son identifiant, qui vit en base', () => {
+    expect(ZONES.some((zone) => zone.id === 'trois')).toBe(true)
+  })
+})
+
+/**
+ * Le libellé d'une zone peut changer ; la copie en cache, elle, garde celui
+ * du jour où elle a été écrite. Sans quoi renommer « Les trois » en
+ * « Rhône, Loire et Pilat » n'aurait rien changé pour qui l'avait déjà
+ * chargée — le cache tient trente jours.
+ */
+describe('libelleDeZone', () => {
+  it('rend le libellé courant d’une zone connue', () => {
+    expect(libelleDeZone('trois', 'Les trois')).toBe('Rhône, Loire et Pilat')
+    expect(libelleDeZone('pilat', 'PNR du Pilat')).toBe('PNR du Pilat')
+  })
+
+  it('garde le libellé stocké pour ce qui n’est pas une zone', () => {
+    // Une recherche par ref ou par ville n'est pas dans ZONES : son libellé
+    // vient de la requête, et lui seul le connaît.
+    expect(libelleDeZone('ref:GR 65', 'GR 65')).toBe('GR 65')
+    expect(libelleDeZone('autour:Saint-Étienne', 'Autour de Saint-Étienne')).toBe(
+      'Autour de Saint-Étienne',
+    )
   })
 })

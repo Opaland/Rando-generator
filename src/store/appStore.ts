@@ -8,6 +8,7 @@ import {
   parseOverpassResponse,
   OverpassError,
   ZONES,
+  libelleDeZone,
 } from '../core/overpass.ts'
 import {
   parseGpx,
@@ -837,7 +838,12 @@ export const useAppStore = create<AppState>()((set, get) => {
       if (!isCurrent()) return
       const now = new Date().toISOString()
       if (cached && !force && zoneUtilisable(cached, now)) {
-        setItineraries(zoneKey, cached.label, cached.itineraries, cached.fetchedAt)
+        setItineraries(
+          zoneKey,
+          libelleDeZone(zoneKey, cached.label),
+          cached.itineraries,
+          cached.fetchedAt,
+        )
         await persistLastZone(zoneKey)
         await recompute()
         return
@@ -895,7 +901,12 @@ export const useAppStore = create<AppState>()((set, get) => {
         if (!isCurrent()) return
         // Miroirs injoignables : on retombe sur le cache même périmé.
         if (cached) {
-          setItineraries(zoneKey, cached.label, cached.itineraries, cached.fetchedAt)
+          setItineraries(
+            zoneKey,
+            libelleDeZone(zoneKey, cached.label),
+            cached.itineraries,
+            cached.fetchedAt,
+          )
           set({
             zoneError:
               'Les serveurs OpenStreetMap sont injoignables : affichage des tracés en cache (ils datent peut-être un peu).',
@@ -1169,7 +1180,7 @@ export const useAppStore = create<AppState>()((set, get) => {
         if (cached) {
           setItineraries(
             lastZoneKey,
-            cached.label,
+            libelleDeZone(lastZoneKey, cached.label),
             cached.itineraries,
             cached.fetchedAt,
           )

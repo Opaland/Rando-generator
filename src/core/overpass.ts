@@ -75,8 +75,14 @@ export const ZONES: OverpassZone[] = [
     group: 'proche',
   },
   {
+    // L'identifiant ne bouge pas : il est écrit en base comme `lastZoneKey`
+    // et sert de clé au cache de zone. Le renommer perdrait silencieusement
+    // la zone restaurée au démarrage de qui l'avait choisie.
     id: 'trois',
-    label: 'Les trois',
+    // « Les trois » laissait deviner de quoi il s'agit (AUDIT_UX.md, constat
+    // U7). Ce n'était pas une troncature : il y avait la place de l'écrire en
+    // entier à toutes les largeurs.
+    label: 'Rhône, Loire et Pilat',
     areaSelectors: [...RHONE_SELECTORS, ...LOIRE_SELECTORS, ...PILAT_SELECTORS],
     group: 'proche',
   },
@@ -431,4 +437,19 @@ export async function fetchOverpass(
     'Impossible de joindre les serveurs de données OpenStreetMap (Overpass). ' +
       'Ils sont peut-être surchargés : réessayez dans quelques minutes.',
   )
+}
+
+/**
+ * Le libellé à afficher pour une zone en cache.
+ *
+ * Une copie en cache garde le libellé du jour où elle a été écrite, et le
+ * cache tient trente jours : renommer une zone n'aurait rien changé pour qui
+ * l'avait déjà chargée (AUDIT_UX.md, constat U7). On préfère donc celui que
+ * `ZONES` porte aujourd'hui, quand la clé en désigne une.
+ *
+ * Ce qui n'est pas une zone — une recherche par ref, une recherche autour
+ * d'une ville — garde le sien : lui seul le connaît.
+ */
+export function libelleDeZone(zoneKey: string, stocke: string): string {
+  return ZONES.find((zone) => zone.id === zoneKey)?.label ?? stocke
 }
