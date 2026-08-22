@@ -303,3 +303,37 @@ export async function surChaqueOnglet(
     await controle(cle)
   }
 }
+
+/**
+ * Vrai si l'élément est **réellement à l'écran**, et pas seulement présent.
+ *
+ * `toBeVisible` de Playwright ne suffit pas : un élément écrêté par un
+ * ancêtre en `overflow: hidden` — le cas exact de la feuille glissante
+ * repliée — garde un rectangle non vide et passe le test. Éprouvé : la
+ * mutation qui remettait le défaut d'AUDIT_UX U3 laissait quatre tests
+ * verts sur quatre.
+ *
+ * On demande donc au navigateur ce qu'il **peint** au centre de l'élément,
+ * comme l'audit l'a fait pour prouver que le bouton du guide passait sous la
+ * feuille. C'est la seule question dont la réponse ne se laisse pas
+ * arranger.
+ *
+ * À appeler par `expect.poll` et non une fois : la feuille a une transition
+ * de 0,2 s sur sa hauteur, et une mesure prise pendant l'animation ne dit
+ * rien de l'état final.
+ */
+export async function estAlEcran(page: Page, testId: string): Promise<boolean> {
+  const cible = page.getByTestId(testId)
+  if ((await cible.count()) === 0) return false
+  return cible.evaluate((element) => {
+    const r = element.getBoundingClientRect()
+    if (r.width === 0 || r.height === 0) return false
+    const x = r.x + r.width / 2
+    const y = r.y + r.height / 2
+    if (x < 0 || y < 0 || x > window.innerWidth || y > window.innerHeight) {
+      return false
+    }
+    const peint = document.elementFromPoint(x, y)
+    return peint !== null && (element === peint || element.contains(peint))
+  })
+}

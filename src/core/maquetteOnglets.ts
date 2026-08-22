@@ -140,3 +140,52 @@ export function dispositionDemandee(recherche: string): Disposition {
     return 'onglets'
   }
 }
+
+/**
+ * Les trois positions de la feuille glissante sur téléphone.
+ *
+ * Le type vivait dans `App.tsx`. Il remonte ici parce qu'une règle a besoin
+ * de le connaître : celle qui décide où poser la feuille quand on change
+ * d'onglet, et qui ne peut pas s'éprouver dans un gestionnaire d'événement.
+ */
+export type PositionFeuille = 'repliee' | 'moitie' | 'pleine'
+
+/**
+ * Les onglets dont tout le contenu vit dans la feuille.
+ *
+ * « Carte » n'en est pas : son contenu, c'est la carte, qui est *derrière*
+ * la feuille et non dedans. Nommé plutôt que testé à l'envers dans deux
+ * endroits — c'est la même distinction qui décide de la position et de ce
+ * qu'on peut affirmer sur elle (CLAUDE.md §4).
+ */
+function toutTientDansLaFeuille(onglet: Onglet): boolean {
+  return onglet !== 'carte'
+}
+
+/**
+ * Où poser la feuille en arrivant sur un onglet (AUDIT_UX.md, constat U3).
+ *
+ * Mesuré avant correction : feuille repliée à 52 px, on touche
+ * « Progression », la feuille reste à 52 px. L'onglet s'allumait, l'écran ne
+ * bougeait pas, et il fallait deviner qu'un second geste restait à faire.
+ *
+ * Deux règles, et rien de plus :
+ *
+ * - un onglet qui n'a rien à montrer hors de la feuille l'ouvre à mi-hauteur
+ *   si elle est fermée ;
+ * - changer d'onglet ne rétrécit jamais. Quelqu'un qui a déplié en grand
+ *   pour lire une longue liste ne doit pas la voir se refermer parce qu'il
+ *   est allé voir ailleurs et revenu.
+ *
+ * Écarté : replier la feuille en arrivant sur « Carte », qui aurait servi le
+ * geste « montre-moi la carte ». La poignée est juste là et le fait en un
+ * toucher, alors que perdre sa place dans la liste des zones parce qu'on a
+ * fait un aller-retour ne se rattrape pas.
+ */
+export function positionPourOnglet(
+  onglet: Onglet,
+  courante: PositionFeuille,
+): PositionFeuille {
+  if (!toutTientDansLaFeuille(onglet)) return courante
+  return courante === 'repliee' ? 'moitie' : courante
+}
