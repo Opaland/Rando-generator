@@ -396,3 +396,52 @@ test('le revêtement se lit sur le profil, et le profil se zoome', async ({
   await page.getByTestId('zoom-tout').click()
   await expect(page.getByTestId('profil-etendue')).toHaveCount(0)
 })
+
+/**
+ * Trouvaille de la revue du sprint 6.
+ *
+ * Le curseur du profil est borné au parcours entier, pas à la fenêtre
+ * visible. Zoomé sur 0,9–1,5 km, une seule frappe `End` le portait à 2,3 km :
+ * mesuré, le cercle était dessiné à `cx = 784` dans un `viewBox` large de
+ * 320, donc écrêté par le `clipPath` et invisible — pendant que la lecture
+ * sous le graphique et le marqueur sur la carte continuaient d'avancer.
+ *
+ * Ce qui est gardé ici n'est pas « la fenêtre a bougé » mais **que le
+ * curseur reste dans le cadre** : c'est l'invariant, et c'est lui qui était
+ * faux.
+ */
+test('zoomé, le curseur clavier ne sort jamais du cadre', async ({ page }) => {
+  await mockExternalNetwork(page)
+  await mockElevation(page)
+  await page.goto('/')
+
+  test.skip(!(await hasMap(page)), 'WebGL indisponible dans ce navigateur headless')
+
+  await page.getByTestId('zone-pilat').click()
+  await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
+    timeout: 15_000,
+  })
+  await openDetailFromMap(page, 4.502, 45.4)
+  await expect(page.getByTestId('itinerary-detail')).toContainText('D+', {
+    timeout: 10_000,
+  })
+
+  const chart = page.getByTestId('elevation-chart')
+  await page.getByTestId('zoom-avant').click()
+  await page.getByTestId('zoom-avant').click()
+  await expect(page.getByTestId('profil-etendue')).toBeVisible()
+
+  await chart.focus()
+  const cadre = { gauche: 4, droite: 316 } // PADDING et WIDTH - PADDING
+  for (const touche of ['End', 'Home', 'ArrowRight', 'ArrowLeft']) {
+    await page.keyboard.press(touche)
+    const cx = await chart.locator('g circle').last().getAttribute('cx')
+    expect(Number(cx)).toBeGreaterThanOrEqual(cadre.gauche - 1)
+    expect(Number(cx)).toBeLessThanOrEqual(cadre.droite + 1)
+  }
+
+  // Et le zoom n'a pas été perdu en chemin : suivre déplace la fenêtre, il
+  // ne la rouvre pas.
+  await expect(page.getByTestId('profil-etendue')).toBeVisible()
+  await expect(page.getByTestId('zoom-tout')).toBeEnabled()
+})

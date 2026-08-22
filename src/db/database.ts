@@ -21,7 +21,28 @@ export interface CachedZone {
   label: string
   itineraries: Itinerary[]
   fetchedAt: string
+  /**
+   * Ce que la requête Overpass demandait au moment de l'écriture.
+   *
+   * Absent sur tout ce qui a été mis en cache avant #179 : la requête ne
+   * demandait alors pas les tags des chemins, et les itinéraires stockés
+   * n'en portent aucun. Le profil affichait pour eux « Rien à en dire :
+   * 100 % » — mesuré : une bande d'origine `inconnu`, couvrant tout.
+   * L'énoncé vrai n'était pas « OpenStreetMap ne dit rien », mais « on ne
+   * l'a jamais demandé », et le cache tient trente jours.
+   */
+  schema?: number
 }
+
+/**
+ * Version courante du contenu mis en cache pour une zone.
+ *
+ * À incrémenter quand la requête Overpass rapporte quelque chose de
+ * nouveau, faute de quoi les copies plus anciennes prétendent répondre à
+ * une question qu'on ne leur a pas posée. 1 = les tags de revêtement des
+ * chemins membres (issue #179).
+ */
+export const SCHEMA_ZONE = 1
 
 export type SettingKey =
   | 'toleranceMeters'
@@ -44,6 +65,17 @@ interface SentiersSchema extends DBSchema {
   settings: { key: string; value: number | string }
   /** Itinéraires créés par l'utilisateur (ids négatifs, réseau PERSO). */
   customItineraries: { key: number; value: Itinerary }
+}
+
+/**
+ * La copie en cache répond-elle encore à la question qu'on pose aujourd'hui ?
+ *
+ * Deux conditions, et une seule fonction pour les porter : l'âge, et la
+ * version du contenu. Les garder séparées aurait laissé le second oubli se
+ * reproduire au prochain enrichissement de la requête (CLAUDE.md §4).
+ */
+export function zoneUtilisable(zone: CachedZone, nowIso: string): boolean {
+  return zone.schema === SCHEMA_ZONE && isFresh(zone.fetchedAt, nowIso)
 }
 
 /** Vrai si un horodatage ISO a moins de CACHE_TTL_MS d'ancienneté à `nowIso`. */

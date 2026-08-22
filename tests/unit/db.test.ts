@@ -3,6 +3,8 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import {
   openSentiersDb,
   isFresh,
+  zoneUtilisable,
+  SCHEMA_ZONE,
   CACHE_TTL_MS,
   DB_VERSION,
   DbError,
@@ -168,5 +170,46 @@ describe('réglages', () => {
     expect(await db.getSetting('toleranceMeters')).toBeUndefined()
     await db.setSetting('toleranceMeters', 25)
     expect(await db.getSetting('toleranceMeters')).toBe(25)
+  })
+})
+
+/**
+ * Trouvaille de la revue du sprint 6.
+ *
+ * #179 a enrichi la requête Overpass sans toucher au cache, dont la durée
+ * de vie est de trente jours. Une zone chargée la veille portait donc des
+ * chemins sans tags — et le profil altimétrique affichait pour elle, mesuré,
+ * une bande unique d'origine `inconnu` et la légende « Rien à en dire :
+ * 100 % ». Ce n'est pas ce que dit OpenStreetMap : c'est ce qu'on ne lui a
+ * pas demandé.
+ */
+describe('zoneUtilisable', () => {
+  const zone = {
+    zoneKey: 'pilat',
+    label: 'Pilat',
+    itineraries: [],
+    fetchedAt: '2026-01-01T00:00:00Z',
+  }
+  const bientot = '2026-01-02T00:00:00Z'
+  const plusTard = '2026-03-01T00:00:00Z'
+
+  it('accepte une copie récente écrite à la version courante', () => {
+    expect(zoneUtilisable({ ...zone, schema: SCHEMA_ZONE }, bientot)).toBe(true)
+  })
+
+  it('refuse une copie récente écrite avant que la version existe', () => {
+    expect(zoneUtilisable(zone, bientot)).toBe(false)
+  })
+
+  it('refuse une copie à la bonne version mais périmée', () => {
+    expect(zoneUtilisable({ ...zone, schema: SCHEMA_ZONE }, plusTard)).toBe(
+      false,
+    )
+  })
+
+  it('refuse une version qu’elle ne connaît pas', () => {
+    expect(zoneUtilisable({ ...zone, schema: SCHEMA_ZONE + 1 }, bientot)).toBe(
+      false,
+    )
   })
 })

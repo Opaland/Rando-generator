@@ -3,6 +3,7 @@ import {
   fenetreEntiere,
   zoomer,
   deplacer,
+  suivre,
   estZoome,
   LARGEUR_MIN_METRES,
 } from '../../src/core/zoomProfil.ts'
@@ -89,5 +90,92 @@ describe('estZoome', () => {
   it('distingue la vue entière d’une vue resserrée', () => {
     expect(estZoome(fenetreEntiere(TOTAL), TOTAL)).toBe(false)
     expect(estZoome({ debut: 0, fin: 5000 }, TOTAL)).toBe(true)
+  })
+})
+
+/**
+ * Trouvaille de la revue du sprint 6.
+ *
+ * Mesuré sur l'application déployée : fenêtre zoomée sur 0,9–1,5 km, une
+ * seule frappe `End` porte le curseur à 2,3 km. La fenêtre ne bougeait pas,
+ * et le cercle du curseur était dessiné à `cx = 784` dans un `viewBox` large
+ * de 320 — hors cadre, écrêté par le `clipPath`. La lecture sous le
+ * graphique et le marqueur sur la carte continuaient d'avancer : on
+ * naviguait à l'aveugle.
+ *
+ * Le commentaire du composant affirmait « le clavier fait la même chose que
+ * la souris ». À la souris c'est impossible : le pointeur ne peut pas
+ * désigner un point hors du cadre.
+ */
+describe('suivre', () => {
+  const total = 10_000
+
+  it('ne bouge pas une fenêtre qui contient déjà le point', () => {
+    const fenetre = { debut: 2000, fin: 4000 }
+    expect(suivre(fenetre, total, 3000)).toEqual(fenetre)
+    // Les bornes comptent comme contenues : sinon chaque butée glisserait.
+    expect(suivre(fenetre, total, 2000)).toEqual(fenetre)
+    expect(suivre(fenetre, total, 4000)).toEqual(fenetre)
+  })
+
+  it('glisse juste ce qu’il faut pour rattraper un point devant', () => {
+    const apres = suivre({ debut: 2000, fin: 4000 }, total, 5000)
+    expect(apres.fin).toBe(5000)
+    // La largeur ne change pas : suivre n'est pas un zoom.
+    expect(apres.fin - apres.debut).toBe(2000)
+  })
+
+  it('glisse de même pour un point derrière', () => {
+    const apres = suivre({ debut: 2000, fin: 4000 }, total, 500)
+    expect(apres.debut).toBe(500)
+    expect(apres.fin - apres.debut).toBe(2000)
+  })
+
+  it('ne sort jamais du parcours', () => {
+    const fin = suivre({ debut: 2000, fin: 4000 }, total, total)
+    expect(fin.fin).toBe(total)
+    expect(fin.debut).toBe(total - 2000)
+    const debut = suivre({ debut: 2000, fin: 4000 }, total, 0)
+    expect(debut.debut).toBe(0)
+    expect(debut.fin).toBe(2000)
+  })
+
+  /**
+   * L'invariant qui compte : après `suivre`, le point est visible. C'est la
+   * seule chose que le composant demande, et la seule qui manquait.
+   */
+  it('rend le point visible, d’où qu’il vienne', () => {
+    const fenetres = [
+      { debut: 0, fin: total },
+      { debut: 0, fin: 50 },
+      { debut: 4000, fin: 4200 },
+      { debut: total - 100, fin: total },
+    ]
+    for (const fenetre of fenetres) {
+      for (const point of [0, 1, 499, 4100, 9999, total]) {
+        const apres = suivre(fenetre, total, point)
+        expect(apres.debut).toBeLessThanOrEqual(point)
+        expect(apres.fin).toBeGreaterThanOrEqual(point)
+        expect(apres.fin - apres.debut).toBeCloseTo(fenetre.fin - fenetre.debut, 6)
+      }
+    }
+  })
+})
+
+/**
+ * Le point est ramené dans le parcours en entrée. Deux butées écrites
+ * d'abord sur la fenêtre en sortie étaient inatteignables : une mutation les
+ * a supprimées sans faire rougir un seul test.
+ */
+describe('suivre — un point hors parcours', () => {
+  it('est ramené aux extrémités plutôt que d’emporter la fenêtre', () => {
+    expect(suivre({ debut: 2000, fin: 4000 }, 10_000, 999_999)).toEqual({
+      debut: 8000,
+      fin: 10_000,
+    })
+    expect(suivre({ debut: 2000, fin: 4000 }, 10_000, -50)).toEqual({
+      debut: 0,
+      fin: 2000,
+    })
   })
 })

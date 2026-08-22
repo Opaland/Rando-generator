@@ -10,6 +10,7 @@ import {
   deplacer as deplacerFenetre,
   estZoome,
   fenetreEntiere,
+  suivre,
   zoomer,
   type Fenetre,
 } from '../core/zoomProfil.ts'
@@ -131,6 +132,15 @@ export function ElevationChart({
       nouveau === null ? null : Math.min(Math.max(nouveau, 0), totalDistance)
     setCurseur(borne)
     setElevationHover(borne === null ? null : pointAtDistance(profile, borne))
+    // La fenêtre suit le curseur. Le curseur est borné au parcours entier,
+    // pas à la fenêtre visible — `End` doit mener au bout du tracé, pas au
+    // bout de ce qu'on regarde. Sans cela, une seule frappe sur une fenêtre
+    // zoomée sortait le curseur du cadre : il était écrêté et invisible
+    // pendant que la lecture et le marqueur de carte continuaient d'avancer
+    // (revue du sprint 6).
+    if (borne !== null && fenetreChoisie !== null) {
+      setFenetreChoisie(suivre(fenetreChoisie, totalDistance, borne))
+    }
   }
 
   const distanceSousPointeur = (clientX: number): number | null => {

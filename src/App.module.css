@@ -324,8 +324,15 @@
     top: 0;
     z-index: 1;
     /* Marges négatives : la poignée occupe toute la largeur de la feuille,
-       par-dessus le padding latéral du panneau. */
-    margin: 0 -var(--espace-7);
+       par-dessus le padding latéral du panneau.
+
+       `-var(--espace-7)` n'est pas du CSS : un signe moins ne peut pas
+       précéder une fonction. La déclaration passait esbuild sans un mot et
+       était jetée par le parseur du navigateur — mesuré dans Chromium,
+       `element.style.margin` restait vide. La poignée n'a donc jamais occupé
+       cette largeur, contrairement à ce que ce commentaire affirmait depuis
+       le sprint 5 (revue du sprint 6). */
+    margin: 0 calc(-1 * var(--espace-7));
     padding: var(--espace-3) var(--espace-7) var(--espace-5);
     min-height: 52px;
     border: none;
