@@ -306,3 +306,34 @@ test('le repère posé sur le profil reste quand on regarde la carte', async ({
   await expect(page.getByTestId('elevation-readout')).toContainText('km')
   expect(await marqueurs()).toBe(1)
 })
+
+test('la pente est donnée avec la longueur sur laquelle elle est moyennée', async ({
+  page,
+}) => {
+  // Issue #179 — Farid, en fauteuil, et Nadia et Yann avec une poussette
+  // décident de s'engager sur cette phrase. « Pente maximale 6 % » se lit
+  // « nulle part plus de 6 % », ce qui est faux à cette résolution : le
+  // profil est échantillonné à cent points au plus, soit un point tous les
+  // 200 m sur un itinéraire de 20 km. Une rampe de 30 m à 20 % y disparaît.
+  await mockExternalNetwork(page)
+  await mockElevation(page)
+  await page.goto('/')
+
+  test.skip(!(await hasMap(page)), 'WebGL indisponible dans ce navigateur headless')
+
+  await page.getByTestId('zone-pilat').click()
+  await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
+    timeout: 15_000,
+  })
+  await openDetailFromMap(page, 4.502, 45.4)
+  await expect(page.getByTestId('itinerary-detail')).toContainText('D+', {
+    timeout: 10_000,
+  })
+
+  const pente = page.getByTestId('pente-max')
+  await expect(pente).toBeVisible()
+  // Le chiffre, et surtout ce qui l'encadre.
+  await expect(pente).toContainText('%')
+  await expect(pente).toContainText('en moyenne sur')
+  await expect(pente).toContainText('ne se verrait pas')
+})

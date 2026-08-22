@@ -22,6 +22,7 @@ import { downloadTextFile } from '../lib/download.ts'
 import { ElevationChart } from './ElevationChart.tsx'
 import { ProgressBalise } from './ProgressBalise.tsx'
 import styles from './ItineraryDetail.module.css'
+import { penteMaximale, libellePente } from '../core/pente.ts'
 
 /**
  * Fiche détail d'un itinéraire, ouverte en cliquant son tracé sur la carte :
@@ -67,6 +68,10 @@ export function ItineraryDetail() {
   const pois = situerPois(poisBruts, itineraryCoords(itin))
 
   const stats = elevationProfile ? elevationStats(elevationProfile.elevations) : null
+  // Pente maximale (issue #179) : Farid, en fauteuil, et Nadia et Yann avec
+  // une poussette en ont besoin pour décider de s'engager. Le chiffre n'est
+  // jamais rendu seul — `libellePente` porte la résolution avec lui.
+  const pente = elevationProfile ? penteMaximale(elevationProfile) : null
   const hasSleepingSpot = pois.some((poi) => POI_OVERNIGHT.includes(poi.kind))
   // Un long GR ne se lit pas en un seul pourcentage : on le découpe en
   // étapes calculées (les découpages des topo-guides sont éditoriaux, donc
@@ -269,6 +274,11 @@ export function ItineraryDetail() {
               D+ {Math.round(stats.gain)} m · D− {Math.round(stats.loss)} m ·{' '}
               {Math.round(stats.min)}–{Math.round(stats.max)} m
             </p>
+            {pente && (
+              <p className={styles.pente} data-testid="pente-max">
+                <strong>Pente</strong> : {libellePente(pente)}
+              </p>
+            )}
           </>
         )}
       </section>
