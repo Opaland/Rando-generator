@@ -26,8 +26,22 @@
   gap: var(--espace-5);
 }
 
+/* La carte devient le repère de position du bouton de fermeture, qui se
+   pose dans son coin sans décaler le titre. */
+.card {
+  position: relative;
+}
+
+.fermer {
+  position: absolute;
+  top: var(--espace-4);
+  right: var(--espace-4);
+}
+
 .title {
   font-size: var(--texte-titre-fort);
+  /* Place réservée au bouton : sans quoi un titre long passe dessous. */
+  padding-right: 44px; /* la largeur du bouton, définie par .btn-icon-close */
 }
 
 .steps {

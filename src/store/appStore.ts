@@ -61,7 +61,7 @@ import {
 import { construireDemonstration } from '../core/demonstration.ts'
 import {
   estModeAffichage,
-  lireGrosTexte,
+  lireDrapeau,
   type ModeAffichage,
 } from '../core/affichage.ts'
 import {
@@ -220,6 +220,23 @@ export interface AppState {
   modeAffichage: ModeAffichage
   /** Tout agrandi et contrasté, y compris les libellés portés par la carte. */
   grosTexte: boolean
+  /**
+   * Le guide de premier lancement a-t-il été fermé ?
+   *
+   * Persisté, parce que la plainte porte précisément sur « quand on ouvre
+   * l'appli » : un guide qui revient à chaque rechargement n'a pas été fermé,
+   * il a été repoussé. Ce qui le rouvre est le rappel de `rappelGuideVisible`.
+   */
+  guideFerme: boolean
+  /**
+   * Le panneau latéral a-t-il été replié ?
+   *
+   * Sur téléphone la feuille avait déjà trois positions ; au-dessus de
+   * 800 px la colonne était définitive et prenait 390 px de carte sans
+   * qu'aucun geste puisse la rendre. Persisté pour la même raison que
+   * ci-dessus.
+   */
+  panneauReplie: boolean
 
   // Itinéraires créés par l'utilisateur (réseau PERSO, ids négatifs)
   customItineraries: Itinerary[]
@@ -348,6 +365,8 @@ export interface AppState {
   rafraichirStockage: () => Promise<void>
   setModeAffichage: (mode: ModeAffichage) => Promise<void>
   setGrosTexte: (actif: boolean) => Promise<void>
+  setGuideFerme: (ferme: boolean) => Promise<void>
+  setPanneauReplie: (replie: boolean) => Promise<void>
   openItineraryDetail: (id: number) => void
   closeItineraryDetail: () => void
   toggleView3D: () => void
@@ -928,6 +947,8 @@ export const useAppStore = create<AppState>()((set, get) => {
     stockage: null,
     modeAffichage: 'complet',
     grosTexte: false,
+    guideFerme: false,
+    panneauReplie: false,
     backupMessage: null,
     lieux: [],
     lieuxLoading: false,
@@ -991,6 +1012,8 @@ export const useAppStore = create<AppState>()((set, get) => {
         objectifsBruts,
         modeBrut,
         grosTexteBrut,
+        guideFermeBrut,
+        panneauReplieBrut,
       ] = await Promise.all([
         db.listTracks(),
         db.listCustomItineraries(),
@@ -1000,6 +1023,8 @@ export const useAppStore = create<AppState>()((set, get) => {
         db.getSetting('objectifs'),
         db.getSetting('modeAffichage'),
         db.getSetting('grosTexte'),
+        db.getSetting('guideFerme'),
+        db.getSetting('panneauReplie'),
       ])
       // Fusion, jamais remplacement : lire IndexedDB prend quelques centaines
       // de millisecondes, et l'utilisateur peut avoir déposé un fichier
@@ -1023,7 +1048,9 @@ export const useAppStore = create<AppState>()((set, get) => {
         // Un réglage abîmé ou écrit par une version future ne doit pas
         // imposer un affichage que personne n'a demandé (issue #173).
         modeAffichage: estModeAffichage(modeBrut) ? modeBrut : 'complet',
-        grosTexte: lireGrosTexte(grosTexteBrut),
+        grosTexte: lireDrapeau(grosTexteBrut),
+        guideFerme: lireDrapeau(guideFermeBrut),
+        panneauReplie: lireDrapeau(panneauReplieBrut),
       }))
 
       // Rattrapage : ce qui a été importé pendant l'ouverture de la base n'y a
@@ -1671,8 +1698,20 @@ export const useAppStore = create<AppState>()((set, get) => {
       set({ grosTexte: actif })
       const db = await baseOuverte()
       // Pas de booléen dans le magasin des réglages : 0/1, relu par
-      // lireGrosTexte qui n'accepte que 1.
+      // lireDrapeau qui n'accepte que 1.
       if (db) await db.setSetting('grosTexte', actif ? 1 : 0)
+    },
+
+    async setGuideFerme(ferme) {
+      set({ guideFerme: ferme })
+      const db = await baseOuverte()
+      if (db) await db.setSetting('guideFerme', ferme ? 1 : 0)
+    },
+
+    async setPanneauReplie(replie) {
+      set({ panneauReplie: replie })
+      const db = await baseOuverte()
+      if (db) await db.setSetting('panneauReplie', replie ? 1 : 0)
     },
 
     async rafraichirStockage() {

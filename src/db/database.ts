@@ -33,6 +33,10 @@ export type SettingKey =
   | 'modeAffichage'
   /** 0 ou 1, faute de booléen dans le magasin des réglages. */
   | 'grosTexte'
+  /** 0 ou 1 : le guide de premier lancement a-t-il été fermé ? */
+  | 'guideFerme'
+  /** 0 ou 1 : le panneau latéral a-t-il été replié sur grand écran ? */
+  | 'panneauReplie'
 
 interface SentiersSchema extends DBSchema {
   zones: { key: string; value: CachedZone }

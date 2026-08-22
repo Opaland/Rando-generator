@@ -5,11 +5,30 @@ import styles from './EmptyState.module.css'
 /** Guide de premier lancement, affiché tant qu'aucune donnée n'est chargée. */
 export function EmptyState() {
   const demarrerDemonstration = useAppStore((s) => s.demarrerDemonstration)
+  const setGuideFerme = useAppStore((s) => s.setGuideFerme)
+  const fermerGuide = () => setGuideFerme(true)
   const [prepare, setPrepare] = useState(false)
 
   return (
     <div className={styles.overlay} data-testid="onboarding">
       <div className={styles.card}>
+        {/*
+          Fermer un guide qu'on a lu est un geste attendu. Il manquait : la
+          surcouche restait tant qu'aucune donnée n'était chargée, c'est-à-dire
+          exactement pendant qu'on voulait regarder la carte pour décider.
+          Le rappel « Guide de démarrage » le rouvre — voir rappelGuideVisible.
+        */}
+        <button
+          type="button"
+          className={`btn-icon-close ${styles.fermer}`}
+          data-testid="onboarding-fermer"
+          aria-label="Fermer le guide de démarrage"
+          onClick={() => {
+            void fermerGuide()
+          }}
+        >
+          ×
+        </button>
         <h2 className={styles.title}>Bienvenue sur Sentiers</h2>
         <ol className={styles.steps}>
           <li>

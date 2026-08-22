@@ -2,9 +2,13 @@ import { describe, it, expect } from 'vitest'
 import {
   MODES_AFFICHAGE,
   estModeAffichage,
-  lireGrosTexte,
+  lireDrapeau,
   sectionsVisibles,
   etoilesDeSortie,
+  guideDisponible,
+  guideDemarrageVisible,
+  rappelGuideVisible,
+  type EtatDonnees,
 } from '../../src/core/affichage.ts'
 
 /**
@@ -30,12 +34,12 @@ describe('modes d’affichage', () => {
   })
 
   it('relit le réglage « gros texte » stocké, et retombe sur faux', () => {
-    expect(lireGrosTexte(1)).toBe(true)
-    expect(lireGrosTexte(0)).toBe(false)
-    expect(lireGrosTexte(undefined)).toBe(false)
+    expect(lireDrapeau(1)).toBe(true)
+    expect(lireDrapeau(0)).toBe(false)
+    expect(lireDrapeau(undefined)).toBe(false)
     // Une valeur écrite par une version future, ou abîmée : pas de gros
     // texte imposé par accident.
-    expect(lireGrosTexte('oui')).toBe(false)
+    expect(lireDrapeau('oui')).toBe(false)
   })
 })
 
@@ -93,5 +97,54 @@ describe('etoilesDeSortie', () => {
   it('ne se laisse pas piéger par une valeur absurde', () => {
     expect(etoilesDeSortie(-10)).toBe(0)
     expect(etoilesDeSortie(NaN)).toBe(0)
+  })
+})
+
+describe('guide de démarrage', () => {
+  const rien: EtatDonnees = {
+    itineraires: false,
+    itinerairesPerso: false,
+    traces: false,
+    chargement: false,
+  }
+
+  it('est disponible tant que rien n’est chargé', () => {
+    expect(guideDisponible(rien)).toBe(true)
+  })
+
+  it('disparaît dès qu’une des trois sources porte quelque chose', () => {
+    expect(guideDisponible({ ...rien, itineraires: true })).toBe(false)
+    expect(guideDisponible({ ...rien, itinerairesPerso: true })).toBe(false)
+    expect(guideDisponible({ ...rien, traces: true })).toBe(false)
+  })
+
+  it('se tait pendant un chargement de zone, qui va le rendre inutile', () => {
+    expect(guideDisponible({ ...rien, chargement: true })).toBe(false)
+  })
+
+  it('reste fermé quand on l’a fermé', () => {
+    expect(guideDemarrageVisible(rien, true)).toBe(false)
+    expect(guideDemarrageVisible(rien, false)).toBe(true)
+  })
+
+  /**
+   * La seule règle qui compte vraiment : fermer ne doit pas faire disparaître
+   * le moyen de rouvrir. Les deux conditions sont exclusives et couvrent
+   * ensemble tous les cas où le guide a quelque chose à dire.
+   */
+  it('rend exactement l’un des deux : le guide, ou son rappel', () => {
+    for (const donnees of [
+      rien,
+      { ...rien, itineraires: true },
+      { ...rien, traces: true },
+      { ...rien, chargement: true },
+    ]) {
+      for (const ferme of [true, false]) {
+        const guide = guideDemarrageVisible(donnees, ferme)
+        const rappel = rappelGuideVisible(donnees, ferme)
+        expect(guide && rappel).toBe(false)
+        expect(guide || rappel).toBe(guideDisponible(donnees))
+      }
+    }
   })
 })

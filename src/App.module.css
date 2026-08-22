@@ -113,6 +113,92 @@
   display: none;
 }
 
+/*
+  Replier le panneau sur grand écran.
+
+  La poignée de la feuille n'existe qu'en dessous de 800 px ; au-dessus, la
+  colonne prenait 390 px de carte définitivement. Ces deux boutons sont les
+  deux faces du même booléen `panneauReplie` : l'un ne s'affiche que quand
+  l'autre est absent, si bien qu'il n'existe aucun état où le panneau est
+  replié sans moyen de le rendre.
+*/
+.sidebar[hidden] {
+  /* `hidden` seul ne suffit pas : la règle `.sidebar { display: grid }` de
+     ce fichier a une spécificité supérieure à celle de la feuille du
+     navigateur et la masquerait. */
+  display: none;
+}
+
+.replier {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  border: none;
+  background: none;
+  border-radius: var(--rayon-md);
+  font-size: var(--texte-vedette);
+  line-height: 1;
+  color: var(--gris-vert);
+  cursor: pointer;
+}
+
+.replier:hover {
+  color: var(--vert-noir);
+  background: var(--gris-vert-clair);
+}
+
+.rendrePanneau {
+  align-self: start;
+  margin-top: var(--espace-7);
+  min-width: 28px;
+  min-height: 44px;
+  border: 1px solid var(--gris-vert-clair);
+  border-left: none;
+  border-radius: 0 var(--rayon-md) var(--rayon-md) 0;
+  background: var(--blanc-carte);
+  color: var(--gris-vert);
+  font-size: var(--texte-titre);
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: var(--ombre-panneau);
+}
+
+.rendrePanneau:hover {
+  color: var(--vert-noir);
+}
+
+/*
+  Rappel du guide de démarrage, une fois qu'on l'a fermé.
+
+  Posé sur la carte, en bas à gauche, hors du chemin des contrôles de zoom
+  (à droite) et de l'attribution (en bas à droite).
+*/
+.rappelGuide {
+  position: absolute;
+  left: var(--espace-7);
+  bottom: var(--espace-7);
+  z-index: var(--z-overlay-guide);
+  padding: var(--espace-4) var(--espace-6);
+  min-height: 44px;
+  border: 1px solid var(--gris-vert-clair);
+  border-radius: var(--rayon-md);
+  background: var(--blanc-carte);
+  color: var(--vert-noir);
+  font-size: var(--texte-appui);
+  cursor: pointer;
+  box-shadow: var(--ombre-panneau);
+}
+
+.rappelGuide:hover {
+  border-color: var(--vert-noir);
+}
+
 .mapLoading {
   margin: var(--espace-8);
   color: var(--gris-vert);
@@ -223,6 +309,10 @@
     /* Le haut du cadre reste visible : on n'oublie pas qu'il y a une carte
        dessous, et la feuille se referme sans chercher un bouton. */
     max-height: calc(100% - 24px);
+  }
+
+  .replier {
+    display: none;
   }
 
   .poignee {
