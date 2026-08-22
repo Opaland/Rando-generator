@@ -84,3 +84,126 @@
   flex: none;
   font-variant-numeric: tabular-nums;
 }
+
+/* Bande de revêtement sous la courbe (issue #179).
+   Les couleurs disent une famille, pas un jugement : rien ici ne prétend
+   qu'un sol est praticable ou non — c'est la personne qui décide, avec les
+   informations sous les yeux. */
+.bande[data-famille='dur'] {
+  fill: var(--gris-vert);
+}
+
+.bande[data-famille='stabilise'] {
+  fill: var(--jaune-pr);
+}
+
+.bande[data-famille='naturel'] {
+  fill: var(--bleu-local);
+}
+
+/* Une valeur qu'OSM connaît mais que la table ne classe pas. Neutre, pour
+   ne pas la faire passer pour l'une des trois familles. */
+.bande[data-famille='autre'] {
+  fill: var(--gris-vert-clair);
+}
+
+/* L'inconnu est hachuré, jamais coloré : une couleur pleine se lirait comme
+   une valeur, et deux tiers du parcours n'en ont pas. */
+.hachure {
+  stroke: var(--gris-vert);
+  stroke-width: 1;
+  opacity: 0.45;
+}
+
+.zoom {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-2);
+  margin-top: var(--espace-2);
+  flex-wrap: wrap;
+}
+
+.zoom button {
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0 var(--espace-3);
+  border: 1px solid var(--gris-vert-clair);
+  border-radius: var(--rayon-sm);
+  background: var(--blanc-papier);
+  color: inherit;
+  font-size: var(--texte-secondaire);
+  cursor: pointer;
+}
+
+.zoom button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.zoom button:focus-visible {
+  outline: var(--anneau-focus);
+}
+
+.etendue {
+  font-size: var(--texte-appui);
+  color: var(--gris-vert);
+  font-variant-numeric: tabular-nums;
+}
+
+.couverture {
+  margin: var(--espace-3) 0 0;
+  font-size: var(--texte-appui);
+  color: var(--gris-vert);
+}
+
+/* La déduction se voit comme une déduction : même teinte, moins affirmée.
+   Une supposition peinte à l'identique d'un relevé serait un mensonge
+   graphique — celui-là même que la bande existe pour éviter (issue #179). */
+.bande[data-origine='deduit'] {
+  opacity: 0.42;
+}
+
+.legende {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 2px;
+}
+
+.legende li {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-3);
+}
+
+.pastille {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex: none;
+}
+
+.pastille[data-origine='renseigne'] {
+  background: var(--gris-vert);
+}
+
+.pastille[data-origine='deduit'] {
+  background: var(--gris-vert);
+  opacity: 0.42;
+}
+
+.pastille[data-origine='inconnu'] {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--gris-vert-clair),
+    var(--gris-vert-clair) 2px,
+    var(--blanc-papier) 2px,
+    var(--blanc-papier) 4px
+  );
+  border: 1px solid var(--gris-vert-clair);
+}
+
+.note {
+  margin: var(--espace-3) 0 0;
+}

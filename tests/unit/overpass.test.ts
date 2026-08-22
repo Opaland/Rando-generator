@@ -308,7 +308,13 @@ describe('fetchOverpass', () => {
     const data = await fetchOverpass('QUERY', { fetchFn })
     expect(fetchFn).toHaveBeenCalledTimes(1)
     expect(fetchFn.mock.calls[0]![0]).toBe(OVERPASS_MIRRORS[0])
-    expect((data as { elements: unknown[] }).elements).toHaveLength(4)
+    // Rattaché au fixture plutôt qu'au nombre 4 : ces tests éprouvent le
+    // transport, pas la taille du jeu d'essai. Le nombre codé en dur les a
+    // fait tomber tous les quatre le jour où le fixture a gagné des chemins
+    // tagués (issue #179), pour un défaut qui n'existait pas.
+    expect((data as { elements: unknown[] }).elements).toHaveLength(
+      pilatFixture.elements.length,
+    )
   })
 
   it('bascule sur le second miroir si le premier échoue (réseau)', async () => {
@@ -391,7 +397,13 @@ describe('fetchOverpass', () => {
 
     // Cumulatif et croissant : c'est ce que l'utilisateur voit défiler.
     expect(octets).toEqual([100, 400, brut.byteLength])
-    expect((data as { elements: unknown[] }).elements).toHaveLength(4)
+    // Rattaché au fixture plutôt qu'au nombre 4 : ces tests éprouvent le
+    // transport, pas la taille du jeu d'essai. Le nombre codé en dur les a
+    // fait tomber tous les quatre le jour où le fixture a gagné des chemins
+    // tagués (issue #179), pour un défaut qui n'existait pas.
+    expect((data as { elements: unknown[] }).elements).toHaveLength(
+      pilatFixture.elements.length,
+    )
   })
 
   it('lit quand même la réponse si le corps n’est pas diffusable', async () => {
@@ -407,7 +419,13 @@ describe('fetchOverpass', () => {
       fetchFn: vi.fn().mockResolvedValue(sansCorps),
       onProgress,
     })
-    expect((data as { elements: unknown[] }).elements).toHaveLength(4)
+    // Rattaché au fixture plutôt qu'au nombre 4 : ces tests éprouvent le
+    // transport, pas la taille du jeu d'essai. Le nombre codé en dur les a
+    // fait tomber tous les quatre le jour où le fixture a gagné des chemins
+    // tagués (issue #179), pour un défaut qui n'existait pas.
+    expect((data as { elements: unknown[] }).elements).toHaveLength(
+      pilatFixture.elements.length,
+    )
     expect(onProgress).not.toHaveBeenCalled()
   })
 
@@ -424,7 +442,13 @@ describe('fetchOverpass', () => {
       .mockResolvedValueOnce(okResponse())
     const data = await fetchOverpass('QUERY', { fetchFn, onProgress: vi.fn() })
     expect(fetchFn).toHaveBeenCalledTimes(2)
-    expect((data as { elements: unknown[] }).elements).toHaveLength(4)
+    // Rattaché au fixture plutôt qu'au nombre 4 : ces tests éprouvent le
+    // transport, pas la taille du jeu d'essai. Le nombre codé en dur les a
+    // fait tomber tous les quatre le jour où le fixture a gagné des chemins
+    // tagués (issue #179), pour un défaut qui n'existait pas.
+    expect((data as { elements: unknown[] }).elements).toHaveLength(
+      pilatFixture.elements.length,
+    )
   })
 
   it('signale chaque tentative de miroir via onAttempt', async () => {
@@ -471,5 +495,128 @@ describe('RAYON_AUTOUR_METERS', () => {
   it('couvre une sortie à la journée sans faire exploser la requête', () => {
     expect(RAYON_AUTOUR_METERS).toBeGreaterThanOrEqual(5_000)
     expect(RAYON_AUTOUR_METERS).toBeLessThanOrEqual(25_000)
+  })
+})
+
+describe('les tags de chemin (issue #179)', () => {
+  /**
+   * Mesuré sur la donnée réelle avant d'écrire une ligne : `out meta geom;`
+   * sur des relations ne rend que la géométrie des membres. Sur une fenêtre
+   * du Pilat, zéro occurrence de `highway` dans 3 Mo — et `highway` est
+   * porté par tous les chemins d'OSM.
+   *
+   * Les demander explicitement coûte +24 % : 450 ko de tags pour 1,84 Mo de
+   * géométrie, soit 129 octets par chemin.
+   */
+  it('les trois requêtes demandent les tags des chemins membres', () => {
+    for (const q of [
+      buildZoneQuery('pilat'),
+      buildRefQuery('GR 7'),
+      buildAroundQuery([4.5, 45.4]),
+    ]) {
+      expect(q).toContain('out meta geom')
+      // Les chemins membres, sortis sans géométrie : elle est déjà rendue
+      // par la relation, la redemander doublerait la réponse pour rien.
+      expect(q).toMatch(/way\(r\.[a-z]+\)/)
+      expect(q).toContain('out tags')
+    }
+  })
+
+  it('rattache les tags retenus aux ways de l’itinéraire', () => {
+    const itins = parseOverpassResponse(
+      {
+        elements: [
+          {
+            type: 'relation',
+            id: 1,
+            tags: { route: 'hiking', name: 'Test' },
+            members: [
+              {
+                type: 'way',
+                ref: 10,
+                geometry: [
+                  { lat: 45.4, lon: 4.5 },
+                  { lat: 45.4, lon: 4.51 },
+                ],
+              },
+            ],
+          },
+          {
+            type: 'way',
+            id: 10,
+            tags: {
+              surface: 'gravel',
+              smoothness: 'good',
+              // Bruit qu'on ne garde pas : mesuré, l'essentiel des 450 ko
+              // est fait de tags qui ne disent rien d'un sentier.
+              maxspeed: '50',
+              source: 'cadastre',
+            },
+          },
+        ],
+      },
+      '2026-01-01T00:00:00Z',
+    )
+    const way = itins[0]!.ways[0]!
+    expect(way.tags?.surface).toBe('gravel')
+    expect(way.tags?.smoothness).toBe('good')
+    expect(way.tags).not.toHaveProperty('maxspeed')
+    expect(way.tags).not.toHaveProperty('source')
+  })
+
+  it('laisse `tags` absent quand le chemin n’a rien qui nous intéresse', () => {
+    // Et non un objet vide : `tags: {}` se sérialise dans le cache pour ne
+    // rien dire, sur chaque way de chaque zone.
+    const itins = parseOverpassResponse(
+      {
+        elements: [
+          {
+            type: 'relation',
+            id: 1,
+            tags: { route: 'hiking' },
+            members: [
+              {
+                type: 'way',
+                ref: 10,
+                geometry: [
+                  { lat: 45.4, lon: 4.5 },
+                  { lat: 45.4, lon: 4.51 },
+                ],
+              },
+            ],
+          },
+          { type: 'way', id: 10, tags: { maxspeed: '50' } },
+        ],
+      },
+      '2026-01-01T00:00:00Z',
+    )
+    expect(itins[0]!.ways[0]!.tags).toBeUndefined()
+  })
+
+  it('ne casse pas sur une réponse sans aucun way (zones déjà en cache)', () => {
+    const itins = parseOverpassResponse(
+      {
+        elements: [
+          {
+            type: 'relation',
+            id: 1,
+            tags: { route: 'hiking' },
+            members: [
+              {
+                type: 'way',
+                ref: 10,
+                geometry: [
+                  { lat: 45.4, lon: 4.5 },
+                  { lat: 45.4, lon: 4.51 },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      '2026-01-01T00:00:00Z',
+    )
+    expect(itins).toHaveLength(1)
+    expect(itins[0]!.ways[0]!.tags).toBeUndefined()
   })
 })

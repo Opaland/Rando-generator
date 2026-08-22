@@ -118,6 +118,23 @@ export const FEATURED_ROUTES: FeaturedRoute[] = [
  */
 const ROUTE_FILTER = '["route"~"^(hiking|foot|walking|pilgrimage)$"]'
 
+/**
+ * La fin commune aux trois requêtes : les relations avec leur géométrie,
+ * puis les tags de leurs chemins membres (issue #179).
+ *
+ * Écrite une fois et partagée, plutôt que recopiée trois fois — une garde
+ * transverse se nomme, elle ne se recopie pas (CLAUDE.md §4). Les trois
+ * requêtes avaient déjà divergé sur d'autres points par le passé.
+ *
+ * `out tags` et non `out meta geom` pour les chemins : leur géométrie est
+ * déjà rendue par la relation, la redemander doublerait la réponse. Mesuré
+ * sur la donnée réelle : les tags seuls coûtent +24 %, soit 129 octets par
+ * chemin, là où la géométrie pèse l'essentiel.
+ */
+const SORTIE_AVEC_TAGS = `.itineraires out meta geom;
+way(r.itineraires);
+out tags;`
+
 /** Requête Overpass : toutes les relations d'itinéraires pédestres d'une zone. */
 export function buildZoneQuery(zoneId: string): string {
   const zone = ZONES.find((z) => z.id === zoneId)
@@ -129,8 +146,8 @@ export function buildZoneQuery(zoneId: string): string {
 (
 ${areas}
 )->.zone;
-relation${ROUTE_FILTER}(area.zone);
-out meta geom;`
+relation${ROUTE_FILTER}(area.zone)->.itineraires;
+${SORTIE_AVEC_TAGS}`
 }
 
 /**
@@ -170,8 +187,8 @@ export function buildRefQuery(ref: string): string {
   const escaped = echapperQL(litteral)
   return `[out:json][timeout:180];
 area["ISO3166-1"="FR"]["admin_level"="2"]->.fr;
-relation${ROUTE_FILTER}["ref"~"^${escaped}$",i](area.fr);
-out meta geom;`
+relation${ROUTE_FILTER}["ref"~"^${escaped}$",i](area.fr)->.itineraires;
+${SORTIE_AVEC_TAGS}`
 }
 
 /**
@@ -196,8 +213,8 @@ export function buildAroundQuery(
 ): string {
   const [lon, lat] = center
   return `[out:json][timeout:180];
-relation${ROUTE_FILTER}(around:${String(Math.round(radiusMeters))},${lat.toFixed(6)},${lon.toFixed(6)});
-out meta geom;`
+relation${ROUTE_FILTER}(around:${String(Math.round(radiusMeters))},${lat.toFixed(6)},${lon.toFixed(6)})->.itineraires;
+${SORTIE_AVEC_TAGS}`
 }
 
 interface OverpassMember {
@@ -233,11 +250,54 @@ function isOverpassResponse(data: unknown): data is OverpassResponse {
  * Les membres non-way ou sans géométrie sont ignorés, les ways répétés dans
  * une relation sont dédupliqués, les relations sans géométrie sont écartées.
  */
+/**
+ * Les seuls tags de chemin qu'on retient (issue #179).
+ *
+ * Tout garder coûterait sans servir : mesuré sur 3 489 chemins réels, les
+ * tags complets pèsent 450 ko dont l'essentiel en `maxspeed`, `lanes`,
+ * `source` — qui ne disent rien d'un sentier. La revue du sprint 4 a montré
+ * ce que coûte un champ ajouté au cache sans mesure préalable.
+ */
+const TAGS_RETENUS = [
+  'surface',
+  'smoothness',
+  'tracktype',
+  // `highway` est retenu pour ce qu'il permet de **déduire** quand
+  // `surface` manque, ce qui est le cas des deux tiers de la longueur.
+  // Mesuré sur 1 086 km réels : là où le revêtement est renseigné, une voie
+  // carrossable est dure dans 93 à 100 % des cas, un chemin ou un sentier
+  // ne l'est que dans 7 à 24 %. Vingt octets par chemin qui font tomber
+  // l'inconnu de 67 % à 1,2 %.
+  'highway',
+] as const
+
+function tagsUtiles(
+  bruts: Record<string, string> | undefined,
+): TrailWay['tags'] | undefined {
+  if (!bruts) return undefined
+  const retenus: Record<string, string> = {}
+  for (const clef of TAGS_RETENUS) {
+    const valeur = bruts[clef]
+    if (valeur !== undefined) retenus[clef] = valeur
+  }
+  // `undefined` et non `{}` : un objet vide se sérialiserait dans le cache
+  // pour ne rien dire, sur chaque chemin de chaque zone.
+  return Object.keys(retenus).length > 0 ? retenus : undefined
+}
+
 export function parseOverpassResponse(
   data: OverpassResponse,
   fetchedAt: string,
 ): Itinerary[] {
   const itineraries: Itinerary[] = []
+  // Les chemins arrivent après les relations dans la réponse, et sont
+  // partagés entre itinéraires : on les indexe une fois.
+  const tagsParWay = new Map<number, TrailWay['tags']>()
+  for (const element of data.elements) {
+    if (element.type !== 'way') continue
+    const utiles = tagsUtiles(element.tags)
+    if (utiles) tagsParWay.set(element.id, utiles)
+  }
   for (const element of data.elements) {
     if (element.type !== 'relation') continue
     const seenWayIds = new Set<number>()
@@ -247,7 +307,8 @@ export function parseOverpassResponse(
       if (seenWayIds.has(member.ref)) continue
       seenWayIds.add(member.ref)
       const coords: LonLat[] = member.geometry.map((g) => [g.lon, g.lat])
-      ways.push({ osmWayId: member.ref, coords })
+      const tags = tagsParWay.get(member.ref)
+      ways.push(tags ? { osmWayId: member.ref, coords, tags } : { osmWayId: member.ref, coords })
     }
     if (ways.length === 0) continue
 

@@ -240,7 +240,10 @@ test('parcourir le profil altimétrique pose un marqueur sur le tracé', async (
   // un marqueur apparaît sur le tracé — c'est tout l'intérêt du lien.
   await page.getByTestId('elevation-chart').hover()
   await expect(readout).toContainText(/km/)
-  await expect(readout).toContainText(/m$/)
+  // L'altitude est cherchée pour elle-même, et non par sa position en fin
+  // de chaîne : la lecture porte désormais aussi le revêtement quand OSM le
+  // connaît (issue #179), et « finit par m » était un accident de format.
+  await expect(readout).toContainText(/·\s\d+\sm/)
   await expect.poll(marqueurs, { timeout: 5_000 }).toBe(1)
 
   // Le clavier fait la même chose que la souris.
@@ -336,4 +339,60 @@ test('la pente est donnée avec la longueur sur laquelle elle est moyennée', as
   await expect(pente).toContainText('%')
   await expect(pente).toContainText('en moyenne sur')
   await expect(pente).toContainText('ne se verrait pas')
+})
+
+test('le revêtement se lit sur le profil, et le profil se zoome', async ({
+  page,
+}) => {
+  // Issue #179, second volet. Mesuré sur la donnée réelle : le revêtement
+  // n'est renseigné que sur un tiers de la longueur, par tronçons épars. Un
+  // filtre « praticable » trancherait sur ce tiers en laissant croire qu'il
+  // tranche sur tout ; la bande montre *où* c'est connu, et le zoom rend
+  // exploitables des tronçons qui font moins d'un pixel en vue d'ensemble.
+  await mockExternalNetwork(page)
+  await mockElevation(page)
+  await page.goto('/')
+
+  test.skip(!(await hasMap(page)), 'WebGL indisponible dans ce navigateur headless')
+
+  await page.getByTestId('zone-pilat').click()
+  await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
+    timeout: 15_000,
+  })
+  await openDetailFromMap(page, 4.502, 45.4)
+  await expect(page.getByTestId('itinerary-detail')).toContainText('D+', {
+    timeout: 10_000,
+  })
+
+  // Trois origines chiffrées séparément : ce qui est lu, ce qui est déduit,
+  // et ce dont on ne peut rien dire. Les confondre ferait passer une
+  // supposition pour un relevé.
+  const couverture = page.getByTestId('revetement-couverture')
+  await expect(couverture).toBeVisible()
+  await expect(couverture).toContainText('Relevé dans OpenStreetMap')
+  await expect(couverture).toContainText('Déduit du type de voie')
+  await expect(couverture).toContainText('Rien à en dire')
+  // La base de la déduction est donnée, pas assénée.
+  await expect(couverture).toContainText('93 à 100 %')
+
+  // La bande porte les deux origines, distinguées. Le sélecteur vise les
+  // rectangles du graphique et non `[data-origine]` tout court : la légende
+  // porte les mêmes attributs et rendait l'assertion increvable — vérifié
+  // en déguisant les déductions en relevés, le test passait quand même.
+  const chart = page.getByTestId('elevation-chart')
+  expect(await chart.locator('rect[data-origine="renseigne"]').count()).toBeGreaterThan(0)
+  expect(await chart.locator('rect[data-origine="deduit"]').count()).toBeGreaterThan(0)
+
+  // Zoom : l'étendue visible apparaît et se resserre.
+  await expect(page.getByTestId('profil-etendue')).toHaveCount(0)
+  await page.getByTestId('zoom-avant').click()
+  const etendue = page.getByTestId('profil-etendue')
+  await expect(etendue).toBeVisible()
+  const apresUnZoom = (await etendue.textContent()) ?? ''
+  await page.getByTestId('zoom-avant').click()
+  await expect(etendue).not.toHaveText(apresUnZoom)
+
+  // « Tout voir » ramène à la vue d'ensemble.
+  await page.getByTestId('zoom-tout').click()
+  await expect(page.getByTestId('profil-etendue')).toHaveCount(0)
 })
