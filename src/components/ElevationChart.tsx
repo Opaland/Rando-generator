@@ -3,7 +3,6 @@ import { fillElevationGaps, pointAtDistance } from '../core/elevation.ts'
 import { reperesDuProfil } from '../core/reperes.ts'
 import {
   couvertureRevetement,
-  familleRevetement,
   libelleRevetement,
   type Bande,
 } from '../core/revetement.ts'
@@ -18,6 +17,26 @@ import { useAppStore } from '../store/appStore.ts'
 import { formatKm } from '../lib/format.ts'
 import type { ElevationProfile } from '../core/types.ts'
 import styles from './ElevationChart.module.css'
+
+/** Un pourcentage entier, sans division par zéro. */
+function pourcent(part: number, total: number): string {
+  return `${String(Math.round((part / Math.max(total, 1)) * 100))} %`
+}
+
+/**
+ * Ce qu'on écrit sous le curseur pour un tronçon.
+ *
+ * Une déduction ne se présente jamais comme un relevé : « probablement
+ * goudronné » et « bitume » ne disent pas la même chose à quelqu'un qui
+ * décide de s'engager en fauteuil.
+ */
+function texteBande(bande: Bande): string {
+  if (bande.origine === 'renseigne') return libelleRevetement(bande.surface)
+  if (bande.origine === 'inconnu') return 'revêtement non renseigné'
+  return bande.famille === 'dur'
+    ? 'probablement goudronné (voie carrossable)'
+    : 'probablement non revêtu (chemin)'
+}
 
 const WIDTH = 320
 const HEIGHT = 100
@@ -168,7 +187,7 @@ export function ElevationChart({
         data-testid="elevation-chart"
         aria-label={`Profil altimétrique, de ${Math.round(min)} à ${Math.round(max)} mètres d'altitude.${
           bandes.length > 0
-            ? ` Revêtement renseigné sur ${Math.round(couverture.fraction * 100)} % du parcours.`
+            ? ` Revêtement renseigné sur ${Math.round(couverture.fraction * 100)} % du parcours, déduit du type de voie sur ${Math.round((couverture.deduitMetres / Math.max(couverture.totalMetres, 1)) * 100)} %.`
             : ''
         } Flèches gauche et droite pour parcourir le tracé.`}
         preserveAspectRatio="none"
@@ -212,18 +231,20 @@ export function ElevationChart({
           {bandes.map((bande) => {
             const x = xDe(bande.debut)
             const largeur = xDe(bande.fin) - x
-            const famille = familleRevetement(bande.surface)
             return (
               <rect
-                key={`${String(bande.debut)}-${bande.surface ?? 'nc'}`}
+                key={`${String(bande.debut)}-${bande.famille}-${bande.origine}`}
                 x={x}
                 y={HEIGHT - HAUTEUR_BANDE}
                 width={Math.max(largeur, 0.5)}
                 height={HAUTEUR_BANDE}
                 className={styles.bande}
-                data-famille={famille}
+                data-famille={bande.famille}
+                data-origine={bande.origine}
                 fill={
-                  famille === 'inconnu' ? 'url(#revetement-inconnu)' : undefined
+                  bande.origine === 'inconnu'
+                    ? 'url(#revetement-inconnu)'
+                    : undefined
                 }
               />
             )
@@ -319,17 +340,36 @@ export function ElevationChart({
               survole.elevation === null
                 ? 'altitude inconnue'
                 : `${Math.round(survole.elevation)} m`
-            }${bandeSurvolee ? ` · ${libelleRevetement(bandeSurvolee.surface)}` : ''}`
+            }${bandeSurvolee ? ` · ${texteBande(bandeSurvolee)}` : ''}`
           : 'Parcourez le profil pour situer un passage sur la carte.'}
       </p>
 
       {bandes.length > 0 && (
-        <p className={styles.couverture} data-testid="revetement-couverture">
-          Revêtement renseigné dans OpenStreetMap sur{' '}
-          <strong>{Math.round(couverture.fraction * 100)} %</strong> du
-          parcours. Le reste n’est pas inconnu du terrain — il est absent de
-          la carte.
-        </p>
+        <div className={styles.couverture} data-testid="revetement-couverture">
+          <ul className={styles.legende}>
+            <li data-origine="renseigne">
+              <span className={styles.pastille} data-origine="renseigne" />
+              Relevé dans OpenStreetMap :{' '}
+              <strong>{pourcent(couverture.connuMetres, couverture.totalMetres)}</strong>
+            </li>
+            <li data-origine="deduit">
+              <span className={styles.pastille} data-origine="deduit" />
+              Déduit du type de voie :{' '}
+              <strong>{pourcent(couverture.deduitMetres, couverture.totalMetres)}</strong>
+            </li>
+            <li data-origine="inconnu">
+              <span className={styles.pastille} data-origine="inconnu" />
+              Rien à en dire :{' '}
+              <strong>{pourcent(couverture.inconnuMetres, couverture.totalMetres)}</strong>
+            </li>
+          </ul>
+          <p className={styles.note}>
+            Les portions <em>déduites</em> le sont du type de voie, pas d’un
+            relevé de terrain : une route est goudronnée dans 93 à 100 % des
+            cas où OpenStreetMap le précise, un chemin ou un sentier ne l’est
+            que dans 7 à 24 %. Mesuré sur 1 086 km d’itinéraires du Pilat.
+          </p>
+        </div>
       )}
 
       {reperes.length > 0 && (

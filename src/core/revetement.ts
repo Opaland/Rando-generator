@@ -119,13 +119,98 @@ export function libelleRevetement(valeur: string | null | undefined): string {
   return LIBELLES[valeur] ?? valeur
 }
 
+/**
+ * D'où vient ce qu'on affiche. La distinction n'est pas décorative : elle
+ * sépare ce qu'OpenStreetMap dit de ce que nous en déduisons, et interdit
+ * de présenter une supposition comme un relevé.
+ */
+export type OrigineRevetement = 'renseigne' | 'deduit' | 'inconnu'
+
+/**
+ * Les types de voie dont on déduit un revêtement dur.
+ *
+ * Mesuré sur 3 489 chemins réels, en ne regardant que ceux dont le
+ * revêtement *est* renseigné : secondary 100 % dur (180 cas), tertiary
+ * 100 % (191), primary 100 % (69), residential 97 % (256), unclassified
+ * 93 % (176).
+ */
+const VOIES_CARROSSABLES = new Set([
+  'motorway',
+  'trunk',
+  'primary',
+  'secondary',
+  'tertiary',
+  'unclassified',
+  'residential',
+  'living_street',
+  'motorway_link',
+  'trunk_link',
+  'primary_link',
+  'secondary_link',
+  'tertiary_link',
+])
+
+/**
+ * Les types de voie dont on déduit un sol naturel.
+ *
+ * Mesuré : track n'est dur que dans 7 % des cas (246 relevés), path dans
+ * 24 % (117). Se tromper ici fait éviter un chemin qui était praticable —
+ * cela coûte une occasion, jamais un danger, et c'est ce qui rend la
+ * déduction acceptable dans ce sens-là.
+ */
+const CHEMINS_NATURELS = new Set(['track', 'path', 'bridleway'])
+
+/**
+ * Les types qu'on refuse de trancher, parce que la mesure les montre
+ * réellement partagés : cycleway est dur dans 56 % des cas, service dans
+ * 71 %, steps dans 66 %, pedestrian sur trop peu de relevés. Déduire là
+ * reviendrait à tirer à pile ou face en le présentant comme un
+ * renseignement.
+ */
+
+export interface Revetement {
+  famille: FamilleRevetement
+  origine: OrigineRevetement
+  /** Valeur OSM brute ; `null` dès qu'on déduit — on n'a pas *lu* « bitume ». */
+  surface: string | null
+}
+
+/**
+ * Ce qu'on peut dire du revêtement d'un chemin, et avec quelle autorité.
+ *
+ * L'ordre compte : un `surface` renseigné l'emporte toujours sur ce que le
+ * type de voie laisserait supposer. On ne déduit que dans le silence.
+ */
+export function revetementDuChemin(
+  tags: { surface?: string; highway?: string } | undefined,
+): Revetement {
+  const surface = tags?.surface
+  if (surface !== undefined) {
+    return {
+      famille: familleRevetement(surface),
+      origine: 'renseigne',
+      surface,
+    }
+  }
+  const highway = tags?.highway
+  if (highway !== undefined && VOIES_CARROSSABLES.has(highway)) {
+    return { famille: 'dur', origine: 'deduit', surface: null }
+  }
+  if (highway !== undefined && CHEMINS_NATURELS.has(highway)) {
+    return { famille: 'naturel', origine: 'deduit', surface: null }
+  }
+  return { famille: 'inconnu', origine: 'inconnu', surface: null }
+}
+
 /** Un tronçon de parcours de revêtement homogène, en distance cumulée. */
 export interface Bande {
   /** Distance depuis le départ, en mètres. */
   debut: number
   fin: number
-  /** Valeur OSM brute ; `null` si le tronçon n'est pas renseigné. */
+  /** Valeur OSM brute ; `null` si déduite ou absente. */
   surface: string | null
+  famille: FamilleRevetement
+  origine: OrigineRevetement
 }
 
 /**
@@ -144,15 +229,29 @@ export function bandesDeRevetement(itinerary: Itinerary): Bande[] {
     // Un way d'un seul point n'a pas de longueur : l'inclure créerait une
     // bande vide, et une bande vide se dessine comme un trait parasite.
     if (longueur <= 0) continue
-    const surface = way.tags?.surface ?? null
+    const { famille, origine, surface } = revetementDuChemin(way.tags)
     const derniere = bandes.at(-1)
-    // Fusion des voisins de même revêtement : sans elle, un long itinéraire
-    // rendrait des centaines de bandes identiques, illisibles et coûteuses
-    // à peindre. Les inconnus se fusionnent comme les autres.
-    if (derniere && derniere.surface === surface) {
+    // Fusion des voisins équivalents : sans elle, un long itinéraire rendrait
+    // des centaines de bandes identiques, illisibles et coûteuses à peindre.
+    //
+    // L'origine entre dans la comparaison : deux tronçons durs, l'un lu et
+    // l'autre supposé, ne se fondent pas en un seul — la nuance doit rester
+    // visible à l'écran.
+    if (
+      derniere !== undefined &&
+      derniere.origine === origine &&
+      derniere.famille === famille &&
+      derniere.surface === surface
+    ) {
       derniere.fin = curseur + longueur
     } else {
-      bandes.push({ debut: curseur, fin: curseur + longueur, surface })
+      bandes.push({
+        debut: curseur,
+        fin: curseur + longueur,
+        surface,
+        famille,
+        origine,
+      })
     }
     curseur += longueur
   }
@@ -160,9 +259,14 @@ export function bandesDeRevetement(itinerary: Itinerary): Bande[] {
 }
 
 export interface Couverture {
+  /** Longueur dont le revêtement est **lu** dans OpenStreetMap. */
   connuMetres: number
+  /** Longueur dont le revêtement est **déduit** du type de voie. */
+  deduitMetres: number
+  /** Longueur sur laquelle on ne sait rien dire. */
+  inconnuMetres: number
   totalMetres: number
-  /** Entre 0 et 1. Zéro quand il n'y a rien à mesurer. */
+  /** Part renseignée, entre 0 et 1. Zéro quand il n'y a rien à mesurer. */
   fraction: number
 }
 
@@ -175,14 +279,20 @@ export interface Couverture {
  */
 export function couvertureRevetement(bandes: Bande[]): Couverture {
   let connu = 0
+  let deduit = 0
+  let inconnu = 0
   let total = 0
   for (const bande of bandes) {
     const longueur = bande.fin - bande.debut
     total += longueur
-    if (bande.surface !== null) connu += longueur
+    if (bande.origine === 'renseigne') connu += longueur
+    else if (bande.origine === 'deduit') deduit += longueur
+    else inconnu += longueur
   }
   return {
     connuMetres: connu,
+    deduitMetres: deduit,
+    inconnuMetres: inconnu,
     totalMetres: total,
     fraction: total > 0 ? connu / total : 0,
   }

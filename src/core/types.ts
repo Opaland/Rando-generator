@@ -25,7 +25,12 @@ export interface TrailWay {
    * sentier. La revue du sprint 4 a montré ce que coûte un champ ajouté
    * sans mesure.
    */
-  tags?: { surface?: string; smoothness?: string; tracktype?: string }
+  tags?: {
+    surface?: string
+    smoothness?: string
+    tracktype?: string
+    highway?: string
+  }
 }
 
 /** Métadonnées éditoriales d'une boucle locale (source open data). */

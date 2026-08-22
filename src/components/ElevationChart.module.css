@@ -155,3 +155,55 @@
   font-size: var(--texte-appui);
   color: var(--gris-vert);
 }
+
+/* La déduction se voit comme une déduction : même teinte, moins affirmée.
+   Une supposition peinte à l'identique d'un relevé serait un mensonge
+   graphique — celui-là même que la bande existe pour éviter (issue #179). */
+.bande[data-origine='deduit'] {
+  opacity: 0.42;
+}
+
+.legende {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 2px;
+}
+
+.legende li {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-3);
+}
+
+.pastille {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex: none;
+}
+
+.pastille[data-origine='renseigne'] {
+  background: var(--gris-vert);
+}
+
+.pastille[data-origine='deduit'] {
+  background: var(--gris-vert);
+  opacity: 0.42;
+}
+
+.pastille[data-origine='inconnu'] {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--gris-vert-clair),
+    var(--gris-vert-clair) 2px,
+    var(--blanc-papier) 2px,
+    var(--blanc-papier) 4px
+  );
+  border: 1px solid var(--gris-vert-clair);
+}
+
+.note {
+  margin: var(--espace-3) 0 0;
+}

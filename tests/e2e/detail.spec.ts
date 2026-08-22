@@ -364,16 +364,24 @@ test('le revêtement se lit sur le profil, et le profil se zoome', async ({
     timeout: 10_000,
   })
 
-  // La couverture est chiffrée, et dit d'où vient le manque.
+  // Trois origines chiffrées séparément : ce qui est lu, ce qui est déduit,
+  // et ce dont on ne peut rien dire. Les confondre ferait passer une
+  // supposition pour un relevé.
   const couverture = page.getByTestId('revetement-couverture')
   await expect(couverture).toBeVisible()
-  await expect(couverture).toContainText('%')
-  await expect(couverture).toContainText('absent de la carte')
+  await expect(couverture).toContainText('Relevé dans OpenStreetMap')
+  await expect(couverture).toContainText('Déduit du type de voie')
+  await expect(couverture).toContainText('Rien à en dire')
+  // La base de la déduction est donnée, pas assénée.
+  await expect(couverture).toContainText('93 à 100 %')
 
-  // La bande porte plusieurs familles, dont l'inconnu.
-  const bandes = page.locator('[data-famille]')
-  expect(await bandes.count()).toBeGreaterThan(1)
-  expect(await page.locator('[data-famille="inconnu"]').count()).toBeGreaterThan(0)
+  // La bande porte les deux origines, distinguées. Le sélecteur vise les
+  // rectangles du graphique et non `[data-origine]` tout court : la légende
+  // porte les mêmes attributs et rendait l'assertion increvable — vérifié
+  // en déguisant les déductions en relevés, le test passait quand même.
+  const chart = page.getByTestId('elevation-chart')
+  expect(await chart.locator('rect[data-origine="renseigne"]').count()).toBeGreaterThan(0)
+  expect(await chart.locator('rect[data-origine="deduit"]').count()).toBeGreaterThan(0)
 
   // Zoom : l'étendue visible apparaît et se resserre.
   await expect(page.getByTestId('profil-etendue')).toHaveCount(0)
