@@ -15,6 +15,6 @@
 .map :global(.maplibregl-ctrl-attrib) {
   /* En rem : l'attribution doit grossir avec le reste quand on a du mal à
      lire, sans quoi le seul texte de la carte reste illisible. */
-  font-size: 0.6875rem;
+  font-size: var(--texte-micro);
   background: rgba(250, 247, 242, 0.85);
 }

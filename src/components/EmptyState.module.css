@@ -27,7 +27,7 @@
 }
 
 .title {
-  font-size: 1.25rem;
+  font-size: var(--texte-titre-fort);
 }
 
 .steps {
@@ -35,7 +35,7 @@
   padding-left: var(--espace-8);
   display: grid;
   gap: var(--espace-4);
-  font-size: 0.92rem;
+  font-size: var(--texte-courant);
 }
 
 .privacy {

@@ -22,7 +22,7 @@
 
 .title {
   flex: 1;
-  font-size: 1.1rem;
+  font-size: var(--texte-titre-fort);
 }
 
 .hint {
@@ -67,7 +67,7 @@
   padding: var(--espace-4) var(--espace-5);
   border: 1px solid var(--gris-vert);
   border-radius: var(--rayon-md);
-  background: #fff;
+  background: var(--blanc-carte);
 }
 
 .note {

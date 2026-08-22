@@ -8,7 +8,7 @@
    discret. */
 .title {
   font-family: var(--font-display);
-  font-size: 1.15rem;
+  font-size: var(--texte-titre-fort);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--vert-noir);
@@ -36,19 +36,19 @@
 .bigPct {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 2.6rem;
+  font-size: var(--texte-chiffre-l);
   font-weight: 700;
   /* 1,1 et non 1 : à 200 %, les hampes de la police d'affichage sortaient de
      la boîte de ligne, qui réservait donc moins de place que le chiffre n'en
      occupait. Rien n'était rogné — il n'y a pas d'overflow caché — mais la
      ligne suivante venait à sa rencontre (issue #173). */
   line-height: 1.1;
-  color: #fff;
+  color: var(--texte-sur-couleur);
 }
 
 .globalDetail {
   margin: 0;
-  font-size: 0.88rem;
+  font-size: var(--texte-courant);
   opacity: 0.9;
 }
 
@@ -67,7 +67,7 @@
 
 .network dt {
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: var(--texte-courant);
 }
 
 .network dd {
@@ -82,7 +82,7 @@
 }
 
 .subtitle {
-  font-size: 0.92rem;
+  font-size: var(--texte-courant);
   margin: 0 0 var(--espace-3);
 }
 
@@ -108,7 +108,7 @@
   padding: var(--espace-4) var(--espace-5);
   border: 1px solid var(--gris-vert-clair);
   border-radius: var(--rayon-md);
-  background: #fff;
+  background: var(--blanc-carte);
   text-align: left;
 }
 
@@ -118,7 +118,7 @@
 
 .topName {
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: var(--texte-courant);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -136,7 +136,7 @@
   border: 1px solid rgba(255, 255, 255, 0.6);
   border-radius: var(--rayon-sm);
   background: transparent;
-  color: #fff;
+  color: var(--texte-sur-couleur);
   cursor: pointer;
 }
 
@@ -161,7 +161,7 @@
   margin-left: auto;
   border: none;
   background: none;
-  font-size: 1.1rem;
+  font-size: var(--texte-titre-fort);
   line-height: 1;
   cursor: pointer;
   color: var(--gris-vert);
@@ -174,7 +174,7 @@
  */
 .horsZone {
   margin: 0;
-  font-size: 0.82rem;
+  font-size: var(--texte-mention);
   opacity: 0.85;
   font-style: italic;
 }

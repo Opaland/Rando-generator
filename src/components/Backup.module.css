@@ -4,7 +4,7 @@
 }
 
 .title {
-  font-size: 1rem;
+  font-size: var(--texte-titre);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--gris-vert);
@@ -30,7 +30,11 @@
   border: 1px solid var(--gris-vert);
   border-radius: var(--rayon-sm);
   background: var(--blanc-papier);
-  color: var(--vert-foret);
+  /* `--vert-foret` était utilisé ici et défini nulle part : la déclaration
+     était invalide, et le bouton héritait sa couleur au lieu de la choisir.
+     Trouvé au ratissage des jetons. `--vert-noir` est l'encre du produit,
+     et c'est ce que le bouton aurait dû demander. */
+  color: var(--vert-noir);
   font: inherit;
   cursor: pointer;
 }

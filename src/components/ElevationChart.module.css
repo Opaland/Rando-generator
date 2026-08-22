@@ -34,7 +34,7 @@
 
 .cursor circle {
   fill: var(--rouge-balisage);
-  stroke: #fff;
+  stroke: var(--blanc-carte);
   stroke-width: 1.5;
   vector-effect: non-scaling-stroke;
 }

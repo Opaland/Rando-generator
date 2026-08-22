@@ -4,7 +4,7 @@
 }
 
 .title {
-  font-size: 1rem;
+  font-size: var(--texte-titre);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--gris-vert);
@@ -34,7 +34,7 @@
   padding: var(--espace-4) var(--espace-5);
   border: 1px solid var(--gris-vert-clair);
   border-radius: var(--rayon-md);
-  background: #fff;
+  background: var(--blanc-carte);
   text-align: left;
   cursor: pointer;
 }
@@ -48,7 +48,7 @@
   font-weight: 700;
   padding: var(--espace-1) var(--espace-3);
   border-radius: var(--rayon-sm);
-  color: #fff;
+  color: var(--texte-sur-couleur);
   align-self: start;
 }
 
@@ -81,7 +81,7 @@
 
 .name {
   font-weight: 600;
-  font-size: 0.92rem;
+  font-size: var(--texte-courant);
 }
 
 .facts {

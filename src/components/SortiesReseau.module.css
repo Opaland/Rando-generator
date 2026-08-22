@@ -4,11 +4,11 @@
 
 .chiffre {
   margin: var(--espace-3) 0;
-  font-size: 1rem;
+  font-size: var(--texte-titre);
 }
 
 .chiffre strong {
-  font-size: 1.35rem;
+  font-size: var(--texte-vedette);
   font-family: var(--font-display);
 }
 

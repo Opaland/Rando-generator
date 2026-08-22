@@ -49,7 +49,7 @@
 }
 
 .icone {
-  font-size: 1.15rem;
+  font-size: var(--texte-titre-fort);
   line-height: 1;
 }
 
