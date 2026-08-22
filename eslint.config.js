@@ -5,7 +5,19 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
-  { ignores: ['dist', 'coverage', 'playwright-report', 'test-results'] },
+  {
+    ignores: [
+      'dist',
+      'coverage',
+      'playwright-report',
+      'test-results',
+      // Bac à sable des tests de mutation : une copie instrumentée du dépôt,
+      // que le lint n'a aucune raison de relire — et qui rendait la porte
+      // rouge sur des `@ts-nocheck` posés par l'outil lui-même.
+      '.stryker-tmp',
+      'reports',
+    ],
+  },
   {
     extends: [js.configs.recommended, ...tseslint.configs.strictTypeChecked],
     files: ['**/*.{ts,tsx}'],

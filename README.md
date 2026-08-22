@@ -110,10 +110,9 @@ existant via `PW_CHROMIUM_PATH=/chemin/vers/chrome npm run e2e`.
    comme au clavier —, les **étapes** pour les itinéraires de plus de 30 km
    (découpage régulier calculé par l'application, ce ne sont pas les étapes
    d'un topo-guide), les **points d'intérêt** à proximité (via Overpass), et
-   une **vue 3D** — une perspective
-   caméra inclinée sur le tracé (pas un relief calculé depuis un modèle
-   numérique de terrain). Le relief et les POI sont des bonus : indisponibles,
-   la fiche reste utilisable.
+   et **« Incliner la carte »** — une caméra inclinée sur le tracé, pas un
+   relief calculé depuis un modèle numérique de terrain. L'altimétrie et les
+   POI sont des bonus : indisponibles, la fiche reste utilisable.
 9. **Se localiser** : le bouton « Ma position » affiche l'appareil sur la
    carte et recentre dessus au premier relevé. La position est lue par le
    navigateur et **reste dans l'onglet** — ni enregistrée, ni transmise. La
@@ -249,10 +248,17 @@ faire.
   coûteux.
 - **Cache Overpass** : en cas d'échec des deux miroirs, on retombe sur le
   cache même périmé, avec un message honnête.
-- **« Vue 3D »** : une inclinaison de caméra MapLibre (pitch/bearing) sur le
-  tracé, pas un relief calculé depuis un modèle numérique de terrain — plus
-  simple, zéro dépendance de tuiles supplémentaire, et honnête dans son
-  intitulé (« vue » plutôt que « relief 3D »).
+- **« Incliner la carte »** : une inclinaison de caméra MapLibre
+  (pitch/bearing) sur le tracé, pas un relief calculé depuis un modèle
+  numérique de terrain — plus simple, et zéro dépendance de tuiles
+  supplémentaire.
+
+  Le bouton s'est d'abord appelé « Vue 3D », et cette section affirmait que
+  l'intitulé était honnête parce qu'il disait « vue » plutôt que « relief
+  3D ». La première personne à l'utiliser a lu « 3D », attendu de la 3D, et
+  dit que ce n'en était pas. Le compromis ne tenait pas : c'est l'usage qui
+  tranche ce qu'un mot promet, pas la note qui l'accompagne. Le vrai relief
+  est instruit à part.
 - **Altimétrie et POI en meilleur effort** : ces deux appels réseau (service
   IGN, Overpass) ne bloquent jamais l'affichage de la fiche détail ; en cas
   d'échec, message clair et le reste (progression, carte) reste utilisable.

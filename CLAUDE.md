@@ -91,6 +91,23 @@ Trois pièges mesurés sur ce dépôt :
 - **`--workers=1`** pour la suite e2e, et
   `PW_CHROMIUM_PATH=/opt/pw-browsers/chromium`.
 
+## 6bis. La mutation trouve les tests creux que je ne vois pas
+
+Trois tests creux trouvés à la main dans une seule session, et un quatrième
+que seul l'outil a vu : une assertion `/200|204/` qui acceptait « 2040 »,
+c'est-à-dire un arrondi remplacé par une multiplication.
+
+`npm run mutation` casse le code exprès et regarde si les tests s'en
+aperçoivent. Première vague sur sept modules : score 78 %, et parmi les
+survivants deux vraies lacunes — une soustraction devenue addition dans le
+calcul de pente, une fusion de bandes qui pouvait finir avant de commencer.
+Aucune des deux n'était visible en relisant.
+
+Ce n'est pas une porte : c'est trop lent pour chaque commit, et un survivant
+n'est pas toujours un défaut (une table de traduction en produit des dizaines
+sans intérêt). C'est une vague à lancer après un module neuf, et à lire en
+cherchant les survivants qui *changent un résultat*.
+
 ## 7. Le déploiement se vérifie avant, pas après
 
 Ne rien empiler sur un `main` rouge. Le hook de démarrage l'annonce quand il

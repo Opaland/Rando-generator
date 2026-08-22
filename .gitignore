@@ -8,3 +8,7 @@ test-results/
 
 # Réglages personnels de Claude Code (les réglages d'équipe sont versionnés)
 .claude/settings.local.json
+
+# Tests de mutation : bac à sable et rapports
+.stryker-tmp
+reports
