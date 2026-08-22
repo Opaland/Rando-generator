@@ -1,7 +1,20 @@
+/*
+  En haut à gauche, à **toutes** les largeurs.
+
+  La légende était en bas à gauche sur grand écran, et montait en haut sous
+  800 px seulement — le correctif du constat M7 de l'audit mobile. Mesuré au
+  22/08 sur 1280 px : elle recouvrait alors 201,9 px des 639,3 de
+  l'attribution, et sur le **début** du texte (AUDIT_UX.md, constat U4).
+
+  Le raisonnement écrit à l'époque valait partout : « l'attribution n'est pas
+  décorative — elle est exigée par l'ODbL et la Licence Ouverte —, c'est donc
+  la légende qui monte ». Il n'avait été appliqué qu'à une largeur. Une seule
+  règle désormais, et plus de palier à tenir d'accord.
+*/
 .legend {
   position: absolute;
   left: 12px;
-  bottom: 12px;
+  top: 12px;
   z-index: var(--z-overlay-legend);
   display: grid;
   gap: var(--espace-3);
@@ -62,11 +75,8 @@
 }
 
 @media (max-width: 800px) {
-  /* La ligne d'attribution de MapLibre occupe le bas de la carte : sur
-     téléphone, la légende passait par-dessus et les deux devenaient
-     illisibles (docs/AUDIT_MOBILE.md, constat M7). L'attribution n'est pas
-     décorative — elle est exigée par l'ODbL et la Licence Ouverte —, c'est
-     donc la légende qui monte. */
+  /* Sur téléphone la légende s'étale en bandeau : l'écran est trop étroit
+     pour qu'elle tienne en bloc à gauche sans se replier en colonne. */
   .legend {
     left: 8px;
     /* Les commandes de zoom occupent le coin haut droit sur 54 px : la

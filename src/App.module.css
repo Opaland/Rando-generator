@@ -295,7 +295,7 @@
 
   .repliee {
     /* Juste la poignée : la carte occupe le reste. */
-    max-height: 52px;
+    max-height: var(--hauteur-poignee);
     overflow: hidden;
   }
 
@@ -373,6 +373,28 @@
    se voit qu'en essayant de toucher. */
 :root[data-maquette='onglets'] .sidebar {
   bottom: calc(var(--hauteur-onglets) + env(safe-area-inset-bottom, 0px));
+}
+
+/* Les commandes ancrées en bas de la carte remontent au-dessus de la barre
+   d'onglets — l'attribution la première.
+
+   La carte, elle, garde toute sa hauteur : c'est la décision du constat M1
+   de l'audit mobile, et la règle suivante la redit. Mais l'attribution n'est
+   pas de l'imagerie : c'est une mention exigée par l'ODbL et la Licence
+   Ouverte, et la barre d'onglets la peignait purement et simplement. Mesuré
+   au 22/08 sur 390 px : `elementFromPoint` au début du texte d'attribution
+   renvoyait un bouton d'onglet (AUDIT_UX.md, constat U4).
+
+   Régression née du passage des onglets en disposition par défaut, qu'aucun
+   test n'attrapait : celui du constat M7 comparait des rectangles entre la
+   légende et l'attribution, et ne demandait jamais ce qui est réellement
+   peint. */
+:root[data-maquette='onglets'] .main :global(.maplibregl-ctrl-bottom-left),
+:root[data-maquette='onglets'] .main :global(.maplibregl-ctrl-bottom-right) {
+  bottom: calc(
+    var(--hauteur-onglets) + var(--hauteur-poignee) +
+      env(safe-area-inset-bottom, 0px)
+  );
 }
 
 /* La barre occupe cinquante-quatre pixels, et ils se prennent sur la feuille,
