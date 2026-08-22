@@ -23,6 +23,7 @@ import { ElevationChart } from './ElevationChart.tsx'
 import { ProgressBalise } from './ProgressBalise.tsx'
 import styles from './ItineraryDetail.module.css'
 import { penteMaximale, libellePente } from '../core/pente.ts'
+import { bandesDeRevetement } from '../core/revetement.ts'
 
 /**
  * Fiche détail d'un itinéraire, ouverte en cliquant son tracé sur la carte :
@@ -72,6 +73,10 @@ export function ItineraryDetail() {
   // une poussette en ont besoin pour décider de s'engager. Le chiffre n'est
   // jamais rendu seul — `libellePente` porte la résolution avec lui.
   const pente = elevationProfile ? penteMaximale(elevationProfile) : null
+  // Les bandes viennent de la géométrie complète des ways, pas du profil
+  // sous-échantillonné : leur axe est la même distance cumulée, elles se
+  // superposent donc sans réattribution point par point (issue #179).
+  const bandes = bandesDeRevetement(itin)
   const hasSleepingSpot = pois.some((poi) => POI_OVERNIGHT.includes(poi.kind))
   // Un long GR ne se lit pas en un seul pourcentage : on le découpe en
   // étapes calculées (les découpages des topo-guides sont éditoriaux, donc
@@ -269,7 +274,13 @@ export function ItineraryDetail() {
         )}
         {elevationProfile && stats && (
           <>
-            <ElevationChart profile={elevationProfile} />
+            {/* `key` : changer d'itinéraire remet à zéro le zoom et le
+                curseur du profil, sans effet de synchronisation. */}
+            <ElevationChart
+              key={detailItineraryId}
+              profile={elevationProfile}
+              bandes={bandes}
+            />
             <p className={styles.elevationStats}>
               D+ {Math.round(stats.gain)} m · D− {Math.round(stats.loss)} m ·{' '}
               {Math.round(stats.min)}–{Math.round(stats.max)} m

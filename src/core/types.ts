@@ -11,6 +11,21 @@ export type Network = 'GR' | 'GRP' | 'PR' | 'LOCAL' | 'PERSO'
 export interface TrailWay {
   osmWayId: number
   coords: LonLat[]
+  /**
+   * Tags OpenStreetMap du chemin, restreints à ce qu'on exploite
+   * (issue #179).
+   *
+   * Optionnel, et il doit le rester : les zones déjà en cache n'en ont pas,
+   * et elles doivent continuer à s'afficher sans qu'on demande à personne
+   * de tout recharger.
+   *
+   * Restreints, parce que tout garder coûterait sans servir : mesuré sur la
+   * donnée réelle, les tags complets de 3 489 chemins pèsent 450 ko, dont
+   * l'essentiel en `maxspeed`, `lanes` ou `source` qui ne disent rien d'un
+   * sentier. La revue du sprint 4 a montré ce que coûte un champ ajouté
+   * sans mesure.
+   */
+  tags?: { surface?: string; smoothness?: string; tracktype?: string }
 }
 
 /** Métadonnées éditoriales d'une boucle locale (source open data). */
