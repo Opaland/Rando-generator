@@ -1,9 +1,18 @@
-import { useEffect, useRef, useState, type DragEvent } from 'react'
-import { polylineLengthMeters } from '../core/sampling.ts'
+import { useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
 import { useAppStore } from '../store/appStore.ts'
 import { etoilesDeSortie } from '../core/affichage.ts'
 import { formatKm, importProgressLabel } from '../lib/format.ts'
 import { outingLabel } from '../core/outing.ts'
+import {
+  preparerHistorique,
+  chercherHistorique,
+  trierHistorique,
+  organiserHistorique,
+  MAX_PAR_ANNEE,
+  SEUIL_GROUPEMENT,
+  type CritereTri,
+  type EntreeHistorique,
+} from '../core/historique.ts'
 import { ConfirmDeleteButton } from './ConfirmDeleteButton.tsx'
 import styles from './TrackManager.module.css'
 
@@ -26,6 +35,11 @@ export function TrackManager() {
   const [dragOver, setDragOver] = useState(false)
   const [importing, setImporting] = useState(false)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
+  const [recherche, setRecherche] = useState('')
+  const [tri, setTri] = useState<CritereTri>('date')
+  // Les années dépliées à la main, par-dessus celle qui l'est par défaut.
+  const [depliees, setDepliees] = useState<Record<string, boolean>>({})
+  const [toutAfficher, setToutAfficher] = useState<Record<string, boolean>>({})
   const successTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(
@@ -34,6 +48,20 @@ export function TrackManager() {
     },
     [],
   )
+
+  // Une seule mesure de longueur par trace, et non une par rendu : sur huit
+  // cents traces de dix mille points, le rendu recalculait huit millions de
+  // distances pour peindre une liste (issue #175).
+  const historique = useMemo(() => preparerHistorique(tracks), [tracks])
+  const groupes = useMemo(
+    () =>
+      organiserHistorique(
+        trierHistorique(chercherHistorique(historique, recherche), tri),
+        tri,
+      ),
+    [historique, recherche, tri],
+  )
+  const nbTrouvees = groupes.reduce((n, g) => n + g.entrees.length, 0)
 
   const runImport = async (files: File[]) => {
     setImporting(true)
@@ -200,90 +228,205 @@ export function TrackManager() {
           Aucune trace pour l’instant.
         </p>
       ) : (
-        <ul className={styles.list} data-testid="tracks-list">
-          {tracks.map((track) => {
-            const ouvert = outingDetail?.trackId === track.id
-            return (
-              <li key={track.id} className={styles.item}>
-                <button
-                  type="button"
-                  className={styles.itemInfo}
-                  aria-expanded={ouvert}
-                  data-testid={`track-toggle-${track.filename}`}
-                  onClick={() => void toggleOutingDetail(track.id)}
-                >
-                  <span className={styles.filename}>{track.filename}</span>
-                  <span className={styles.itemMeta}>
-                    {track.date
-                      ? new Date(track.date).toLocaleDateString('fr-FR')
-                      : 'date inconnue'}
-                    {' · '}
-                    {formatKm(polylineLengthMeters(track.points))}
-                    {typeof track.elevationGain === 'number' &&
-                      ` · D+ ${Math.round(track.elevationGain)} m`}
-                  </span>
-                </button>
-                <ConfirmDeleteButton
-                  label={`Supprimer la trace ${track.filename}`}
-                  onConfirm={() => void removeTrack(track.id)}
+        <>
+          {tracks.length >= SEUIL_GROUPEMENT && (
+            <div className={styles.outils}>
+              <label className={styles.chercher}>
+                <span className="sr-only">Rechercher une sortie</span>
+                <input
+                  type="search"
+                  value={recherche}
+                  data-testid="tracks-recherche"
+                  placeholder="Nom de fichier ou date…"
+                  onChange={(e) => {
+                    setRecherche(e.target.value)
+                  }}
                 />
-                {ouvert && (
-                  <div className={styles.outing} data-testid="track-outing">
-                    <p className={styles.outingTitle}>{outingLabel(track)}</p>
-                    {outingDetail.loading ? (
-                      <p className={styles.outingHint} role="status">
-                        Calcul de la sortie…
-                      </p>
-                    ) : outingDetail.highlights.length === 0 ? (
-                      <p className={styles.outingHint}>
-                        Cette sortie n’a fait avancer aucun itinéraire balisé
-                        de la zone chargée.
-                      </p>
-                    ) : (
-                      <>
-                        {/* Trois étoiles au plus, d'après le meilleur
-                            itinéraire avancé. Ce n'est pas un score : pas de
-                            classement, pas de comparaison entre personnes.
-                            Une étoile dit « ça a compté » (issue #173). */}
-                        {(() => {
-                          const etoiles = etoilesDeSortie(
-                            Math.max(
-                              ...outingDetail.highlights.map((f) => f.pct),
-                            ),
-                          )
-                          return (
-                            <p
-                              className={styles.etoiles}
-                              data-testid="outing-etoiles"
-                              data-etoiles={etoiles}
-                            >
-                              <span aria-hidden="true">
-                                {'★'.repeat(etoiles)}
-                                {'☆'.repeat(3 - etoiles)}
-                              </span>
-                              <span className="sr-only">
-                                {etoiles} étoile{etoiles > 1 ? 's' : ''} sur 3
-                              </span>
-                            </p>
-                          )
-                        })()}
-                        <ul className={styles.outingList}>
-                          {outingDetail.highlights.map((fait) => (
-                            <li key={fait.itineraryId}>
-                              <strong>{fait.name}</strong> :{' '}
-                              {formatKm(fait.doneMeters)}
-                            </li>
-                          ))}
-                        </ul>
-                      </>
-                    )}
-                  </div>
-                )}
-              </li>
-            )
-          })}
-        </ul>
+              </label>
+              <label className={styles.trier}>
+                <span className="sr-only">Trier les sorties</span>
+                <select
+                  value={tri}
+                  data-testid="tracks-tri"
+                  onChange={(e) => {
+                    setTri(e.target.value as CritereTri)
+                  }}
+                >
+                  <option value="date">Les plus récentes</option>
+                  <option value="distance">Les plus longues</option>
+                  <option value="denivele">Le plus de dénivelé</option>
+                </select>
+              </label>
+              <p className={styles.compte} role="status" data-testid="tracks-compte">
+                {nbTrouvees === tracks.length
+                  ? `${tracks.length} sorties`
+                  : `${nbTrouvees} sur ${tracks.length}`}
+              </p>
+            </div>
+          )}
+
+          {nbTrouvees === 0 ? (
+            <p className={styles.empty} data-testid="tracks-aucun-resultat">
+              Aucune sortie ne correspond à « {recherche.trim()} ».
+            </p>
+          ) : (
+            groupes.map((groupe) => {
+              const cle = String(groupe.annee ?? 'sans-date')
+              const groupe_est_seul = groupes.length === 1 && groupe.annee === null
+              const ouvert = depliees[cle] ?? groupe.ouvertParDefaut
+              // Chercher traverse les plis : sans cela, la sortie trouvée
+              // dans une année repliée resterait invisible.
+              const visible = ouvert || recherche.trim() !== ''
+              const bornees =
+                toutAfficher[cle] ?? false
+                  ? groupe.entrees
+                  : groupe.entrees.slice(0, MAX_PAR_ANNEE)
+              return (
+                <section key={cle} className={styles.annee}>
+                  {!groupe_est_seul && (
+                    <button
+                      type="button"
+                      className={styles.anneeTitre}
+                      aria-expanded={visible}
+                      data-testid={`tracks-annee-${cle}`}
+                      onClick={() => {
+                        setDepliees((etat) => ({ ...etat, [cle]: !visible }))
+                      }}
+                    >
+                      <span>{groupe.annee ?? 'Sans date'}</span>
+                      <span className={styles.anneeCompte}>
+                        {groupe.entrees.length}
+                      </span>
+                    </button>
+                  )}
+                  {visible && (
+                    <>
+                      <ul className={styles.list} data-testid="tracks-list">
+                        {bornees.map((entree) => (
+                          <ItemTrace
+                            key={entree.track.id}
+                            entree={entree}
+                            outingDetail={outingDetail}
+                            toggleOutingDetail={toggleOutingDetail}
+                            removeTrack={removeTrack}
+                          />
+                        ))}
+                      </ul>
+                      {groupe.restantes > 0 && !(toutAfficher[cle] ?? false) && (
+                        <button
+                          type="button"
+                          className={styles.plus}
+                          data-testid={`tracks-plus-${cle}`}
+                          onClick={() => {
+                            setToutAfficher((etat) => ({ ...etat, [cle]: true }))
+                          }}
+                        >
+                          Afficher les {groupe.restantes} sorties suivantes
+                        </button>
+                      )}
+                    </>
+                  )}
+                </section>
+              )
+            })
+          )}
+        </>
       )}
     </details>
+  )
+}
+
+/**
+ * Une sortie de la liste. Extraite parce que la liste est maintenant rendue
+ * depuis plusieurs endroits (un groupe par année), et qu'une duplication de
+ * ce bloc serait le genre de recopie qui finit par diverger.
+ */
+function ItemTrace({
+  entree,
+  outingDetail,
+  toggleOutingDetail,
+  removeTrack,
+}: {
+  entree: EntreeHistorique
+  outingDetail: ReturnType<typeof useAppStore.getState>['outingDetail']
+  toggleOutingDetail: (id: string) => Promise<void> | void
+  removeTrack: (id: string) => Promise<void> | void
+}) {
+  const track = entree.track
+  const ouvert = outingDetail?.trackId === track.id
+  return (
+    <li className={styles.item}>
+      <button
+        type="button"
+        className={styles.itemInfo}
+        aria-expanded={ouvert}
+        data-testid={`track-toggle-${track.filename}`}
+        onClick={() => void toggleOutingDetail(track.id)}
+      >
+        <span className={styles.filename}>{track.filename}</span>
+        <span className={styles.itemMeta}>
+          {track.date
+            ? new Date(track.date).toLocaleDateString('fr-FR')
+            : 'date inconnue'}
+          {' · '}
+          {formatKm(entree.metres)}
+          {typeof track.elevationGain === 'number' &&
+            ` · D+ ${Math.round(track.elevationGain)} m`}
+        </span>
+      </button>
+      <ConfirmDeleteButton
+        label={`Supprimer la trace ${track.filename}`}
+        onConfirm={() => void removeTrack(track.id)}
+      />
+      {ouvert && (
+        <div className={styles.outing} data-testid="track-outing">
+          <p className={styles.outingTitle}>{outingLabel(track)}</p>
+          {outingDetail.loading ? (
+            <p className={styles.outingHint} role="status">
+              Calcul de la sortie…
+            </p>
+          ) : outingDetail.highlights.length === 0 ? (
+            <p className={styles.outingHint}>
+              Cette sortie n’a fait avancer aucun itinéraire balisé de la zone
+              chargée.
+            </p>
+          ) : (
+            <>
+              {/* Trois étoiles au plus, d'après le meilleur itinéraire
+                  avancé. Ce n'est pas un score : pas de classement, pas de
+                  comparaison entre personnes. Une étoile dit « ça a compté »
+                  (issue #173). */}
+              {(() => {
+                const etoiles = etoilesDeSortie(
+                  Math.max(...outingDetail.highlights.map((f) => f.pct)),
+                )
+                return (
+                  <p
+                    className={styles.etoiles}
+                    data-testid="outing-etoiles"
+                    data-etoiles={etoiles}
+                  >
+                    <span aria-hidden="true">
+                      {'★'.repeat(etoiles)}
+                      {'☆'.repeat(3 - etoiles)}
+                    </span>
+                    <span className="sr-only">
+                      {etoiles} étoile{etoiles > 1 ? 's' : ''} sur 3
+                    </span>
+                  </p>
+                )
+              })()}
+              <ul className={styles.outingList}>
+                {outingDetail.highlights.map((fait) => (
+                  <li key={fait.itineraryId}>
+                    <strong>{fait.name}</strong> : {formatKm(fait.doneMeters)}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </div>
+      )}
+    </li>
   )
 }

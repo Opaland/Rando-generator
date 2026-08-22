@@ -23,28 +23,38 @@ export interface ParsedGpx {
   /** Nombre de points écartés parce qu'ils tombaient hors du monde (issue #167). */
   pointsHorsLimites: number
   /**
-   * Horodatage de chaque point, aligné sur `points` (issue #149).
+   * Horodatage de chaque point, en **millisecondes depuis l'époque Unix**,
+   * aligné sur `points` (issue #149).
    *
    * Le temps n'était lu que pour le premier point, afin de dater la trace,
    * puis oublié. C'est pourtant la seule information qui distingue une
    * marche d'un trajet en voiture : des points espacés de 470 m le long
    * d'un sentier créditent plus de 90 % sans qu'aucun contrôle soit
    * possible.
+   *
+   * En nombre et non en chaîne ISO : ces tableaux finissent en base et dans
+   * les sauvegardes. Mesuré sur une trace de 10 000 points — 254 ko en ISO
+   * contre 88 ko en millisecondes, pour la même information à la
+   * milliseconde près. `date` reste une chaîne ISO : elle est affichée, pas
+   * calculée.
    */
-  times: (string | null)[]
+  times: (number | null)[]
   /**
    * Précision horizontale rapportée par l'appareil (HDOP), alignée sur
    * `points`. Sans elle, un bruit de ±60 m autour du sentier crédite 100 %
    * exactement comme une trace propre — le moteur ne voit aucune
    * différence, et ne peut pas en voir.
    *
-   * Jamais obligatoire : un GPX exporté d'un logiciel de tracé n'en a pas,
-   * et reste un itinéraire cible parfaitement valide.
+   * `null` — et non un tableau de `null` — quand le format ne porte pas du
+   * tout cette mesure. La distinction est utile : un tableau de `null` dit
+   * « le format la rapporte, ce fichier ne l'a pas renseignée », ce qui est
+   * le cas d'un GPX exporté d'un logiciel de tracé.
    */
-  hdops: (number | null)[]
+  hdops: (number | null)[] | null
   /**
    * Précision horizontale en **mètres**, alignée sur `points`. C'est ce que
-   * rapporte le FIT (`gps_accuracy`), et le GPX ne la porte pas.
+   * rapporte le FIT (`gps_accuracy`), et le GPX ne la porte pas — d'où
+   * `null` chez ce dernier.
    *
    * Volontairement séparée de `hdops` : un HDOP est sans dimension, une
    * précision est en mètres, et passer de l'un à l'autre demande un facteur
@@ -52,7 +62,7 @@ export interface ParsedGpx {
    * facteur en le cachant — l'issue #149 supposait que le FIT portait un
    * hdop ; il porte autre chose.
    */
-  precisionsMetres: (number | null)[]
+  precisionsMetres: (number | null)[] | null
 }
 
 /**
@@ -109,7 +119,7 @@ export function parseGpx(xmlText: string, parser: XmlParser): ParsedGpx {
     times,
     hdops,
     // Le GPX rapporte un HDOP, jamais une précision en mètres.
-    precisionsMetres: points.map(() => null),
+    precisionsMetres: null,
     date: metadataTime ?? firstPointDate,
     pointsHorsLimites,
   }
@@ -118,7 +128,7 @@ export function parseGpx(xmlText: string, parser: XmlParser): ParsedGpx {
 interface ExtractedPoints {
   points: LonLat[]
   elevations: (number | null)[]
-  times: (string | null)[]
+  times: (number | null)[]
   hdops: (number | null)[]
   firstPointDate: string | null
   pointsHorsLimites: number
@@ -131,7 +141,7 @@ interface ExtractedPoints {
 function extractPoints(doc: Document, tagName: 'trkpt' | 'rtept'): ExtractedPoints {
   const points: LonLat[] = []
   const elevations: (number | null)[] = []
-  const times: (string | null)[] = []
+  const times: (number | null)[] = []
   const hdops: (number | null)[] = []
   let firstPointDate: string | null = null
   let pointsHorsLimites = 0
@@ -154,7 +164,10 @@ function extractPoints(doc: Document, tagName: 'trkpt' | 'rtept'): ExtractedPoin
     // Les quatre tableaux avancent ensemble, y compris quand un point est
     // écarté : un décalage d'un cran rendrait la vitesse calculée absurde.
     const time = pt.getElementsByTagName('time')[0]?.textContent.trim()
-    times.push(time ?? null)
+    // Un <time> illisible ne vaut pas mieux qu'un <time> absent : NaN
+    // décalerait toute vitesse calculée à partir de lui.
+    const instant = time ? Date.parse(time) : Number.NaN
+    times.push(Number.isFinite(instant) ? instant : null)
     if (firstPointDate === null && time) firstPointDate = time
 
     const hdop = Number(

@@ -75,18 +75,24 @@ export interface Track {
   /** Dénivelé positif cumulé en mètres (null si le GPX n'a pas d'altitudes). */
   elevationGain?: number | null
   /**
-   * Horodatage de chaque point, aligné sur `points` (issue #149).
+   * Horodatage de chaque point, en millisecondes depuis l'époque Unix,
+   * aligné sur `points` (issue #149).
    *
    * Optionnel, et il doit le rester : les traces déjà en base n'en ont pas,
    * et elles doivent continuer à compter sans qu'on demande à personne de
    * tout réimporter. Un GPX exporté d'un logiciel de tracé n'en a pas non
    * plus, et reste un itinéraire cible parfaitement valide.
    */
-  times?: (string | null)[]
-  /** HDOP par point, sans dimension. Optionnel, même raison. */
-  hdops?: (number | null)[]
-  /** Précision GPS par point, en mètres. Optionnel, même raison. */
-  precisionsMetres?: (number | null)[]
+  times?: (number | null)[]
+  /**
+   * HDOP par point, sans dimension. `null` quand le format ne porte pas du
+   * tout cette mesure, ce qui n'est pas la même chose qu'un tableau de
+   * `null` — celui-ci dit que le format la rapporte et que le fichier ne
+   * l'a pas renseignée.
+   */
+  hdops?: (number | null)[] | null
+  /** Précision GPS par point, en mètres. Même convention que `hdops`. */
+  precisionsMetres?: (number | null)[] | null
 }
 
 export interface CompletionResult {

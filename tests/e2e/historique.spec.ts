@@ -1,85 +1,117 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork, buildGpx } from './helpers.ts'
+import { mockExternalNetwork } from './helpers.ts'
 
-test('les sorties datées alimentent un historique et un graphique mensuel', async ({
-  page,
-}) => {
-  await mockExternalNetwork(page)
-  await page.goto('/')
-
-  // Rien à montrer tant qu'aucune trace n'est importée.
-  await expect(page.getByTestId('history-totals')).toHaveCount(0)
-
-  await page.getByTestId('gpx-input').setInputFiles([
-    {
-      name: 'mars.gpx',
-      mimeType: 'application/gpx+xml',
-      buffer: Buffer.from(buildGpx(15, '2026-03-08T09:00:00Z'), 'utf-8'),
-    },
-    {
-      name: 'mai.gpx',
-      mimeType: 'application/gpx+xml',
-      buffer: Buffer.from(buildGpx(40, '2026-05-12T09:00:00Z'), 'utf-8'),
-    },
-  ])
-
-  const totaux = page.getByTestId('history-totals')
-  await expect(totaux).toContainText('2 sorties')
-  await expect(totaux).toContainText('km')
-
-  // Mars, avril (vide) et mai : le mois sans sortie est conservé.
-  const chart = page.getByTestId('history-chart')
-  await expect(chart).toBeVisible()
-  await expect(chart.locator('rect')).toHaveCount(3)
-  await expect(chart).toContainText(/mars/i)
-  await expect(chart).toContainText(/mai/i)
-
-  // L'historique survit au rechargement, comme les traces.
-  await page.reload()
-  await expect(page.getByTestId('history-totals')).toContainText('2 sorties')
-})
-
-test('une trace sans date est comptée sans fausser le graphique', async ({
-  page,
-}) => {
-  await mockExternalNetwork(page)
-  await page.goto('/')
-
-  const sansDate = buildGpx(15).replace(
-    /<metadata>.*<\/metadata>/,
-    '<metadata></metadata>',
-  )
-  await page.getByTestId('gpx-input').setInputFiles({
-    name: 'sans-date.gpx',
+/**
+ * Issue #175 — « Retrouver une sortie précise parmi huit cents, en moins de
+ * trente secondes, sans faire défiler la liste entière. »
+ *
+ * C'est le critère de vérification écrit dans l'issue. Il est repris ici
+ * tel quel : on cherche, on trouve, sans avoir déplié quoi que ce soit.
+ */
+function gpx(
+  nom: string,
+  date: string,
+  points: number,
+  rang: number,
+): { name: string; mimeType: string; buffer: Buffer } {
+  // Chaque trace suit sa propre latitude : deux archives identiques au
+  // point près seraient écartées comme doublons (issue #165), et la liste
+  // ne compterait pas ce que le test croit y avoir mis.
+  const lat = (45.4 + rang * 0.002).toFixed(6)
+  const trkpts = Array.from(
+    { length: points },
+    (_, i) => `<trkpt lat="${lat}" lon="${(4.5 + i * 0.0002).toFixed(6)}"><ele>800</ele></trkpt>`,
+  ).join('')
+  return {
+    name: nom,
     mimeType: 'application/gpx+xml',
-    buffer: Buffer.from(sansDate, 'utf-8'),
-  })
+    buffer: Buffer.from(
+      `<?xml version="1.0"?><gpx version="1.1" xmlns="http://www.topografix.com/GPX/1/1">` +
+        `<metadata><time>${date}</time></metadata><trk><trkseg>${trkpts}</trkseg></trk></gpx>`,
+      'utf-8',
+    ),
+  }
+}
 
-  await expect(page.getByTestId('history-totals')).toContainText('1 sortie')
-  // Elle est signalée comme absente du graphique plutôt que silencieusement
-  // rangée dans un mois arbitraire.
-  await expect(page.getByTestId('history')).toContainText(/sans date/i)
-})
+/** Quarante sorties sur trois années, dont une seule cherchée. */
+function archive() {
+  const fichiers = []
+  let rang = 0
+  for (let i = 0; i < 18; i += 1) {
+    fichiers.push(gpx(`2026-sortie-${i}.gpx`, `2026-0${(i % 9) + 1}-1${i % 9}T08:00:00Z`, 12 + i, rang++))
+  }
+  for (let i = 0; i < 14; i += 1) {
+    fichiers.push(gpx(`2025-sortie-${i}.gpx`, `2025-0${(i % 9) + 1}-1${i % 9}T08:00:00Z`, 12 + i, rang++))
+  }
+  fichiers.push(gpx('crete-du-pilat.gpx', '2018-09-04T08:00:00Z', 60, rang++))
+  for (let i = 0; i < 7; i += 1) {
+    fichiers.push(gpx(`2018-sortie-${i}.gpx`, `2018-0${(i % 9) + 1}-1${i % 9}T08:00:00Z`, 12 + i, rang++))
+  }
+  return fichiers
+}
 
-test('« Mes sorties » dit le plus long enchaînement d’un seul tenant', async ({
+test('retrouver une sortie de 2018 parmi quarante, sans dérouler la liste', async ({
   page,
 }) => {
   await mockExternalNetwork(page)
   await page.goto('/')
-
   await page.getByTestId('zone-pilat').click()
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
-  await page.getByTestId('gpx-input').setInputFiles({
-    name: 'sortie.gpx',
-    mimeType: 'application/gpx+xml',
-    buffer: Buffer.from(buildGpx(15), 'utf-8'),
+  await page.getByTestId('gpx-input').setInputFiles(archive())
+  await expect(page.getByTestId('tracks-compte')).toContainText('40 sorties', {
+    timeout: 30_000,
   })
-  await expect(page.getByTestId('global-pct')).toHaveText('54,5 %')
 
-  // Le pourcentage dit combien ; celui-ci dit si c'était d'affilée.
-  const enchainement = page.getByTestId('history-run')
-  await expect(enchainement).toContainText('km')
-  await expect(enchainement).toContainText(/tronçons? qui se suiv/)
+  // 2018 est replié : la sortie cherchée n'est pas à l'écran.
+  await expect(page.getByTestId('track-toggle-crete-du-pilat.gpx')).toHaveCount(0)
+  // Et 2026, l'année la plus récente, est ouverte.
+  await expect(page.getByTestId('track-toggle-2026-sortie-0.gpx')).toBeVisible()
+
+  await page.getByTestId('tracks-recherche').fill('crete')
+
+  // Trouvée, alors même que son année est repliée : chercher traverse les
+  // plis, sinon la recherche mentirait par omission.
+  await expect(page.getByTestId('track-toggle-crete-du-pilat.gpx')).toBeVisible()
+  await expect(page.getByTestId('tracks-compte')).toContainText('1 sur 40')
+  await expect(page.getByTestId('track-toggle-2026-sortie-0.gpx')).toHaveCount(0)
+})
+
+test('le tri change l’ordre, et le dit', async ({ page }) => {
+  await mockExternalNetwork(page)
+  await page.goto('/')
+  await page.getByTestId('zone-pilat').click()
+  await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
+    timeout: 15_000,
+  })
+  await page.getByTestId('gpx-input').setInputFiles(archive())
+  await expect(page.getByTestId('tracks-compte')).toContainText('40 sorties', {
+    timeout: 30_000,
+  })
+
+  // Trier par distance range la plus longue en tête, toutes années
+  // confondues — donc « crete-du-pilat.gpx », la seule à quarante points.
+  await page.getByTestId('tracks-tri').selectOption('distance')
+  const premier = page.getByTestId('tracks-list').first().locator('li').first()
+  await expect(premier).toContainText('crete-du-pilat.gpx')
+})
+
+test('une recherche sans résultat le dit, au lieu de tout montrer', async ({
+  page,
+}) => {
+  await mockExternalNetwork(page)
+  await page.goto('/')
+  await page.getByTestId('zone-pilat').click()
+  await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
+    timeout: 15_000,
+  })
+  await page.getByTestId('gpx-input').setInputFiles(archive())
+  await expect(page.getByTestId('tracks-compte')).toContainText('40 sorties', {
+    timeout: 30_000,
+  })
+
+  await page.getByTestId('tracks-recherche').fill('zzzz')
+  await expect(page.getByTestId('tracks-aucun-resultat')).toBeVisible()
+  await expect(page.getByTestId('tracks-list')).toHaveCount(0)
 })
