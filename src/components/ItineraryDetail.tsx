@@ -28,7 +28,7 @@ import { bandesDeRevetement } from '../core/revetement.ts'
 /**
  * Fiche détail d'un itinéraire, ouverte en cliquant son tracé sur la carte :
  * profil altimétrique (service IGN), points d'intérêt proches (Overpass),
- * et une vue 3D (caméra inclinée sur le tracé — perspective, pas un relief
+ * et une inclinaison de caméra sur le tracé — une perspective, pas un relief
  * calculé à partir d'un modèle numérique de terrain).
  */
 export function ItineraryDetail() {
@@ -108,7 +108,7 @@ export function ItineraryDetail() {
           data-testid="detail-3d-toggle"
           onClick={toggleView3D}
         >
-          Vue 3D
+          {view3D ? 'Remettre à plat' : 'Incliner la carte'}
         </button>
         <button
           type="button"
