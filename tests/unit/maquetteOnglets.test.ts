@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   dispositionDemandee,
   ONGLETS,
+  positionInitiale,
   positionPourOnglet,
   sectionsDeLOnglet,
 } from '../../src/core/maquetteOnglets.ts'
@@ -160,5 +161,51 @@ describe('positionPourOnglet', () => {
         expect(feuilleMontreQuelqueChose || contenuHorsFeuille).toBe(true)
       }
     }
+  })
+})
+
+/**
+ * AUDIT_UX.md, constat U1 — le défaut le plus grave de l'audit, parce qu'il
+ * frappe la première seconde de la première visite.
+ *
+ * Mesuré sur 390 × 844 : la carte du guide va de y 191 à 708, la feuille
+ * commence à y 439, et le bouton « Voir un exemple » est à y 485 — donc
+ * 46 px sous le bord de la feuille. `elementFromPoint` en son centre ne
+ * renvoyait pas le bouton : recouvert, non cliquable. C'est pourtant le seul
+ * chemin qui montre le produit à quelqu'un qui n'a encore aucune trace.
+ *
+ * Remonter le guide au-dessus de la feuille a été envisagé et écarté : le
+ * guide dit « choisissez une zone **dans le panneau** », il ne peut pas le
+ * recouvrir en le désignant. C'est la feuille qui lui laisse la place, et
+ * qui la reprend dès qu'il est fermé.
+ */
+describe('positionInitiale', () => {
+  it('laisse la place au guide de premier lancement', () => {
+    expect(
+      positionInitiale({ guideAffiche: true, zoneRestauree: false }),
+    ).toBe('repliee')
+  })
+
+  it('rouvre à mi-hauteur dès que le guide est fermé', () => {
+    expect(
+      positionInitiale({ guideAffiche: false, zoneRestauree: false }),
+    ).toBe('moitie')
+  })
+
+  /**
+   * Le comportement d'origine, qu'il ne s'agissait pas de perdre : au retour
+   * sur l'application, une zone est déjà en cache — on vient regarder sa
+   * carte, la feuille reste basse.
+   */
+  it('reste basse au retour, quand une zone est déjà là', () => {
+    expect(
+      positionInitiale({ guideAffiche: false, zoneRestauree: true }),
+    ).toBe('repliee')
+  })
+
+  it('reste basse au retour même si le guide s’affiche', () => {
+    expect(
+      positionInitiale({ guideAffiche: true, zoneRestauree: true }),
+    ).toBe('repliee')
   })
 })

@@ -26,6 +26,7 @@ import {
 import { BarreOnglets } from './components/BarreOnglets.tsx'
 import {
   dispositionDemandee,
+  positionInitiale,
   positionPourOnglet,
   sectionsDeLOnglet,
   type Onglet,
@@ -130,14 +131,17 @@ function App() {
   }, [modeAffichage, grosTexte])
   const [aboutOpen, setAboutOpen] = useState(false)
   /**
-   * null = suivre l'état des données. Au retour sur l'application, une zone
-   * est déjà en cache : on vient regarder sa carte, la feuille reste basse.
-   * À la première visite il n'y a rien à voir sur la carte, et tout à faire
-   * dans le panneau : elle s'ouvre à mi-hauteur.
+   * null = personne n'a touché la poignée, la position se déduit de l'état
+   * (voir `positionInitiale`, qui porte les raisons). Dès qu'on la touche,
+   * c'est ce choix-là qui vaut.
    */
   const [feuille, setFeuille] = useState<PositionFeuille | null>(null)
   const position: PositionFeuille =
-    feuille ?? (zoneRestoredAtStartup ? 'repliee' : 'moitie')
+    feuille ??
+    positionInitiale({
+      guideAffiche: guideDemarrageVisible(donnees, guideFerme),
+      zoneRestauree: zoneRestoredAtStartup,
+    })
 
   /**
    * Changer d'onglet, c'est demander à voir ce qu'il contient.

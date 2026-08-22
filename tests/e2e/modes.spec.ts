@@ -1,5 +1,8 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork, buildGpx,
+import {
+  buildGpx,
+  fermerLeGuide,
+  mockExternalNetwork,
   ouvrirOnglet,
 } from './helpers.ts'
 import type { Page } from '@playwright/test'
@@ -110,6 +113,7 @@ test('à 200 %, rien ne déborde sur un écran de 360 px', async ({ page }) => {
   await mockExternalNetwork(page)
   await page.setViewportSize({ width: 360, height: 740 })
   await page.goto('/')
+  await fermerLeGuide(page)
   await avecUneZoneEtUneTrace(page)
 
   await page.getByTestId('mode-affichage').locator(':scope > summary').click()

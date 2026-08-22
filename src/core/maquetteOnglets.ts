@@ -189,3 +189,32 @@ export function positionPourOnglet(
   if (!toutTientDansLaFeuille(onglet)) return courante
   return courante === 'repliee' ? 'moitie' : courante
 }
+
+/**
+ * Où poser la feuille tant que personne ne l'a touchée (AUDIT_UX.md, U1).
+ *
+ * Deux raisons de la laisser basse, et une seule de l'ouvrir :
+ *
+ * - le guide de premier lancement est affiché : il lui faut la hauteur.
+ *   Mesuré avant correction sur 390 × 844, son bouton « Voir un exemple »
+ *   tombait 46 px sous le bord de la feuille, recouvert et non cliquable —
+ *   alors que c'est le seul chemin qui montre le produit à quelqu'un qui
+ *   n'a encore aucune trace ;
+ * - une zone a été restaurée du cache : on revient regarder sa carte.
+ *
+ * Sinon la feuille s'ouvre à mi-hauteur : il n'y a rien à voir sur la carte
+ * et tout à faire dans le panneau.
+ *
+ * Rien à désactiver quand le guide se ferme : `guideAffiche` redevient faux,
+ * la position se recalcule, la feuille remonte. Un effet qui l'aurait
+ * repositionnée aurait fait la même chose en moins fiable.
+ */
+export function positionInitiale({
+  guideAffiche,
+  zoneRestauree,
+}: {
+  guideAffiche: boolean
+  zoneRestauree: boolean
+}): PositionFeuille {
+  return guideAffiche || zoneRestauree ? 'repliee' : 'moitie'
+}
