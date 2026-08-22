@@ -72,3 +72,21 @@ test('sur grand écran, le prototype rend la main au panneau colonne', async ({
   await page.goto('/?maquette=onglets')
   await expect(page.getByTestId('barre-onglets')).toBeHidden()
 })
+
+test('la feuille réserve exactement la hauteur de la barre', async ({ page }) => {
+  // Trouvé à la revue du sprint 5 : la réserve était écrite « 56px » à la
+  // main pour une barre qui en fait 50. Deux nombres séparés dérivent en
+  // silence, et le jour où ils se croisent dans le mauvais sens, le dernier
+  // contenu de la feuille passe sous la barre sans que rien ne le dise.
+  await page.setViewportSize(TELEPHONE)
+  await mockExternalNetwork(page)
+  await page.goto('/?maquette=onglets')
+
+  const barre = await page.getByTestId('barre-onglets').boundingBox()
+  expect(barre).not.toBeNull()
+  const reserve = await page
+    .getByTestId('sidebar')
+    .evaluate((el) => getComputedStyle(el).paddingBottom)
+
+  expect(Math.round(barre!.height)).toBe(Math.round(parseFloat(reserve)))
+})
