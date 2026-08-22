@@ -4,6 +4,8 @@ import {
   mockTilesOk,
   mockElevation,
   buildGpx,
+  ouvrirOnglet,
+  surChaqueOnglet,
 } from './helpers.ts'
 
 /**
@@ -33,21 +35,38 @@ test('aucune cible tactile sous 24 px sur un écran de téléphone', async ({
   await mockTilesOk(page)
   await page.goto('/')
 
+  await ouvrirOnglet(page, 'carte')
   await page.getByTestId('zone-pilat').click()
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await ouvrirOnglet(page, 'sorties')
   await page.getByTestId('gpx-input').setInputFiles({
     name: 'sortie.gpx',
     mimeType: 'application/gpx+xml',
     buffer: Buffer.from(buildGpx(15), 'utf-8'),
   })
+  await ouvrirOnglet(page, 'progression')
   await expect(page.getByTestId('global-pct')).toHaveText('54,5 %')
   // Tout déplier : les filtres et le bilan de sortie comptent aussi.
   await page.getByTestId('discovery-filters').locator('summary').click()
+  await ouvrirOnglet(page, 'sorties')
   await page.getByTestId('track-toggle-sortie.gpx').click()
 
-  const trop_petites = await page.evaluate((minimum) => {
+  // Les quatre onglets sont parcourus : sans cela l'audit ne verrait qu'un
+  // quart de l'application depuis que la navigation est par onglets
+  // (issue #171). En disposition accordéons, la boucle tourne une fois.
+  const trop_petites: { descriptif: string; w: number; h: number }[] = []
+  await surChaqueOnglet(page, async () => {
+    trop_petites.push(...(await mesurerCibles(page)))
+  })
+
+  expect(trop_petites).toEqual([])
+})
+
+/** Relève les cibles tactiles trop petites de la page telle qu'elle est. */
+async function mesurerCibles(page: import('@playwright/test').Page) {
+  return page.evaluate((minimum) => {
     const cibles = [
       ...document.querySelectorAll(
         'button, select, summary, input, [role="button"]',
@@ -68,9 +87,7 @@ test('aucune cible tactile sous 24 px sur un écran de téléphone', async ({
         (e) => e.w > 0 && e.h > 0 && (e.w < minimum || e.h < minimum),
       )
   }, MINIMUM)
-
-  expect(trop_petites).toEqual([])
-})
+}
 
 test('le profil altimétrique répond au doigt, pas seulement à la souris', async ({
   page,
@@ -80,10 +97,12 @@ test('le profil altimétrique répond au doigt, pas seulement à la souris', asy
   await mockElevation(page)
   await page.goto('/')
 
+  await ouvrirOnglet(page, 'carte')
   await page.getByTestId('zone-pilat').click()
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await ouvrirOnglet(page, 'progression')
   await page
     .getByTestId('itinerary-list')
     .getByRole('button', { name: /GR 7/ })
@@ -133,6 +152,7 @@ test('la légende et l’attribution ne se recouvrent pas sur téléphone', asyn
   expect(debordement?.haut).toBeLessThanOrEqual(0)
   expect(debordement?.bas).toBeLessThanOrEqual(0)
 
+  await ouvrirOnglet(page, 'carte')
   await page.getByTestId('zone-pilat').click()
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
@@ -174,18 +194,42 @@ test('rien ne descend sous 13 px sur un écran de téléphone', async ({
   await mockTilesOk(page)
   await page.goto('/')
 
+  await ouvrirOnglet(page, 'carte')
   await page.getByTestId('zone-pilat').click()
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await ouvrirOnglet(page, 'sorties')
   await page.getByTestId('gpx-input').setInputFiles({
     name: 'sortie.gpx',
     mimeType: 'application/gpx+xml',
     buffer: Buffer.from(buildGpx(15), 'utf-8'),
   })
+  await ouvrirOnglet(page, 'progression')
   await expect(page.getByTestId('global-pct')).toHaveText('54,5 %')
 
-  const textes = await page.evaluate(() => {
+  // Les quatre onglets, pour la même raison que l'audit des cibles.
+  const textes: { px: number; texte: string; badge: boolean }[] = []
+  await surChaqueOnglet(page, async () => {
+    textes.push(...(await releverTailles(page)))
+  })
+
+  // Deux exceptions assumées, et pas une de plus :
+  //  — les badges de réseau (GR, GRP, PR, Boucle) : deux ou trois capitales
+  //    grasses sur fond plein, contraintes en largeur dans les listes ;
+  //  — l'attribution MapLibre, phrase dense qu'on consulte une fois et qui
+  //    occuperait le quart de la carte à 14 px.
+  const attribution = (t: string) =>
+    /MapLibre|IGN|OpenStreetMap|Métropole/.test(t)
+  expect(textes.filter((t) => t.px < 13 && !attribution(t.texte))).toEqual([])
+  expect(
+    textes.filter((t) => t.px < 14 && !t.badge && !attribution(t.texte)),
+  ).toEqual([])
+})
+
+/** Relève la taille de chaque élément qui porte lui-même du texte. */
+async function releverTailles(page: import('@playwright/test').Page) {
+  return page.evaluate(() => {
     const releve: { px: number; texte: string; badge: boolean }[] = []
     for (const el of document.querySelectorAll('body *')) {
       const propre = el.textContent.trim()
@@ -206,20 +250,7 @@ test('rien ne descend sous 13 px sur un écran de téléphone', async ({
     }
     return releve
   })
-
-  // Deux exceptions assumées, et pas une de plus :
-  //  — les badges de réseau (GR, GRP, PR, Boucle) : deux ou trois capitales
-  //    grasses sur fond plein, contraintes en largeur dans les listes ;
-  //  — l'attribution MapLibre, phrase dense qu'on consulte une fois et qui
-  //    occuperait le quart de la carte à 14 px.
-  const attribution = (t: string) => /MapLibre|IGN|OpenStreetMap|Métropole/.test(t)
-  expect(
-    textes.filter((t) => t.px < 13 && !attribution(t.texte)),
-  ).toEqual([])
-  expect(
-    textes.filter((t) => t.px < 14 && !t.badge && !attribution(t.texte)),
-  ).toEqual([])
-})
+}
 
 /**
  * La carte occupait 40 % de l'écran et le panneau 60 %, par héritage de la
@@ -250,6 +281,7 @@ test('la carte occupe le cadre, le panneau devient une feuille', async ({
   const feuille = page.getByTestId('sidebar')
   // Première visite : rien à voir sur la carte, tout à faire dans le panneau.
   await expect(feuille).toHaveAttribute('data-position', 'moitie')
+  await ouvrirOnglet(page, 'carte')
   await page.getByTestId('zone-pilat').click()
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
@@ -304,6 +336,7 @@ test('au retour, la feuille laisse la carte visible', async ({ page }) => {
   await mockExternalNetwork(page)
   await mockTilesOk(page)
   await page.goto('/')
+  await ouvrirOnglet(page, 'carte')
   await page.getByTestId('zone-pilat').click()
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
@@ -329,10 +362,12 @@ test('la fiche détail laisse voir le tracé dont elle parle', async ({
   await mockElevation(page)
   await page.goto('/')
 
+  await ouvrirOnglet(page, 'carte')
   await page.getByTestId('zone-pilat').click()
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await ouvrirOnglet(page, 'progression')
   await page
     .getByTestId('itinerary-list')
     .getByRole('button', { name: /GR 7/ })

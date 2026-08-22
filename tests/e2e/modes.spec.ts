@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork, buildGpx } from './helpers.ts'
+import { mockExternalNetwork, buildGpx,
+  ouvrirOnglet,
+} from './helpers.ts'
 import type { Page } from '@playwright/test'
 
 /**
@@ -13,10 +15,12 @@ import type { Page } from '@playwright/test'
  */
 
 async function avecUneZoneEtUneTrace(page: Page): Promise<void> {
+  await ouvrirOnglet(page, 'carte')
   await page.getByTestId('zone-pilat').click()
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await ouvrirOnglet(page, 'sorties')
   await page.getByTestId('gpx-input').setInputFiles({
     name: 'sortie.gpx',
     mimeType: 'application/gpx+xml',
@@ -137,6 +141,8 @@ test('à 200 %, rien ne déborde sur un écran de 360 px', async ({ page }) => {
   expect(panneau).not.toBeNull()
   expect(panneau!.scroll).toBeLessThanOrEqual(panneau!.client + 1)
 
+  // Le grand chiffre vit sous l'onglet Progression depuis #171.
+  await ouvrirOnglet(page, 'progression')
   // Le grand chiffre reste entier dans le cadre qui le porte.
   const pct = page.getByTestId('global-pct')
   await expect(pct).toBeVisible()

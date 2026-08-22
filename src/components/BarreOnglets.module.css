@@ -11,15 +11,21 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   background: var(--blanc-papier);
-  border-top: 1px solid var(--gris-vert-clair);
+  /* Pas de bordure : elle s'ajoutait à la hauteur et décalait la barre d'un
+     pixel par rapport à ce que la feuille dégage. L'ombre sépare déjà la
+     barre du contenu, et elle ne prend pas de place. Un `+ 1px` dans le
+     calcul de la feuille aurait marché — et aurait été exactement le nombre
+     magique que ce jeton existe pour supprimer. */
   box-shadow: var(--ombre-feuille);
   /* Zone sûre iOS : sans elle, la barre passe sous l'indicateur d'accueil
      et la dernière cible devient inatteignable. */
   padding-bottom: env(safe-area-inset-bottom, 0px);
-  /* Hauteur tenue par le jeton partagé : ce que la feuille réserve et ce
-     que la barre occupe ne peuvent plus diverger. Reste au-dessus des
-     44 px de cible tactile, vérifié par un test. */
-  min-height: var(--hauteur-onglets);
+  /* Hauteur **exacte**, et non un minimum : ce que la feuille dégage et ce
+     que la barre occupe dérivent alors de la même expression, et ne peuvent
+     plus diverger d'un pixel. Un `min-height` les laissait s'écarter dès que
+     le contenu grandissait — c'est arrivé en montant les libellés de 11,5 à
+     14,4 px, et l'invariant l'a vu au pixel près. */
+  height: var(--hauteur-onglets);
 }
 
 .onglet {
@@ -54,11 +60,17 @@
 }
 
 .libelle {
-  font-size: var(--texte-etiquette);
+  /* La navigation principale n'est pas une étiquette. L'audit mobile fixe
+     un plancher de 14 px hors badges, et les libellés étaient en dessous :
+     trouvé par le test, pas en relisant. */
+  font-size: var(--texte-courant);
   min-width: 0;
   overflow-wrap: anywhere;
 }
 
+/* Au-dessus du point de rupture, la barre n'est même plus rendue par React
+   (src/lib/ecran.ts) : cette règle reste comme filet, pour le cas d'un
+   redimensionnement pendant lequel React n'aurait pas encore repeint. */
 @media (min-width: 800px) {
   .barre {
     display: none;

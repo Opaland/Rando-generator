@@ -21,12 +21,13 @@ import { ModeSwitch } from './components/ModeSwitch.tsx'
 import { sectionsVisibles } from './core/affichage.ts'
 import { BarreOnglets } from './components/BarreOnglets.tsx'
 import {
-  maquetteDemandee,
+  dispositionDemandee,
   sectionsDeLOnglet,
   type Onglet,
   type SectionApp,
 } from './core/maquetteOnglets.ts'
 import { ZonePicker } from './components/ZonePicker.tsx'
+import { useEcranCompact } from './lib/ecran.ts'
 import { formatPct } from './lib/format.ts'
 import { useAppStore } from './store/appStore.ts'
 import styles from './App.module.css'
@@ -67,18 +68,27 @@ function App() {
   const grosTexte = useAppStore((s) => s.grosTexte)
   const sections = sectionsVisibles(modeAffichage)
 
-  // Prototype de navigation par onglets (issue #171), servi uniquement sur
-  // `?maquette=onglets` — #177 interdit de l'industrialiser avant la session
-  // E2, mais une session ne se conduit pas sans quelque chose qui s'utilise.
-  // Lu une seule fois : le drapeau ne change pas en cours de session.
-  const [maquette] = useState(() =>
-    typeof window === 'undefined' ? false : maquetteDemandee(window.location.search),
+  // Navigation par onglets (issue #171), disposition par défaut depuis que
+  // la porte de #177 a été levée. Les accordéons restent servis par
+  // `?maquette=accordeons` — ce qui laisse la session E2 conduisible et un
+  // retour en arrière possible. Lu une seule fois : la disposition ne change
+  // pas en cours de session.
+  const [maquette] = useState(
+    () =>
+      typeof window !== 'undefined' &&
+      dispositionDemandee(window.location.search) === 'onglets',
   )
   const [ongletActif, setOngletActif] = useState<Onglet>('carte')
-  // Sans maquette, `visible` dit oui à tout : l'empilement d'origine est
+  // La barre n'existe qu'en dessous du point de rupture : au-dessus, le
+  // panneau colonne montre tout. Sans cette condition, le filtrage par
+  // onglet s'appliquait aussi sur grand écran, où la barre est masquée —
+  // une seule section visible et aucun moyen d'en changer.
+  const compact = useEcranCompact()
+  const onglets = maquette && compact
+  // En accordéons, `visible` dit oui à tout : l'empilement d'origine est
   // rendu exactement comme avant, sans une condition de plus à son sujet.
   const visible = (section: SectionApp): boolean =>
-    !maquette || sectionsDeLOnglet(ongletActif).includes(section)
+    !onglets || sectionsDeLOnglet(ongletActif).includes(section)
 
   // Les deux modes se posent sur la racine du document plutôt que sur un
   // conteneur : le gros texte doit atteindre les dialogues et les surcouches
@@ -87,8 +97,9 @@ function App() {
   // en position fixe, et c'est la feuille — ailleurs dans l'arbre — qui doit
   // lui réserver sa hauteur (prototype #171).
   useEffect(() => {
-    if (maquette) document.documentElement.dataset['maquette'] = 'onglets'
-  }, [maquette])
+    if (onglets) document.documentElement.dataset['maquette'] = 'onglets'
+    else delete document.documentElement.dataset['maquette']
+  }, [onglets])
 
   useEffect(() => {
     const racine = document.documentElement
@@ -191,7 +202,7 @@ function App() {
       <div className={styles.layout}>
         <aside
           className={`${styles.sidebar} ${styles[position]}`}
-          aria-label="Panneau de contrôle"
+          aria-label={onglets ? 'Contenu de l’onglet' : 'Panneau de contrôle'}
           data-testid="sidebar"
           data-position={position}
         >
@@ -269,7 +280,7 @@ function App() {
         </main>
       </div>
 
-      {maquette && (
+      {onglets && (
         <BarreOnglets actif={ongletActif} onChange={setOngletActif} />
       )}
 

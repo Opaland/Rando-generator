@@ -18,7 +18,19 @@
    détail » — ce que le test tactile a constaté avant moi. */
 @media (max-width: 800px) {
   .card {
+    /* Au-dessus de la feuille repliée. En navigation par onglets, la
+       feuille est elle-même remontée : sans quoi la fiche se retrouvait
+       dessous, et le lien « voir le détail » devenait inatteignable. */
     bottom: 56px;
+  }
+
+  /* La fiche suit la feuille quand la barre d'onglets la fait remonter :
+     sinon elle passe dessous, et le lien « voir le détail » devient
+     inatteignable au doigt. */
+  :root[data-maquette='onglets'] .card {
+    bottom: calc(
+      56px + var(--hauteur-onglets) + env(safe-area-inset-bottom, 0px)
+    );
   }
 }
 

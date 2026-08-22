@@ -257,3 +257,49 @@ export function buildGpx(
   <trk><trkseg>${points.join('\n')}</trkseg></trk>
 </gpx>`
 }
+
+/** Les quatre onglets de la navigation compacte (issue #171). */
+export const ONGLETS = ['carte', 'sorties', 'progression', 'reglages'] as const
+export type CleOnglet = (typeof ONGLETS)[number]
+
+/**
+ * Se place sur un onglet — et ne fait rien si la barre n'existe pas.
+ *
+ * Le silence est délibéré. La barre n'apparaît qu'en dessous du point de
+ * rupture, et l'ancienne disposition reste servie par
+ * `?maquette=accordeons` : un test qui aurait à savoir dans laquelle il
+ * tourne pour appeler cette fonction n'aurait rien gagné. Ici le même test
+ * passe dans les deux, et n'exprime que ce qui l'intéresse — « je veux voir
+ * les sorties », pas « je clique sur le deuxième bouton ».
+ */
+export async function ouvrirOnglet(page: Page, cle: CleOnglet): Promise<void> {
+  const onglet = page.getByTestId(`onglet-${cle}`)
+  if ((await onglet.count()) === 0) return
+  await onglet.click()
+}
+
+/**
+ * Exécute un contrôle sur chacun des quatre onglets, l'un après l'autre.
+ *
+ * Les audits de gabarit — cibles tactiles, tailles de texte — regardaient
+ * une page où tout était empilé. Avec les onglets, ils ne voyaient plus
+ * qu'un quart de l'application : les parcourir tous rend la couverture
+ * qu'ils avaient, et l'étend à la navigation elle-même.
+ *
+ * En disposition accordéons, la boucle tourne une fois sur une page qui
+ * contient déjà tout, et le résultat est le même qu'avant.
+ */
+export async function surChaqueOnglet(
+  page: Page,
+  controle: (cle: CleOnglet | 'tout') => Promise<void>,
+): Promise<void> {
+  const barre = page.getByTestId('barre-onglets')
+  if ((await barre.count()) === 0) {
+    await controle('tout')
+    return
+  }
+  for (const cle of ONGLETS) {
+    await ouvrirOnglet(page, cle)
+    await controle(cle)
+  }
+}

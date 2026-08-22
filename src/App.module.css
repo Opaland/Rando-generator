@@ -131,6 +131,8 @@
   }
 }
 
+/* 800 px : le point de rupture est aussi lu par React, dans src/lib/ecran.ts
+   — les deux doivent rester d'accord. */
 @media (max-width: 800px) {
   /* En-tête compact : la phrase longue se repliait sur sept lignes dans une
      colonne étroite, soit 20 % de la hauteur avant le premier contenu utile. */
@@ -264,6 +266,24 @@
 /* Prototype #171 : la feuille et la carte réservent la hauteur de la barre
    d'onglets, sinon leur dernier contenu passe dessous et devient illisible.
    Portée par un attribut sur la racine pour ne rien changer hors maquette. */
+/* La feuille remonte au-dessus de la barre d'onglets au lieu de se poser
+   dessous. La réserve était d'abord un `padding-bottom` : le contenu ne
+   passait plus sous la barre, mais la poignée, elle, restait collée en bas
+   de l'écran — donc sous la barre, qui interceptait les clics. Feuille
+   repliée, on ne pouvait plus rouvrir le panneau du tout.
+
+   Trouvé par la suite e2e, pas en relisant : c'est le genre de défaut qui ne
+   se voit qu'en essayant de toucher. */
 :root[data-maquette='onglets'] .sidebar {
-  padding-bottom: calc(var(--hauteur-onglets) + env(safe-area-inset-bottom, 0px));
+  bottom: calc(var(--hauteur-onglets) + env(safe-area-inset-bottom, 0px));
+}
+
+/* La barre occupe cinquante-quatre pixels, et ils se prennent sur la feuille,
+   pas sur la carte. L'audit mobile (constat M1) a rendu la carte dominante
+   par décision, pas par accident : la laisser rétrécir à chaque ajout
+   d'interface reviendrait à défaire cette décision sans jamais la
+   reprendre. Mesuré : sans cette règle, la carte visible tombait de 349 à
+   312 px sur 844. */
+:root[data-maquette='onglets'] .moitie {
+  max-height: calc(48vh - var(--hauteur-onglets));
 }
