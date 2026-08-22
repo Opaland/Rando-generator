@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { About } from './components/About.tsx'
 import { Backup } from './components/Backup.tsx'
 import { CustomItineraries } from './components/CustomItineraries.tsx'
@@ -26,8 +26,10 @@ import {
 import { BarreOnglets } from './components/BarreOnglets.tsx'
 import {
   dispositionDemandee,
+  positionPourOnglet,
   sectionsDeLOnglet,
   type Onglet,
+  type PositionFeuille,
   type SectionApp,
 } from './core/maquetteOnglets.ts'
 import { ZonePicker } from './components/ZonePicker.tsx'
@@ -40,12 +42,13 @@ import styles from './App.module.css'
 // listes sont utilisables immédiatement.
 const MapView = lazy(() => import('./components/MapView.tsx'))
 
-/**
- * Positions de la feuille du panneau sur téléphone (voir .sidebar dans
- * App.module.css). Sur grand écran la feuille n'existe pas : le panneau est
- * une colonne, et cet état n'a aucun effet.
+/*
+ * Les positions de la feuille du panneau sur téléphone (voir .sidebar dans
+ * App.module.css) sont définies dans core/maquetteOnglets : une règle les
+ * consulte pour décider où poser la feuille en changeant d'onglet, et cette
+ * règle s'éprouve sans DOM. Sur grand écran la feuille n'existe pas : le
+ * panneau est une colonne, et cet état n'a aucun effet.
  */
-type PositionFeuille = 'repliee' | 'moitie' | 'pleine'
 
 const SUIVANTE: Record<PositionFeuille, PositionFeuille> = {
   repliee: 'moitie',
@@ -93,6 +96,7 @@ function App() {
       dispositionDemandee(window.location.search) === 'onglets',
   )
   const [ongletActif, setOngletActif] = useState<Onglet>('carte')
+  const panneauRef = useRef<HTMLElement>(null)
   // La barre n'existe qu'en dessous du point de rupture : au-dessus, le
   // panneau colonne montre tout. Sans cette condition, le filtrage par
   // onglet s'appliquait aussi sur grand écran, où la barre est masquée —
@@ -134,6 +138,25 @@ function App() {
   const [feuille, setFeuille] = useState<PositionFeuille | null>(null)
   const position: PositionFeuille =
     feuille ?? (zoneRestoredAtStartup ? 'repliee' : 'moitie')
+
+  /**
+   * Changer d'onglet, c'est demander à voir ce qu'il contient.
+   *
+   * Trois onglets sur quatre n'ont rien à montrer hors de la feuille : y
+   * arriver feuille fermée donnait un écran identique à celui qu'on quittait,
+   * l'onglet allumé et rien d'autre (AUDIT_UX.md, constat U3). La règle qui
+   * décide de la position vit dans core/maquetteOnglets, où elle s'éprouve.
+   *
+   * Le défilement repart du haut : la feuille est un cadre commun aux quatre
+   * onglets, et sa position de défilement lui appartient, pas au contenu.
+   * Sans cela, on arrivait au milieu de la liste des itinéraires parce qu'on
+   * avait fait défiler celle des traces.
+   */
+  const changerDOnglet = (onglet: Onglet) => {
+    setOngletActif(onglet)
+    setFeuille(positionPourOnglet(onglet, position))
+    panneauRef.current?.scrollTo({ top: 0 })
+  }
 
   // Choisir un itinéraire dans la liste, c'est demander à le voir sur la
   // carte. La feuille se replie donc : sinon la fiche résumé qui s'ouvre en
@@ -219,6 +242,7 @@ function App() {
 
       <div className={styles.layout}>
         <aside
+          ref={panneauRef}
           className={`${styles.sidebar} ${styles[position]}`}
           aria-label={onglets ? 'Contenu de l’onglet' : 'Panneau de contrôle'}
           data-testid="sidebar"
@@ -347,7 +371,7 @@ function App() {
       </div>
 
       {onglets && (
-        <BarreOnglets actif={ongletActif} onChange={setOngletActif} />
+        <BarreOnglets actif={ongletActif} onChange={changerDOnglet} />
       )}
 
       <About

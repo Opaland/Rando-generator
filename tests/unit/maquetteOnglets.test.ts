@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   dispositionDemandee,
   ONGLETS,
+  positionPourOnglet,
   sectionsDeLOnglet,
 } from '../../src/core/maquetteOnglets.ts'
 
@@ -105,6 +106,59 @@ describe('sectionsDeLOnglet', () => {
     // place. C'est un seuil de présentation, tranché ici et écrit.
     for (const onglet of ONGLETS) {
       expect(sectionsDeLOnglet(onglet.cle).length).toBeLessThanOrEqual(4)
+    }
+  })
+})
+
+/**
+ * AUDIT_UX.md, constat U3 — changer d'onglet ne montrait pas l'onglet.
+ *
+ * Mesuré sur téléphone : feuille repliée à 52 px pour regarder la carte, on
+ * touche « Progression », la feuille reste à 52 px. L'onglet s'allume,
+ * l'écran ne bouge pas. Il fallait deviner qu'un second geste — tirer la
+ * poignée — restait à faire.
+ *
+ * La règle tient en une phrase : **un onglet dont tout le contenu vit dans
+ * la feuille l'ouvre ; un onglet qui a du contenu ailleurs ne la touche
+ * pas.** « Carte » est le seul du second genre : son contenu, c'est la
+ * carte, qui est derrière la feuille et non dedans.
+ *
+ * Et changer d'onglet ne rétrécit jamais : quelqu'un qui a déplié en grand
+ * pour lire une longue liste ne doit pas la voir se refermer parce qu'il est
+ * allé voir ailleurs et revenu.
+ */
+describe('positionPourOnglet', () => {
+  it('ouvre la feuille pour un onglet qui n’a rien à montrer ailleurs', () => {
+    for (const onglet of ['sorties', 'progression', 'reglages'] as const) {
+      expect(positionPourOnglet(onglet, 'repliee')).toBe('moitie')
+    }
+  })
+
+  it('ne rétrécit jamais ce qui est déjà ouvert', () => {
+    expect(positionPourOnglet('progression', 'moitie')).toBe('moitie')
+    expect(positionPourOnglet('progression', 'pleine')).toBe('pleine')
+    expect(positionPourOnglet('sorties', 'pleine')).toBe('pleine')
+  })
+
+  it('laisse « Carte » comme elle est : son contenu est derrière la feuille', () => {
+    for (const position of ['repliee', 'moitie', 'pleine'] as const) {
+      expect(positionPourOnglet('carte', position)).toBe(position)
+    }
+  })
+
+  /**
+   * L'invariant, qui vaut mieux que l'énumération : après un changement
+   * d'onglet, ou bien la feuille montre quelque chose, ou bien l'onglet a du
+   * contenu hors de la feuille. Jamais un écran sans rien.
+   */
+  it('ne laisse jamais un onglet sans rien à l’écran', () => {
+    for (const onglet of ONGLETS) {
+      for (const position of ['repliee', 'moitie', 'pleine'] as const) {
+        const apres = positionPourOnglet(onglet.cle, position)
+        const feuilleMontreQuelqueChose = apres !== 'repliee'
+        const contenuHorsFeuille = onglet.cle === 'carte'
+        expect(feuilleMontreQuelqueChose || contenuHorsFeuille).toBe(true)
+      }
     }
   })
 })
