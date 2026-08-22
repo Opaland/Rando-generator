@@ -204,6 +204,16 @@
   border: 1px solid var(--gris-vert-clair);
 }
 
+/* Mise en garde sur la résolution du profil : le même registre que la note
+   du revêtement, parce que les deux disent la même chose — jusqu'où on peut
+   se fier à ce qui est dessiné. */
+.resolution {
+  margin: var(--espace-3) 0 0;
+  color: var(--gris-vert);
+  font-size: var(--texte-appui);
+  line-height: 1.4;
+}
+
 .note {
   margin: var(--espace-3) 0 0;
 }
