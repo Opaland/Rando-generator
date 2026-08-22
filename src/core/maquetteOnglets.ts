@@ -37,36 +37,37 @@ export interface DefinitionOnglet {
   libelle: string
   /** Icône **et** libellé : une icône seule se devine, et se devine mal. */
   icone: string
-  /** Ce que l'onglet promet, en une question posée du point de vue de la
-   * personne — c'est ce qui doit décider du rangement, pas la parenté
-   * technique des composants. */
-  intention: string
 }
+
+/*
+ * Un champ `intention` a existé ici, portant la question à laquelle chaque
+ * onglet répond — « où vais-je, que me reste-t-il ». Rien ne le lisait :
+ * une donnée qu'aucun rendu ne consulte finit par mentir, et celle-ci
+ * affirmait en plus décider du rangement, ce qu'elle ne faisait pas.
+ * Retiré à la revue du sprint 5. Les intentions vivent dans l'issue #171 et
+ * dans le commentaire ci-dessus, où elles n'ont rien à prouver.
+ */
 
 export const ONGLETS: DefinitionOnglet[] = [
   {
     cle: 'carte',
     libelle: 'Carte',
     icone: '🗺️',
-    intention: 'Où en suis-je, visuellement',
   },
   {
     cle: 'sorties',
     libelle: 'Sorties',
     icone: '👟',
-    intention: 'Qu’est-ce que j’ai marché',
   },
   {
     cle: 'progression',
     libelle: 'Progression',
     icone: '📈',
-    intention: 'Où vais-je, que me reste-t-il',
   },
   {
     cle: 'reglages',
     libelle: 'Réglages',
     icone: '⚙️',
-    intention: 'Comment ça marche, et mes données',
   },
 ]
 

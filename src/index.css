@@ -94,6 +94,11 @@
   --z-overlay-draw: 7; /* RouteDrawer : panneau de tracé d'itinéraire */
   --z-overlay-locate: 8; /* LocateButton : « où suis-je », toujours atteignable */
   --z-feuille: 9; /* Panneau de contrôle en feuille glissante (téléphone) */
+  /* Hauteur de la barre d'onglets du prototype #171. Mesurée à 50 px et
+     posée ici plutôt que recopiée : la feuille doit réserver exactement
+     cette hauteur, et deux nombres séparés dérivent en silence — le mien
+     disait déjà 56 px pour une barre qui en fait 50. */
+  --hauteur-onglets: 50px;
   --z-onglets: 10; /* Prototype #171 : barre d'onglets, au-dessus de la
                       feuille — une navigation que la feuille dépliée
                       recouvrirait ne serait plus une navigation. */

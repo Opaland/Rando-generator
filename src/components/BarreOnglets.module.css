@@ -16,6 +16,10 @@
   /* Zone sûre iOS : sans elle, la barre passe sous l'indicateur d'accueil
      et la dernière cible devient inatteignable. */
   padding-bottom: env(safe-area-inset-bottom, 0px);
+  /* Hauteur tenue par le jeton partagé : ce que la feuille réserve et ce
+     que la barre occupe ne peuvent plus diverger. Reste au-dessus des
+     44 px de cible tactile, vérifié par un test. */
+  min-height: var(--hauteur-onglets);
 }
 
 .onglet {

@@ -265,5 +265,5 @@
    d'onglets, sinon leur dernier contenu passe dessous et devient illisible.
    Portée par un attribut sur la racine pour ne rien changer hors maquette. */
 :root[data-maquette='onglets'] .sidebar {
-  padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(var(--hauteur-onglets) + env(safe-area-inset-bottom, 0px));
 }
