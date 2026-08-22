@@ -68,11 +68,19 @@
   overflow-wrap: anywhere;
 }
 
-/* Au-dessus du point de rupture, la barre n'est même plus rendue par React
-   (src/lib/ecran.ts) : cette règle reste comme filet, pour le cas d'un
-   redimensionnement pendant lequel React n'aurait pas encore repeint. */
-@media (min-width: 800px) {
-  .barre {
-    display: none;
-  }
-}
+/* Pas de règle qui masque la barre.
+
+   Il y en avait une — `@media (min-width: 800px) { display: none }` — posée
+   comme filet « pour le cas d'un redimensionnement pendant lequel React
+   n'aurait pas encore repeint ». C'est ce filet qui a ouvert le trou qu'il
+   devait couvrir : `src/lib/ecran.ts` teste `(max-width: 800px)`, vrai à
+   800, et cette règle était vraie à 800 elle aussi. À cette largeur exacte,
+   React filtrait les sections par onglet et le CSS masquait la barre qui
+   permet d'en changer — « Sorties », « Progression » et « Réglages »
+   devenaient inatteignables (AUDIT_UX.md, constat U2).
+
+   La présence de la barre est décidée par React, et par lui seul. Une barre
+   visible une image de trop pendant un redimensionnement ne coûte rien ;
+   une barre masquée pendant que les sections sont filtrées coûte l'accès à
+   trois quarts de l'application. `tests/unit/pointDeRupture.test.ts` garde
+   la règle absente. */
