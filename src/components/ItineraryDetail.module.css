@@ -287,3 +287,12 @@
   border-left: 3px solid var(--jaune-pr);
   padding-left: var(--espace-4);
 }
+
+/* Pente maximale (issue #179). Le texte porte sa propre nuance — « en
+   moyenne sur N m » — et ne doit pas être réduit typographiquement à son
+   chiffre : quelqu'un décide de s'engager sur cette phrase. */
+.pente {
+  margin: var(--espace-2) 0 0;
+  font-size: var(--texte-secondaire);
+  color: var(--vert-noir);
+}
