@@ -35,6 +35,7 @@ import {
 } from './core/maquetteOnglets.ts'
 import { ZonePicker } from './components/ZonePicker.tsx'
 import { useEcranCompact } from './lib/ecran.ts'
+import { pourcentageMesurable } from './core/milestones.ts'
 import { formatPct } from './lib/format.ts'
 import { useAppStore } from './store/appStore.ts'
 import styles from './App.module.css'
@@ -70,7 +71,18 @@ function App() {
   const hasCustomData = useAppStore((s) => s.customItineraries.length > 0)
   const hasTracks = useAppStore((s) => s.tracks.length > 0)
   const zoneLoading = useAppStore((s) => s.zoneLoading)
-  const globalPct = useAppStore((s) => s.matching?.global.pct ?? null)
+  /**
+   * Le pourcentage global, ou `null` quand il n'y a rien à mesurer.
+   *
+   * `pct` vaut 0 dès que le calcul tourne, même sur un ensemble vide : la
+   * poignée accueillait donc les nouveaux venus par « 0 % parcourus » alors
+   * qu'aucune zone n'était chargée (AUDIT_UX.md, constat U5). Ce n'est pas
+   * décourageant, c'est faux — il n'y a pas 0 % de parcouru, il n'y a rien
+   * à parcourir. `pourcentageMesurable` porte la question une seule fois.
+   */
+  const globalPct = useAppStore((s) =>
+    pourcentageMesurable(s.matching?.global) ? (s.matching?.global.pct ?? null) : null,
+  )
   const zoneRestoredAtStartup = useAppStore((s) => s.zoneRestoredAtStartup)
   const modeAffichage = useAppStore((s) => s.modeAffichage)
   const grosTexte = useAppStore((s) => s.grosTexte)
