@@ -19,6 +19,13 @@ import { DemoBanner } from './components/DemoBanner.tsx'
 import { InstallButton } from './components/InstallButton.tsx'
 import { ModeSwitch } from './components/ModeSwitch.tsx'
 import { sectionsVisibles } from './core/affichage.ts'
+import { BarreOnglets } from './components/BarreOnglets.tsx'
+import {
+  maquetteDemandee,
+  sectionsDeLOnglet,
+  type Onglet,
+  type SectionApp,
+} from './core/maquetteOnglets.ts'
 import { ZonePicker } from './components/ZonePicker.tsx'
 import { formatPct } from './lib/format.ts'
 import { useAppStore } from './store/appStore.ts'
@@ -60,9 +67,29 @@ function App() {
   const grosTexte = useAppStore((s) => s.grosTexte)
   const sections = sectionsVisibles(modeAffichage)
 
+  // Prototype de navigation par onglets (issue #171), servi uniquement sur
+  // `?maquette=onglets` — #177 interdit de l'industrialiser avant la session
+  // E2, mais une session ne se conduit pas sans quelque chose qui s'utilise.
+  // Lu une seule fois : le drapeau ne change pas en cours de session.
+  const [maquette] = useState(() =>
+    typeof window === 'undefined' ? false : maquetteDemandee(window.location.search),
+  )
+  const [ongletActif, setOngletActif] = useState<Onglet>('carte')
+  // Sans maquette, `visible` dit oui à tout : l'empilement d'origine est
+  // rendu exactement comme avant, sans une condition de plus à son sujet.
+  const visible = (section: SectionApp): boolean =>
+    !maquette || sectionsDeLOnglet(ongletActif).includes(section)
+
   // Les deux modes se posent sur la racine du document plutôt que sur un
   // conteneur : le gros texte doit atteindre les dialogues et les surcouches
   // de carte, qui sortent de l'arbre du panneau (issue #173).
+  // Posé sur la racine plutôt que passé en classe : la barre d'onglets est
+  // en position fixe, et c'est la feuille — ailleurs dans l'arbre — qui doit
+  // lui réserver sa hauteur (prototype #171).
+  useEffect(() => {
+    if (maquette) document.documentElement.dataset['maquette'] = 'onglets'
+  }, [maquette])
+
   useEffect(() => {
     const racine = document.documentElement
     racine.dataset['mode'] = modeAffichage
@@ -193,16 +220,22 @@ function App() {
           <DemoBanner />
           {/* Le mode simple cache, il n'enlève pas : la carte, les traces et
               le tableau de bord restent, tout le reste se replie (#173). */}
-          {sections.zone && <ZonePicker />}
-          {sections.traces && <TrackManager />}
-          {sections.itineraires && <CustomItineraries />}
-          {sections.tableauDeBord && <Dashboard />}
-          {sections.objectifs && <Objectifs />}
-          {sections.prochaineSortie && <NextOuting />}
-          {sections.historique && <History />}
-          {sections.itineraires && <ItineraryList />}
-          {sections.reglages && <Settings />}
-          {sections.sauvegarde && <Backup />}
+          {sections.zone && visible('zone') && <ZonePicker />}
+          {sections.traces && visible('traces') && <TrackManager />}
+          {sections.itineraires && visible('itinerairesPerso') && (
+            <CustomItineraries />
+          )}
+          {sections.tableauDeBord && visible('tableauDeBord') && <Dashboard />}
+          {sections.objectifs && visible('objectifs') && <Objectifs />}
+          {sections.prochaineSortie && visible('prochaineSortie') && (
+            <NextOuting />
+          )}
+          {sections.historique && visible('historique') && <History />}
+          {sections.itineraires && visible('listeItineraires') && (
+            <ItineraryList />
+          )}
+          {sections.reglages && visible('reglages') && <Settings />}
+          {sections.sauvegarde && visible('sauvegarde') && <Backup />}
           <ModeSwitch />
           <InstallButton />
           <footer className={styles.footer}>
@@ -235,6 +268,10 @@ function App() {
           <LocateButton />
         </main>
       </div>
+
+      {maquette && (
+        <BarreOnglets actif={ongletActif} onChange={setOngletActif} />
+      )}
 
       <About
         open={aboutOpen}

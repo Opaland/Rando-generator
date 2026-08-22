@@ -259,3 +259,11 @@
     margin-top: var(--espace-3);
   }
 }
+
+
+/* Prototype #171 : la feuille et la carte réservent la hauteur de la barre
+   d'onglets, sinon leur dernier contenu passe dessous et devient illisible.
+   Portée par un attribut sur la racine pour ne rien changer hors maquette. */
+:root[data-maquette='onglets'] .sidebar {
+  padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+}

@@ -1,0 +1,62 @@
+/* Prototype #171 — ne s'affiche que sur `?maquette=onglets`, et seulement
+   en dessous du point de rupture : sur grand écran, le panneau colonne
+   existant reste la bonne réponse, l'issue le dit. */
+.barre {
+  position: fixed;
+  inset: auto 0 0 0;
+  /* Au-dessus de la feuille : dépliée, celle-ci recouvrait la barre et
+     interceptait les clics — la navigation devenait inatteignable, ce qui
+     aurait cassé la session au lieu de la renseigner. */
+  z-index: var(--z-onglets);
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  background: var(--blanc-papier);
+  border-top: 1px solid var(--gris-vert-clair);
+  box-shadow: var(--ombre-feuille);
+  /* Zone sûre iOS : sans elle, la barre passe sous l'indicateur d'accueil
+     et la dernière cible devient inatteignable. */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.onglet {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  /* 44 px de haut au minimum, cible tactile de l'issue. */
+  min-height: 44px;
+  padding: var(--espace-3) var(--espace-2);
+  border: none;
+  background: none;
+  color: var(--gris-vert);
+  cursor: pointer;
+  min-width: 0;
+}
+
+.onglet[aria-current='page'] {
+  color: var(--vert-noir);
+  box-shadow: inset 0 2px 0 var(--rouge-balisage);
+}
+
+.onglet:focus-visible {
+  outline: var(--anneau-focus);
+  outline-offset: -2px;
+}
+
+.icone {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.libelle {
+  font-size: var(--texte-etiquette);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 800px) {
+  .barre {
+    display: none;
+  }
+}
