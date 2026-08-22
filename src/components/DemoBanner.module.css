@@ -19,7 +19,7 @@
   padding: var(--espace-2) var(--espace-7);
   border: 1px solid var(--vert-noir);
   border-radius: var(--rayon-sm);
-  background: #fff;
+  background: var(--blanc-carte);
   font: inherit;
   cursor: pointer;
 }

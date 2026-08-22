@@ -6,7 +6,7 @@
 .title {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 1rem;
+  font-size: var(--texte-titre);
   display: inline;
 }
 

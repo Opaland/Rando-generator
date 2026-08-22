@@ -4,7 +4,7 @@
 }
 
 .title {
-  font-size: 1rem;
+  font-size: var(--texte-titre);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--gris-vert);
@@ -16,7 +16,7 @@
   border-radius: var(--rayon-lg);
   padding: var(--espace-7);
   text-align: center;
-  background: #fff;
+  background: var(--blanc-carte);
   transition: border-color 0.15s, background 0.15s;
 }
 
@@ -55,7 +55,7 @@
   padding: var(--espace-4) var(--espace-5);
   border-left: 4px solid var(--erreur-bord);
   background: var(--erreur-fond);
-  font-size: 0.9rem;
+  font-size: var(--texte-courant);
 }
 
 .errors ul {
@@ -65,7 +65,7 @@
 
 .errors button {
   border: 1px solid var(--vert-noir);
-  background: #fff;
+  background: var(--blanc-carte);
   border-radius: var(--rayon-sm);
   padding: var(--espace-1) var(--espace-5);
 }
@@ -74,7 +74,7 @@
   padding: var(--espace-4) var(--espace-5);
   border-left: 4px solid var(--attention-bord);
   background: var(--attention-fond);
-  font-size: 0.9rem;
+  font-size: var(--texte-courant);
 }
 
 .doublons p {
@@ -105,7 +105,7 @@
 
 .doublonActions button {
   border: 1px solid var(--vert-noir);
-  background: #fff;
+  background: var(--blanc-carte);
   border-radius: var(--rayon-sm);
   /* 44 px de haut : la cible se touche en marchant, avec des gants. */
   min-height: 44px;
@@ -114,7 +114,7 @@
 
 .empty {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: var(--texte-courant);
   color: var(--gris-vert);
 }
 
@@ -134,7 +134,7 @@
   align-items: center;
   gap: var(--espace-4);
   padding: var(--espace-4) var(--espace-5);
-  background: #fff;
+  background: var(--blanc-carte);
   border: 1px solid var(--gris-vert-clair);
   border-radius: var(--rayon-md);
 }
@@ -194,7 +194,7 @@
 
 .etoiles {
   margin: 0 0 var(--espace-3);
-  font-size: 1.3rem;
+  font-size: var(--texte-vedette);
   line-height: 1;
   color: var(--jaune-pr);
   letter-spacing: 2px;

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  maquetteDemandee,
+  dispositionDemandee,
   ONGLETS,
   sectionsDeLOnglet,
 } from '../../src/core/maquetteOnglets.ts'
@@ -16,23 +16,26 @@ import {
  * Le drapeau porte tout le poids de la retenue : par défaut, l'application
  * ne bouge pas d'un pixel.
  */
-describe('maquetteDemandee', () => {
-  it('est fausse quand rien n’est demandé', () => {
-    expect(maquetteDemandee('')).toBe(false)
-    expect(maquetteDemandee('?zone=pilat')).toBe(false)
+describe('dispositionDemandee', () => {
+  it('rend les onglets par défaut', () => {
+    expect(dispositionDemandee('')).toBe('onglets')
+    expect(dispositionDemandee('?zone=pilat')).toBe('onglets')
   })
 
-  it('est vraie sur le paramètre exact, et lui seul', () => {
-    expect(maquetteDemandee('?maquette=onglets')).toBe(true)
-    expect(maquetteDemandee('?zone=pilat&maquette=onglets')).toBe(true)
+  it('rend les accordéons sur demande explicite', () => {
+    // La porte de sortie n'est pas une politesse : c'est elle qui permet de
+    // conduire la session E2 en donnant deux URL différentes à deux groupes.
+    expect(dispositionDemandee('?maquette=accordeons')).toBe('accordeons')
+    expect(dispositionDemandee('?zone=pilat&maquette=accordeons')).toBe('accordeons')
   })
 
-  it('ignore une valeur voisine plutôt que de deviner', () => {
-    // Un prototype qui s'active par erreur pendant une session fausserait
-    // celle-ci sans que personne s'en aperçoive : la comparaison est stricte.
-    expect(maquetteDemandee('?maquette=onglet')).toBe(false)
-    expect(maquetteDemandee('?maquette=1')).toBe(false)
-    expect(maquetteDemandee('?maquette=')).toBe(false)
+  it('ne devine pas une valeur voisine', () => {
+    // Une valeur approchante rend les onglets, jamais un troisième
+    // comportement : pendant une session, une disposition inattendue
+    // fausserait le relevé sans que personne s'en aperçoive.
+    expect(dispositionDemandee('?maquette=accordeon')).toBe('onglets')
+    expect(dispositionDemandee('?maquette=')).toBe('onglets')
+    expect(dispositionDemandee('?maquette=onglets')).toBe('onglets')
   })
 })
 

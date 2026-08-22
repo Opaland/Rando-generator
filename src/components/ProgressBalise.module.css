@@ -11,8 +11,8 @@
   min-width: 0;
   background: linear-gradient(
     180deg,
-    #fff 0%,
-    #fff 50%,
+    var(--blanc-balisage) 0%,
+    var(--blanc-balisage) 50%,
     var(--stripe-color, var(--rouge-balisage)) 50%,
     var(--stripe-color, var(--rouge-balisage)) 100%
   );

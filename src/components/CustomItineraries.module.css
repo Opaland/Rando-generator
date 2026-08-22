@@ -4,7 +4,7 @@
 }
 
 .title {
-  font-size: 1rem;
+  font-size: var(--texte-titre);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--gris-vert);
@@ -64,7 +64,7 @@
   border: 1px solid var(--gris-vert-clair);
   border-left: 4px solid var(--vert-noir);
   border-radius: var(--rayon-md);
-  background: #fff;
+  background: var(--blanc-carte);
   text-align: left;
 }
 
@@ -79,7 +79,7 @@
 
 .name {
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: var(--texte-courant);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -94,7 +94,7 @@
 .pct {
   font-variant-numeric: tabular-nums;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: var(--texte-courant);
 }
 
 .km {

@@ -1,16 +1,15 @@
 /**
- * Le prototype de navigation par onglets (issue #171), et rien de plus.
+ * La navigation par onglets (issue #171).
  *
- * #177 interdit d'industrialiser cette refonte avant la session E2 : c'est
- * la plus lourde du backlog, fondée sur une hypothèse de conception, et la
- * corriger après coup coûterait le lot entier.
+ * Elle a d'abord vécu derrière un drapeau, parce que #177 interdisait de
+ * l'industrialiser avant la session E2 — la refonte la plus lourde du
+ * backlog, fondée sur une hypothèse de conception. C'est la disposition par
+ * défaut depuis que Cédric a tranché de ne pas attendre la session.
  *
- * Mais une session ne se conduit pas sur une maquette d'image : il faut
- * quelque chose qui s'utilise. Sans prototype, l'issue attend un test qui
- * attend l'issue. Ce module tient donc les deux bouts — le découpage est
- * écrit et éprouvé, et il ne s'active que si on le demande explicitement.
- *
- * Par défaut, l'application ne bouge pas d'un pixel.
+ * Ce que cela engage est écrit ici plutôt que perdu dans un historique :
+ * l'hypothèse n'a pas été validée, elle a été adoptée. Les accordéons
+ * restent servis par `?maquette=accordeons`, ce qui laisse E2 conduisible
+ * et laisse un retour en arrière possible sans réécriture.
  */
 
 export type Onglet = 'carte' | 'sorties' | 'progression' | 'reglages'
@@ -113,17 +112,31 @@ export function sectionsDeLOnglet(onglet: Onglet): SectionApp[] {
 
 export { MAX_SECTIONS_PAR_ONGLET }
 
+export type Disposition = 'onglets' | 'accordeons'
+
 /**
- * Le prototype ne s'active que sur `?maquette=onglets`, exactement.
+ * Quelle disposition afficher.
  *
- * La comparaison est stricte à dessein : un prototype qui s'activerait par
- * erreur pendant une session la fausserait sans que personne s'en aperçoive,
- * et E2 conclurait sur la mauvaise version.
+ * Les onglets sont maintenant la disposition par défaut. Ils ont d'abord
+ * vécu derrière `?maquette=onglets`, parce que #177 interdisait de les
+ * industrialiser avant la session E2 ; c'est Cédric qui a décidé de les
+ * passer devant sans attendre la session.
+ *
+ * L'ancienne disposition reste atteignable par `?maquette=accordeons`, et
+ * ce n'est pas une politesse : c'est ce qui permet de conduire E2 malgré
+ * tout, en donnant à un groupe l'URL des accordéons et à l'autre l'URL nue.
+ * Une bascule qu'on retire ferme la porte à la comparaison en même temps
+ * qu'elle simplifie le code.
+ *
+ * La comparaison est stricte : une valeur voisine rend les onglets, jamais
+ * un troisième comportement.
  */
-export function maquetteDemandee(recherche: string): boolean {
+export function dispositionDemandee(recherche: string): Disposition {
   try {
-    return new URLSearchParams(recherche).get('maquette') === 'onglets'
+    return new URLSearchParams(recherche).get('maquette') === 'accordeons'
+      ? 'accordeons'
+      : 'onglets'
   } catch {
-    return false
+    return 'onglets'
   }
 }

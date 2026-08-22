@@ -22,7 +22,7 @@
   border: 1px solid var(--gris-vert-clair);
   background: var(--blanc-papier);
   color: var(--vert-noir);
-  font-size: 0.88rem;
+  font-size: var(--texte-courant);
   font-weight: 600;
   box-shadow: var(--ombre-flottante);
 }
@@ -30,11 +30,11 @@
 .buttonActive {
   background: var(--bleu-position);
   border-color: var(--bleu-position);
-  color: #fff;
+  color: var(--texte-sur-couleur);
 }
 
 .button:hover {
-  background: #fff;
+  background: var(--blanc-carte);
 }
 
 .label {

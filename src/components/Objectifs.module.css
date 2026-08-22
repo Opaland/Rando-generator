@@ -4,7 +4,7 @@
 }
 
 .title {
-  font-size: 1rem;
+  font-size: var(--texte-titre);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--gris-vert);
@@ -44,7 +44,7 @@
   font-weight: 700;
   padding: var(--espace-1) var(--espace-3);
   border-radius: var(--rayon-sm);
-  color: #fff;
+  color: var(--texte-sur-couleur);
 }
 
 .GR {
@@ -93,7 +93,7 @@
   border-radius: var(--rayon-sm);
   background: transparent;
   color: var(--gris-vert);
-  font-size: 1.1rem;
+  font-size: var(--texte-titre-fort);
   line-height: 1;
   cursor: pointer;
 }

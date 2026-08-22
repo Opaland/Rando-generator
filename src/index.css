@@ -1,6 +1,10 @@
 :root {
   /* Palette « balisage » */
   --rouge-balisage: #c8102e;
+  /* Le blanc du balisage, apparié au rouge ci-dessus. Troisième rôle du
+     blanc, et le seul qui bougerait si la marque changeait : il appartient
+     à la balise, pas aux surfaces. */
+  --blanc-balisage: #fff;
   --jaune-pr: #d9a400;
   /* Orange foncé : garde un ratio de contraste ≥ 4,5:1 avec du texte blanc. */
   --orange-grp: #b34a08;
@@ -75,13 +79,43 @@
     system-ui, sans-serif;
   --font-sans: system-ui, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
 
-  /* Trois paliers de texte secondaire. Ils existent pour qu'un seul endroit
-     décide de leur taille : l'application se lit dehors, en marchant, en
+  /* L'échelle typographique complète. Elle existe pour qu'un seul endroit
+     décide de ces tailles : l'application se lit dehors, en marchant, en
      plein soleil, et pas seulement à vingt centimètres dans un salon
-     (docs/AUDIT_MOBILE.md, constat M8). */
+     (docs/AUDIT_MOBILE.md, constat M8).
+
+     Elle n'a pas été inventée : elle a été relevée. Quarante-six tailles
+     étaient écrites en dur dans les feuilles de composants, dont quatre
+     valeurs pour une même intention — 0,88, 0,9, 0,92 et 0,95 rem — et six
+     pour une autre — 1,1 à 1,4 rem. Personne n'avait décidé cela ; c'est
+     né d'un fichier à l'autre, comme les deux jaunes de la revue globale.
+     Les proches sont ramenées à la plus employée, ce qui déplace certaines
+     de deux centièmes de rem et n'en change aucune de plus de cinq. */
+  --texte-micro: 0.6875rem; /* attribution de la carte, mentions légales */
   --texte-etiquette: 0.72rem; /* badges de réseau : GR, GRP, PR, Boucle */
   --texte-appui: 0.78rem; /* mentions discrètes, légende de carte */
+  --texte-mention: 0.82rem; /* précisions sous un chiffre */
   --texte-secondaire: 0.85rem; /* second niveau de lecture courant */
+  --texte-courant: 0.9rem; /* le plus employé : listes, aides, boutons */
+  --texte-corps: 0.9375rem; /* corps de page, égal à celui du body */
+  --texte-titre: 1rem; /* titre de section repliable */
+  --texte-titre-fort: 1.15rem; /* titre marqué, en-tête de panneau */
+  --texte-vedette: 1.35rem; /* ce qu'on doit lire en premier */
+
+  /* Trois tailles d'affichage pour les pourcentages de progression. Trois
+     surfaces différentes, trois hiérarchies : la fiche flottante, le
+     panneau détail, le tableau de bord. */
+  --texte-chiffre-s: 2rem;
+  --texte-chiffre-m: 2.2rem;
+  --texte-chiffre-l: 2.6rem;
+
+  /* Deux blancs, et c'est voulu : le fond de page est un papier crème
+     (--blanc-papier), les surfaces posées dessus sont d'un blanc franc.
+     Ce qui ne l'était pas, c'est de les écrire « #fff » trente-sept fois
+     sans les nommer — deux rôles distincts derrière une même valeur, dont
+     aucun ne pouvait bouger sans l'autre. */
+  --blanc-carte: #fff; /* surfaces posées sur le papier */
+  --texte-sur-couleur: #fff; /* texte sur un aplat de couleur */
 
   color-scheme: light;
 
@@ -98,7 +132,7 @@
      posée ici plutôt que recopiée : la feuille doit réserver exactement
      cette hauteur, et deux nombres séparés dérivent en silence — le mien
      disait déjà 56 px pour une barre qui en fait 50. */
-  --hauteur-onglets: 50px;
+  --hauteur-onglets: 56px;
   --z-onglets: 10; /* Prototype #171 : barre d'onglets, au-dessus de la
                       feuille — une navigation que la feuille dépliée
                       recouvrirait ne serait plus une navigation. */
@@ -122,7 +156,7 @@ body {
      racine grandissait, le corps restait à quinze pixels, et l'interface avec
      lui (issue #173). 0,9375 rem vaut exactement 15 px sur une racine par
      défaut : l'affichage habituel ne bouge pas d'un pixel. */
-  font-size: 0.9375rem;
+  font-size: var(--texte-corps);
   line-height: 1.45;
   background: var(--blanc-papier);
   color: var(--vert-noir);
@@ -185,7 +219,7 @@ a:focus-visible,
   min-height: 44px;
   padding: var(--espace-4) var(--espace-7);
   border-radius: var(--rayon-md);
-  font-size: 0.88rem;
+  font-size: var(--texte-courant);
   font-weight: 600;
   border: 1px solid transparent;
   transition: background-color 0.15s, border-color 0.15s, color 0.15s;
@@ -194,7 +228,7 @@ a:focus-visible,
 .btn-primary {
   background: var(--rouge-balisage);
   border-color: var(--rouge-balisage);
-  color: #fff;
+  color: var(--texte-sur-couleur);
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -203,7 +237,7 @@ a:focus-visible,
 }
 
 .btn-secondary {
-  background: #fff;
+  background: var(--blanc-carte);
   border-color: var(--vert-noir);
   color: var(--vert-noir);
 }
@@ -242,7 +276,7 @@ a:focus-visible,
   border: none;
   background: none;
   border-radius: var(--rayon-md);
-  font-size: 1.4rem;
+  font-size: var(--texte-vedette);
   line-height: 1;
   color: var(--gris-vert);
 }
@@ -275,7 +309,7 @@ a:focus-visible,
 .acc-summary::after {
   content: '▾';
   flex: none;
-  font-size: 0.8rem;
+  font-size: var(--texte-mention);
   color: var(--gris-vert);
   transition: transform 0.15s;
 }
@@ -297,7 +331,7 @@ details[open] > .acc-summary::after {
 
 .balise > span:first-child {
   flex: 1;
-  background: #fff;
+  background: var(--blanc-carte);
 }
 
 .balise > span:last-child {
@@ -336,7 +370,7 @@ details[open] > .acc-summary::after {
      pas une information qu'on relit en marchant. */
   .maplibregl-map .maplibregl-ctrl-attrib,
   .maplibregl-map .maplibregl-ctrl-attrib-inner {
-    font-size: 0.75rem;
+    font-size: var(--texte-etiquette);
   }
 
   .acc-summary {
