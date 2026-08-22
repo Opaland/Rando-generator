@@ -135,3 +135,28 @@ export function franchissementTientEncore(
   const jalon = reachedMilestone(resultat.pct)
   return jalon !== null && jalon >= annonce.milestone
 }
+
+/**
+ * Y a-t-il de quoi annoncer un pourcentage ?
+ *
+ * **Un pourcentage a besoin d'un dénominateur.** `pct` vaut 0 dès que le
+ * calcul tourne, y compris sur un ensemble vide : une division par zéro doit
+ * bien rendre quelque chose. Ce zéro-là n'est pas une mesure, et l'afficher
+ * revenait à accueillir quelqu'un par « 0 % parcourus » alors qu'il n'y a
+ * rien à parcourir (AUDIT_UX.md, constat U5). Ce n'est pas décourageant,
+ * c'est faux.
+ *
+ * Nommé plutôt que testé à la volée là où le chiffre s'affiche : la même
+ * question se pose partout où un pourcentage est écrit, et deux copies
+ * auraient dérivé (CLAUDE.md §4).
+ */
+export function pourcentageMesurable(
+  stats: { totalMeters: number } | null | undefined,
+): boolean {
+  return (
+    stats !== null &&
+    stats !== undefined &&
+    Number.isFinite(stats.totalMeters) &&
+    stats.totalMeters > 0
+  )
+}

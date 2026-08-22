@@ -6,6 +6,7 @@ import {
   DEFAULT_COMPLETION_PCT,
   MILESTONES,
   normalizeCompletionPct,
+  pourcentageMesurable,
   crossedMilestones,
   isCompleted,
   metersToNextMilestone,
@@ -13,6 +14,7 @@ import {
   reachedMilestone,
 } from '../../src/core/milestones.ts'
 import type { CompletionResult } from '../../src/core/types.ts'
+import type { AggregateStats } from '../../src/core/matching.ts'
 
 function result(itineraryId: number, pct: number): CompletionResult {
   return {
@@ -160,5 +162,53 @@ describe('franchissementTientEncore', () => {
   it('tombe si l’itinéraire a disparu du calcul', () => {
     const annonce = { itineraryId: 999, milestone: 50 }
     expect(franchissementTientEncore(annonce, resultat(100))).toBe(false)
+  })
+})
+
+/**
+ * AUDIT_UX.md, constat U5 — « 0 % parcourus » s'affichait avant qu'il y ait
+ * quoi que ce soit à parcourir.
+ *
+ * Ce n'est pas seulement un mauvais premier chiffre : c'est un chiffre
+ * **faux**. Il n'y a pas 0 % de parcouru quand il n'y a rien à parcourir ;
+ * il n'y a pas de pourcentage du tout. `pct` vaut pourtant 0 dès que le
+ * calcul tourne, parce qu'une division par zéro doit bien rendre quelque
+ * chose — et ce zéro-là, personne ne l'a mesuré.
+ *
+ * La règle tient en une phrase : **un pourcentage a besoin d'un
+ * dénominateur.**
+ */
+describe('pourcentageMesurable', () => {
+  /** La forme exacte que le matching produit, pour ne pas tester une façade. */
+  function stats(totalMeters: number, doneMeters = 0): AggregateStats {
+    return {
+      doneMeters,
+      totalMeters,
+      pct: totalMeters === 0 ? 0 : (doneMeters / totalMeters) * 100,
+    }
+  }
+
+  it('refuse un pourcentage sans rien à mesurer', () => {
+    expect(pourcentageMesurable(stats(0))).toBe(false)
+  })
+
+  it('accepte dès qu’il y a de la longueur à parcourir', () => {
+    expect(pourcentageMesurable(stats(4400))).toBe(true)
+    expect(pourcentageMesurable(stats(4400, 2200))).toBe(true)
+  })
+
+  it('refuse une absence de calcul', () => {
+    expect(pourcentageMesurable(null)).toBe(false)
+    expect(pourcentageMesurable(undefined)).toBe(false)
+  })
+
+  /**
+   * Une longueur négative ou absurde ne fait pas un dénominateur. Le cas ne
+   * devrait pas arriver ; s'il arrive, mieux vaut ne rien annoncer qu'un
+   * pourcentage dont personne ne peut dire d'où il sort.
+   */
+  it('refuse une longueur qui n’en est pas une', () => {
+    expect(pourcentageMesurable(stats(-1))).toBe(false)
+    expect(pourcentageMesurable(stats(Number.NaN))).toBe(false)
   })
 })
