@@ -1,5 +1,8 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork } from './helpers.ts'
+import {
+  fermerLeGuide,
+  mockExternalNetwork,
+} from './helpers.ts'
 
 /**
  * Page « pourquoi Sentiers » (issue #19).
@@ -50,6 +53,7 @@ test('sur téléphone, le lien descend dans le pied plutôt que de manger la car
   await page.setViewportSize({ width: 390, height: 844 })
   await mockExternalNetwork(page)
   await page.goto('/')
+  await fermerLeGuide(page)
 
   await expect(page.getByTestId('pourquoi-link')).toBeHidden()
   const pied = page.getByTestId('pourquoi-link-pied')

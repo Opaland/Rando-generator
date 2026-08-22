@@ -337,3 +337,21 @@ export async function estAlEcran(page: Page, testId: string): Promise<boolean> {
     return peint !== null && (element === peint || element.contains(peint))
   })
 }
+
+/**
+ * Ferme le guide de premier lancement, comme le fait une personne.
+ *
+ * Depuis AUDIT_UX U1, le guide reçoit toute la hauteur au premier
+ * lancement : la feuille reste repliée derrière lui et s'ouvre à mi-hauteur
+ * dès qu'il est fermé. Un test qui vise le panneau doit donc faire ce geste
+ * d'abord — c'est celui qu'on fait devant l'écran.
+ *
+ * Sans effet quand le guide n'est pas là (données déjà chargées, guide déjà
+ * fermé), pour qu'un même parcours de test serve dans les deux cas.
+ */
+export async function fermerLeGuide(page: Page): Promise<void> {
+  const fermer = page.getByTestId('onboarding-fermer')
+  if ((await fermer.count()) === 0) return
+  await fermer.click()
+  await expect(page.getByTestId('onboarding')).toHaveCount(0)
+}

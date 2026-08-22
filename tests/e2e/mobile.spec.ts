@@ -1,9 +1,10 @@
 import { test, expect } from '@playwright/test'
 import {
+  buildGpx,
+  fermerLeGuide,
+  mockElevation,
   mockExternalNetwork,
   mockTilesOk,
-  mockElevation,
-  buildGpx,
   ouvrirOnglet,
   surChaqueOnglet,
 } from './helpers.ts'
@@ -34,6 +35,7 @@ test('aucune cible tactile sous 24 px sur un écran de téléphone', async ({
   await mockExternalNetwork(page)
   await mockTilesOk(page)
   await page.goto('/')
+  await fermerLeGuide(page)
 
   await ouvrirOnglet(page, 'carte')
   await page.getByTestId('zone-pilat').click()
@@ -96,6 +98,7 @@ test('le profil altimétrique répond au doigt, pas seulement à la souris', asy
   await mockTilesOk(page)
   await mockElevation(page)
   await page.goto('/')
+  await fermerLeGuide(page)
 
   await ouvrirOnglet(page, 'carte')
   await page.getByTestId('zone-pilat').click()
@@ -133,24 +136,19 @@ test('la légende et l’attribution ne se recouvrent pas sur téléphone', asyn
   await mockExternalNetwork(page)
   await mockTilesOk(page)
   await page.goto('/')
-
-  // L'état d'accueil s'affiche avant tout chargement : il doit tenir dans la
-  // zone carte, sinon sa dernière étape est coupée (constat M5).
-  await expect(page.getByTestId('onboarding')).toBeVisible()
-  const debordement = await page.evaluate(() => {
-    const zone = document.querySelector('[data-testid="onboarding"]')
-    const panneau = zone?.firstElementChild
-    if (!zone || !panneau) return null
-    const dehors = zone.getBoundingClientRect()
-    const dedans = panneau.getBoundingClientRect()
-    return {
-      haut: Math.round(dehors.top - dedans.top),
-      bas: Math.round(dedans.bottom - dehors.bottom),
-    }
-  })
-  expect(debordement).not.toBeNull()
-  expect(debordement?.haut).toBeLessThanOrEqual(0)
-  expect(debordement?.bas).toBeLessThanOrEqual(0)
+  /*
+   * La vérification du constat M5 — « l'état d'accueil tient dans le cadre »
+   * — vivait ici et a été retirée, pas oubliée : elle mesurait la carte du
+   * guide contre la surcouche `[data-testid="onboarding"]`, qui est en
+   * `inset: 0` sur le cadre carte et s'étend donc **sous la feuille**. La
+   * carte y tenait toujours, et le bouton « Voir un exemple » était pourtant
+   * recouvert et incliquable (AUDIT_UX.md, constat U1). Un test qui ne
+   * pouvait pas échouer.
+   *
+   * Elle est reprise dans `guide-lisible.spec.ts`, qui demande au navigateur
+   * ce qu'il **peint** au centre du bouton, sur deux tailles d'écran.
+   */
+  await fermerLeGuide(page)
 
   await ouvrirOnglet(page, 'carte')
   await page.getByTestId('zone-pilat').click()
@@ -193,6 +191,7 @@ test('rien ne descend sous 13 px sur un écran de téléphone', async ({
   await mockExternalNetwork(page)
   await mockTilesOk(page)
   await page.goto('/')
+  await fermerLeGuide(page)
 
   await ouvrirOnglet(page, 'carte')
   await page.getByTestId('zone-pilat').click()
@@ -277,9 +276,13 @@ test('la carte occupe le cadre, le panneau devient une feuille', async ({
   await mockExternalNetwork(page)
   await mockTilesOk(page)
   await page.goto('/')
+  await fermerLeGuide(page)
 
   const feuille = page.getByTestId('sidebar')
-  // Première visite : rien à voir sur la carte, tout à faire dans le panneau.
+  // Première visite, guide fermé : rien à voir sur la carte, tout à faire
+  // dans le panneau — il s'ouvre à mi-hauteur sans qu'on touche la poignée.
+  // Tant que le guide est affiché, la feuille lui laisse la hauteur
+  // (AUDIT_UX.md, constat U1) ; `fermerLeGuide` fait le geste juste avant.
   await expect(feuille).toHaveAttribute('data-position', 'moitie')
   await ouvrirOnglet(page, 'carte')
   await page.getByTestId('zone-pilat').click()
@@ -336,6 +339,7 @@ test('au retour, la feuille laisse la carte visible', async ({ page }) => {
   await mockExternalNetwork(page)
   await mockTilesOk(page)
   await page.goto('/')
+  await fermerLeGuide(page)
   await ouvrirOnglet(page, 'carte')
   await page.getByTestId('zone-pilat').click()
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
@@ -361,6 +365,7 @@ test('la fiche détail laisse voir le tracé dont elle parle', async ({
   await mockTilesOk(page)
   await mockElevation(page)
   await page.goto('/')
+  await fermerLeGuide(page)
 
   await ouvrirOnglet(page, 'carte')
   await page.getByTestId('zone-pilat').click()
