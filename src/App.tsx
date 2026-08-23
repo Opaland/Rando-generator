@@ -365,10 +365,19 @@ function App() {
               PR #213). Il se nomme maintenant, et il porte ce que le panneau
               contient plutôt qu'un mot d'interface : c'est la même phrase que
               la poignée de la feuille sur téléphone, pour la même raison.
+
+              Et c'est désormais le **même composant**, ce que le commentaire
+              ci-dessus promettait déjà. Sur grand écran, panneau replié, rien
+              ne disait qu'une sortie s'enregistrait : la barre d'onglets, qui
+              porte le témoin sur téléphone, n'existe pas à cette largeur. Deux
+              surfaces, une seule règle.
             */}
             <span aria-hidden="true">›</span>
-            <span className={styles.rendrePanneauTexte}>
-              Zones, traces et réglages
+            <span
+              className={styles.rendrePanneauTexte}
+              data-testid="panneau-rendre-texte"
+            >
+              <PoigneeTexte pourcentage={globalPct} />
             </span>
           </button>
         )}
