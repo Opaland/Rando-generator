@@ -32,6 +32,22 @@ async function marcher(page: Page, jusqua: number, depuis = 1): Promise<void> {
   }
 }
 
+/**
+ * Combien de lignes de trace ont été poussées dans la carte.
+ *
+ * On lit le témoin que `useMapSources` publie déjà, et non la source
+ * MapLibre : le navigateur d'intégration n'a pas toujours WebGL, et
+ * interroger la carte rendrait le test dépendant du fond de carte au lieu
+ * des données.
+ */
+async function tracesSurLaCarte(page: Page): Promise<number> {
+  return page.evaluate(
+    () =>
+      (window as unknown as { __sentiersTrailStats?: { traces: number } })
+        .__sentiersTrailStats?.traces ?? -1,
+  )
+}
+
 async function ouvrir(page: Page): Promise<void> {
   await mockExternalNetwork(page)
   await installerGeolocalisationPilotee(page)
@@ -176,4 +192,64 @@ test('la carte et l’enregistrement se partagent un seul suivi GPS', async ({
   await expect
     .poll(() => suivisDePosition(page), { timeout: 10_000 })
     .toBe(0)
+})
+
+/**
+ * **Le parcours d'un téléphone**, celui pour lequel l'enregistrement
+ * existe. Les quatre tests ci-dessus tournent à la largeur par défaut de
+ * Playwright, où toutes les sections s'affichent en même temps ; sur un
+ * téléphone, les onglets filtrent, et l'écran de marche vit sous
+ * « Sorties ». La revue a trouvé le trou en essayant de cliquer
+ * « Démarrer » à 390 px : le bouton n'était pas là.
+ */
+test.describe('sur un téléphone', () => {
+  test.use({ viewport: { width: 390, height: 844 } })
+
+  test('la sortie se démarre, se voit sur la carte, et se dit sur la barre', async ({
+    page,
+  }) => {
+    await ouvrir(page)
+
+    // Rien ne tourne : aucun témoin.
+    await expect(page.getByTestId('temoin-sortie')).toHaveCount(0)
+
+    await page.getByTestId('onglet-sorties').click()
+    await page.getByTestId('sortie-demarrer').click()
+
+    // Le témoin apparaît avant la première position : la sortie a commencé.
+    await expect(page.getByTestId('temoin-sortie')).toHaveAttribute(
+      'data-etat',
+      'enregistrement',
+    )
+
+    await marcher(page, 5)
+    await expect(page.getByTestId('sortie-distance')).not.toContainText('0 m')
+
+    // On retourne à la carte : le témoin reste, c'est tout son objet.
+    await page.getByTestId('onglet-carte').click()
+    await expect(page.getByTestId('temoin-sortie')).toBeVisible()
+
+    // Et la sortie se dessine pendant qu'on la marche : sans cela on
+    // regarde une carte vide pendant deux heures.
+    await expect
+      .poll(() => tracesSurLaCarte(page), { timeout: 15_000 })
+      .toBe(1)
+
+    // La pause change le témoin sans le faire disparaître : c'est la sortie
+    // en pause qu'on oublie, pas celle qui tourne.
+    await page.getByTestId('onglet-sorties').click()
+    await page.getByTestId('sortie-pause').click()
+    await expect(page.getByTestId('temoin-sortie')).toHaveAttribute(
+      'data-etat',
+      'pause',
+    )
+    // Le tracé reste : ce qui est marché l'a bien été.
+    expect(await tracesSurLaCarte(page)).toBe(1)
+
+    // Terminée, la sortie devient une trace : toujours une ligne, plus de
+    // témoin. Une sortie dessinée deux fois serait une sortie fausse.
+    await page.getByTestId('sortie-terminer').click()
+    await expect(page.getByTestId('temoin-sortie')).toHaveCount(0)
+    await expect.poll(() => tracesSurLaCarte(page), { timeout: 15_000 }).toBe(1)
+  })
 })
