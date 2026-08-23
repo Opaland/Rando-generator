@@ -122,6 +122,47 @@ export function sectionsDeLOnglet(onglet: Onglet): SectionApp[] {
 
 export { MAX_SECTIONS_PAR_ONGLET }
 
+/**
+ * Identifiants d'ancrage des sections, pour amener à l'une d'elles.
+ *
+ * La barre d'onglets est visible à toutes les largeurs depuis le 23/08. Sur
+ * téléphone elle **filtre** les sections ; sur grand écran, le panneau
+ * colonne continue de tout montrer et cliquer un onglet **amène à sa
+ * première section**.
+ *
+ * Filtrer sur grand écran était l'autre lecture, et elle a été essayée : une
+ * soixantaine de tests de bout en bout perdaient l'accès aux panneaux — ce
+ * qui dit surtout qu'on y cacherait les trois quarts d'un écran qui a la
+ * place de tout montrer.
+ *
+ * Un identifiant, pas un sélecteur : le composant décide comment l'atteindre.
+ * Le cœur n'a pas à connaître le DOM.
+ */
+const ANCRES: Record<SectionApp, string> = {
+  zone: 'zone',
+  enregistrement: 'enregistrement',
+  traces: 'traces',
+  itinerairesPerso: 'itineraires-perso',
+  tableauDeBord: 'tableau-de-bord',
+  objectifs: 'objectifs',
+  prochaineSortie: 'prochaine-sortie',
+  listeItineraires: 'liste-itineraires',
+  historique: 'historique',
+  reglages: 'reglages',
+  sauvegarde: 'sauvegarde',
+}
+
+/** Le repère à atteindre quand on choisit cet onglet. */
+export function ancreDeLOnglet(onglet: Onglet): string {
+  const premiere = sectionsDeLOnglet(onglet)[0]
+  return premiere ? ANCRES[premiere] : ''
+}
+
+/** L'identifiant d'ancrage d'une section, pour le poser sur son conteneur. */
+export function ancreDeSection(section: SectionApp): string {
+  return ANCRES[section]
+}
+
 export type Disposition = 'onglets' | 'accordeons'
 
 /**

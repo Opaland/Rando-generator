@@ -394,8 +394,37 @@
 
    Trouvé par la suite e2e, pas en relisant : c'est le genre de défaut qui ne
    se voit qu'en essayant de toucher. */
-:root[data-maquette='onglets'] .sidebar {
-  bottom: calc(var(--hauteur-onglets) + env(safe-area-inset-bottom, 0px));
+/* En dessous du point de rupture seulement : au-dessus, la feuille est une
+   colonne en flux et `bottom` ne veut rien dire. La règle a longtemps pu
+   rester globale parce que l'attribut n'était posé que sur téléphone ; il
+   l'est maintenant à toutes les largeurs, et ce qui est propre à la feuille
+   doit le dire. */
+@media (max-width: 800px) {
+  :root[data-maquette='onglets'] .sidebar {
+    bottom: calc(var(--hauteur-onglets) + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/*
+   Sur grand écran, la barre ne recouvre rien : la page entière lui laisse
+   sa bande.
+
+   La première version faisait l'inverse — la barre par-dessus, et une
+   réserve dans la colonne. La suite e2e a montré ce que ça coûtait : le
+   rappel du guide de démarrage devenait inatteignable, `nav` interceptant
+   le clic. Et il n'était pas seul — `RouteDrawer`, la fiche `ItineraryDetail`
+   et le bouton de localisation s'ancrent tous à 12 px du bas de la carte.
+   Quatre rustines, une par surface, dont la cinquième aurait manqué :
+   exactement le mode d'échec de CLAUDE.md §4.
+
+   Sur téléphone, la barre recouvre la carte **par décision** (audit mobile,
+   constat M1) : la hauteur y est rare, et la carte doit rester dominante.
+   Sur un écran de 800 px de haut, cinquante-six pixels ne se disputent pas.
+   La règle est donc là, et elle est unique. */
+@media (min-width: 801px) {
+  :root[data-maquette='onglets'] .app {
+    padding-bottom: var(--hauteur-onglets);
+  }
 }
 
 /* Les commandes ancrées en bas de la carte remontent au-dessus de la barre
@@ -412,12 +441,19 @@
    test n'attrapait : celui du constat M7 comparait des rectangles entre la
    légende et l'attribution, et ne demandait jamais ce qui est réellement
    peint. */
-:root[data-maquette='onglets'] .main :global(.maplibregl-ctrl-bottom-left),
-:root[data-maquette='onglets'] .main :global(.maplibregl-ctrl-bottom-right) {
-  bottom: calc(
-    var(--hauteur-onglets) + var(--hauteur-poignee) +
-      env(safe-area-inset-bottom, 0px)
-  );
+/* Sous le point de rupture seulement : c'est là, et là seulement, que la
+   barre est posée par-dessus la carte. Au-dessus, la page lui réserve sa
+   bande (règle plus bas) et l'attribution n'a personne au-dessus d'elle —
+   la relever de cinquante pixels y creuserait un vide que rien ne
+   justifie. */
+@media (max-width: 800px) {
+  :root[data-maquette='onglets'] .main :global(.maplibregl-ctrl-bottom-left),
+  :root[data-maquette='onglets'] .main :global(.maplibregl-ctrl-bottom-right) {
+    bottom: calc(
+      var(--hauteur-onglets) + var(--hauteur-poignee) +
+        env(safe-area-inset-bottom, 0px)
+    );
+  }
 }
 
 /* La barre occupe cinquante-quatre pixels, et ils se prennent sur la feuille,
@@ -426,6 +462,8 @@
    d'interface reviendrait à défaire cette décision sans jamais la
    reprendre. Mesuré : sans cette règle, la carte visible tombait de 349 à
    312 px sur 844. */
-:root[data-maquette='onglets'] .moitie {
-  max-height: calc(48vh - var(--hauteur-onglets));
+@media (max-width: 800px) {
+  :root[data-maquette='onglets'] .moitie {
+    max-height: calc(48vh - var(--hauteur-onglets));
+  }
 }
