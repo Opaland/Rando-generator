@@ -94,6 +94,27 @@ chemins ». Il y en avait quatre.
 Dès qu'une condition doit être consultée par plusieurs actions, elle devient
 une fonction nommée. C'est le seul remède connu à ce mode d'échec.
 
+## 4bis. Un commentaire qui justifie une existence est une affirmation
+
+Trois trouvés faux dans la même journée, sur des sujets sans rapport :
+
+- « Exporté pour les tests » — aucun test ne s'en servait ;
+- « Tracé de l'utilisateur : rien à attribuer, c'est le sien » — faux pour un
+  PDIPR importé, et c'était une violation de licence ;
+- « relit la base, donc rien n'est perdu » — ne relisait pas les
+  déclarations, arrivées après lui.
+
+**Aucun n'était faux quand il a été écrit.** C'est ce qui les rend
+dangereux : une justification vieillit comme le reste, mais personne ne la
+relit, parce qu'elle a l'air d'expliquer plutôt que d'affirmer.
+
+Le remède n'est pas d'en écrire moins — ces commentaires portent le pourquoi,
+et c'est ce qui manque partout ailleurs. C'est de les traiter comme des
+assertions : quand une phrase dit « parce que X », **X se vérifie**, et de
+préférence par un test plutôt que par une relecture.
+
+---
+
 ## 5. Ce qu'on affirme dans une PR, on l'a vérifié
 
 J'ai écrit « la démonstration fonctionne hors ligne » sans l'avoir testé.
@@ -138,6 +159,25 @@ Ce n'est pas une porte : c'est trop lent pour chaque commit, et un survivant
 n'est pas toujours un défaut (une table de traduction en produit des dizaines
 sans intérêt). C'est une vague à lancer après un module neuf, et à lire en
 cherchant les survivants qui *changent un résultat*.
+
+## 6ter. Un test qui suppose un ordre échoue seulement en suite complète
+
+Deux courses trouvées le même jour, dans des fichiers sans rapport :
+`fermerLeGuide` vérifiait la présence du guide **puis** cliquait ; un test de
+miroir posait sa fonction de relâchement depuis le gestionnaire de route et
+l'appelait avec `?.()` — sans effet, en silence, s'il n'avait pas encore
+tourné.
+
+Les deux n'échouaient **que sur la suite complète**, jamais isolées : la
+fenêtre ne s'ouvre que sous charge. C'est la signature de cette famille, et
+elle se reconnaît avant de chercher la cause.
+
+Le remède est le même dans les deux cas : **cesser de chercher un ordre sûr,
+boucler sur l'état final voulu.** Un `catch` dans une telle boucle n'avale pas
+une assertion — il avale une tentative, dans une convergence qui, elle, est
+assertée.
+
+---
 
 ## 7. Le déploiement se vérifie avant, pas après
 
