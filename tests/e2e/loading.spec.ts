@@ -72,13 +72,28 @@ test('la bascule de miroir affiche un message de nouvelle tentative', async ({
 }) => {
   await mockTiles(page)
   await page.route(MIRROR_1, (route) => route.abort())
-  await page.route(MIRROR_2, (route) => route.fulfill({ json: pilatFixture }))
+  // Le second miroir répond, mais pas tout de suite.
+  //
+  // Le message « nouvelle tentative » ne vit qu'**entre** l'échec du
+  // premier miroir et la réponse du second. Quand le second répondait
+  // instantanément, l'état intermédiaire pouvait naître et mourir entre
+  // deux sondages de Playwright : le test a rougi une fois dans une suite
+  // complète, jamais isolé, et n'a pas été reproductible en cinq essais.
+  // Un état transitoire ne se guette pas, il se retient.
+  const relachement: { ouvrir: (() => void) | null } = { ouvrir: null }
+  await page.route(MIRROR_2, async (route) => {
+    await new Promise<void>((resolve) => {
+      relachement.ouvrir = resolve
+    })
+    await route.fulfill({ json: pilatFixture })
+  })
   await page.goto('/')
 
   await page.getByTestId('zone-pilat').click()
   await expect(page.getByTestId('zone-loading')).toContainText(
     /nouvelle tentative/i,
   )
+  relachement.ouvrir?.()
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
