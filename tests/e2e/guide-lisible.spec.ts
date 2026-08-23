@@ -43,6 +43,16 @@ for (const { nom, viewport } of TELEPHONES) {
           message: 'le bouton de fermeture du guide n’est pas à l’écran',
         })
         .toBe(true)
+      // Et le guide dit encore ce que fait le produit. Sur un écran court,
+      // quelque chose doit défiler ; la première fois qu'on a réservé la
+      // bande d'attribution, ce sont les trois étapes qui ont cédé — leur
+      // rangée est tombée à zéro pixel, et aucun test ne l'a vu. Ce qui
+      // défile, ce sont les phrases du bas ; l'entrée en matière reste.
+      await expect
+        .poll(() => estAlEcran(page, 'guide-etape-1'), {
+          message: 'la première étape du guide n’est pas à l’écran',
+        })
+        .toBe(true)
 
       // Et il se laisse vraiment toucher : c'est ce que le recouvrement
       // empêchait. `click` échoue si un autre élément intercepte le geste,

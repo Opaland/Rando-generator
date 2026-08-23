@@ -6,7 +6,7 @@
      la taille de police, et un nombre figé serait faux quelque part
      (AUDIT_UX.md, constat U4). Le jeton porte la valeur de repli, employée
      avant la première mesure et si `ResizeObserver` manque. */
-  bottom: calc(12px + var(--hauteur-attribution));
+  bottom: calc(12px + var(--bande-attribution));
   z-index: var(--z-overlay-locate);
   display: grid;
   justify-items: end;

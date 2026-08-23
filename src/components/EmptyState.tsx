@@ -30,25 +30,48 @@ export function EmptyState() {
           ×
         </button>
         <h2 className={styles.title}>Bienvenue sur Sentiers</h2>
-        <ol className={styles.steps}>
-          <li>
-            <strong>Choisissez une zone</strong> dans le panneau (ou un ref
-            comme « GR 20 ») : les itinéraires balisés d’OpenStreetMap
-            s’affichent.
-          </li>
-          <li>
-            {/* Même correction qu'au dépôt de traces : le geste qui marche
-                partout passe devant (AUDIT_UX.md, constat U12). Une
-                correction de texte se fait sur toutes les surfaces, et
-                celle-ci en avait deux (CLAUDE.md §3). */}
-            <strong>Ajoutez vos fichiers GPX</strong> — vos sorties passées, ou
-            un parcours à faire dans « Mes itinéraires ».
-          </li>
-          <li>
-            <strong>Lisez votre progression</strong> : carte colorée,
-            pourcentages, kilomètres restants.
-          </li>
-        </ol>
+        {/*
+          Ce qui défile quand l'écran est court, et rien d'autre : le titre
+          reste en haut, « Voir un exemple » reste en bas. Voir le
+          commentaire de `.card` dans la feuille de style — c'est le seul
+          arrangement trouvé qui tienne à la fois U1 (le bouton atteignable
+          au premier lancement) et U4 (l'attribution jamais recouverte) sur
+          un 360 × 640.
+        */}
+        <div className={styles.corps}>
+          <ol className={styles.steps}>
+            {/* Repère de test : la première étape doit rester à l'écran.
+                Un premier essai de mise en page l'avait réduite à zéro
+                pixel sans qu'aucun test ne s'en aperçoive. */}
+            <li data-testid="guide-etape-1">
+              <strong>Choisissez une zone</strong> dans le panneau (ou un ref
+              comme « GR 20 ») : les itinéraires balisés d’OpenStreetMap
+              s’affichent.
+            </li>
+            <li>
+              {/* Même correction qu'au dépôt de traces : le geste qui marche
+                  partout passe devant (AUDIT_UX.md, constat U12). Une
+                  correction de texte se fait sur toutes les surfaces, et
+                  celle-ci en avait deux (CLAUDE.md §3). */}
+              <strong>Ajoutez vos fichiers GPX</strong> — vos sorties passées,
+              ou un parcours à faire dans « Mes itinéraires ».
+            </li>
+            <li>
+              <strong>Lisez votre progression</strong> : carte colorée,
+              pourcentages, kilomètres restants.
+            </li>
+          </ol>
+          <p className={styles.demoAide}>
+            Des boucles réelles de la Métropole de Lyon et trois sorties
+            fictives, pour voir à quoi ressemblent les chiffres. Rien n’est
+            enregistré.
+          </p>
+          <p className={styles.privacy}>
+            Vos traces sont lues et gardées dans votre navigateur : elles ne
+            partent nulle part. Les fonds de carte, eux, viennent de l’IGN —
+            «&nbsp;À propos&nbsp;» dit exactement qui reçoit quoi.
+          </p>
+        </div>
         <button
           type="button"
           className={`btn-primary ${styles.demo}`}
@@ -63,16 +86,6 @@ export function EmptyState() {
         >
           {prepare ? 'Préparation…' : 'Voir un exemple'}
         </button>
-        <p className={styles.demoAide}>
-          Des boucles réelles de la Métropole de Lyon et trois sorties
-          fictives, pour voir à quoi ressemblent les chiffres. Rien n’est
-          enregistré.
-        </p>
-        <p className={styles.privacy}>
-          Vos traces sont lues et gardées dans votre navigateur : elles ne
-          partent nulle part. Les fonds de carte, eux, viennent de l’IGN —
-          «&nbsp;À propos&nbsp;» dit exactement qui reçoit quoi.
-        </p>
       </div>
     </div>
   )

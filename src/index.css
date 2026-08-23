@@ -139,16 +139,20 @@
      l'attribution (AUDIT_UX.md, constat U4). Deux nombres séparés dérivent
      en silence : c'est déjà arrivé à `--hauteur-onglets`. */
   --hauteur-poignee: 52px;
-  /* Hauteur de la ligne d'attribution de la carte. Valeur de repli
-     seulement : `MapView` la remesure à l'exécution et l'écrase sur la
-     racine, parce qu'elle n'est pas constante — mesuré, 64 px sur un
-     téléphone de 390 px (trois lignes), 44 px entre 800 et 1280 (deux),
-     24 px à partir de 1600 (une), et davantage en gros texte.
+  /* Bande réservée en bas de la carte à la mention d'attribution : sa
+     hauteur propre, plus tout ce qui la pousse vers le haut (barre d'onglets
+     et poignée de la feuille sur téléphone).
 
-     Le repli retient la plus grande des trois : réserver trop de place coûte
-     quelques pixels, en recouvrir une mention exigée par l'ODbL et la
+     Valeur de repli seulement : `MapView` la remesure à l'exécution et
+     l'écrase sur la racine, parce que rien de tout cela n'est constant —
+     mesuré, l'attribution occupe 64 px sur un téléphone de 390 px (trois
+     lignes), 44 px entre 800 et 1280 (deux), 24 px à partir de 1600 (une),
+     et davantage en gros texte.
+
+     Le repli additionne le pire cas de chaque terme : réserver trop de place
+     coûte quelques pixels, en recouvrir une mention exigée par l'ODbL et la
      Licence Ouverte coûte autre chose. */
-  --hauteur-attribution: 64px;
+  --bande-attribution: calc(64px + var(--hauteur-onglets) + var(--hauteur-poignee));
   --z-onglets: 10; /* Prototype #171 : barre d'onglets, au-dessus de la
                       feuille — une navigation que la feuille dépliée
                       recouvrirait ne serait plus une navigation. */
