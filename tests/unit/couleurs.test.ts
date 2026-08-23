@@ -4,6 +4,12 @@ import {
   NETWORK_COLORS,
   POSITION_COLOR,
 } from '../../src/lib/networkDisplay.ts'
+import {
+  BLANC_BALISAGE,
+  ENCRE,
+  GRIS_VERT,
+  PAPIER,
+} from '../../src/lib/couleursPartagees.ts'
 import type { Network } from '../../src/core/types.ts'
 
 /**
@@ -47,4 +53,30 @@ describe('couleur de position', () => {
     const trouve = /--bleu-position:\s*([^;]+);/.exec(indexCss)
     expect(trouve?.[1]?.trim().toLowerCase()).toBe(POSITION_COLOR.toLowerCase())
   })
+})
+
+/**
+ * Les couleurs de base, ajoutées le 23/08.
+ *
+ * Elles traînaient recopiées à la main : six `#1e2b23`, trois `#faf7f2`,
+ * trois `#ffffff` dans `map/style.ts` et `summaryCard.ts`. La duplication
+ * JS/CSS est inévitable — `DESIGN_SYSTEM.md` explique pourquoi — mais la
+ * recopie **à l'intérieur du monde JS** ne l'était pas, et c'est elle qui
+ * laissait un `#c1272d` orphelin s'installer sans que rien ne le signale.
+ */
+const BASES: Record<string, string> = {
+  '--blanc-papier': PAPIER,
+  '--vert-noir': ENCRE,
+  '--gris-vert': GRIS_VERT,
+  '--blanc-balisage': BLANC_BALISAGE,
+}
+
+describe('couleurs de base', () => {
+  it.each(Object.entries(BASES))(
+    'la variable CSS %s vaut la constante partagée',
+    (variable, attendu) => {
+      const trouve = new RegExp(`${variable}:\\s*([^;]+);`).exec(indexCss)
+      expect(trouve?.[1]?.trim().toLowerCase()).toBe(attendu.toLowerCase())
+    },
+  )
 })

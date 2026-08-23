@@ -6,7 +6,7 @@ import {
   formatKm,
   formatPct,
 } from '../lib/format.ts'
-import { POI_LABELS, POI_OVERNIGHT, mentionEau } from '../lib/poiDisplay.ts'
+import { POI_COLORS, POI_LABELS, POI_OVERNIGHT, mentionEau } from '../lib/poiDisplay.ts'
 import { NETWORK_BADGES } from '../lib/networkDisplay.ts'
 import { elevationStats } from '../core/elevation.ts'
 import { itineraryCoords } from '../core/mapdata.ts'
@@ -482,6 +482,26 @@ export function ItineraryDetail() {
                       focusOn([poi.lon, poi.lat])
                     }}
                   >
+                    {/*
+                      La pastille de la liste est celle de la carte.
+
+                      Sans elle, le code couleur n'était lisible nulle part :
+                      douze teintes peintes par MapLibre, et aucune légende.
+                      Retrouver sur la carte le refuge qu'on vient de lire
+                      demandait de deviner. La couleur vient de la même
+                      constante que le marqueur, si bien que les deux ne
+                      peuvent pas diverger.
+
+                      `aria-hidden` : le libellé juste à côté dit déjà la
+                      catégorie. Une pastille annoncée en plus ne ferait que
+                      répéter, et une couleur ne se lit pas à voix haute.
+                    */}
+                    <span
+                      className={styles.poiPastille}
+                      style={{ background: POI_COLORS[poi.kind] }}
+                      aria-hidden="true"
+                      data-testid={`poi-pastille-${poi.kind}`}
+                    />
                     <span className={styles.poiKind}>{POI_LABELS[poi.kind]}</span>
                     <span className={styles.poiName}>
                       {poi.name ?? POI_LABELS[poi.kind]}

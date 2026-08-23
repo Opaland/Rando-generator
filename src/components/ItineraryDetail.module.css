@@ -223,6 +223,18 @@
   font-size: var(--texte-appui);
 }
 
+/* La pastille de la liste, exactement le marqueur de la carte : 12 px de
+   côté, liseré de papier comme sur la carte, pour que l'œil fasse le lien
+   sans qu'on ait à l'expliquer. */
+.poiPastille {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--blanc-papier);
+  box-shadow: 0 0 0 1px var(--gris-vert-clair);
+}
+
 .poiKind {
   flex: none;
   font-size: var(--texte-appui);

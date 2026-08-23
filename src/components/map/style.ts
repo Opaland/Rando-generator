@@ -8,6 +8,12 @@ import {
   NETWORK_COLORS,
   POSITION_COLOR,
 } from '../../lib/networkDisplay.ts'
+import {
+  BLANC_BALISAGE,
+  ENCRE,
+  GRIS_VERT,
+  PAPIER,
+} from '../../lib/couleursPartagees.ts'
 import type { PointOfInterest } from '../../core/types.ts'
 
 /**
@@ -40,7 +46,7 @@ const NETWORK_COLOR_MATCH: ExpressionSpecification = [
   NETWORK_COLORS.LOCAL,
   'PERSO',
   NETWORK_COLORS.PERSO,
-  '#5a6b5d',
+  GRIS_VERT,
 ]
 
 export function baseStyle(tiles: string, attribution: string): StyleSpecification {
@@ -75,7 +81,7 @@ export function baseStyle(tiles: string, attribution: string): StyleSpecificatio
         type: 'line',
         source: 'trails',
         paint: {
-          'line-color': '#ffffff',
+          'line-color': BLANC_BALISAGE,
           'line-width': 6,
           'line-opacity': 0.85,
         },
@@ -136,7 +142,7 @@ export function baseStyle(tiles: string, attribution: string): StyleSpecificatio
         source: 'trails',
         filter: ['==', ['get', 'itineraryId'], -1],
         paint: {
-          'line-color': '#1e2b23',
+          'line-color': ENCRE,
           'line-width': 6,
           'line-opacity': 0.35,
         },
@@ -147,7 +153,7 @@ export function baseStyle(tiles: string, attribution: string): StyleSpecificatio
         type: 'line',
         source: 'tracks',
         paint: {
-          'line-color': '#1e2b23',
+          'line-color': ENCRE,
           'line-width': 1.5,
           'line-opacity': 0.65,
           'line-dasharray': [1, 2],
@@ -161,7 +167,7 @@ export function baseStyle(tiles: string, attribution: string): StyleSpecificatio
           'circle-radius': 6,
           'circle-color': ['get', 'color'],
           'circle-stroke-width': 2,
-          'circle-stroke-color': '#faf7f2',
+          'circle-stroke-color': PAPIER,
         },
       },
       {
@@ -169,7 +175,7 @@ export function baseStyle(tiles: string, attribution: string): StyleSpecificatio
         type: 'line',
         source: 'draw',
         paint: {
-          'line-color': '#1e2b23',
+          'line-color': ENCRE,
           'line-width': 5,
           'line-opacity': 0.9,
         },
@@ -181,9 +187,9 @@ export function baseStyle(tiles: string, attribution: string): StyleSpecificatio
         source: 'draw-points',
         paint: {
           'circle-radius': 6,
-          'circle-color': '#faf7f2',
+          'circle-color': PAPIER,
           'circle-stroke-width': 3,
-          'circle-stroke-color': '#1e2b23',
+          'circle-stroke-color': ENCRE,
         },
       },
       {
@@ -194,9 +200,17 @@ export function baseStyle(tiles: string, attribution: string): StyleSpecificatio
         source: 'elevation-hover',
         paint: {
           'circle-radius': 6,
-          'circle-color': '#c1272d',
+          /*
+            Ce point valait `#c1272d` : un rouge qui ne correspondait à aucun
+            jeton, à huit unités de clarté du rouge de balisage. Personne ne
+            l'avait choisi contre lui — il avait été tapé, une fois, et
+            recopié nulle part ailleurs. Le repère du profil et le tracé
+            qu'il désigne sont le même objet vu deux fois : ils sont
+            maintenant de la même couleur.
+          */
+          'circle-color': NETWORK_COLORS.GR,
           'circle-stroke-width': 2.5,
-          'circle-stroke-color': '#ffffff',
+          'circle-stroke-color': BLANC_BALISAGE,
         },
       },
       {
@@ -208,7 +222,7 @@ export function baseStyle(tiles: string, attribution: string): StyleSpecificatio
           'circle-radius': 7,
           'circle-color': POSITION_COLOR,
           'circle-stroke-width': 3,
-          'circle-stroke-color': '#ffffff',
+          'circle-stroke-color': BLANC_BALISAGE,
         },
       },
     ],

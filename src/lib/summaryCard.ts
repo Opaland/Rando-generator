@@ -1,14 +1,14 @@
 import { formatKm } from './format.ts'
 import { NETWORK_COLORS } from './networkDisplay.ts'
+import { ENCRE, GRIS_VERT, PAPIER } from './couleursPartagees.ts'
 import type { Summary } from '../core/summary.ts'
 
 /** Format des cartes d'aperçu des réseaux sociaux (1,91:1). */
 export const CARD_WIDTH = 1_200
 export const CARD_HEIGHT = 630
 
-const FOND = '#faf7f2'
-const ENCRE = '#1e2b23'
-const GRIS = '#5a6b5d'
+const FOND = PAPIER
+const GRIS = GRIS_VERT
 
 const DISPLAY = "'Avenir Next', 'Futura', 'Trebuchet MS', system-ui, sans-serif"
 const SANS = "system-ui, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif"

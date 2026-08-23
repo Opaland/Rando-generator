@@ -177,6 +177,59 @@ remarquerait qu'en les regardant côte à côte, c'est-à-dire jamais.
 Si vous ajoutez une couleur partagée entre les deux mondes, ajoutez-la à ce
 test dans le même commit.
 
+Depuis le 23/08, les quatre couleurs de base — papier, encre, gris-vert,
+blanc de balisage — vivent dans `src/lib/couleursPartagees.ts` et sont
+gardées de la même façon. La duplication JS/CSS est inévitable ; la recopie
+**à l'intérieur** du monde JS ne l'était pas, et elle avait laissé six
+`#1e2b23`, trois `#faf7f2` et un `#c1272d` orphelin s'installer sans que rien
+ne le signale.
+
+---
+
+## Le code couleur des points d'intérêt
+
+Douze teintes posées une par une au fil des lots ne font pas un code. Mesuré
+le 23/08, l'assortiment portait trois défauts qu'aucune relecture n'attrape :
+
+- **`hut` valait exactement le rouge GR** — la pastille d'un refuge était bit
+  pour bit la couleur d'un tracé ;
+- **`water` valait exactement le bleu de la position** — un point d'eau et
+  « où suis-je », même point de 6 px, même couleur ;
+- **`ruins` et `marker` étaient à ΔE 11,7**, en dessous de ce qui se
+  distingue sur une pastille. Quatre autres paires étaient sous 20.
+
+La règle, désormais : **une famille, une teinte ; à l'intérieur d'une
+famille, la clarté dit l'engagement.**
+
+| Famille | Catégories | Teinte |
+|---|---|---|
+| Dormir | refuge gardé · gîte d'étape · couchage libre | violet, du foncé au clair |
+| Halte | pique-nique · abri météo | vert |
+| Relief | sommet · col · point de vue | terre et regard |
+| Eau | point d'eau | bleu profond |
+| Patrimoine | monument · vestige · croix ou borne | minéraux sourds |
+
+L'abri météo a changé de famille : il était au milieu des couchages, il est
+avec la halte. **On n'y dort pas** — la distinction que les issues #23 puis
+#161 ont défendue, et qui se lit maintenant sur la carte sans ouvrir la
+fiche.
+
+`tests/unit/poiCouleurs.test.ts` tient trois règles **calculées**, pas
+recopiées : contraste ≥ 3:1 contre le liseré, ΔE ≥ 20 de toute couleur de
+balisage et du bleu de position, ΔE ≥ 20 entre familles et ≥ 15 à
+l'intérieur d'une famille. Une teinte changée au jugement rougit si elle sort
+du code.
+
+Le seuil de ΔE 20 en CIE76 est posé au jugement, faute d'étude sur des
+pastilles de six pixels : c'est deux fois le seuil usuel de « différence
+nette » sur un aplat large, et exactement l'écart qui manquait à
+`ruins`/`marker`. Ce qu'il faudrait pour trancher mieux : montrer la carte à
+quelqu'un et lui demander de nommer deux pastilles voisines.
+
+Et le code se lit quelque part : la fiche détail porte la pastille à côté de
+chaque point. Sans elle, douze couleurs étaient peintes par MapLibre sans la
+moindre légende.
+
 ---
 
 ## Ce qu'on ne fera pas
