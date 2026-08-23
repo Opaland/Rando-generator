@@ -1,6 +1,6 @@
 # Revue du sprint de la nuit du 23/08/2026
 
-Sept PR (#232 à #238), toutes fusionnées et déployées. Cette revue regarde
+Douze PR (#232 à #243), toutes fusionnées et déployées. Cette revue regarde
 **l'application**, pas les diffs — c'est ce qui distingue une revue de
 sprint d'une relecture transversale, et c'est de cette distinction que sont
 sortis les trois défauts ci-dessous.
@@ -22,6 +22,11 @@ qui ne débouche sur rien reste une vérification, et ne pas l'écrire revient
 | #236 | Trois tests de la porte mesuraient la machine, pas le code |
 | #237 | Voir sa sortie pendant qu'on la marche |
 | #238 | Un état transitoire ne se guette pas, il se retient |
+| #239 | Cette revue, et la feuille de route remise à jour |
+| #240 | La poignée dit la sortie qu'on est en train de marcher |
+| #241 | Le bouton qui rend le panneau annonce la sortie, lui aussi |
+| #242 | Démarrer une sortie quitte la démonstration |
+| #243 | Dire que Sentiers enregistre une sortie, sur toutes les surfaces |
 
 **La boucle du produit est refermée.** Jusqu'à cette nuit, pour voir sa
 progression, il fallait enregistrer sa sortie dans Strava ou Garmin,
@@ -108,28 +113,50 @@ le temps d'observer.
 
 ---
 
-## Ce qui reste ouvert
+## Ce que la revue a laissé ouvert, et ce qu'elle en a fait
 
-Trois constats de cette revue n'ont **pas** été corrigés, et il vaut mieux
-les écrire que les redécouvrir :
+Trois constats étaient écrits ici comme non corrigés. **Deux l'ont été dans
+la foulée**, et le troisième reste ouvert délibérément.
 
-1. **La zone de dépôt de fichiers n'est plus visible sans faire défiler**
-   quand on ouvre « Sorties » sur un téléphone — conséquence assumée du
-   rangement (enregistrer passe devant importer), mais à mesurer.
-2. **Pas de témoin d'enregistrement sur grand écran avec le panneau
-   replié** : la barre d'onglets n'existe pas à cette largeur. Cas plus
-   étroit — il faut avoir replié le panneau soi-même — et une deuxième
-   surface à tenir ne s'ajoute pas sans décision.
-3. **La poignée de la feuille annonce toujours « Zones, traces et
-   réglages »** pendant qu'une sortie s'enregistre, alors qu'elle pourrait
-   dire la distance. C'est le libellé de U5 ; le changer touche un état déjà
-   arbitré.
+| constat | suite |
+|---|---|
+| la poignée annonce toujours « Zones, traces et réglages » pendant une sortie | corrigé (#240) : elle dit « 2,4 km · 42:00 » |
+| pas de témoin sur grand écran, panneau replié | corrigé (#241), et plus simplement que prévu — le bouton porte déjà la même phrase que la poignée, c'est devenu le même composant |
+| la zone de dépôt descendue sous le pli sur téléphone | **laissé ouvert** |
 
-Et **U11** (les émojis en couleur de la barre d'onglets) reste ouvert
-depuis l'audit UX : c'est un choix de design, pas un défaut mesuré. Il ne se
+Le dernier l'est pour une raison : faire défiler pour atteindre la deuxième
+section d'un onglet est le comportement attendu. Ce qui mérite d'être
+mesuré, c'est si quelqu'un cherche cette zone sans la trouver — et cela se
+mesure avec une personne, pas avec un test.
+
+**U11** (les émojis en couleur de la barre d'onglets) reste ouvert depuis
+l'audit UX : c'est un choix de design, pas un défaut mesuré. Il ne se
 tranche pas seul de nuit.
 
 ---
+
+## Deux défauts trouvés après coup, en cherchant ailleurs
+
+La revue avait regardé l'écran. Deux défauts de plus sont sortis en
+regardant **ce qui existait déjà**, plutôt que ce qui venait d'être écrit.
+
+**Démarrer une sortie n'éteignait pas la démonstration** (#242). L'issue
+#172 avait posé la règle et l'import d'un fichier la respectait — « la
+démonstration s'efface au premier vrai fichier ». Démarrer une sortie est
+plus réel encore, et laissait pourtant une vraie trace se ranger à côté de
+trois sorties fictives, pendant qu'un bandeau affirmait que rien n'était
+enregistré. Le défaut que #172 avait fermé, rouvert par une porte que
+personne n'avait pensé à fermer — parce qu'elle n'existait pas encore.
+
+**Cinq surfaces publiques décrivaient un produit qui ne sait que lire des
+fichiers** (#243). Dont « À propos », à qui manquait la seule chose qui
+compte vraiment : pendant un enregistrement, la position est relevée toutes
+les quelques secondes et écrite dans le navigateur. C'est la donnée la plus
+sensible que l'application ait jamais manipulée, et la page qui promet que
+rien ne sort ne la nommait pas.
+
+Une fonctionnalité neuve n'a pas de diff avec les règles qu'elle enfreint :
+elle ne les enfreint qu'en s'ajoutant à côté.
 
 ## Ce que ce sprint apprend
 
