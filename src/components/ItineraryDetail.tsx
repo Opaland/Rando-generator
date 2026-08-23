@@ -12,7 +12,11 @@ import { elevationStats } from '../core/elevation.ts'
 import { itineraryCoords } from '../core/mapdata.ts'
 import { situerPois } from '../core/poiDistance.ts'
 import { mentionPoisEmportes } from '../core/poisEmportes.ts'
-import { DEFAULT_STAGE_METERS, buildStages } from '../core/stages.ts'
+import {
+  DEFAULT_STAGE_METERS,
+  buildStages,
+  waypointsDesEtapes,
+} from '../core/stages.ts'
 import { assessItinerary } from '../core/dataQuality.ts'
 import {
   buildGpxDocument,
@@ -264,6 +268,32 @@ export function ItineraryDetail() {
             {Math.round(DEFAULT_STAGE_METERS / 1_000)} km — ce ne sont pas les
             étapes d’un topo-guide.
           </p>
+          {/*
+            Le plan sort de l'application (issue #161). Un seul fichier, à
+            waypoints : une montre en avale un, le tracé reste entier, et les
+            coupures se lisent dessus. Vingt fichiers demanderaient vingt
+            gestes et perdraient la continuité.
+          */}
+          <button
+            type="button"
+            className="btn-secondary"
+            data-testid="etapes-export"
+            onClick={() => {
+              const label = displayName(itin)
+              downloadTextFile(
+                gpxFilename(`${label} etapes`),
+                buildGpxDocument({
+                  name: `${label} — ${String(etapes.length)} étapes`,
+                  coords: itineraryCoords(itin),
+                  attribution: gpxAttributionFor(itin.network),
+                  createdAt: new Date().toISOString(),
+                  waypoints: waypointsDesEtapes(etapes),
+                }),
+              )
+            }}
+          >
+            Exporter le découpage en GPX
+          </button>
           <ol className={styles.stages} data-testid="detail-stages">
             {etapes.map((etape) => (
               <li key={etape.index}>

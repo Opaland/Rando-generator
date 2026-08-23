@@ -1,3 +1,5 @@
+import { formatKm } from '../lib/format.ts'
+import type { GpxWaypoint } from './gpxExport.ts'
 import type { Itinerary, LonLat, Sample, TrailWay } from './types.ts'
 import { STEP_METERS } from './types.ts'
 
@@ -217,4 +219,35 @@ export function buildStages(
     debut = fin - parEtape
   }
   return etapes
+}
+
+/**
+ * Les repères à poser sur le GPX d'un itinéraire découpé (issue #161).
+ *
+ * Camille prépare trois semaines sur la Grande Traversée des Alpes. Jusqu'ici
+ * seul l'itinéraire complet s'exportait : elle ne pouvait pas emporter **son
+ * découpage**, c'est-à-dire la seule chose qu'elle avait construite ici.
+ *
+ * Un départ, une fin par étape. La dernière s'appelle « Arrivée » et non
+ * « Fin d'étape » : ce n'est pas là qu'on dort, c'est là qu'on s'arrête — et
+ * une montre qui affiche vingt et un « Fin d'étape » n'aide personne à
+ * reconnaître le dernier.
+ */
+export function waypointsDesEtapes(stages: Stage[]): GpxWaypoint[] {
+  const premiere = stages[0]
+  if (!premiere) return []
+  const reperes: GpxWaypoint[] = [
+    { lon: premiere.start[0], lat: premiere.start[1], name: 'Départ' },
+  ]
+  for (const [rang, etape] of stages.entries()) {
+    const derniere = rang === stages.length - 1
+    reperes.push({
+      lon: etape.end[0],
+      lat: etape.end[1],
+      name: derniere
+        ? `Arrivée — ${formatKm(etape.endMeters)}`
+        : `Fin d’étape ${String(etape.index)} — ${formatKm(etape.endMeters)}`,
+    })
+  }
+  return reperes
 }

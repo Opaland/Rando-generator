@@ -42,12 +42,26 @@ export function gpxAttributionFor(network: Network): GpxAttribution | null {
   }
 }
 
+/** Un repère posé sur le tracé : une coupure d'étape, par exemple. */
+export interface GpxWaypoint {
+  lon: number
+  lat: number
+  name: string
+}
+
 export interface GpxExportOptions {
   name: string
   coords: LonLat[]
   attribution: GpxAttribution | null
   /** Horodatage ISO — injecté pour garder la fonction pure. */
   createdAt: string
+  /**
+   * Repères à poser sur le tracé (issue #161).
+   *
+   * Un GPX à waypoints plutôt qu'un fichier par étape : une montre en avale
+   * un seul, le tracé reste entier, et les coupures se lisent dessus.
+   */
+  waypoints?: GpxWaypoint[]
 }
 
 function escapeXml(text: string): string {
@@ -82,13 +96,28 @@ export function buildGpxDocument(options: GpxExportOptions): string {
     </copyright>\n`
     : ''
 
+  /*
+    L'ordre est imposé par le schéma GPX 1.1 : metadata, wpt, rte, trk. Un
+    fichier qui l'enfreint est refusé par certaines montres — sans message,
+    ce qui est le pire des cas sur le terrain.
+  */
+  const reperes = (options.waypoints ?? [])
+    .map(
+      (w) =>
+        `  <wpt lat="${w.lat.toFixed(7)}" lon="${w.lon.toFixed(7)}">
+    <name>${escapeXml(w.name)}</name>
+  </wpt>`,
+    )
+    .join('\n')
+  const blocReperes = reperes === '' ? '' : `${reperes}\n`
+
   return `<?xml version="1.0" encoding="UTF-8"?>
 <gpx version="1.1" creator="Sentiers" xmlns="http://www.topografix.com/GPX/1/1">
   <metadata>
     <name>${safeName}</name>
 ${copyright}    <time>${escapeXml(createdAt)}</time>
   </metadata>
-  <trk>
+${blocReperes}  <trk>
     <name>${safeName}</name>
     <trkseg>
 ${points}
