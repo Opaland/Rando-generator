@@ -1,4 +1,5 @@
 import {
+  EARTH_RADIUS_METERS,
   cellIndices,
   cellKeyFromIndices,
   distanceMeters,
@@ -12,7 +13,7 @@ import type {
   Network,
   Sample,
 } from './types.ts'
-import { STEP_METERS } from './types.ts'
+import { CELL_SIZE_DEG, STEP_METERS } from './types.ts'
 
 /**
  * Le matching répond à une seule question : quelle part d'un itinéraire
@@ -159,12 +160,59 @@ function buildTrackIndex(points: LonLat[]): TrackIndex {
   return index
 }
 
-/** Distance du point à la trace, en ne testant que les 9 cellules voisines. */
-function distanceToTrack(index: TrackIndex, point: LonLat): number {
+/**
+ * Combien de cellules balayer en longitude pour couvrir la tolérance
+ * (issue #170).
+ *
+ * Le hachage découpe l'espace en carrés **de degrés**, et un degré de
+ * longitude rétrécit avec la latitude : la cellule fait 118 m de large à
+ * 45°, et 17 m à 84°. Balayer les huit voisines suffisait donc en France et
+ * plus du tout au-delà — mesuré, trace nord-sud et passage à 35 m sous une
+ * tolérance de 100 m : 100 % jusqu'à 80°, puis **0 %** à 82° ou 84° selon
+ * l'endroit où la trace tombe dans la grille. Deux randonnées identiques
+ * séparées de 80 m, l'une créditée et l'autre non, sans que rien ne le dise.
+ *
+ * Ce rayon n'est pas un réglage : il se **dérive** de la largeur d'une
+ * cellule à cette latitude et de la tolérance demandée. À 45°, il vaut 1 —
+ * la France ne change pas de comportement et ne paie rien.
+ *
+ * La borne finale n'est pas une coquetterie. `Math.cos(Math.PI / 2)` vaut
+ * 6,1 × 10⁻¹⁷ et non zéro : sans elle, le rayon calculé au pôle atteindrait
+ * le million de cellules et la boucle ne rendrait jamais la main. Le même
+ * piège avait fait tourner un test dix minutes dans `corridor.ts`.
+ */
+export function rayonCellules(lat: number, toleranceMeters: number): number {
+  const cotes = Math.ceil(360 / CELL_SIZE_DEG)
+  const largeurCellule =
+    EARTH_RADIUS_METERS *
+    (Math.PI / 180) *
+    Math.cos((lat * Math.PI) / 180) *
+    CELL_SIZE_DEG
+  if (!(largeurCellule > 0)) return cotes
+  return Math.min(cotes, Math.max(1, Math.ceil(toleranceMeters / largeurCellule)))
+}
+
+/**
+ * Distance du point à la trace, en ne testant que les cellules qui peuvent
+ * contenir un passage à portée de la tolérance.
+ *
+ * Le rayon vaut 1 aux latitudes françaises — soit exactement les neuf
+ * cellules d'avant — et s'élargit là où les cellules rétrécissent.
+ */
+function distanceToTrack(
+  index: TrackIndex,
+  point: LonLat,
+  toleranceMeters: number,
+): number {
   const [cx, cy] = cellIndices(point[0], point[1])
+  const rayonX = rayonCellules(point[1], toleranceMeters)
+  // En latitude, une cellule vaut 167 m partout : le calcul est celui de la
+  // longitude à la latitude zéro, et il ne dépend pas du point — hors de la
+  // boucle, donc.
+  const rayonY = rayonCellules(0, toleranceMeters)
   let best = Infinity
-  for (let dx = -1; dx <= 1; dx++) {
-    for (let dy = -1; dy <= 1; dy++) {
+  for (let dx = -rayonX; dx <= rayonX; dx++) {
+    for (let dy = -rayonY; dy <= rayonY; dy++) {
       const bucket = index.get(cellKeyFromIndices(cx + dx, cy + dy))
       if (!bucket) continue
       for (const segment of bucket) {
@@ -183,7 +231,11 @@ function matchSamples(
   toleranceMeters: number,
 ): void {
   for (const sample of samples) {
-    const distance = distanceToTrack(index, [sample.lon, sample.lat])
+    const distance = distanceToTrack(
+      index,
+      [sample.lon, sample.lat],
+      toleranceMeters,
+    )
     sample.distanceMeters = distance
     sample.done = distance <= toleranceMeters
   }
