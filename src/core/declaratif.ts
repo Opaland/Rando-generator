@@ -1,4 +1,4 @@
-import { displayName, formatPct } from '../lib/format.ts'
+import { displayName, formatKm, formatPct } from '../lib/format.ts'
 import type { Itinerary, Network } from './types.ts'
 
 /**
@@ -167,4 +167,56 @@ export function listerDeclarations(
     if (b.date === null) return -1
     return a.date < b.date ? 1 : -1
   })
+}
+
+/**
+ * Ce que le tableau de bord a comme sujet (revue globale du 23/08).
+ *
+ * Sylvie coche quinze PR depuis leur fiche, et son bilan affichait
+ * « Aucune sortie importée pour l'instant » — une phrase qui contredisait ce
+ * qu'elle venait de faire. Elle était juste la veille : c'est #158 qui l'a
+ * rendue fausse **sans la toucher**, parce qu'elle testait `traces === 0`,
+ * et que Sylvie n'aura jamais de trace. C'est tout son cas.
+ *
+ * La bonne question n'est pas « a-t-elle importé une trace ? » mais
+ * « **a-t-elle fait quelque chose ?** ». Elle est nommée ici parce que trois
+ * endroits pourraient vouloir la poser, et que la recopier est le mode
+ * d'échec de CLAUDE.md §4.
+ */
+export type EtatBilan = 'vide' | 'declare' | 'mesure'
+
+export function etatDuBilan(compte: {
+  traces: number
+  declarations: number
+}): EtatBilan {
+  if (compte.traces > 0) return 'mesure'
+  return compte.declarations > 0 ? 'declare' : 'vide'
+}
+
+/**
+ * La phrase sous le grand pourcentage.
+ *
+ * Pour Sylvie, le zéro reste vrai : c'est le pourcentage **mesuré**, et #158
+ * interdit de le gonfler avec du déclaratif. Ce qui change, c'est qu'on
+ * cesse de lui dire qu'elle n'a rien fait — et qu'on lui dit pourquoi son
+ * chiffre est à zéro, ce qui est autre chose.
+ */
+export function libelleSousLeChiffre(
+  etat: EtatBilan,
+  global: { doneMeters: number; totalMeters: number },
+): string {
+  if (etat === 'vide') {
+    return `Aucune sortie importée pour l’instant — ${formatKm(
+      global.totalMeters,
+    )} à découvrir dans cette zone.`
+  }
+  if (etat === 'declare') {
+    return (
+      'Ce pourcentage ne compte que les traces GPX, et vous n’en avez pas ' +
+      'encore importé. Vos itinéraires cochés à la main sont plus bas.'
+    )
+  }
+  return `${formatKm(global.doneMeters)} parcourus · ${formatKm(
+    Math.max(0, global.totalMeters - global.doneMeters),
+  )} restants`
 }

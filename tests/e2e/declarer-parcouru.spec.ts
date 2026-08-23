@@ -208,3 +208,36 @@ test('les déclarations ont leur section dans « Mes sorties »', async ({
   await section.getByRole('button', { name: /Confirmer/ }).click()
   await expect(page.getByTestId('declarations')).toHaveCount(0)
 })
+
+/**
+ * Revue globale du 23/08 — le zéro de Sylvie.
+ *
+ * Sans aucune trace GPX, cocher un itinéraire ne doit plus produire
+ * « Aucune sortie importée pour l'instant » : la phrase contredirait ce que
+ * la personne vient de faire. Le pourcentage, lui, reste à zéro — il est le
+ * pourcentage **mesuré**, et #158 interdit de le gonfler.
+ */
+test('sans trace, cocher change ce qu’on lit sous le zéro', async ({
+  page,
+}) => {
+  await mockExternalNetwork(page)
+  await page.goto('/')
+  await chargerLaZone(page)
+
+  // Avant : personne n'a rien fait, et la phrase le dit à juste titre.
+  await expect(page.getByTestId('global-vide')).toBeVisible()
+
+  await ouvrirLaFiche(page)
+  await page.getByTestId('declare-ouvrir').click()
+  await page.getByTestId('declare-valider').click()
+  await expect(page.getByTestId('declare-etat')).toBeVisible()
+  await page.getByTestId('itinerary-detail-close').click()
+
+  // Après : le zéro tient, la phrase change.
+  await expect(page.getByTestId('global-pct')).toHaveText('0 %')
+  await expect(page.getByTestId('global-vide')).toHaveCount(0)
+  const sousLeChiffre = page.getByTestId('global-declare-etat')
+  await expect(sousLeChiffre).toBeVisible()
+  await expect(sousLeChiffre).toContainText('cochés à la main')
+  await expect(sousLeChiffre).not.toContainText('Aucune sortie')
+})

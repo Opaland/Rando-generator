@@ -141,3 +141,29 @@ describe('la page et le service worker parlent la même langue', () => {
     expect(swSource).toMatch(/télécharg/i)
   })
 })
+
+/**
+ * Trouvaille de la revue globale du 23/08.
+ *
+ * `FOND_DE_REPLI` était exporté avec le commentaire « Exporté pour les
+ * tests » — alors qu'aucun test ne s'en servait. Le commentaire justifiait
+ * une existence, et cette justification était fausse le jour même où elle a
+ * été écrite.
+ *
+ * Ce que la constante disait valait pourtant d'être tenu : **le repli
+ * OpenStreetMap n'est pas préchargé.** Il sert quand l'IGN ne répond pas,
+ * c'est-à-dire dans un cas de réseau — et on ne prépare pas une panne de
+ * réseau en doublant un téléchargement fait pour s'en passer. Ce test-là le
+ * tient, ce que la constante ne faisait pas.
+ */
+describe('ce qui n’est pas emporté (revue globale du 23/08)', () => {
+  it('n’emporte pas le fond de repli OpenStreetMap', () => {
+    const res = ressourcesDeLaRandonnee(TRACE, {
+      zooms: [14],
+      rayonMetres: 200,
+    })
+    const hote = new URL(OSM_TILES.replace(/\{[zxy]\}/g, '1')).hostname
+    expect(res.tuiles.some((url) => url.includes(hote))).toBe(false)
+    expect(res.tuiles.length).toBeGreaterThan(0)
+  })
+})

@@ -5,7 +5,11 @@ import { displayName, formatKm, formatPct } from '../lib/format.ts'
 import { useCountUp } from '../lib/useCountUp.ts'
 import { isCompleted } from '../core/milestones.ts'
 import { tracesHorsZone } from '../core/couverture.ts'
-import { chiffresDeCompletion } from '../core/declaratif.ts'
+import {
+  chiffresDeCompletion,
+  etatDuBilan,
+  libelleSousLeChiffre,
+} from '../core/declaratif.ts'
 import { buildSummary, summaryFilename } from '../core/summary.ts'
 import { summaryCardBlob } from '../lib/summaryCard.ts'
 import { downloadBlob } from '../lib/download.ts'
@@ -105,6 +109,10 @@ export function Dashboard() {
   // `global` ne vaut que si `matching` vaut : la mesure déjà faite sur chaque
   // itinéraire se lit donc sans détour, et c'est elle qui empêche de compter
   // deux fois un sentier parcouru à moitié puis coché.
+  const etatBilan = etatDuBilan({
+    traces: tracks.length,
+    declarations: parcoursDeclares.length,
+  })
   const chiffres =
     matching && global
       ? chiffresDeCompletion(global, itineraries, parcoursDeclares, {
@@ -154,19 +162,21 @@ export function Dashboard() {
           <p className={styles.bigPct} data-testid="global-pct">
             {formatPct(pctAnime)}
           </p>
-          {tracks.length === 0 ? (
-            // Un zéro nu se lit comme un calcul en panne. Il dit ici d'où il
-            // vient, et ce qu'il y a à gagner (issue #172).
-            <p className={styles.globalDetail} data-testid="global-vide">
-              Aucune sortie importée pour l’instant —{' '}
-              {formatKm(global.totalMeters)} à découvrir dans cette zone.
-            </p>
-          ) : (
-            <p className={styles.globalDetail} data-testid="global-km">
-              {formatKm(global.doneMeters)} parcourus ·{' '}
-              {formatKm(global.totalMeters - global.doneMeters)} restants
-            </p>
-          )}
+          {/*
+            Un zéro nu se lit comme un calcul en panne : il dit ici d'où il
+            vient (issue #172). Depuis #158, « d'où il vient » a trois
+            réponses et non deux — quelqu'un qui n'a coché que des
+            déclarations n'a pas « rien fait », et le lui dire était faux
+            (revue globale du 23/08).
+          */}
+          <p
+            className={styles.globalDetail}
+            data-testid={
+              etatBilan === 'mesure' ? 'global-km' : `global-${etatBilan === 'declare' ? 'declare-etat' : 'vide'}`
+            }
+          >
+            {libelleSousLeChiffre(etatBilan, global)}
+          </p>
           {chiffres && chiffres.pctDeclare > 0 && (
             <p className={styles.declare} data-testid="global-declare">
               <strong>{formatPct(chiffres.pctDeclare)} déclarés</strong> en

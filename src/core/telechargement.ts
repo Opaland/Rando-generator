@@ -1,4 +1,4 @@
-import { IGN_TILES, OSM_TILES } from '../components/map/style.ts'
+import { IGN_TILES } from '../components/map/style.ts'
 import {
   tuilesDuCorridor,
   urlDeTuile,
@@ -91,9 +91,6 @@ export function ressourcesDeLaRandonnee(
     altimetrie: buildElevationLineUrl(coords),
   }
 }
-
-/** Exporté pour les tests : le repli, qui n'est pas préchargé. */
-export const FOND_DE_REPLI = OSM_TILES
 
 /**
  * Les zooms où l'on lit un sentier, et pas au-delà.
