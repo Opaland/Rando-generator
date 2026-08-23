@@ -159,9 +159,16 @@ L'application s'installe et se relance **sans réseau** une fois visitée
   « Réglages » affiche la place occupée, et vider les données du site la
   rend.
 
+  Les **points d'intérêt** suivent, par un autre chemin : Overpass répond en
+  `POST`, que le Cache API ne sait pas ranger, donc ils sont écrits dans
+  IndexedDB. Hors connexion la fiche les affiche en disant de quand ils
+  datent — une tuile périmée reste juste, un point d'eau peut avoir été
+  supprimé ou tari.
+
 Ne fonctionnent **pas** hors connexion, et ne sont pas présentés comme tels :
 charger une nouvelle zone (Overpass), et le relief ou les points d'intérêt
-d'un itinéraire **qu'on n'a pas emporté**. Rien n'est gardé pour avoir été
+d'un itinéraire **qu'on n'a pas emporté** — la fiche dit alors que ces points
+sont indisponibles, elle ne conclut pas qu'il n'y en a pas. Rien n'est gardé pour avoir été
 regardé : un relief ou des POI périmés ne valent pas mieux qu'un message
 clair. Ce qui est gardé l'a été sur demande. Un bandeau l'explique dès que la
 connexion tombe.

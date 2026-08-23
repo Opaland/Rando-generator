@@ -29,6 +29,7 @@ describe('openSentiersDb', () => {
       'customItineraries',
       'enregistrement',
       'enregistrementPoints',
+      'poisEmportes',
       'settings',
       'tracks',
       'zones',
@@ -213,5 +214,44 @@ describe('zoneUtilisable', () => {
     expect(zoneUtilisable({ ...zone, schema: SCHEMA_ZONE + 1 }, bientot)).toBe(
       false,
     )
+  })
+})
+
+/**
+ * Les points d'intérêt emportés (issue #153, quatrième pierre).
+ *
+ * Ils sont ici et non dans un cache du service worker parce qu'Overpass
+ * répond en `POST`, et que le Cache API ne sait pas ranger une requête
+ * `POST`. Une clef par itinéraire : on emporte une randonnée, pas une
+ * région.
+ */
+describe('poisEmportes', () => {
+  const reserve = {
+    itineraryId: 42,
+    pois: [],
+    recuperesLe: '2026-08-23T10:00:00.000Z',
+  }
+
+  it('rend ce qu’on y a rangé', async () => {
+    await db.ecrirePoisEmportes(reserve)
+    await expect(db.lirePoisEmportes(42)).resolves.toEqual(reserve)
+  })
+
+  it('ne rend rien pour un itinéraire jamais emporté', async () => {
+    await expect(db.lirePoisEmportes(7)).resolves.toBeUndefined()
+  })
+
+  /** Réemporter remplace : deux réserves pour un même sentier ne veulent rien dire. */
+  it('remplace la réserve précédente au lieu de l’empiler', async () => {
+    await db.ecrirePoisEmportes(reserve)
+    await db.ecrirePoisEmportes({ ...reserve, recuperesLe: '2026-08-24T10:00:00.000Z' })
+    const relue = await db.lirePoisEmportes(42)
+    expect(relue?.recuperesLe).toBe('2026-08-24T10:00:00.000Z')
+  })
+
+  it('oublie sur demande', async () => {
+    await db.ecrirePoisEmportes(reserve)
+    await db.effacerPoisEmportes(42)
+    await expect(db.lirePoisEmportes(42)).resolves.toBeUndefined()
   })
 })

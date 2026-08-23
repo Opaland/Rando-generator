@@ -11,6 +11,7 @@ import { NETWORK_BADGES } from '../lib/networkDisplay.ts'
 import { elevationStats } from '../core/elevation.ts'
 import { itineraryCoords } from '../core/mapdata.ts'
 import { situerPois } from '../core/poiDistance.ts'
+import { mentionPoisEmportes } from '../core/poisEmportes.ts'
 import { DEFAULT_STAGE_METERS, buildStages } from '../core/stages.ts'
 import { assessItinerary } from '../core/dataQuality.ts'
 import {
@@ -43,6 +44,8 @@ export function ItineraryDetail() {
   const elevationLoading = useAppStore((s) => s.elevationLoading)
   const poisBruts = useAppStore((s) => s.pois)
   const poisLoading = useAppStore((s) => s.poisLoading)
+  const poisSource = useAppStore((s) => s.poisSource)
+  const poisRecuperesLe = useAppStore((s) => s.poisRecuperesLe)
   const view3D = useAppStore((s) => s.view3D)
   const closeItineraryDetail = useAppStore((s) => s.closeItineraryDetail)
   const toggleView3D = useAppStore((s) => s.toggleView3D)
@@ -68,6 +71,13 @@ export function ItineraryDetail() {
   // on affiche ce qu'ils coûtent — un aller-retour, pas une distance à vol
   // d'oiseau.
   const pois = situerPois(poisBruts, itineraryCoords(itin))
+  // Un point d'eau emporté il y a trois mois peut avoir été supprimé ou
+  // tari : le servir sans le dire serait la promesse que le service worker
+  // refuse de faire depuis toujours (issue #153).
+  const mentionEmport = mentionPoisEmportes(
+    { pois: poisBruts, source: poisSource, recuperesLe: poisRecuperesLe },
+    new Date(),
+  )
 
   const stats = elevationProfile ? elevationStats(elevationProfile.elevations) : null
   // Pente maximale (issue #179) : Farid, en fauteuil, et Nadia et Yann avec
@@ -171,7 +181,11 @@ export function ItineraryDetail() {
         </button>
         {/* `key` : changer d'itinéraire remonte le bouton, ce qui recalcule
             son corridor et oublie le téléchargement précédent. */}
-        <BoutonEmporter key={detailItineraryId} coords={itineraryCoords(itin)} />
+        <BoutonEmporter
+          key={detailItineraryId}
+          coords={itineraryCoords(itin)}
+          itineraryId={detailItineraryId}
+        />
       </div>
 
       {itin.details && (
@@ -322,8 +336,17 @@ export function ItineraryDetail() {
             Recherche autour du tracé…
           </p>
         )}
+        {mentionEmport && (
+          <p className={styles.hint} data-testid="poi-emportes">
+            {mentionEmport}
+          </p>
+        )}
         {!poisLoading && pois.length === 0 && (
-          <p className={styles.hint}>Aucun point d’intérêt répertorié à proximité.</p>
+          <p className={styles.hint}>
+            {poisSource === 'aucune'
+              ? 'Points d’intérêt indisponibles : il faut du réseau, ou avoir emporté cette randonnée.'
+              : 'Aucun point d’intérêt répertorié à proximité.'}
+          </p>
         )}
         {pois.length > 0 && (
           <p className={styles.hint}>

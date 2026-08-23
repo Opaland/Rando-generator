@@ -302,17 +302,36 @@ export function parsePoiResponse(data: unknown): PointOfInterest[] {
 }
 
 /**
+ * Récupère les points d'intérêt autour d'un tracé, ou `null` si la demande
+ * n'a pas abouti.
+ *
+ * La distinction compte depuis qu'on peut emporter une randonnée (issue
+ * #153) : `[]` veut dire « Overpass a répondu, il n'y a rien ici », `null`
+ * veut dire « on n'a pas pu demander ». Les confondre — ce que faisait
+ * `fetchPois` — ferait passer une panne de réseau pour un désert, et
+ * priverait de sa réserve quelqu'un qui l'a constituée pour ce moment-là.
+ */
+export async function fetchPoisOuEchec(
+  coords: LonLat[],
+  options: FetchOverpassOptions = {},
+): Promise<PointOfInterest[] | null> {
+  try {
+    const data = await fetchOverpass(buildPoiQuery(coords), options)
+    return parsePoiResponse(data)
+  } catch {
+    return null
+  }
+}
+
+/**
  * Récupère les points d'intérêt autour d'un tracé. Ne lève jamais d'erreur :
  * un POI est un bonus, jamais bloquant — en cas d'échec, tableau vide.
+ *
+ * Garde son nom là où l'appelant n'a rien à décider d'un échec, et délègue.
  */
 export async function fetchPois(
   coords: LonLat[],
   options: FetchOverpassOptions = {},
 ): Promise<PointOfInterest[]> {
-  try {
-    const data = await fetchOverpass(buildPoiQuery(coords), options)
-    return parsePoiResponse(data)
-  } catch {
-    return []
-  }
+  return (await fetchPoisOuEchec(coords, options)) ?? []
 }

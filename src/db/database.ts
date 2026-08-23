@@ -2,6 +2,7 @@ import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
 import type { Itinerary, Track } from '../core/types.ts'
 import type { PointBrut } from '../core/recorder.ts'
 import type { EnteteEnregistrement } from '../core/reprise.ts'
+import type { PoisEmportes } from '../core/poisEmportes.ts'
 
 /** Erreur de persistance, message affichable tel quel à l'utilisateur. */
 export class DbError extends Error {
@@ -12,7 +13,7 @@ export class DbError extends Error {
 }
 
 export const DB_NAME = 'sentiers'
-export const DB_VERSION = 3
+export const DB_VERSION = 4
 
 /** Durée de vie du cache des tracés : 30 jours. */
 export const CACHE_TTL_MS = 30 * 24 * 3600 * 1000
@@ -88,6 +89,15 @@ interface SentiersSchema extends DBSchema {
    * c'est-à-dire précisément quand la batterie est la plus basse.
    */
   enregistrementPoints: { key: number; value: PointBrut }
+  /**
+   * Les points d'intérêt emportés avec une randonnée (issue #153).
+   *
+   * Ils sont ici et non dans un cache du service worker parce qu'Overpass
+   * répond en `POST`, et que le Cache API ne sait pas ranger une requête
+   * `POST` : c'est vérifié, pas supposé. Une clef par itinéraire — on
+   * emporte une randonnée, pas une région.
+   */
+  poisEmportes: { key: number; value: PoisEmportes }
 }
 
 /**
@@ -129,6 +139,12 @@ export interface SentiersDb {
   compterPointsEnregistres(): Promise<number>
   lirePointsEnregistres(): Promise<PointBrut[]>
   effacerEnregistrement(): Promise<void>
+  /** Range les points d'intérêt emportés avec une randonnée (issue #153). */
+  ecrirePoisEmportes(pois: PoisEmportes): Promise<void>
+  /** Ce qu'on avait emporté pour cet itinéraire, ou `undefined`. */
+  lirePoisEmportes(itineraryId: number): Promise<PoisEmportes | undefined>
+  /** Oublie ce qu'on avait emporté — quand l'itinéraire disparaît. */
+  effacerPoisEmportes(itineraryId: number): Promise<void>
 }
 
 export interface OpenDbOptions {
@@ -176,6 +192,11 @@ export async function openSentiersDb(
           database.createObjectStore('enregistrement')
           database.createObjectStore('enregistrementPoints', {
             autoIncrement: true,
+          })
+        }
+        if (oldVersion < 4) {
+          database.createObjectStore('poisEmportes', {
+            keyPath: 'itineraryId',
           })
         }
       },
@@ -250,6 +271,15 @@ export async function openSentiersDb(
       // `getAll` sur une clef auto-incrémentée rend l'ordre d'insertion :
       // c'est l'ordre du sentier, et c'est celui qu'attend le matching.
       return raw.getAll('enregistrementPoints')
+    },
+    async ecrirePoisEmportes(pois) {
+      await raw.put('poisEmportes', pois)
+    },
+    lirePoisEmportes(itineraryId) {
+      return raw.get('poisEmportes', itineraryId)
+    },
+    async effacerPoisEmportes(itineraryId) {
+      await raw.delete('poisEmportes', itineraryId)
     },
     async effacerEnregistrement() {
       const tx = raw.transaction(
