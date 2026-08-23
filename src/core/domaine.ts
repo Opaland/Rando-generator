@@ -20,13 +20,13 @@ import type { LonLat } from './types.ts'
  * refuse, c'est ce qu'on ne sait pas mesurer : franchir l'antiméridien, et
  * rien d'autre.
  *
- * Ce que cette borne ne couvre pas, et qu'il faut savoir : l'issue signale
- * aussi que le hachage spatial dégénère près des pôles, les cellules de
- * degrés y devenant trop étroites en longitude. Je n'ai pas su l'exhiber par
- * le chemin public du matching — trois sondes à 45, 51, 55, 60, 70 et 80° de
- * latitude rendent toutes 100 %. Faute de l'avoir reproduit, je ne pose pas
- * de borne dessus : une limite tirée d'une algèbre que je n'ai pas vérifiée
- * serait le nombre inventé que CLAUDE.md §2 interdit.
+ * Le second effet signalé par l'issue — le hachage spatial qui dégénère en
+ * haute latitude — n'a pas eu besoin d'une borne : il a été **corrigé**. Le
+ * rayon de balayage se dérive désormais de la tolérance et de la largeur
+ * d'une cellule (`rayonCellules`, dans `matching.ts`). Il avait fallu trois
+ * sondes pour l'exhiber : les deux premières décalaient la trace le long de
+ * son propre axe, où elle traverse les mêmes cellules et où rien ne peut se
+ * voir.
  */
 
 /**

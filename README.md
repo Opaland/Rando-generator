@@ -154,6 +154,13 @@ Les quatre chemins par lesquels des coordonnées entrent portent la même garde,
 par la même fonction nommée : les lecteurs GPX, TCX et FIT, et la restauration
 de sauvegarde.
 
+Le hachage spatial du matching, lui, a été corrigé plutôt que borné : il
+découpe l'espace en carrés **de degrés**, et une cellule qui fait 118 m de
+large à 45° n'en fait plus que 17 à 84°. Le balayage se dérive maintenant de
+la tolérance demandée, au lieu d'être figé à neuf cellules. Aux latitudes
+françaises il vaut exactement ce qu'il valait — la correction ne s'y paie
+rien.
+
 ### Hors connexion
 
 L'application s'installe et se relance **sans réseau** une fois visitée
