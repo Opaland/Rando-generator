@@ -80,11 +80,31 @@ test('la bascule de miroir affiche un message de nouvelle tentative', async ({
   // deux sondages de Playwright : le test a rougi une fois dans une suite
   // complète, jamais isolé, et n'a pas été reproductible en cinq essais.
   // Un état transitoire ne se guette pas, il se retient.
-  const relachement: { ouvrir: (() => void) | null } = { ouvrir: null }
+  /*
+    Le relâchement porte un drapeau, et pas seulement une fonction.
+
+    La version précédente posait `ouvrir` **depuis le gestionnaire de
+    route**, et le test l'appelait ensuite avec `?.()`. Si le gestionnaire
+    n'avait pas encore tourné — le message « nouvelle tentative » naît quand
+    l'application lance la requête, pas quand Playwright l'intercepte —
+    `ouvrir` valait encore `null`, l'appel ne faisait rien en silence, et le
+    second miroir restait bloqué à jamais. Mesuré : un échec sur la suite
+    complète du 23/08, jamais reproduit isolément en trois essais.
+
+    C'est la même faute que dans `fermerLeGuide` le matin même : un test qui
+    suppose un ordre que rien ne garantit. Le drapeau supprime l'ordre au
+    lieu de parier dessus.
+  */
+  const relachement: { demande: boolean; ouvrir: (() => void) | null } = {
+    demande: false,
+    ouvrir: null,
+  }
   await page.route(MIRROR_2, async (route) => {
-    await new Promise<void>((resolve) => {
-      relachement.ouvrir = resolve
-    })
+    if (!relachement.demande) {
+      await new Promise<void>((resolve) => {
+        relachement.ouvrir = resolve
+      })
+    }
     await route.fulfill({ json: pilatFixture })
   })
   await page.goto('/')
@@ -93,6 +113,7 @@ test('la bascule de miroir affiche un message de nouvelle tentative', async ({
   await expect(page.getByTestId('zone-loading')).toContainText(
     /nouvelle tentative/i,
   )
+  relachement.demande = true
   relachement.ouvrir?.()
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,

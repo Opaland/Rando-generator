@@ -3,6 +3,7 @@ import {
   GeoJsonError,
   looksLikeGeoJson,
   parseGeoJsonTrails,
+  sourceDeclaree,
 } from '../../src/core/geojson.ts'
 
 /**
@@ -195,5 +196,94 @@ describe('parseGeoJsonTrails', () => {
   it('rend une liste vide pour une collection sans ligne', () => {
     // Le fichier est valide, il ne contient simplement aucun sentier.
     expect(parseGeoJsonTrails(collection([]))).toEqual([])
+  })
+})
+
+/**
+ * Issue #87 — lire la provenance déclarée par le fichier.
+ *
+ * Léa importe le PDIPR de son département. S'il déclare son producteur et sa
+ * licence, on les porte ; s'il ne les déclare pas, on **n'invente rien** —
+ * la fiche préviendra que l'export sera muet.
+ *
+ * Les clefs cherchées sont celles qu'on rencontre en pratique dans les
+ * exports open data français : `attribution`, `source`, `licence`/`license`.
+ * Aucune n'est normalisée par la spécification GeoJSON, qui ne prévoit rien
+ * pour cela — c'est pourquoi on en accepte plusieurs plutôt qu'une seule
+ * qu'on aurait décrétée.
+ */
+describe('provenance déclarée (issue #87)', () => {
+  const trace = {
+    type: 'Feature',
+    properties: { name: 'Sentier des Monts' },
+    geometry: {
+      type: 'LineString',
+      coordinates: [
+        [4.5, 45.4],
+        [4.51, 45.41],
+      ],
+    },
+  }
+
+  it('lit l’attribution et la licence de la collection', () => {
+    const source = sourceDeclaree({
+      type: 'FeatureCollection',
+      attribution: 'Département de l’Ain',
+      license: 'https://www.etalab.gouv.fr/licence-ouverte-open-licence',
+      features: [trace],
+    })
+    expect(source).toEqual({
+      author: 'Département de l’Ain',
+      license: 'https://www.etalab.gouv.fr/licence-ouverte-open-licence',
+    })
+  })
+
+  it('accepte « source » et « licence » à la française', () => {
+    expect(
+      sourceDeclaree({
+        type: 'FeatureCollection',
+        source: 'Conseil départemental de l’Isère',
+        licence: 'Licence Ouverte 2.0',
+        features: [trace],
+      })?.author,
+    ).toBe('Conseil départemental de l’Isère')
+  })
+
+  /** Un producteur sans licence reste une attribution utile. */
+  it('accepte un producteur sans licence', () => {
+    const source = sourceDeclaree({
+      type: 'FeatureCollection',
+      attribution: 'Parc du Pilat',
+      features: [trace],
+    })
+    expect(source?.author).toBe('Parc du Pilat')
+    expect(source?.license).toBe('')
+  })
+
+  /** Une licence sans producteur n'attribue à personne : ce n'est pas une source. */
+  it('refuse une licence sans producteur', () => {
+    expect(
+      sourceDeclaree({
+        type: 'FeatureCollection',
+        license: 'ODbL',
+        features: [trace],
+      }),
+    ).toBeNull()
+  })
+
+  it('ne rend rien quand le fichier ne déclare rien', () => {
+    expect(
+      sourceDeclaree({ type: 'FeatureCollection', features: [trace] }),
+    ).toBeNull()
+  })
+
+  it('ne se laisse pas prendre à une valeur qui n’est pas un texte', () => {
+    expect(
+      sourceDeclaree({
+        type: 'FeatureCollection',
+        attribution: { nom: 'Ain' },
+        features: [trace],
+      }),
+    ).toBeNull()
   })
 })

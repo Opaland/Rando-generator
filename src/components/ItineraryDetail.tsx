@@ -21,9 +21,10 @@ import {
 import { assessItinerary } from '../core/dataQuality.ts'
 import { lienOpenStreetMap } from '../core/lienOsm.ts'
 import {
+  attributionDe,
   buildGpxDocument,
-  gpxAttributionFor,
   gpxFilename,
+  mentionDeSource,
 } from '../core/gpxExport.ts'
 import { downloadTextFile } from '../lib/download.ts'
 import { BoutonEmporter } from './BoutonEmporter.tsx'
@@ -175,6 +176,15 @@ export function ItineraryDetail() {
           L'effort qualifié (issue #156), avec ce sur quoi il repose — et non
           le seul mot, qui pourrait passer pour une cotation.
         */}
+        {/*
+          On ne devine pas une attribution manquante (issue #87) : on
+          prévient que l'export sera muet, et la personne décide.
+        */}
+        {mentionDeSource(itin) && (
+          <p className={styles.effort} data-testid="detail-source-absente">
+            {mentionDeSource(itin)}
+          </p>
+        )}
         <p className={styles.effort} data-testid="detail-effort">
           {libelleEffort(itineraryFacts(itin))}
         </p>
@@ -189,7 +199,7 @@ export function ItineraryDetail() {
               buildGpxDocument({
                 name: label,
                 coords: itineraryCoords(itin),
-                attribution: gpxAttributionFor(itin.network),
+                attribution: attributionDe(itin),
                 createdAt: new Date().toISOString(),
               }),
             )
@@ -312,7 +322,7 @@ export function ItineraryDetail() {
                 buildGpxDocument({
                   name: `${label} — ${String(etapes.length)} étapes`,
                   coords: itineraryCoords(itin),
-                  attribution: gpxAttributionFor(itin.network),
+                  attribution: attributionDe(itin),
                   createdAt: new Date().toISOString(),
                   waypoints: waypointsDesEtapes(etapes),
                 }),

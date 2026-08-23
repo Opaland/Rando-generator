@@ -5,8 +5,10 @@ import {
   GeoJsonError,
   looksLikeGeoJson,
   parseGeoJsonTrails,
+  sourceDeclaree,
   type GeoJsonTrail,
 } from '../core/geojson.ts'
+import type { SourceItineraire } from '../core/types.ts'
 import {
   ZipError,
   entreesDeTrace,
@@ -139,9 +141,16 @@ export async function developperArchives(
  * plusieurs itinéraires d'un coup, là où un GPX n'en porte qu'un. Le format
  * est reconnu au contenu, pas à l'extension.
  */
-export async function lireItineraires(
-  file: File,
-): Promise<{ trails: GeoJsonTrail[]; pointsHorsLimites: number }> {
+export async function lireItineraires(file: File): Promise<{
+  trails: GeoJsonTrail[]
+  pointsHorsLimites: number
+  /**
+   * Provenance déclarée par le fichier, quand il en déclare une (issue #87).
+   * Portée jusqu'à l'export GPX : la Licence Ouverte l'exige, et le fichier
+   * circulera hors d'ici.
+   */
+  source: SourceItineraire | null
+}> {
   const buffer = await file.arrayBuffer()
   if (!looksLikeFit(buffer)) {
     const texte = new TextDecoder().decode(buffer)
@@ -152,12 +161,19 @@ export async function lireItineraires(
       } catch {
         throw new GeoJsonError('Ce fichier n’est pas un JSON valide.')
       }
-      return { trails: parseGeoJsonTrails(donnees), pointsHorsLimites: 0 }
+      return {
+        trails: parseGeoJsonTrails(donnees),
+        pointsHorsLimites: 0,
+        source: sourceDeclaree(donnees),
+      }
     }
   }
   const trace = await parseTraceFile(file)
+  // Un GPX déposé dans « Mes itinéraires » est un tracé qu'on a dessiné ou
+  // relevé soi-même : rien à attribuer, et rien à en dire.
   return {
     trails: [{ name: null, lines: [trace.points] }],
     pointsHorsLimites: trace.pointsHorsLimites,
+    source: null,
   }
 }
