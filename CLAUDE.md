@@ -160,6 +160,26 @@ n'est pas toujours un défaut (une table de traduction en produit des dizaines
 sans intérêt). C'est une vague à lancer après un module neuf, et à lire en
 cherchant les survivants qui *changent un résultat*.
 
+**Deuxième vague, 23/08, sept modules de la journée : 83,9 %, 111 survivants.**
+Onze changeaient un résultat, et trois choses valent d'être retenues :
+
+- **un survivant m'a montré que mon propre test ne pouvait pas échouer.**
+  J'avais écrit l'assertion sur l'étape 1, dont le départ est zéro : `fin + 0`
+  et `fin − 0` donnent le même nombre. Le §1 dit d'enlever le correctif ; ici
+  c'est l'outil qui l'a fait à ma place, et il a eu raison contre moi ;
+- **deux mutants ont survécu à trois tests successifs**, chaque survie disant
+  que le cas atteint n'était pas celui que je croyais écrire. La garde ne
+  devient atteignable qu'au second tour de boucle, ou sur une dernière étape
+  courte. Un test qui vise une ligne sans l'atteindre est vert pour rien ;
+- **trois survivants sont équivalents** — le même résultat par un autre
+  chemin. Ils sont écrits comme tels dans le test, pour qu'on ne les rechasse
+  pas à la vague suivante. Dire d'un survivant qu'il n'en est pas un fait
+  partie de la lecture.
+
+Le plus utile n'était pas un calcul mais une ancre : `/^https?:\/\//` privée de
+son `^` accepte `javascript:alert(1)#https://x`, et cette adresse part dans un
+`href`.
+
 ## 6ter. Un test qui suppose un ordre échoue seulement en suite complète
 
 Deux courses trouvées le même jour, dans des fichiers sans rapport :
