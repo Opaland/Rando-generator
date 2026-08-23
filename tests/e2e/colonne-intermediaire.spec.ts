@@ -63,15 +63,31 @@ for (const largeur of LARGEURS) {
       // L'autre moitié de la règle. Sans elle, un plancher trop haut
       // ramènerait tout à une colonne : les libellés tiendraient, et la
       // liste des départements deviendrait deux fois plus longue à parcourir.
-      const rhone = await page.getByTestId('zone-rhone').boundingBox()
-      const loire = await page.getByTestId('zone-loire').boundingBox()
-      const memeLigne =
-        Math.abs((rhone?.y ?? 0) - (loire?.y ?? 0)) < 4
       const attendu = largeur >= 1101 || largeur <= 800
-      expect(
-        memeLigne,
-        `à ${String(largeur)} px, « Rhône » et « Loire » ${memeLigne ? 'partagent' : 'ne partagent pas'} leur ligne`,
-      ).toBe(attendu)
+
+      /**
+       * `null` quand la mesure n'est pas encore possible, et surtout pas
+       * une conclusion.
+       *
+       * La version d'origine repliait une boîte absente sur `?? 0` : si
+       * l'une des deux zones était mesurable et l'autre pas encore, l'écart
+       * valait la position de la première, donc « pas la même ligne ». Le
+       * test concluait alors de rien du tout — et il l'a fait en intégration
+       * continue, en échouant puis en réussissant au réessai dans le même
+       * run. Rendre `null` fait attendre `expect.poll` au lieu de trancher.
+       */
+      const memeLigne = async (): Promise<boolean | null> => {
+        const rhone = await page.getByTestId('zone-rhone').boundingBox()
+        const loire = await page.getByTestId('zone-loire').boundingBox()
+        if (!rhone || !loire) return null
+        return Math.abs(rhone.y - loire.y) < 4
+      }
+
+      await expect
+        .poll(memeLigne, {
+          message: `à ${String(largeur)} px, « Rhône » et « Loire » ${attendu ? 'devraient partager' : 'ne devraient pas partager'} leur ligne`,
+        })
+        .toBe(attendu)
     })
 
     test('le champ de recherche montre son exemple en entier', async ({
