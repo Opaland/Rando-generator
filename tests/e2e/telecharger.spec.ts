@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork } from './helpers.ts'
+import { buildGpx, mockExternalNetwork } from './helpers.ts'
 
 /*
  * Recopiés depuis `src/core/telechargement.ts`, et pas importés : aucun
@@ -157,5 +157,166 @@ test.describe('télécharger une randonnée', () => {
     expect(dernier['total']).toBe(0)
     expect(dernier['faites']).toBe(0)
     expect(dernier['octets']).toBe(0)
+  })
+})
+
+/**
+ * Le bouton de la fiche détail (issue #153, troisième pierre).
+ *
+ * Ce que ce test prouve : la fiche calcule un corridor, annonce un nombre de
+ * tuiles **exact**, remet cette liste au service worker quand on appuie, et
+ * change de libellé au rythme des comptes rendus.
+ *
+ * Le service worker est ici remplacé par une doublure posée avant le
+ * chargement de la page. Ce n'est pas un renoncement : les mécaniques du
+ * vrai service worker sont éprouvées par les trois tests ci-dessus et par
+ * `tests/unit/swPrecharger.test.ts`, qui l'exécute pour de bon. Ce qu'il
+ * restait à établir, c'est le chemin entre le tracé et le message — et le
+ * laisser télécharger de vraies tuiles ferait dépendre la suite de la
+ * disponibilité de la Géoplateforme, en la martelant depuis l'intégration
+ * continue à chaque exécution.
+ */
+test.describe('emporter une randonnée depuis la fiche', () => {
+  async function poserDoublure(page: import('@playwright/test').Page) {
+    await page.addInitScript(() => {
+      const envoyes: unknown[] = []
+      ;(window as unknown as Record<string, unknown>)['__emport'] = envoyes
+      Object.defineProperty(navigator.serviceWorker, 'controller', {
+        configurable: true,
+        get: () => ({
+          postMessage: (message: unknown) => {
+            envoyes.push(message)
+          },
+        }),
+      })
+    })
+  }
+
+  test('annonce un compte de tuiles, puis suit ce qui descend', async ({
+    page,
+  }) => {
+    await mockExternalNetwork(page)
+    await poserDoublure(page)
+    await page.goto('/')
+
+    await page.getByTestId('custom-input').setInputFiles({
+      name: 'boucle-test.gpx',
+      mimeType: 'application/gpx+xml',
+      buffer: Buffer.from(buildGpx(0), 'utf-8'),
+    })
+    const liste = page.getByTestId('custom-list')
+    await expect(liste).toContainText('boucle-test')
+    await liste
+      .getByRole('button', { name: /boucle-test/ })
+      .filter({ hasNotText: 'Supprimer' })
+      .click()
+    await page.getByTestId('itinerary-card-detail-link').click()
+
+    const bouton = page.getByTestId('itinerary-detail-emporter')
+    /*
+      `toHaveText` et non `toContainText` : « Emporter cette randonnée »
+      seul serait accepté par le second, et c'est précisément le cas qu'on
+      veut voir échouer — un bouton qui n'annoncerait aucun compte.
+    */
+    await expect(bouton).toHaveText(/^Emporter cette randonnée \(\d+ tuiles?\)$/)
+
+    await bouton.click()
+
+    // Ce que la page a réellement remis au service worker.
+    const envoye = await page.evaluate(
+      ([messagePrecharger]) => {
+        const envoyes = (window as unknown as Record<string, unknown>)[
+          '__emport'
+        ] as { type: string; urls: string[] }[]
+        return envoyes.find((m) => m.type === messagePrecharger) ?? null
+      },
+      [MESSAGE_PRECHARGER] as const,
+    )
+    expect(envoye).not.toBeNull()
+    const urls = envoye?.urls ?? []
+    expect(urls.length).toBeGreaterThan(1)
+    expect(urls.filter((u) => u.includes('data.geopf.fr/wmts')).length).toBe(
+      urls.length - 1,
+    )
+    // La dernière adresse est le profil altimétrique : on n'emporte pas un
+    // fond de carte sans le relief qui va avec.
+    expect(urls.at(-1)).toContain('/altimetrie/')
+
+    // Le bouton ne se relance pas tant que ça descend.
+    await expect(bouton).toBeDisabled()
+
+    await page.evaluate(
+      ([messageProgres, total]) => {
+        navigator.serviceWorker.dispatchEvent(
+          new MessageEvent('message', {
+            data: {
+              type: messageProgres,
+              faites: 3,
+              total,
+              octets: 3 * 1024 * 1024,
+              echecs: 0,
+              fini: false,
+            },
+          }),
+        )
+      },
+      [MESSAGE_PROGRES, urls.length] as const,
+    )
+    await expect(bouton).toHaveText(`3 / ${String(urls.length)} · 3 Mo`)
+
+    await page.evaluate(
+      ([messageProgres, total]) => {
+        navigator.serviceWorker.dispatchEvent(
+          new MessageEvent('message', {
+            data: {
+              type: messageProgres,
+              faites: total,
+              total,
+              octets: 5 * 1024 * 1024,
+              echecs: 2,
+              fini: true,
+            },
+          }),
+        )
+      },
+      [MESSAGE_PROGRES, urls.length] as const,
+    )
+    await expect(bouton).toHaveText('Emportée · 5 Mo · 2 manquantes')
+    await expect(page.getByTestId('emporter-manquantes')).toBeVisible()
+  })
+
+  /**
+   * Fermer la fiche arrête ce qui court : sinon le service worker
+   * continuerait à marteler la Géoplateforme derrière un écran quitté.
+   */
+  test('referme et arrête', async ({ page }) => {
+    await mockExternalNetwork(page)
+    await poserDoublure(page)
+    await page.goto('/')
+
+    await page.getByTestId('custom-input').setInputFiles({
+      name: 'boucle-test.gpx',
+      mimeType: 'application/gpx+xml',
+      buffer: Buffer.from(buildGpx(0), 'utf-8'),
+    })
+    const liste = page.getByTestId('custom-list')
+    await expect(liste).toContainText('boucle-test')
+    await liste
+      .getByRole('button', { name: /boucle-test/ })
+      .filter({ hasNotText: 'Supprimer' })
+      .click()
+    await page.getByTestId('itinerary-card-detail-link').click()
+    await page.getByTestId('itinerary-detail-emporter').click()
+    await page.getByTestId('itinerary-detail-close').click()
+
+    const arrets = await page.evaluate(() => {
+      const envoyes = (window as unknown as Record<string, unknown>)[
+        '__emport'
+      ] as { type: string }[]
+      return envoyes.filter(
+        (m) => m.type === 'sentiers:arreter-telechargement',
+      ).length
+    })
+    expect(arrets).toBe(1)
   })
 })

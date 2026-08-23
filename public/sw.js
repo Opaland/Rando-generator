@@ -55,6 +55,23 @@ const CONNECTIVITY_MESSAGE = 'sentiers:connectivity'
  * raison, et gardés par le même genre de test. */
 const MESSAGE_PRECHARGER = 'sentiers:precharger'
 const MESSAGE_PROGRES = 'sentiers:telechargement'
+const MESSAGE_ARRETER = 'sentiers:arreter-telechargement'
+
+/*
+ * Les onglets qui ont demandé l'arrêt de leur téléchargement.
+ *
+ * Le corridor d'un GR de 200 km compte des milliers de tuiles et la boucle
+ * est séquentielle : sans ce moyen d'arrêt, appuyer sur « Emporter » serait
+ * sans retour, et fermer la fiche laisserait le service worker marteler la
+ * Géoplateforme derrière un écran qu'on a quitté.
+ *
+ * Un ensemble d'identifiants d'onglets, et non un simple drapeau : le
+ * service worker est partagé par toutes les pages du site. Avec un drapeau,
+ * refermer une fiche dans un onglet interrompait le téléchargement lancé
+ * dans un autre — qui affichait alors « Emportée » sur une randonnée
+ * incomplète, sans que rien de visible depuis cet onglet ne l'explique.
+ */
+const arretsDemandes = new Set()
 
 /*
  * Vrai dès qu'une requête de l'application a dû être servie depuis le cache
@@ -80,7 +97,12 @@ async function signalerSecours() {
 self.addEventListener('message', (event) => {
   if (event.data?.type === MESSAGE_PRECHARGER) {
     const liste = Array.isArray(event.data.urls) ? event.data.urls : []
+    arretsDemandes.delete(event.source?.id)
     event.waitUntil(precharger(liste, event.source))
+    return
+  }
+  if (event.data?.type === MESSAGE_ARRETER) {
+    arretsDemandes.add(event.source?.id)
     return
   }
   if (event.data?.type !== CONNECTIVITY_MESSAGE) return
@@ -177,11 +199,28 @@ async function reseauPuisCache(request, cacheName, secours) {
   }
 }
 
-/** Cache d'abord : une tuile ne change pas, inutile de la retélécharger. */
+/**
+ * Cache d'abord : une tuile ne change pas, inutile de la retélécharger.
+ *
+ * Deux caches sont consultés, et l'ordre n'est pas indifférent : celui de
+ * navigation, borné, puis celui de terrain, qui contient ce qu'on a emporté
+ * exprès. Sans ce second regard, une randonnée emportée s'afficherait grise
+ * hors connexion alors que ses tuiles sont là — rangées ailleurs.
+ */
 async function cachePuisReseau(request, cacheName) {
   const cache = await caches.open(cacheName)
   const enCache = await cache.match(request, OPTIONS_MATCH)
   if (enCache) return enCache
+  const terrain = await caches.open(CACHE_TERRAIN)
+  const emportee = await terrain.match(request, OPTIONS_MATCH)
+  /*
+    Pas de `signalerSecours()` ici, et c'est délibéré : servir une tuile
+    qu'on a emportée n'est pas se rabattre sur le cache faute de réseau,
+    c'est se servir de ce qu'on est allé chercher. Le signaler ferait
+    apparaître le bandeau « Hors connexion » en pleine connexion, dès qu'on
+    survole une randonnée emportée — un mensonge dans l'autre sens.
+  */
+  if (emportee) return emportee
   const reponse = await fetch(request)
   // Une tuile tierce peut être « opaque » (sans en-têtes CORS) : elle reste
   // stockable et réutilisable telle quelle.
@@ -261,12 +300,25 @@ async function precharger(liste, source) {
   let faites = 0
   let octets = 0
   let echecs = 0
+  const demandeur = source?.id
   for (const adresse of liste) {
+    if (arretsDemandes.has(demandeur)) break
     try {
-      const url = new URL(adresse)
-      const cache = await caches.open(
-        estTuile(url) ? CACHE_TUILES : CACHE_TERRAIN,
-      )
+      /*
+        Tout ce qu'on emporte va dans le cache de terrain, **y compris les
+        tuiles**.
+
+        Elles allaient d'abord dans `CACHE_TUILES`, ce qui semblait naturel :
+        une tuile est une tuile. Mais ce cache-là est borné à 600 entrées et
+        taillé du plus ancien à chaque tuile consultée ensuite. On emportait
+        donc 104 tuiles, on ouvrait la carte, et une partie disparaissait
+        sans rien dire — pendant que le bouton affichait « Emportée ».
+
+        Le cache de terrain, lui, n'est pas taillé : ce qu'on a demandé
+        reste. La contrepartie est qu'il grossit, et qu'il ne se vide qu'en
+        effaçant les données du site. C'est le sens du mot « emporter ».
+      */
+      const cache = await caches.open(CACHE_TERRAIN)
       const request = new Request(adresse, { mode: 'cors' })
       const reponse = await fetch(request)
       if (reponse && (reponse.ok || reponse.type === 'opaque')) {
@@ -283,5 +335,11 @@ async function precharger(liste, source) {
     faites += 1
     rendreCompte({ faites, total, octets, echecs, fini: faites === total })
   }
-  if (total === 0) rendreCompte({ faites: 0, total: 0, octets: 0, echecs: 0, fini: true })
+  // Une liste vide, ou un arrêt en cours de route : dans les deux cas la
+  // boucle sort sans avoir rendu de compte final, et la page resterait sur
+  // « 3 / 50 » pour toujours.
+  if (faites < total || total === 0) {
+    rendreCompte({ faites, total, octets, echecs, fini: true })
+  }
+  arretsDemandes.delete(demandeur)
 }

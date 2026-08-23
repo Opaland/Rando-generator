@@ -19,6 +19,7 @@ import {
   gpxFilename,
 } from '../core/gpxExport.ts'
 import { downloadTextFile } from '../lib/download.ts'
+import { BoutonEmporter } from './BoutonEmporter.tsx'
 import { ElevationChart } from './ElevationChart.tsx'
 import { ProgressBalise } from './ProgressBalise.tsx'
 import styles from './ItineraryDetail.module.css'
@@ -168,6 +169,9 @@ export function ItineraryDetail() {
         >
           Exporter en GPX
         </button>
+        {/* `key` : changer d'itinéraire remonte le bouton, ce qui recalcule
+            son corridor et oublie le téléchargement précédent. */}
+        <BoutonEmporter key={detailItineraryId} coords={itineraryCoords(itin)} />
       </div>
 
       {itin.details && (

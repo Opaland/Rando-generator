@@ -151,9 +151,23 @@ panneau replié), U11 (les émojis en couleur).
 
 Dans cet ordre, parce que chacun suppose le précédent :
 
-- **#153 — télécharger une sortie pour le hors-ligne** : le corridor,
-  l'altimétrie et les POI. N'a de sens qu'une fois qu'on enregistre sur le
-  terrain (jalon 1) ;
+- **#153 — télécharger une sortie pour le hors-ligne**. Trois pierres sur
+  quatre sont posées : le corridor de tuiles (`src/core/corridor.ts`), le
+  cache volontaire du service worker, et le bouton « Emporter cette
+  randonnée » de la fiche détail. **Reste la quatrième** : les points
+  d'intérêt, qu'Overpass sert en `POST` — le Cache API ne sait pas ranger une
+  requête `POST`, il faudra donc les écrire dans IndexedDB, ce qui est un
+  autre chemin que celui des tuiles.
+
+  Deux réglages y sont posés **au jugement, faute de mesure**, et il faut le
+  savoir avant de s'y fier : les zooms 12 à 16, et le corridor de 500 m
+  (`ZOOMS_TERRAIN`, `RAYON_CORRIDOR_METRES`). Ce qui manque pour les
+  trancher : **le poids réel d'une tuile de la Géoplateforme sur un secteur
+  de montagne.** Personne ne l'a relevé, c'est pourquoi le bouton annonce un
+  nombre de tuiles et non des mégaoctets. La mesure faite, on pourra
+  afficher un budget avant de lancer, et prévenir avant les gros
+  téléchargements — un GR de 200 km demande des milliers de tuiles, et pour
+  l'instant le seul garde-fou est qu'on peut arrêter ;
 - **#154 — prévenir quand on quitte le parcours suivi**. Attention : c'est la
   frontière de « pas de navigation ». Prévenir qu'on s'écarte n'est pas
   guider ; le vérifier auprès d'une personne avant de le construire ;

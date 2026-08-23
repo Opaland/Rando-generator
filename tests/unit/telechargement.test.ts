@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import swSource from '../../public/sw.js?raw'
 import e2eSource from '../e2e/telecharger.spec.ts?raw'
 import {
+  MESSAGE_ARRETER,
   MESSAGE_PRECHARGER,
   MESSAGE_PROGRES,
   estAltimetrie,
@@ -118,6 +119,12 @@ describe('la page et le service worker parlent la même langue', () => {
     for (const source of [swSource, e2eSource]) {
       expect(source).toContain(`'${MESSAGE_PRECHARGER}'`)
       expect(source).toContain(`'${MESSAGE_PROGRES}'`)
+    }
+  })
+
+  it('emploie le même nom pour l’ordre d’arrêt', () => {
+    for (const source of [swSource, e2eSource]) {
+      expect(source).toContain(`'${MESSAGE_ARRETER}'`)
     }
   })
 

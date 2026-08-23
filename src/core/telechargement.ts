@@ -4,6 +4,7 @@ import {
   urlDeTuile,
   type OptionsCorridor,
 } from './corridor.ts'
+import { formatOctets } from '../lib/format.ts'
 import { buildElevationLineUrl } from './elevation.ts'
 import type { LonLat } from './types.ts'
 
@@ -93,3 +94,71 @@ export function ressourcesDeLaRandonnee(
 
 /** Exporté pour les tests : le repli, qui n'est pas préchargé. */
 export const FOND_DE_REPLI = OSM_TILES
+
+/**
+ * Les zooms où l'on lit un sentier, et pas au-delà.
+ *
+ * Ce nombre décide de **ce qui est téléchargé** : il tombe du côté de
+ * CLAUDE.md §2 où l'on n'invente pas, et il est posé faute de mesure. Ce
+ * qui est exigible, c'est de dire d'où il vient.
+ *
+ * En deçà de 12, la tuile ne montre plus le tracé, seulement la vallée ;
+ * au-delà de 16, la Géoplateforme sert le cadastre, utile en ville et sans
+ * objet sur un GR — et chaque zoom supplémentaire quadruple le nombre de
+ * tuiles. Mesuré sur 2,3 km de GR : 104 tuiles pour ces cinq zooms.
+ *
+ * Ce qu'il faudrait pour trancher mieux : le poids réel d'une tuile IGN sur
+ * un secteur de montagne, que personne n'a relevé.
+ */
+export const ZOOMS_TERRAIN = [12, 13, 14, 15, 16]
+
+/**
+ * Un demi-kilomètre de part et d'autre du tracé.
+ *
+ * De quoi couvrir un écart de sentier, une variante de balisage, et le
+ * décalage entre le tracé OSM et ce qu'on a sous les pieds — sans emporter
+ * la vallée voisine. Même réserve que ci-dessus : posé au jugement, non
+ * mesuré.
+ */
+export const RAYON_CORRIDOR_METRES = 500
+
+/**
+ * Ce que dit le bouton, aux trois moments de sa vie.
+ *
+ * Avant : le nombre de tuiles. C'est ce qu'on sait exactement, et c'est
+ * tout ce qu'on sait — l'issue #153 demandait « le budget affiché avant de
+ * lancer », c'est-à-dire des mégaoctets, et elle ne les aura pas : personne
+ * n'a mesuré ce que pèse une tuile de la Géoplateforme sur un secteur de
+ * montagne. Annoncer « environ 40 Mo » reviendrait à cacher un nombre
+ * inventé derrière un mot rassurant (CLAUDE.md §2). Le jour où la mesure
+ * existera, elle se posera ici sans rien déplacer d'autre.
+ *
+ * Pendant et après : des octets réellement reçus, comptés par le service
+ * worker. Là, le chiffre est mesuré, et il peut être affiché sans réserve.
+ */
+export function libelleTelechargement(
+  progres: ProgresTelechargement | null,
+  tuiles: number,
+): string {
+  if (progres === null) {
+    if (tuiles <= 0) return 'Emporter cette randonnée'
+    const unite = tuiles === 1 ? 'tuile' : 'tuiles'
+    return `Emporter cette randonnée (${String(tuiles)} ${unite})`
+  }
+  const poids = formatOctets(progres.octets)
+  if (!progres.fini) {
+    return `${String(progres.faites)} / ${String(progres.total)} · ${poids}`
+  }
+  if (progres.echecs <= 0) return `Emportée · ${poids}`
+  const accord = progres.echecs === 1 ? 'manquante' : 'manquantes'
+  return `Emportée · ${poids} · ${String(progres.echecs)} ${accord}`
+}
+
+/**
+ * La page demande au service worker de s'arrêter là où il en est.
+ *
+ * Sans ce message, le bouton serait un piège : le corridor d'un GR de
+ * 200 km compte des milliers de tuiles, la boucle est séquentielle, et rien
+ * ne permettrait de revenir en arrière. Fermer la fiche l'envoie.
+ */
+export const MESSAGE_ARRETER = 'sentiers:arreter-telechargement'
