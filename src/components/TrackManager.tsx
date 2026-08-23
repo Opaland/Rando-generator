@@ -113,16 +113,32 @@ export function TrackManager() {
         }}
         onDrop={onDrop}
       >
+        {/*
+          Le geste qui marche partout passe devant. « Glissez vos fichiers »
+          menait, sur un téléphone où le glisser-déposer n'existe pas
+          (AUDIT_UX.md, constat U12) : la seule action possible était en
+          second, derrière un « ou ».
+
+          Le glisser-déposer n'est pas retiré — il reste le geste naturel à
+          la souris. Il est mentionné sous `pointer: fine` seulement, comme
+          la phrase de confidentialité de l'en-tête a deux longueurs pour la
+          même promesse. La condition porte sur l'entrée, pas sur la largeur :
+          une tablette de 900 px n'a pas plus de souris qu'un téléphone.
+        */}
         <p className={styles.dropText}>
-          Glissez vos fichiers GPX, FIT ou TCX ici, ou
           <button
             type="button"
             className="btn-link"
             data-testid="gpx-browse"
             onClick={() => inputRef.current?.click()}
           >
-            parcourez vos fichiers
-          </button>
+            Choisissez vos fichiers
+          </button>{' '}
+          GPX, FIT ou TCX
+          <span className={styles.dropGlisser} data-testid="depot-glisser">
+            {' '}
+            — ou glissez-les ici.
+          </span>
         </p>
         <p className={styles.dropHint}>
           Lecture 100 % locale : vos traces ne sont envoyées nulle part. Vous

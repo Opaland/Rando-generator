@@ -29,6 +29,24 @@
   margin: 0;
 }
 
+/*
+  La mention du glisser-déposer n'apparaît qu'avec un pointeur fin.
+
+  Au doigt, elle décrit un geste qui n'existe pas — et elle menait la phrase
+  jusqu'au 22/08 (AUDIT_UX.md, constat U12). La condition porte sur l'entrée
+  et non sur la largeur : une tablette de 900 px n'a pas plus de souris qu'un
+  téléphone, et une fenêtre de navigateur réduite sur un portable en a une.
+*/
+.dropGlisser {
+  display: none;
+}
+
+@media (pointer: fine) {
+  .dropGlisser {
+    display: inline;
+  }
+}
+
 .dropHint {
   margin: var(--espace-3) 0 0;
   font-size: var(--texte-appui);
