@@ -303,3 +303,29 @@ test.describe("la poignée pendant une sortie", () => {
       .toMatch(/parcourus|Zones, traces et réglages/);
   });
 });
+
+/**
+ * Sur grand écran, panneau replié, rien ne disait qu'une sortie
+ * s'enregistrait : la barre d'onglets, qui porte le témoin sur téléphone,
+ * n'existe pas à cette largeur. Le bouton qui rend le panneau porte déjà la
+ * même phrase que la poignée, « pour la même raison » disait son
+ * commentaire — c'est maintenant le même composant.
+ */
+test.describe('sur grand écran, panneau replié', () => {
+  test.use({ viewport: { width: 1280, height: 900 } })
+
+  test('le bouton qui rend le panneau annonce la sortie en cours', async ({
+    page,
+  }) => {
+    await ouvrir(page)
+    await page.getByTestId('sortie-demarrer').click()
+    await marcher(page, 5)
+    await expect(page.getByTestId('sortie-distance')).not.toHaveText('0 m')
+
+    await page.getByTestId('panneau-replier').click()
+    const bouton = page.getByTestId('panneau-rendre-texte')
+    await expect(bouton).toBeVisible()
+    await expect(bouton).not.toHaveText('Zones, traces et réglages')
+    await expect(bouton).toContainText(/\d/)
+  })
+})
