@@ -4,6 +4,7 @@ import { Backup } from './components/Backup.tsx'
 import { CustomItineraries } from './components/CustomItineraries.tsx'
 import { Dashboard } from './components/Dashboard.tsx'
 import { EmptyState } from './components/EmptyState.tsx'
+import { Enregistreur } from './components/Enregistreur.tsx'
 import { History } from './components/History.tsx'
 import { ItineraryCard } from './components/ItineraryCard.tsx'
 import { ItineraryDetail } from './components/ItineraryDetail.tsx'
@@ -313,6 +314,9 @@ function App() {
           {/* Le mode simple cache, il n'enlève pas : la carte, les traces et
               le tableau de bord restent, tout le reste se replie (#173). */}
           {sections.zone && visible('zone') && <ZonePicker />}
+          {sections.enregistrement && visible('enregistrement') && (
+            <Enregistreur />
+          )}
           {sections.traces && visible('traces') && <TrackManager />}
           {sections.itineraires && visible('itinerairesPerso') && (
             <CustomItineraries />

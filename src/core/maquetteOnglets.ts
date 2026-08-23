@@ -21,6 +21,7 @@ export type Onglet = 'carte' | 'sorties' | 'progression' | 'reglages'
  */
 export type SectionApp =
   | 'zone'
+  | 'enregistrement'
   | 'traces'
   | 'itinerairesPerso'
   | 'tableauDeBord'
@@ -88,6 +89,15 @@ const MAX_SECTIONS_PAR_ONGLET = 4
  * - `zone` va sous **Carte** : choisir sa zone, c'est choisir ce que la
  *   carte montre. C'est la seule section que Carte porte, l'onglet reste
  *   donc « plein cadre » au sens de l'issue.
+ * - `enregistrement` ouvre **Sorties**, et c'est le seul placement qui se
+ *   passe de discussion : l'onglet s'appelle « Sorties » et porte une
+ *   chaussure. Enregistrer la sienne y arrive en premier, avant de gérer
+ *   celles qui sont déjà là.
+ * - `sauvegarde` a quitté **Sorties** pour **Réglages**. Deux raisons, dont
+ *   une seule serait faible : exporter et réimporter sa base entière est un
+ *   geste d'administration, pas une sortie ; et l'onglet Sorties serait
+ *   passé à cinq sections, au-delà du seuil que ce module se donne. Réglages
+ *   n'en portait qu'une.
  * - `itinerairesPerso` va sous **Sorties** : importer ses propres tracés
  *   cibles est un geste d'entrée de données, voisin de l'import de traces,
  *   même si l'objet produit est une cible et non une sortie. C'est le
@@ -96,14 +106,14 @@ const MAX_SECTIONS_PAR_ONGLET = 4
  */
 const RANGEMENT: Record<Onglet, SectionApp[]> = {
   carte: ['zone'],
-  sorties: ['traces', 'itinerairesPerso', 'historique', 'sauvegarde'],
+  sorties: ['enregistrement', 'traces', 'itinerairesPerso', 'historique'],
   progression: [
     'tableauDeBord',
     'objectifs',
     'prochaineSortie',
     'listeItineraires',
   ],
-  reglages: ['reglages'],
+  reglages: ['reglages', 'sauvegarde'],
 }
 
 export function sectionsDeLOnglet(onglet: Onglet): SectionApp[] {

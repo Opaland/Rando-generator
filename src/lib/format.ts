@@ -67,6 +67,28 @@ export function formatDuration(minutes: number): string {
     : `${heures} h ${reste.toString().padStart(2, '0')}`
 }
 
+/**
+ * « 1:04:37 », « 12:05 » — un chronomètre qui tourne, à la seconde.
+ *
+ * Distinct de `formatDuration`, et pas par goût : celui-ci arrondit à la
+ * minute, ce qui convient à une sortie rangée mais pas à un chiffre qu'on
+ * regarde avancer. Un compteur bloqué une minute entière sur « 3 min »
+ * ressemble à une application figée — et sur le terrain, c'est justement la
+ * question qu'on se pose.
+ *
+ * L'heure n'apparaît qu'à partir de la première : « 12:05 » se lit sans
+ * effort, « 0:12:05 » demande de compter les segments.
+ */
+export function formatChrono(millisecondes: number): string {
+  const total = Math.max(0, Math.floor(millisecondes / 1000))
+  const heures = Math.floor(total / 3600)
+  const minutes = Math.floor((total % 3600) / 60)
+  const secondes = total % 60
+  const mm = minutes.toString().padStart(2, '0')
+  const ss = secondes.toString().padStart(2, '0')
+  return heures > 0 ? `${String(heures)}:${mm}:${ss}` : `${String(minutes)}:${ss}`
+}
+
 /** « Lecture de sortie.gpx (2 sur 5)… » — avancement d'un import multi-fichiers. */
 export function importProgressLabel(progress: {
   done: number
