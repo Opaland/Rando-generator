@@ -19,6 +19,7 @@ import {
   waypointsDesEtapes,
 } from '../core/stages.ts'
 import { assessItinerary } from '../core/dataQuality.ts'
+import { lienOpenStreetMap } from '../core/lienOsm.ts'
 import {
   buildGpxDocument,
   gpxAttributionFor,
@@ -102,6 +103,10 @@ export function ItineraryDetail() {
   // Une relation trouée produit un pourcentage faux sans le dire : le
   // signaler ne répare rien, mais rend le chiffre lisible.
   const qualite = assessItinerary(itin, new Date().toISOString())
+  // Issue #160 : un signalement devient une contribution. Cadré sur la plus
+  // grande interruption quand on sait la situer — Marc arrive à l'endroit
+  // qui manque, pas au début d'un GR de 400 km.
+  const lienOsm = lienOpenStreetMap(itin, qualite.gaps)
 
 
   return (
@@ -263,6 +268,20 @@ export function ItineraryDetail() {
               </li>
             )}
           </ul>
+          {lienOsm && (
+            <p className={styles.hint}>
+              <a
+                href={lienOsm}
+                target="_blank"
+                rel="noreferrer"
+                data-testid="lien-osm"
+              >
+                Ouvrir cette relation dans OpenStreetMap
+              </a>{' '}
+              — vous connaissez peut-être ce terrain mieux que la carte. Ce
+              que vous y corrigez profite à tout le monde, ici comme là-bas.
+            </p>
+          )}
         </section>
       )}
 
