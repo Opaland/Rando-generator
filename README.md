@@ -150,6 +150,12 @@ le déclaratif n'entre pas dans le calcul de correspondance, donc les tronçons
 restants, les suggestions de prochaine sortie et les séries continues
 l'ignorent — ils n'y ont pas accès.
 
+Sur la carte, un itinéraire coché est **discontinu** là où un itinéraire
+mesuré est plein, dans la couleur de son réseau : c'est le figuré qui
+distingue, pas une couleur de plus. Les déclarations partent dans la
+sauvegarde exportable, et se relisent depuis une sauvegarde antérieure sans
+erreur.
+
 ### Le domaine où la géométrie est juste
 
 Les distances sont calculées par une projection équirectangulaire, qui ne

@@ -1,6 +1,7 @@
 import { useEffect, type RefObject } from 'react'
 import type { GeoJSONSource, Map as MaplibreMap } from 'maplibre-gl'
 import {
+  buildDeclaresGeoJSON,
   buildTrailGeoJSON,
   buildTracksGeoJSON,
 } from '../../core/mapdata.ts'
@@ -72,7 +73,13 @@ export function appliquerQuandPret(
  * liste en désaccord avec les `setData` qui suivent produirait soit une
  * attente inutile, soit une écriture silencieusement perdue.
  */
-const SOURCES_DONNEES = ['trails', 'trails-done', 'tracks', 'pois'] as const
+const SOURCES_DONNEES = [
+  'trails',
+  'trails-done',
+  'trails-declares',
+  'tracks',
+  'pois',
+] as const
 const SOURCES_DESSIN = ['draw', 'draw-points'] as const
 const SOURCES_POSITION = ['user-position'] as const
 const SOURCES_REPERE = ['elevation-hover'] as const
@@ -92,6 +99,7 @@ export function useMapSources(
   const userPosition = useAppStore((s) => s.userPosition)
   const elevationHover = useAppStore((s) => s.elevationHover)
   const drawPath = useAppStore((s) => s.drawPath)
+  const parcoursDeclares = useAppStore((s) => s.parcoursDeclares)
   const drawWaypoints = useAppStore((s) => s.drawWaypoints)
 
   // Mise à jour des couches quand les données changent.
@@ -113,6 +121,13 @@ export function useMapSources(
       done.features.push(...custom.done.features)
       void map.getSource<GeoJSONSource>('trails')?.setData(base)
       void map.getSource<GeoJSONSource>('trails-done')?.setData(done)
+      // Le déclaratif (issue #158) : sa propre source, et rien de commun avec
+      // les échantillons du matching.
+      const declares = buildDeclaresGeoJSON(
+        [...itineraries, ...customItineraries],
+        parcoursDeclares,
+      )
+      void map.getSource<GeoJSONSource>('trails-declares')?.setData(declares)
       // La sortie en cours passe par la même source que les traces
       // importées : une seule couche, un seul style. Sans elle, on marche
       // deux heures en regardant une carte vide.
@@ -131,6 +146,7 @@ export function useMapSources(
             base: number
             done: number
             traces: number
+            declares: number
             styleEpoch: number
           }
         }
@@ -141,6 +157,9 @@ export function useMapSources(
         // cours : c'est le seul moyen, sans WebGL, de vérifier qu'on la
         // dessine pendant qu'on la marche.
         traces: tracesDessinees.features.length,
+        // Le déclaratif ne se lit pas au pixel : sans ce témoin, aucun test
+        // ne peut dire s'il est dessiné (issue #158).
+        declares: declares.features.length,
         styleEpoch,
       }
     }
@@ -150,6 +169,7 @@ export function useMapSources(
     mapRef,
     itineraries,
     customItineraries,
+    parcoursDeclares,
     matching,
     customMatching,
     tracks,

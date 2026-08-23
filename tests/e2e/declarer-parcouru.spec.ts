@@ -142,3 +142,39 @@ test('une déclaration survit au rechargement', async ({ page }) => {
     timeout: 20_000,
   })
 })
+
+/**
+ * Le figuré distinct sur la carte (issue #158, seconde piste).
+ *
+ * On ne lit pas un trait discontinu au pixel : le composant carte publie ce
+ * qu'il a effectivement remis à MapLibre, et c'est ce témoin qu'on mesure —
+ * la même technique que pour la sortie en cours.
+ */
+test('un itinéraire coché est dessiné à part sur la carte', async ({ page }) => {
+  await mockExternalNetwork(page)
+  await page.goto('/')
+  await chargerLaZone(page)
+
+  const declares = async () =>
+    page.evaluate(
+      () =>
+        (
+          window as unknown as {
+            __sentiersTrailStats?: { declares: number }
+          }
+        ).__sentiersTrailStats?.declares ?? -1,
+    )
+
+  // Rien de coché : rien de dessiné dans cette couche.
+  await expect.poll(declares, { timeout: 15_000 }).toBe(0)
+
+  await ouvrirLaFiche(page)
+  await page.getByTestId('declare-ouvrir').click()
+  await page.getByTestId('declare-valider').click()
+
+  // Les chemins de l'itinéraire coché apparaissent dans leur propre source.
+  await expect.poll(declares, { timeout: 15_000 }).toBeGreaterThan(0)
+
+  await page.getByTestId('declare-retirer').click()
+  await expect.poll(declares, { timeout: 15_000 }).toBe(0)
+})

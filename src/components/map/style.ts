@@ -56,6 +56,7 @@ export function baseStyle(tiles: string, attribution: string): StyleSpecificatio
       },
       trails: { type: 'geojson', data: emptyCollection() },
       'trails-done': { type: 'geojson', data: emptyCollection() },
+      'trails-declares': { type: 'geojson', data: emptyCollection() },
       tracks: { type: 'geojson', data: emptyCollection() },
       pois: { type: 'geojson', data: emptyCollection() },
       draw: { type: 'geojson', data: emptyCollection() },
@@ -93,6 +94,30 @@ export function baseStyle(tiles: string, attribution: string): StyleSpecificatio
           'line-opacity': 0.45,
         },
         layout: { 'line-cap': 'round', 'line-join': 'round' },
+      },
+      {
+        /*
+          Les itinéraires déclarés parcourus (issue #158).
+
+          Trait **discontinu**, dans la couleur de leur réseau : mesuré =
+          plein, déclaré = pointillé. Le figuré distingue, la couleur
+          continue de dire le réseau — ajouter un jeton de couleur pour
+          « déclaré » referait l'erreur relevée par l'audit global, où deux
+          couleurs étaient nées entre deux sprints sans décision.
+
+          Posée sous `trails-done` dans l'ordre des couches : là où les deux
+          se superposent, c'est le mesuré qu'on doit voir.
+        */
+        id: 'trails-declares',
+        type: 'line',
+        source: 'trails-declares',
+        paint: {
+          'line-color': NETWORK_COLOR_MATCH,
+          'line-width': 3,
+          'line-opacity': 0.8,
+          'line-dasharray': [2, 2],
+        },
+        layout: { 'line-cap': 'butt', 'line-join': 'round' },
       },
       {
         id: 'trails-done',

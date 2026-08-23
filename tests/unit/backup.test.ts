@@ -461,3 +461,81 @@ describe('domaine de validité à la restauration (issue #170)', () => {
     expect(relue.tracks).toHaveLength(1)
   })
 })
+
+/**
+ * Les parcours déclarés dans la sauvegarde (issue #158).
+ *
+ * Sans cela, Sylvie perdrait ses quinze PR au premier changement de
+ * navigateur — et la sauvegarde, qui est « la seule copie qui vous
+ * appartienne », mentirait par omission.
+ */
+describe('parcours déclarés et sauvegarde (issue #158)', () => {
+  const declare = {
+    itineraryId: 42,
+    date: '2024-05-01',
+    declareLe: '2026-08-23T10:00:00.000Z',
+  }
+
+  it('les emporte, et les rend', async () => {
+    const backup = buildBackup({
+      tracks: [],
+      customItineraries: [],
+      settings: {},
+      parcoursDeclares: [declare],
+      exportedAt: '2026-01-01T00:00:00Z',
+    })
+    const octets = await compresserBackup(serialiserBackup(backup))
+    const relue = await lireArchiveBackup(
+      octets.buffer.slice(
+        octets.byteOffset,
+        octets.byteOffset + octets.byteLength,
+      ) as ArrayBuffer,
+    )
+    expect(relue.parcoursDeclares).toEqual([declare])
+  })
+
+  /**
+   * Une sauvegarde antérieure à #158 n'en porte aucun. Elle doit se relire
+   * sans erreur et rendre une liste vide — pas `undefined`, que l'appelant
+   * devrait alors garder en tête à chaque usage.
+   */
+  it('relit une sauvegarde écrite avant que cela existe', async () => {
+    const ancienne = {
+      format: BACKUP_FORMAT,
+      version: BACKUP_VERSION,
+      exportedAt: '2026-01-01T00:00:00Z',
+      tracks: [],
+      customItineraries: [],
+      settings: {},
+    }
+    const octets = await compresserBackup(JSON.stringify(ancienne))
+    const relue = await lireArchiveBackup(
+      octets.buffer.slice(
+        octets.byteOffset,
+        octets.byteOffset + octets.byteLength,
+      ) as ArrayBuffer,
+    )
+    expect(relue.parcoursDeclares).toEqual([])
+  })
+
+  /** Une entrée abîmée ne doit pas emporter toute la restauration. */
+  it('écarte une entrée illisible sans rien perdre d’autre', async () => {
+    const bancale = {
+      format: BACKUP_FORMAT,
+      version: BACKUP_VERSION,
+      exportedAt: '2026-01-01T00:00:00Z',
+      tracks: [],
+      customItineraries: [],
+      settings: {},
+      parcoursDeclares: [declare, { itineraryId: 'quarante-deux' }, null],
+    }
+    const octets = await compresserBackup(JSON.stringify(bancale))
+    const relue = await lireArchiveBackup(
+      octets.buffer.slice(
+        octets.byteOffset,
+        octets.byteOffset + octets.byteLength,
+      ) as ArrayBuffer,
+    )
+    expect(relue.parcoursDeclares).toEqual([declare])
+  })
+})

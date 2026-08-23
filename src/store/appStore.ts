@@ -1582,6 +1582,10 @@ export const useAppStore = create<AppState>()((set, get) => {
           toleranceMeters: etat.toleranceMeters,
           completionPct: etat.completionPct,
         },
+        // Sans cela, quinze PR cochés à la main disparaîtraient au premier
+        // changement de navigateur — et la sauvegarde, « la seule copie qui
+        // vous appartienne », mentirait par omission (issue #158).
+        parcoursDeclares: etat.parcoursDeclares,
         exportedAt: new Date().toISOString(),
       })
       const octets = await compresserBackup(serialiserBackup(backup))
@@ -1631,7 +1635,32 @@ export const useAppStore = create<AppState>()((set, get) => {
         }
       }
 
-      set({ tracks: traces.tracks, customItineraries: persos.itineraries })
+      /*
+        Les déclarations se fusionnent comme le reste : ce qui est déjà là
+        l'emporte, la sauvegarde complète. Écraser ferait disparaître une
+        déclaration faite depuis l'export, exactement comme cela arrivait
+        aux traces avant qu'on le corrige.
+      */
+      const declaresFusionnes = [
+        ...get().parcoursDeclares,
+        ...backup.parcoursDeclares.filter(
+          (d) =>
+            !get().parcoursDeclares.some(
+              (deja) => deja.itineraryId === d.itineraryId,
+            ),
+        ),
+      ]
+      if (db) {
+        for (const declaration of declaresFusionnes) {
+          await db.declarerParcours(declaration)
+        }
+      }
+
+      set({
+        tracks: traces.tracks,
+        customItineraries: persos.itineraries,
+        parcoursDeclares: declaresFusionnes,
+      })
       if (traces.ajoutees > 0 || persos.ajoutes > 0) await recompute()
 
       // Les réglages ne sont repris que s'ils sont présents : une sauvegarde
