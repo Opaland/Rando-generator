@@ -5,6 +5,7 @@ import { displayName, formatKm, formatPct } from '../lib/format.ts'
 import { useCountUp } from '../lib/useCountUp.ts'
 import { isCompleted } from '../core/milestones.ts'
 import { tracesHorsZone } from '../core/couverture.ts'
+import { chiffresDeCompletion } from '../core/declaratif.ts'
 import { buildSummary, summaryFilename } from '../core/summary.ts'
 import { summaryCardBlob } from '../lib/summaryCard.ts'
 import { downloadBlob } from '../lib/download.ts'
@@ -30,6 +31,7 @@ export function Dashboard() {
   const dismissCelebration = useAppStore((s) => s.dismissCelebration)
   const seuilBoucle = useAppStore((s) => s.completionPct)
   const tracks = useAppStore((s) => s.tracks)
+  const parcoursDeclares = useAppStore((s) => s.parcoursDeclares)
 
   // Le chiffre rattrape la barre : les voir bouger séparément donne
   // l'impression qu'ils ne parlent pas du même résultat.
@@ -92,6 +94,25 @@ export function Dashboard() {
   if (itineraries.length === 0) return null
 
   const global = matching?.global
+  /*
+    Les deux chiffres, côte à côte et jamais additionnés (issue #158).
+
+    Le grand pourcentage reste **le mesuré**, et rien d'autre : c'est lui qui
+    porte la promesse « le chiffre est vrai ». Le déclaratif s'affiche à part,
+    en toutes lettres, et seulement quand il existe — quelqu'un qui n'a rien
+    coché ne verra jamais le mot « mesurés ».
+  */
+  // `global` ne vaut que si `matching` vaut : la mesure déjà faite sur chaque
+  // itinéraire se lit donc sans détour, et c'est elle qui empêche de compter
+  // deux fois un sentier parcouru à moitié puis coché.
+  const chiffres =
+    matching && global
+      ? chiffresDeCompletion(global, itineraries, parcoursDeclares, {
+          mesuresParItineraire: new Map(
+            matching.results.map((r) => [r.itineraryId, r.doneMeters]),
+          ),
+        })
+      : null
   const itineraireFete = celebration
     ? byId.get(celebration.itineraryId)
     : undefined
@@ -144,6 +165,15 @@ export function Dashboard() {
             <p className={styles.globalDetail} data-testid="global-km">
               {formatKm(global.doneMeters)} parcourus ·{' '}
               {formatKm(global.totalMeters - global.doneMeters)} restants
+            </p>
+          )}
+          {chiffres && chiffres.pctDeclare > 0 && (
+            <p className={styles.declare} data-testid="global-declare">
+              <strong>{formatPct(chiffres.pctDeclare)} déclarés</strong> en
+              plus, sur {formatKm(chiffres.metresDeclares)} d’itinéraires
+              cochés à la main. Ce chiffre-là n’est pas mesuré : il n’entre ni
+              dans le pourcentage ci-dessus, ni dans les tronçons restants, ni
+              dans les suggestions de prochaine sortie.
             </p>
           )}
           {boucles > 0 && (

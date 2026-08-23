@@ -29,6 +29,7 @@ describe('openSentiersDb', () => {
       'customItineraries',
       'enregistrement',
       'enregistrementPoints',
+      'parcoursDeclares',
       'poisEmportes',
       'settings',
       'tracks',
@@ -253,5 +254,35 @@ describe('poisEmportes', () => {
     await db.ecrirePoisEmportes(reserve)
     await db.effacerPoisEmportes(42)
     await expect(db.lirePoisEmportes(42)).resolves.toBeUndefined()
+  })
+})
+
+/**
+ * Les parcours déclarés (issue #158).
+ *
+ * Un magasin séparé du matching, et c'est le fond du sujet : ce qui est
+ * coché à la main ne peut pas se mélanger par accident à ce qui est mesuré.
+ */
+describe('parcoursDeclares', () => {
+  const parcours = {
+    itineraryId: 42,
+    date: '2024-05-01',
+    declareLe: '2026-08-23T10:00:00.000Z',
+  }
+
+  it('coche, liste, décoche', async () => {
+    await db.declarerParcours(parcours)
+    await expect(db.listerParcoursDeclares()).resolves.toEqual([parcours])
+    await db.retirerParcoursDeclare(42)
+    await expect(db.listerParcoursDeclares()).resolves.toEqual([])
+  })
+
+  /** Recocher le même sentier ne l'empile pas : c'est un fait, pas un journal. */
+  it('remplace au lieu d’empiler', async () => {
+    await db.declarerParcours(parcours)
+    await db.declarerParcours({ ...parcours, date: null })
+    const tout = await db.listerParcoursDeclares()
+    expect(tout).toHaveLength(1)
+    expect(tout[0]?.date).toBeNull()
   })
 })
