@@ -17,10 +17,18 @@
   gap: var(--espace-7);
 }
 
+/* Deux rangées : ce que je regarde, puis ce que je peux en faire. */
 .header {
+  display: grid;
+  gap: var(--espace-4);
+  justify-items: start;
+}
+
+.identite {
   display: flex;
   align-items: flex-start;
   gap: var(--espace-5);
+  width: 100%;
 }
 
 .badge {
@@ -70,6 +78,13 @@
   margin: var(--espace-1) 0 0;
   font-size: var(--texte-secondaire);
   color: var(--gris-vert);
+  /* Le sous-titre est le seul endroit qui nomme l'itinéraire en toutes
+     lettres : deux lignes lui sont laissées, au-delà on coupe plutôt que
+     d'empiler (AUDIT_UX.md, constat U10). */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .view3d,
