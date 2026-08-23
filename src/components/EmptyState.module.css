@@ -5,6 +5,21 @@
   display: grid;
   place-items: center;
   padding: var(--espace-7);
+  /*
+    La carte du guide s'arrête au-dessus de l'attribution.
+
+    Elle est centrée dans le cadre de la carte, et à la première ouverture
+    sur téléphone elle en occupe presque toute la hauteur : mesuré, quatre
+    sondes `elementFromPoint` sur cinq le long de la mention d'attribution
+    renvoyaient la carte du guide — 80 % de la mention recouverte, par la
+    correction même de U4, qui avait remonté l'attribution au-dessus de la
+    barre d'onglets et de la poignée.
+
+    `attribution.spec.ts` ne pouvait pas le voir : il fermait le guide avant
+    de mesurer. C'est la revue de sprint qui l'a trouvé, en regardant
+    l'application et non le diff.
+  */
+  padding-bottom: calc(var(--espace-7) + var(--bande-attribution));
   pointer-events: none;
 }
 
@@ -24,6 +39,32 @@
   padding: var(--espace-7) var(--espace-8);
   display: grid;
   gap: var(--espace-5);
+  /*
+    Trois rangées : le titre, le corps, l'action. **Seul le corps défile.**
+
+    Sur un 360 × 640, la bande du bas (attribution, poignée, barre
+    d'onglets) prend 192 px : il reste 337 px pour une carte qui en demande
+    517. Quelque chose doit défiler, et le choix de ce qui reste en place
+    est tout le sujet — réserver la bande sans rien changer d'autre faisait
+    sortir « Voir un exemple » du cadre, c'est-à-dire rouvrait U1, le
+    constat le plus grave de l'audit, pour refermer U4.
+
+    Un premier essai ne laissait défiler que les étapes : mesuré, leur
+    rangée tombait à **0 px** sur cet écran. Le guide y perdait les trois
+    phrases qui disent ce que fait le produit — le remède était pire.
+
+    `minmax(0, 1fr)` et non `1fr` : une rangée `1fr` ne descend pas sous la
+    taille de son contenu, et le corps refuserait de rétrécir.
+  */
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+/* Le corps porte l'espacement que la carte portait : c'est lui qui empile
+   désormais les étapes et les deux paragraphes. */
+.corps {
+  display: grid;
+  gap: var(--espace-5);
+  overflow-y: auto;
 }
 
 /* La carte devient le repère de position du bouton de fermeture, qui se

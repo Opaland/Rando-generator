@@ -42,7 +42,31 @@ async function replierLaFeuille(page: Page): Promise<void> {
  * les quatre largeurs qui encadrent les paliers de la mise en page.
  */
 
-const LARGEURS = [390, 800, 810, 1280]
+/**
+ * Les quatre largeurs qui encadrent les paliers de la mise en page, avec la
+ * hauteur qui va avec.
+ *
+ * La hauteur n'est pas un détail : c'est elle qui décide si la carte du
+ * guide, centrée dans le cadre, touche la mention d'attribution. Mesurer à
+ * 900 px de haut sur un téléphone de 390 aurait laissé passer le défaut de
+ * la revue du 23/08 — la sonde n'y était rouge que d'un cheveu. 844 px est
+ * la hauteur d'un iPhone 12 à 14, et c'est celle de toutes les mesures
+ * d'`AUDIT_UX.md`.
+ *
+ * 360 × 640 est le petit téléphone Android, et il gagne sa place par la
+ * mesure : c'est le seul écran de cette liste où réserver **la seule
+ * hauteur du bandeau** au lieu de la bande entière — barre d'onglets et
+ * poignée comprises — laisse la carte du guide retomber sur la mention.
+ * À 390 × 844 la même erreur passe à quatre pixels près, c'est-à-dire
+ * qu'elle passe.
+ */
+const ECRANS = [
+  { largeur: 360, hauteur: 640 },
+  { largeur: 390, hauteur: 844 },
+  { largeur: 800, hauteur: 900 },
+  { largeur: 810, hauteur: 900 },
+  { largeur: 1280, hauteur: 900 },
+]
 
 interface Boite {
   x: number
@@ -79,9 +103,9 @@ async function boitesDeLaCarte(page: Page): Promise<Record<string, Boite | null>
   })
 }
 
-for (const largeur of LARGEURS) {
-  test.describe(`à ${String(largeur)} px`, () => {
-    test.use({ viewport: { width: largeur, height: 900 } })
+for (const { largeur, hauteur } of ECRANS) {
+  test.describe(`à ${String(largeur)} × ${String(hauteur)} px`, () => {
+    test.use({ viewport: { width: largeur, height: hauteur } })
 
     test('rien ne recouvre l’attribution', async ({ page }) => {
       await mockExternalNetwork(page)
@@ -142,6 +166,59 @@ for (const largeur of LARGEURS) {
           : `${peint.tagName}.${peint.className.slice(0, 40)}`
       })
       expect(auDessus).toBe('attribution')
+    })
+
+    /**
+     * Le même contrôle **guide ouvert**, c'est-à-dire à la toute première
+     * ouverture — l'état que les deux tests ci-dessus ne pouvaient pas voir,
+     * puisqu'ils commencent par `fermerLeGuide`.
+     *
+     * C'est par ce trou qu'un défaut est passé : la correction de U4 a
+     * remonté l'attribution au-dessus de la barre d'onglets et de la
+     * poignée, donc dans la zone qu'occupe la carte du guide. Mesuré à
+     * 390 px, quatre sondes sur cinq le long de la mention renvoyaient la
+     * carte du guide (`DIV._card_…`) — **80 % de la mention recouverte**, à
+     * la première seconde de la première visite.
+     *
+     * On sonde sur toute la hauteur de la mention et pas en un seul point :
+     * un recouvrement partiel est un recouvrement, et c'est précisément ce
+     * qui s'était produit.
+     */
+    test('guide ouvert, rien ne se pose sur l’attribution', async ({ page }) => {
+      await mockExternalNetwork(page)
+      await mockTilesOk(page)
+      await page.goto('/')
+      test.skip(!(await hasMap(page)), 'WebGL indisponible')
+
+      await expect(page.getByTestId('onboarding')).toBeVisible()
+
+      const sondes = await page.evaluate(() => {
+        const attrib = document.querySelector('.maplibregl-ctrl-attrib-inner')
+        if (!attrib) return null
+        const r = attrib.getBoundingClientRect()
+        return [0.1, 0.3, 0.5, 0.7, 0.9].map((f) => {
+          const peint = document.elementFromPoint(r.x + 6, r.y + r.height * f)
+          const surLAttribution =
+            peint !== null && (attrib === peint || attrib.contains(peint))
+          return {
+            f,
+            // `getAttribute` et non `className` : sur un élément SVG, la
+            // seconde n'est pas une chaîne, et le message de diagnostic
+            // planterait au lieu de dire ce qui recouvre.
+            peint: peint
+              ? `${peint.tagName}.${(peint.getAttribute('class') ?? '').slice(0, 40)}`
+              : 'rien',
+            surLAttribution,
+          }
+        })
+      })
+      expect(sondes, 'pas d’attribution sur la carte').not.toBeNull()
+
+      const recouvertes = (sondes ?? []).filter((s) => !s.surLAttribution)
+      expect(
+        recouvertes,
+        `à ${String(largeur)} px, guide ouvert, ces sondes ne trouvent pas l’attribution`,
+      ).toEqual([])
     })
   })
 }
