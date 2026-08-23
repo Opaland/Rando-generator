@@ -1,3 +1,4 @@
+import type { ParcoursDeclare } from './declaratif.ts'
 import { traverseAntimeridien } from './domaine.ts'
 import { trackFingerprint } from './gpx.ts'
 import type { Itinerary, LonLat, Track } from './types.ts'
@@ -39,6 +40,14 @@ export interface Backup {
   tracks: Track[]
   customItineraries: Itinerary[]
   settings: BackupReglages
+  /**
+   * Les itinéraires déclarés parcourus (issue #158).
+   *
+   * Toujours présent en lecture, même pour une sauvegarde écrite avant que
+   * cela existe : une liste vide plutôt qu'`undefined`, pour qu'aucun
+   * appelant n'ait à s'en souvenir.
+   */
+  parcoursDeclares: ParcoursDeclare[]
 }
 
 /**
@@ -51,6 +60,7 @@ export function buildBackup(parts: {
   tracks: Track[]
   customItineraries: Itinerary[]
   settings: BackupReglages
+  parcoursDeclares?: ParcoursDeclare[]
   exportedAt: string
 }): Backup {
   return {
@@ -60,6 +70,7 @@ export function buildBackup(parts: {
     tracks: parts.tracks,
     customItineraries: parts.customItineraries,
     settings: parts.settings,
+    parcoursDeclares: parts.parcoursDeclares ?? [],
   }
 }
 
@@ -180,6 +191,23 @@ function estTrace(valeur: unknown): valeur is Track {
   )
 }
 
+/**
+ * Un parcours déclaré lisible (issue #158).
+ *
+ * `date` peut être absente ou nulle — « je ne sais plus quand » est une
+ * réponse complète, pas une donnée manquante.
+ */
+function estParcoursDeclare(valeur: unknown): valeur is ParcoursDeclare {
+  const p = champs(valeur)
+  if (!p) return false
+  const date = p['date']
+  return (
+    typeof p['itineraryId'] === 'number' &&
+    typeof p['declareLe'] === 'string' &&
+    (date === null || date === undefined || typeof date === 'string')
+  )
+}
+
 function estItineraire(valeur: unknown): valeur is Itinerary {
   const i = champs(valeur)
   if (!i) return false
@@ -253,6 +281,7 @@ export async function lireArchiveBackup(
   }
   const tracks = brut['tracks']
   const persos = brut['customItineraries']
+  const declares = brut['parcoursDeclares']
   const exportedAt = brut['exportedAt']
 
   return {
@@ -264,6 +293,15 @@ export async function lireArchiveBackup(
     tracks: Array.isArray(tracks) ? tracks.filter(estTrace) : [],
     customItineraries: Array.isArray(persos)
       ? persos.filter(estItineraire)
+      : [],
+    // Absent des sauvegardes antérieures à #158 : liste vide, jamais
+    // `undefined`, pour qu'aucun appelant n'ait à s'en souvenir.
+    parcoursDeclares: Array.isArray(declares)
+      ? declares.filter(estParcoursDeclare).map((d) => ({
+          itineraryId: d.itineraryId,
+          date: d.date ?? null,
+          declareLe: d.declareLe,
+        }))
       : [],
     settings: {
       ...(nombre('toleranceMeters') !== undefined

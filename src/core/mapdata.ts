@@ -155,6 +155,47 @@ export interface TrackProperties {
 }
 
 /** Traces GPX en surimpression (une feature par trace d'au moins 2 points). */
+/**
+ * Les itinéraires déclarés parcourus, pour la carte (issue #158).
+ *
+ * Le figuré retenu est le trait **discontinu**, dans la couleur de son
+ * réseau : mesuré = plein, déclaré = pointillé. Le style s'en charge ; ici on
+ * ne produit que la géométrie et le réseau.
+ *
+ * Pourquoi le figuré et non une couleur : l'audit global avait relevé deux
+ * jetons de couleur nés entre deux sprints sans que personne les ait
+ * décidés, et une couleur de plus se disputerait la lecture avec les cinq
+ * couleurs de réseau — qui, elles, portent déjà une information.
+ *
+ * Cette collection est **la seule** chose que le déclaratif ajoute à la
+ * carte. Elle ne passe pas par `Sample`, donc rien de ce qui suppose une
+ * géométrie mesurée ne peut s'en nourrir.
+ */
+export function buildDeclaresGeoJSON(
+  itineraries: Itinerary[],
+  declares: { itineraryId: number }[],
+): LineCollection<TrailProperties> {
+  const coches = new Set(declares.map((d) => d.itineraryId))
+  const features: LineFeature<TrailProperties>[] = []
+  for (const itin of itineraries) {
+    if (!coches.has(itin.osmRelationId)) continue
+    for (const way of itin.ways) {
+      // Un point isolé n'est pas une ligne : MapLibre refuserait la
+      // géométrie, et la couche entière disparaîtrait avec elle.
+      if (way.coords.length < 2) continue
+      features.push(
+        lineFeature(way.coords, {
+          network: itin.network,
+          itineraryId: itin.osmRelationId,
+          itineraryIds: [itin.osmRelationId],
+          wayId: way.osmWayId,
+        }),
+      )
+    }
+  }
+  return { type: 'FeatureCollection', features }
+}
+
 export function buildTracksGeoJSON(
   tracks: Track[],
 ): LineCollection<TrackProperties> {
