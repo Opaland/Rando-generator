@@ -158,6 +158,14 @@ celles-ci. Les déclarations partent dans la
 sauvegarde exportable, et se relisent depuis une sauvegarde antérieure sans
 erreur.
 
+### Une grosse bibliothèque
+
+Mesuré le 23/08/2026 sur **800 activités** de 2 h 30 à un point par seconde,
+soit 7,2 millions de points : import en **94,7 s**, **91 Mo** occupés dans
+IndexedDB (9 % du quota), sauvegarde de **36,7 Mo** produite en 6,4 s, et
+aucune trace perdue. Le détail et ce que la mesure ne dit pas :
+`docs/MESURE_BIBLIOTHEQUE.md`. Reproductible avec `npm run mesure`.
+
 ### Deux onglets, une seule base
 
 IndexedDB refuse de migrer tant qu'une page reste ouverte sur la version
