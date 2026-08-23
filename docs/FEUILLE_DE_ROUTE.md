@@ -10,12 +10,17 @@ trois audits. Ici, seulement les prochains pas.
 
 ## Où en est le produit
 
-La boucle est complète **sauf en amont** : on importe une trace, elle est
-appariée aux itinéraires balisés, on lit sa progression, son historique, son
-bilan, ses objectifs. Tout marche, tout est testé, tout est déployé.
+**La boucle est complète.** Depuis la nuit du 22 au 23/08, Sentiers
+enregistre une sortie : on appuie sur « Démarrer », on marche, le tracé se
+dessine, on termine, et la sortie devient une trace comme une autre —
+appariée, comptée, exportable. Elle survit à un onglet tué, et se retrouve
+en pause au rechargement.
 
-Mais pour avoir une trace, il faut **une autre application**. C'est le seul
-trou, et il est en amont de tout le reste.
+Le trou qui rendait la proposition de valeur dépendante d'un concurrent est
+donc refermé. Ce qui reste de #152 est la **mesure de batterie**, qui ne se
+fait pas dans un test : `docs/PROTOCOLE_BATTERIE.md` dit exactement quoi
+relever, et aucun chiffre d'autonomie n'est affiché nulle part tant que la
+séance n'a pas eu lieu.
 
 Trois audits ont été menés : `AUDIT_MOBILE.md` (mise en page téléphone, neuf
 constats, tous traités), `PRODUCT_AUDIT.md` (audit externe du 20/08),
@@ -37,13 +42,41 @@ libère beaucoup.
 | **#173 / E3–E4** | Théo (9 ans) et Jeanine (76 ans) menant chacun une tâche sans aide | L'issue reste ouverte tant que la preuve humaine manque — le code, lui, est fini |
 | **#203** | Un arbitrage : doubler les réglages dans `localStorage` (synchrone) ou accepter la fenêtre | Un réglage changé puis rechargé dans la seconde est perdu. La fenêtre est étroite ; doubler crée deux sources de vérité |
 | **#2** | Un avis juridique sur la balise blanc/rouge | L'identité visuelle repose dessus |
+| **#152, pierre 4** | Deux téléphones, deux heures chacun — `docs/PROTOCOLE_BATTERIE.md` dit quoi relever | Le chiffre d'autonomie affiché à côté de « Démarrer ». Sans lui, on ne promet rien ; et si la consommation est mauvaise, ce sont ces mesures qui fixeront les seuils de filtrage des positions |
 
 ---
 
 ## Jalon 1 — Fermer la boucle : Sentiers enregistre une sortie (#152)
 
-**Le seul P0 encore ouvert, et le constat que l'audit externe qualifie
-d'existentiel.**
+**Fait, sauf la mesure de batterie.** Quatre pierres étaient prévues ; les
+trois premières sont livrées et déployées.
+
+| pierre | état |
+|---|---|
+| 1. `core/recorder.ts`, la machine à états | livrée (#220) |
+| 2. la persistance du tampon et la reprise après un onglet tué | livrée (#233) |
+| 3. l'écran de marche, la géolocalisation, le tracé en direct | livrées (#234, #237) |
+| 4. **la mesure de batterie** | **protocole écrit, séance à faire** |
+
+Ce qui a été tranché en chemin, et qui ne se redécide pas sans raison :
+
+- **une sortie reprise est en pause, jamais en marche.** Un onglet tué à
+  10 h et rouvert à 13 h ne veut pas dire qu'on a marché trois heures ;
+- **le segment qui enjambe une pause n'est pas compté.** On ne compte que
+  ce qu'on a vu ;
+- **un seul `watchPosition`** pour la carte et l'enregistrement ;
+- **aucun filtre de bruit sur les positions retenues.** Distance minimale,
+  intervalle minimal, seuil de précision : ces trois seuils changent ce qui
+  est compté comme parcouru, et se mesurent sur des sorties réelles.
+
+Ce qui suit décrit l'état d'avant, gardé parce que le pourquoi n'a pas
+changé.
+
+---
+
+### Pourquoi c'était le seul P0
+
+**Le constat que l'audit externe qualifie d'existentiel.**
 
 > « Le produit a un seul problème existentiel : il ne sait pas encore
 > accompagner une randonnée. Tout le reste est du raffinement. »
@@ -68,20 +101,31 @@ Deux points non négociables :
   s'annonce, comme le reste ;
 - **la position ne quitte jamais l'appareil**, y compris en enregistrement.
 
-Découpage suggéré, un item par PR :
+Reste de ce jalon, et rien d'autre :
 
-1. `core/recorder.ts` en TDD — la machine à états seule, sans géolocalisation ;
-2. la persistance du tampon et la reprise après un onglet tué ;
-3. l'écran de marche : distance, durée, D+, ce qu'il reste. Rien qui demande
-   de sortir le téléphone toutes les deux minutes ;
-4. la mesure de batterie, écrite dans la PR avec son protocole.
+- **la séance de mesure de batterie** (`docs/PROTOCOLE_BATTERIE.md`). Deux
+  appareils, deux heures chacun, une feuille de relevé. C'est un item
+  bloqué sur Cédric, comme les cinq du tableau plus haut ;
+- **« ce qu'il reste »** n'est pas affiché : cela suppose de savoir quel
+  itinéraire on suit, ce que rien ne dit aujourd'hui, et le déduire de la
+  position demande un appariement en direct dont le seuil change ce qui est
+  compté (#150, #151).
 
 ---
 
 ## Jalon 2 — Les dix constats restants de l'audit UX
 
-Ils sont petits, mesurés, et chacun tient dans une PR. Deux méritent de
-passer devant les autres.
+**Douze des treize sont traités** (nuit du 22 au 23/08). Ce qui suit décrit
+l'état de l'audit au moment où il a été écrit ; seul **U11** reste ouvert,
+et c'est un choix de design, pas un défaut mesuré :
+
+> U11 — des émojis en couleur dans une palette qui n'en a pas. La barre
+> d'onglets porte 🗺 👟 📈 ⚙ en couleurs natives, contre une palette tenue
+> à quatre teintes sur papier crème. Trancher demande de décider ce qu'on
+> veut à la place, et cela ne se décide pas seul de nuit.
+
+Ils étaient petits, mesurés, et chacun a tenu dans une PR. Deux méritaient
+de passer devant les autres.
 
 **U4 — l'attribution OpenStreetMap est masquée sur 32 % de sa largeur**, sur
 son début, par la légende de carte. À 810 px le recouvrement est total.
