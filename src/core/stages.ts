@@ -1,6 +1,13 @@
 import { formatKm } from '../lib/format.ts'
+import { distanceMeters } from './geo.ts'
 import type { GpxWaypoint } from './gpxExport.ts'
-import type { Itinerary, LonLat, Sample, TrailWay } from './types.ts'
+import type {
+  Itinerary,
+  LonLat,
+  PointOfInterest,
+  Sample,
+  TrailWay,
+} from './types.ts'
 import { STEP_METERS } from './types.ts'
 
 /**
@@ -250,4 +257,136 @@ export function waypointsDesEtapes(stages: Stage[]): GpxWaypoint[] {
     })
   }
   return reperes
+}
+
+/**
+ * Caler les étapes sur les couchages (issue #161, point 1).
+ *
+ * Camille prépare trois semaines sur la Grande Traversée des Alpes. Un
+ * découpage tous les 22 km qui la fait dormir à 4 km d'un refuge est joli sur
+ * le papier et inutilisable sur le terrain. Les refuges sont déjà
+ * téléchargés et classés ; le découpage les ignorait.
+ *
+ * ## La fenêtre ne s'invente pas
+ *
+ * Déplacer une coupure demande de dire jusqu'où, et ce nombre-là **change ce
+ * qui est calculé** : CLAUDE.md §2 interdit de le poser au jugement.
+ *
+ * Il ne l'est pas. La fenêtre est **la moitié de la longueur d'étape**,
+ * parce que c'est le plus grand déplacement qui garde les coupures dans
+ * l'ordre : au-delà, une coupure passerait devant sa voisine et les étapes se
+ * croiseraient. La géométrie du problème donne la borne ; il n'y avait rien
+ * à décider.
+ */
+
+/** Un endroit où dormir, situé le long du tracé. */
+export interface CouchageSitue {
+  nom: string
+  /** Distance depuis le départ, mesurée sur le tracé. */
+  metresLeLongDuTrace: number
+  /** Aller-retour depuis le tracé — ce que le détour coûte vraiment. */
+  detourMetres: number
+}
+
+/** Une étape, et le couchage sur lequel sa fin a été calée s'il y en a un. */
+export interface EtapeCalee extends Stage {
+  couchage: CouchageSitue | null
+}
+
+/**
+ * Déplace la fin de chaque étape vers le couchage le plus proche, dans la
+ * fenêtre. La dernière coupure est l'arrivée : elle ne bouge pas.
+ *
+ * Un couchage ne sert qu'une fois, et c'est **la garde d'ordre qui l'assure**
+ * — pas un registre des couchages déjà pris. J'en avais écrit un ; en
+ * l'ôtant, aucun test ne rougissait. C'était du code mort : une fois une
+ * coupure calée sur un refuge, l'étape suivante démarre exactement là, et
+ * `metresLeLongDuTrace <= startMeters` écarte ce refuge d'elle-même.
+ *
+ * Le test qui affirmait cet invariant passait donc pour une raison que je
+ * n'avais pas voulue (CLAUDE.md §1bis). Il reste, parce que l'invariant
+ * compte ; ce qui a disparu, c'est la ceinture qui doublait la bretelle.
+ */
+export function calerSurCouchages(
+  etapes: Stage[],
+  couchages: CouchageSitue[],
+  stageMeters: number,
+): EtapeCalee[] {
+  const fenetre = stageMeters / 2
+  const calees: EtapeCalee[] = etapes.map((e) => ({ ...e, couchage: null }))
+
+  for (let i = 0; i < calees.length - 1; i++) {
+    const etape = calees[i] as EtapeCalee
+    const suivante = calees[i + 1] as EtapeCalee
+    let meilleur: CouchageSitue | null = null
+    let ecartMeilleur = Infinity
+    for (const c of couchages) {
+      const ecart = Math.abs(c.metresLeLongDuTrace - etape.endMeters)
+      if (ecart > fenetre) continue
+      // La coupure ne doit ni précéder le départ de son étape, ni dépasser
+      // l'arrivée de la suivante : sinon l'ordre se casse.
+      if (c.metresLeLongDuTrace <= etape.startMeters) continue
+      if (c.metresLeLongDuTrace >= suivante.endMeters) continue
+      if (ecart < ecartMeilleur) {
+        meilleur = c
+        ecartMeilleur = ecart
+      }
+    }
+    if (!meilleur) continue
+    const nouvelleFin = meilleur.metresLeLongDuTrace
+    etape.endMeters = nouvelleFin
+    etape.meters = nouvelleFin - etape.startMeters
+    etape.couchage = meilleur
+    suivante.startMeters = nouvelleFin
+    suivante.meters = suivante.endMeters - nouvelleFin
+  }
+  return calees
+}
+
+/**
+ * Les couchages d'un tracé, situés dessus et rangés dans l'ordre du parcours.
+ *
+ * `hut` et `bivouac` seulement : un `shelter` est un abri météo, prévu pour
+ * une pause ou une urgence, pas pour la nuit. Y caler une étape enverrait
+ * quelqu'un dormir où l'on ne dort pas — c'est le genre d'erreur qui se paie
+ * en montagne, et la distinction existe déjà dans les données.
+ */
+export function couchagesLeLongDuTrace(
+  pois: PointOfInterest[],
+  trace: LonLat[],
+): CouchageSitue[] {
+  const cumul = distancesCumuleesDuTrace(trace)
+  const couchages: CouchageSitue[] = []
+  for (const poi of pois) {
+    if (poi.kind !== 'hut' && poi.kind !== 'bivouac') continue
+    let meilleurIndex = 0
+    let meilleureDistance = Infinity
+    for (const [index, point] of trace.entries()) {
+      const d = distanceMeters([poi.lon, poi.lat], point)
+      if (d < meilleureDistance) {
+        meilleureDistance = d
+        meilleurIndex = index
+      }
+    }
+    couchages.push({
+      nom: poi.name ?? 'Couchage',
+      metresLeLongDuTrace: cumul[meilleurIndex] ?? 0,
+      detourMetres: meilleureDistance * 2,
+    })
+  }
+  return couchages.sort(
+    (a, b) => a.metresLeLongDuTrace - b.metresLeLongDuTrace,
+  )
+}
+
+/** Distance cumulée depuis le départ, point par point. */
+function distancesCumuleesDuTrace(trace: LonLat[]): number[] {
+  const cumul: number[] = [0]
+  for (let i = 1; i < trace.length; i++) {
+    cumul.push(
+      (cumul[i - 1] ?? 0) +
+        distanceMeters(trace[i - 1] as LonLat, trace[i] as LonLat),
+    )
+  }
+  return cumul
 }

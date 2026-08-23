@@ -16,6 +16,8 @@ import { mentionPoisEmportes } from '../core/poisEmportes.ts'
 import {
   DEFAULT_STAGE_METERS,
   buildStages,
+  calerSurCouchages,
+  couchagesLeLongDuTrace,
   waypointsDesEtapes,
 } from '../core/stages.ts'
 import { assessItinerary } from '../core/dataQuality.ts'
@@ -100,7 +102,22 @@ export function ItineraryDetail() {
   // Un long GR ne se lit pas en un seul pourcentage : on le découpe en
   // étapes calculées (les découpages des topo-guides sont éditoriaux, donc
   // hors de portée — cf. src/core/stages.ts).
-  const etapes = buildStages(itin, relevantMatching?.samples ?? [])
+  /*
+    Les coupures se calent sur les couchages quand il y en a (issue #161).
+
+    Une étape en montagne est décidée par le refuge, pas par le kilomètre :
+    un découpage tous les 22 km qui fait dormir à 4 km d'un refuge est
+    inutilisable sur le terrain. Quand aucun couchage n'est connu dans la
+    fenêtre, la coupure reste au kilomètre — et la fiche le dit, plutôt que
+    de laisser croire qu'elle a été choisie.
+  */
+  const couchages = couchagesLeLongDuTrace(poisBruts, itineraryCoords(itin))
+  const etapes = calerSurCouchages(
+    buildStages(itin, relevantMatching?.samples ?? []),
+    couchages,
+    DEFAULT_STAGE_METERS,
+  )
+  const etapesCalees = etapes.filter((e) => e.couchage !== null).length
   // Une relation trouée produit un pourcentage faux sans le dire : le
   // signaler ne répare rien, mais rend le chiffre lisible.
   const qualite = assessItinerary(itin, new Date().toISOString())
@@ -300,10 +317,22 @@ export function ItineraryDetail() {
           <h4 id="stages-title" className={styles.sectionTitle}>
             Étapes
           </h4>
-          <p className={styles.hint}>
-            Découpage régulier calculé par l’application, en tranches d’environ{' '}
-            {Math.round(DEFAULT_STAGE_METERS / 1_000)} km — ce ne sont pas les
-            étapes d’un topo-guide.
+          <p className={styles.hint} data-testid="etapes-explication">
+            {etapesCalees > 0
+              ? `Découpage calculé en tranches d’environ ${String(
+                  Math.round(DEFAULT_STAGE_METERS / 1_000),
+                )} km, ${
+                  etapesCalees > 1
+                    ? `dont ${String(etapesCalees)} coupures calées`
+                    : 'dont une coupure calée'
+                } sur un refuge — ce ne sont pas les étapes d’un topo-guide.`
+              : poisLoading
+                ? `Découpage régulier calculé par l’application, en tranches d’environ ${String(
+                    Math.round(DEFAULT_STAGE_METERS / 1_000),
+                  )} km — ce ne sont pas les étapes d’un topo-guide. Recherche des refuges en cours…`
+                : `Découpage régulier calculé par l’application, en tranches d’environ ${String(
+                    Math.round(DEFAULT_STAGE_METERS / 1_000),
+                  )} km — ce ne sont pas les étapes d’un topo-guide. Aucun refuge connu près des coupures : elles tombent au kilomètre.`}
           </p>
           {/*
             Le plan sort de l'application (issue #161). Un seul fichier, à
@@ -346,6 +375,7 @@ export function ItineraryDetail() {
                     <span className={styles.stageRange}>
                       {' '}
                       {formatKm(etape.startMeters)} → {formatKm(etape.endMeters)}
+                      {etape.couchage && ` · ${etape.couchage.nom}`}
                     </span>
                   </span>
                   <ProgressBalise
