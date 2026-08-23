@@ -35,6 +35,7 @@ import {
   type Lieu,
 } from '../core/geocode.ts'
 import { resumeObjectif, type ResumeObjectif } from '../core/objectifs.ts'
+import type { ParcoursDeclare } from '../core/declaratif.ts'
 import { polylineLengthMeters } from '../core/sampling.ts'
 import { itineraryCoords } from '../core/mapdata.ts'
 import { parseBouclesGeoJSON } from '../core/boucles.ts'
@@ -236,6 +237,18 @@ export interface AppState extends EtatSortie, ActionsSortie {
    * constate ; un objectif dit par où continuer.
    */
   objectifs: number[]
+  /**
+   * Itinéraires déclarés parcourus, sans trace GPX (issue #158).
+   *
+   * Volontairement à côté de `matching` et non dedans : le déclaratif
+   * n'entre pas dans le pipeline, donc « prochaine sortie », les tronçons
+   * restants et les séries continues l'ignorent par construction.
+   */
+  parcoursDeclares: ParcoursDeclare[]
+  /** Coche un itinéraire comme parcouru, avec une date approximative. */
+  declarerParcours: (itineraryId: number, date: string | null) => Promise<void>
+  /** Décoche : on peut s'être trompé de sentier. */
+  retirerParcoursDeclare: (itineraryId: number) => Promise<void>
   zoneError: string | null
 
   // Traces GPX
@@ -1088,6 +1101,7 @@ export const useAppStore = create<AppState>()((set, get) => {
     lieuError: null,
     lieuxVides: false,
     objectifs: [],
+    parcoursDeclares: [],
     customItineraries: [],
     toleranceMeters: DEFAULT_TOLERANCE_METERS,
     completionPct: DEFAULT_COMPLETION_PCT,
@@ -1146,6 +1160,7 @@ export const useAppStore = create<AppState>()((set, get) => {
         completion,
         lastZoneKey,
         objectifsBruts,
+        declaresEnBase,
         modeBrut,
         grosTexteBrut,
         guideFermeBrut,
@@ -1157,6 +1172,7 @@ export const useAppStore = create<AppState>()((set, get) => {
         db.getSetting('completionPct'),
         db.getSetting('lastZoneKey'),
         db.getSetting('objectifs'),
+        db.listerParcoursDeclares(),
         db.getSetting('modeAffichage'),
         db.getSetting('grosTexte'),
         db.getSetting('guideFerme'),
@@ -1196,6 +1212,22 @@ export const useAppStore = create<AppState>()((set, get) => {
           lireObjectifs(objectifsBruts),
           etat.objectifs,
         ),
+        /*
+          Même raison que pour les traces : cocher un itinéraire pendant que
+          la base s'ouvre ne doit pas être annulé sans un mot. Ce qui est
+          déjà à l'écran l'emporte, le reste s'ajoute.
+        */
+        parcoursDeclares: enDemonstration
+          ? etat.parcoursDeclares
+          : [
+              ...etat.parcoursDeclares,
+              ...declaresEnBase.filter(
+                (d) =>
+                  !etat.parcoursDeclares.some(
+                    (deja) => deja.itineraryId === d.itineraryId,
+                  ),
+              ),
+            ],
         // Un réglage abîmé ou écrit par une version future ne doit pas
         // imposer un affichage que personne n'a demandé (issue #173).
         modeAffichage: repriseAuDemarrage(
@@ -1720,6 +1752,41 @@ export const useAppStore = create<AppState>()((set, get) => {
     effacerLieux() {
       lieuSequence += 1
       set({ lieux: [], lieuError: null, lieuxVides: false, lieuxLoading: false })
+    },
+
+    /*
+      Cocher un itinéraire (issue #158).
+
+      L'état part en premier et la base suit, comme partout ailleurs ici :
+      c'est la fenêtre décrite par #203, connue et non tranchée. Ce qui
+      compte pour cette issue-là, c'est ailleurs — le déclaratif n'entre
+      jamais dans `matching`, donc rien de ce qui suppose une géométrie
+      réelle ne peut s'en nourrir.
+    */
+    async declarerParcours(itineraryId, date) {
+      const parcours = {
+        itineraryId,
+        date,
+        declareLe: new Date().toISOString(),
+      }
+      set((etat) => ({
+        parcoursDeclares: [
+          ...etat.parcoursDeclares.filter((d) => d.itineraryId !== itineraryId),
+          parcours,
+        ],
+      }))
+      const db = await baseOuverte()
+      if (db) await db.declarerParcours(parcours)
+    },
+
+    async retirerParcoursDeclare(itineraryId) {
+      set((etat) => ({
+        parcoursDeclares: etat.parcoursDeclares.filter(
+          (d) => d.itineraryId !== itineraryId,
+        ),
+      }))
+      const db = await baseOuverte()
+      if (db) await db.retirerParcoursDeclare(itineraryId)
     },
 
     async setTolerance(value) {

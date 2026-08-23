@@ -136,6 +136,20 @@ existant via `PW_CHROMIUM_PATH=/chemin/vers/chrome npm run e2e`.
     est dessinée sur l'appareil et ne contient aucune coordonnée : des totaux
     et des noms d'itinéraires publics, rien d'autre.
 
+### Déclarer un parcours, sans trace GPX
+
+La majorité des randonneurs n'enregistrent rien. Depuis la fiche d'un
+itinéraire, « Je l'ai déjà fait » le coche à la main, avec une date
+approximative si on s'en souvient — « je ne sais plus quand » est une réponse
+complète, pas une donnée manquante (issue #158).
+
+**Ce qui est coché ne se confond jamais avec ce qui est mesuré.** Le grand
+pourcentage reste celui des traces ; le déclaratif s'affiche à part, en
+toutes lettres. Ce n'est pas une discipline mais une propriété de structure :
+le déclaratif n'entre pas dans le calcul de correspondance, donc les tronçons
+restants, les suggestions de prochaine sortie et les séries continues
+l'ignorent — ils n'y ont pas accès.
+
 ### Le domaine où la géométrie est juste
 
 Les distances sont calculées par une projection équirectangulaire, qui ne

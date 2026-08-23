@@ -3,6 +3,7 @@ import type { Itinerary, Track } from '../core/types.ts'
 import type { PointBrut } from '../core/recorder.ts'
 import type { EnteteEnregistrement } from '../core/reprise.ts'
 import type { PoisEmportes } from '../core/poisEmportes.ts'
+import type { ParcoursDeclare } from '../core/declaratif.ts'
 
 /** Erreur de persistance, message affichable tel quel à l'utilisateur. */
 export class DbError extends Error {
@@ -13,7 +14,7 @@ export class DbError extends Error {
 }
 
 export const DB_NAME = 'sentiers'
-export const DB_VERSION = 4
+export const DB_VERSION = 5
 
 /** Durée de vie du cache des tracés : 30 jours. */
 export const CACHE_TTL_MS = 30 * 24 * 3600 * 1000
@@ -98,6 +99,14 @@ interface SentiersSchema extends DBSchema {
    * emporte une randonnée, pas une région.
    */
   poisEmportes: { key: number; value: PoisEmportes }
+  /**
+   * Les itinéraires déclarés parcourus sans trace GPX (issue #158).
+   *
+   * Un magasin à part, et c'est le fond du sujet : le déclaratif n'entre
+   * jamais dans le pipeline de matching, donc il ne peut pas se mélanger au
+   * mesuré par accident.
+   */
+  parcoursDeclares: { key: number; value: ParcoursDeclare }
 }
 
 /**
@@ -145,6 +154,12 @@ export interface SentiersDb {
   lirePoisEmportes(itineraryId: number): Promise<PoisEmportes | undefined>
   /** Oublie ce qu'on avait emporté — quand l'itinéraire disparaît. */
   effacerPoisEmportes(itineraryId: number): Promise<void>
+  /** Coche un itinéraire comme parcouru, sans trace (issue #158). */
+  declarerParcours(parcours: ParcoursDeclare): Promise<void>
+  /** Tous les itinéraires cochés à la main. */
+  listerParcoursDeclares(): Promise<ParcoursDeclare[]>
+  /** Décoche : on peut s'être trompé de sentier. */
+  retirerParcoursDeclare(itineraryId: number): Promise<void>
 }
 
 export interface OpenDbOptions {
@@ -196,6 +211,11 @@ export async function openSentiersDb(
         }
         if (oldVersion < 4) {
           database.createObjectStore('poisEmportes', {
+            keyPath: 'itineraryId',
+          })
+        }
+        if (oldVersion < 5) {
+          database.createObjectStore('parcoursDeclares', {
             keyPath: 'itineraryId',
           })
         }
@@ -280,6 +300,15 @@ export async function openSentiersDb(
     },
     async effacerPoisEmportes(itineraryId) {
       await raw.delete('poisEmportes', itineraryId)
+    },
+    async declarerParcours(parcours) {
+      await raw.put('parcoursDeclares', parcours)
+    },
+    listerParcoursDeclares() {
+      return raw.getAll('parcoursDeclares')
+    },
+    async retirerParcoursDeclare(itineraryId) {
+      await raw.delete('parcoursDeclares', itineraryId)
     },
     async effacerEnregistrement() {
       const tx = raw.transaction(

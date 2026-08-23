@@ -21,6 +21,7 @@ import {
 } from '../core/gpxExport.ts'
 import { downloadTextFile } from '../lib/download.ts'
 import { BoutonEmporter } from './BoutonEmporter.tsx'
+import { DeclarerParcouru } from './DeclarerParcouru.tsx'
 import { ElevationChart } from './ElevationChart.tsx'
 import { ProgressBalise } from './ProgressBalise.tsx'
 import styles from './ItineraryDetail.module.css'
@@ -186,6 +187,8 @@ export function ItineraryDetail() {
           coords={itineraryCoords(itin)}
           itineraryId={detailItineraryId}
         />
+        {/* Issue #158 : sans trace GPX, « je l'ai fait » n'existait pas. */}
+        <DeclarerParcouru key={`declare-${String(detailItineraryId)}`} itineraryId={detailItineraryId} />
       </div>
 
       {itin.details && (
