@@ -158,6 +158,19 @@ celles-ci. Les déclarations partent dans la
 sauvegarde exportable, et se relisent depuis une sauvegarde antérieure sans
 erreur.
 
+### Rendre à OpenStreetMap
+
+Une relation trouée est signalée — nombre de morceaux, kilomètres
+d'interruption — et sa fiche porte maintenant un lien **vers la relation sur
+openstreetmap.org, cadré sur la plus grande interruption**. Qui connaît le
+terrain peut aller le corriger là où ça manque, plutôt qu'au début d'un GR de
+400 km (issue #160).
+
+Vers la page, jamais vers l'éditeur : ouvrir iD directement mettrait quelqu'un
+en position de modifier une donnée partagée avant d'avoir vu ce qu'elle
+contient. Le lien n'apparaît que pour ce qui vient réellement d'OSM — ni les
+boucles de la Métropole, ni les itinéraires dessinés à la main.
+
 ### Un mot à côté des chiffres
 
 « 420 m D+ » ne dit pas « facile » à qui débute. Chaque itinéraire porte donc
