@@ -1,6 +1,13 @@
-/* Prototype #171 — ne s'affiche que sur `?maquette=onglets`, et seulement
-   en dessous du point de rupture : sur grand écran, le panneau colonne
-   existant reste la bonne réponse, l'issue le dit. */
+/* Issue #171 — la barre de navigation principale.
+
+   Elle n'était rendue qu'en dessous du point de rupture : l'issue posait que
+   sur grand écran, le panneau colonne suffisait. Cédric a demandé le
+   contraire le 23/08 — « pour le menu en bas met le tout le temps même sur
+   PC » — et elle est rendue à toutes les largeurs depuis.
+
+   Ce qui change avec la largeur n'est plus sa présence mais son office :
+   sur téléphone elle filtre les sections, sur grand écran elle amène à
+   celle qu'on désigne (voir `ancreDeLOnglet`). */
 .barre {
   position: fixed;
   inset: auto 0 0 0;

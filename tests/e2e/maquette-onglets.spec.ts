@@ -67,15 +67,26 @@ test('chaque onglet montre ses sections, et seulement les siennes', async ({
   await expect(page.getByTestId('gpx-dropzone')).toHaveCount(0)
 })
 
-test('sur grand écran, le prototype rend la main au panneau colonne', async ({
+test('sur grand écran, la barre reste — mais elle cesse de filtrer', async ({
   page,
 }) => {
-  // L'issue est explicite : au-dessus du point de rupture, le panneau
-  // existant reste la bonne réponse.
+  // L'issue #171 disait le contraire : au-dessus du point de rupture, le
+  // panneau colonne était « la bonne réponse » et la barre disparaissait.
+  // Cédric a demandé la barre partout le 23/08 — « pour le menu en bas met
+  // le tout le temps même sur PC ».
+  //
+  // Ce que l'issue avait raison de protéger reste protégé, et c'est l'objet
+  // de la seconde moitié de ce test : la colonne continue de tout montrer.
+  // Ce qui change est la présence de la barre, pas le filtrage.
   await page.setViewportSize({ width: 1280, height: 900 })
   await mockExternalNetwork(page)
   await page.goto('/')
-  await expect(page.getByTestId('barre-onglets')).toBeHidden()
+  await expect(page.getByTestId('barre-onglets')).toBeVisible()
+
+  // « Mes traces » appartient à « Sorties », pas à « Carte » qui est actif.
+  // Sa présence dit que rien n'est filtré.
+  await expect(page.getByTestId('gpx-dropzone')).toHaveCount(1)
+  await expect(page.getByTestId('settings')).toHaveCount(1)
 })
 
 test('la feuille s’arrête exactement où la barre commence', async ({ page }) => {

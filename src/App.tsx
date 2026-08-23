@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 import { About } from './components/About.tsx'
 import { Backup } from './components/Backup.tsx'
 import { CustomItineraries } from './components/CustomItineraries.tsx'
@@ -28,6 +28,8 @@ import {
 } from './core/affichage.ts'
 import { BarreOnglets } from './components/BarreOnglets.tsx'
 import {
+  ancreDeLOnglet,
+  ancreDeSection,
   dispositionDemandee,
   positionInitiale,
   positionPourOnglet,
@@ -64,6 +66,28 @@ const ACTION: Record<PositionFeuille, string> = {
   repliee: 'Ouvrir le panneau de contrôle',
   moitie: 'Agrandir le panneau de contrôle',
   pleine: 'Réduire le panneau de contrôle',
+}
+
+/**
+ * Le conteneur qui porte le repère d'une section.
+ *
+ * Un `div` neutre plutôt qu'un attribut posé dans chacun des onze
+ * composants : le repère vient de `core/maquetteOnglets`, et il n'a à être
+ * lu qu'à un seul endroit. Onze littéraux recopiés auraient été la
+ * quatrième garde oubliée de CLAUDE.md §4 — celle qu'on découvre en
+ * cherchant pourquoi un onglet ne mène nulle part.
+ *
+ * Le panneau est une grille : un enveloppement par section garde une case
+ * par section, donc les mêmes gouttières qu'avant.
+ */
+function Ancre({
+  section,
+  children,
+}: {
+  section: SectionApp
+  children: ReactNode
+}) {
+  return <div data-ancre={ancreDeSection(section)}>{children}</div>
 }
 
 function App() {
@@ -112,13 +136,38 @@ function App() {
       dispositionDemandee(window.location.search) === 'onglets',
   )
   const [ongletActif, setOngletActif] = useState<Onglet>('carte')
+  /**
+   * Section à rejoindre au prochain rendu, ou `null` quand il n'y a rien à
+   * rejoindre. Une référence et non un état : la vider est un ménage, pas un
+   * fait dont un rendu dépend, et l'y mettre déclencherait le rendu en
+   * cascade que le lint interdit à juste titre.
+   */
+  const ancreVisee = useRef<string | null>(null)
+  /**
+   * Le compteur, lui, est un état : c'est lui qui dit « on vient de demander
+   * ». Sans lui, l'effet devrait dépendre de l'onglet actif, et il se
+   * relancerait au dépliage du panneau — quelqu'un qui replie puis rend sa
+   * colonne perdrait sa place dans la liste sans avoir rien demandé.
+   */
+  const [demandeDAncre, setDemandeDAncre] = useState(0)
   const panneauRef = useRef<HTMLElement>(null)
-  // La barre n'existe qu'en dessous du point de rupture : au-dessus, le
-  // panneau colonne montre tout. Sans cette condition, le filtrage par
-  // onglet s'appliquait aussi sur grand écran, où la barre est masquée —
-  // une seule section visible et aucun moyen d'en changer.
   const compact = useEcranCompact()
-  const onglets = maquette && compact
+  // La barre existe à toutes les largeurs depuis le 23/08 : sur PC aussi, la
+  // navigation principale doit être visible sans qu'on la cherche.
+  //
+  // Ce qu'elle *fait*, en revanche, dépend de la place. Sur téléphone elle
+  // filtre les sections, comme depuis #171. Sur grand écran, filtrer a été
+  // essayé et rendu : le panneau colonne a la place de tout montrer, et
+  // n'en montrer qu'un quart cachait les trois autres derrière un onglet
+  // sans rien gagner — une soixantaine de tests de bout en bout perdaient
+  // l'accès aux panneaux, ce qui est la même chose vue d'en face. L'onglet
+  // y devient donc un repère : il amène à sa première section.
+  //
+  // Deux booléens plutôt qu'un, parce que ce sont deux questions : « la
+  // barre est-elle là » et « filtre-t-elle ». Les confondre est exactement
+  // ce qui avait masqué la barre à 800 px pile (AUDIT_UX.md, constat U2).
+  const onglets = maquette
+  const filtrage = maquette && compact
   // Le repli du panneau ne concerne que la colonne. En dessous du point de
   // rupture c'est une feuille glissante, qui a déjà ses trois positions :
   // deux mécanismes concurrents sur la même surface se contrediraient.
@@ -126,7 +175,7 @@ function App() {
   // En accordéons, `visible` dit oui à tout : l'empilement d'origine est
   // rendu exactement comme avant, sans une condition de plus à son sujet.
   const visible = (section: SectionApp): boolean =>
-    !onglets || sectionsDeLOnglet(ongletActif).includes(section)
+    !filtrage || sectionsDeLOnglet(ongletActif).includes(section)
 
   // Les deux modes se posent sur la racine du document plutôt que sur un
   // conteneur : le gros texte doit atteindre les dialogues et les surcouches
@@ -173,9 +222,38 @@ function App() {
    */
   const changerDOnglet = (onglet: Onglet) => {
     setOngletActif(onglet)
-    setFeuille(positionPourOnglet(onglet, position))
-    panneauRef.current?.scrollTo({ top: 0 })
+    if (filtrage) {
+      setFeuille(positionPourOnglet(onglet, position))
+      panneauRef.current?.scrollTo({ top: 0 })
+      return
+    }
+    // Sur grand écran rien n'est caché : il n'y a rien à ouvrir, il y a un
+    // endroit où aller. Le panneau replié se rend d'abord, sinon on ferait
+    // défiler une colonne absente — et l'effet ci-dessous attend ce rendu
+    // plutôt que de parier sur une image.
+    if (panneauReplie) void setPanneauReplie(false)
+    ancreVisee.current = ancreDeLOnglet(onglet)
+    setDemandeDAncre((n) => n + 1)
   }
+
+  /**
+   * Amener à la section visée, une fois qu'elle est là.
+   *
+   * Le défilement ne peut pas se faire dans le gestionnaire de clic : quand
+   * le panneau était replié, il n'est pas encore dans le document au moment
+   * où l'on clique. Attendre une image (`requestAnimationFrame`) aurait
+   * marché la plupart du temps — c'est-à-dire aurait échoué sous charge, et
+   * seulement en suite complète (CLAUDE.md §6ter). L'effet, lui, se déclenche
+   * *parce que* le panneau vient d'être rendu.
+   */
+  useEffect(() => {
+    const ancre = ancreVisee.current
+    if (ancre === null) return
+    if (panneauLarge && panneauReplie) return
+    const cible = panneauRef.current?.querySelector(`[data-ancre="${ancre}"]`)
+    cible?.scrollIntoView({ block: 'start' })
+    ancreVisee.current = null
+  }, [demandeDAncre, panneauLarge, panneauReplie])
 
   // Choisir un itinéraire dans la liste, c'est demander à le voir sur la
   // carte. La feuille se replie donc : sinon la fiche résumé qui s'ouvre en
@@ -259,11 +337,11 @@ function App() {
         </p>
       )}
 
-      <div className={styles.layout}>
+      <div className={styles.layout} data-testid="layout">
         <aside
           ref={panneauRef}
           className={`${styles.sidebar} ${styles[position]}`}
-          aria-label={onglets ? 'Contenu de l’onglet' : 'Panneau de contrôle'}
+          aria-label={filtrage ? 'Contenu de l’onglet' : 'Panneau de contrôle'}
           data-testid="sidebar"
           data-position={position}
           id="panneau-de-controle"
@@ -313,28 +391,64 @@ function App() {
           <DemoBanner />
           {/* Le mode simple cache, il n'enlève pas : la carte, les traces et
               le tableau de bord restent, tout le reste se replie (#173). */}
-          {sections.zone && visible('zone') && <ZonePicker />}
+          {sections.zone && visible('zone') && (
+            <Ancre section="zone">
+              <ZonePicker />
+            </Ancre>
+          )}
           {sections.enregistrement && visible('enregistrement') && (
-            <Enregistreur />
+            <Ancre section="enregistrement">
+              <Enregistreur />
+            </Ancre>
           )}
-          {sections.traces && visible('traces') && <TrackManager />}
+          {sections.traces && visible('traces') && (
+            <Ancre section="traces">
+              <TrackManager />
+            </Ancre>
+          )}
           {sections.itineraires && visible('itinerairesPerso') && (
-            <CustomItineraries />
+            <Ancre section="itinerairesPerso">
+              <CustomItineraries />
+            </Ancre>
           )}
-          {sections.tableauDeBord && visible('tableauDeBord') && <Dashboard />}
-          {sections.objectifs && visible('objectifs') && <Objectifs />}
+          {sections.tableauDeBord && visible('tableauDeBord') && (
+            <Ancre section="tableauDeBord">
+              <Dashboard />
+            </Ancre>
+          )}
+          {sections.objectifs && visible('objectifs') && (
+            <Ancre section="objectifs">
+              <Objectifs />
+            </Ancre>
+          )}
           {sections.prochaineSortie && visible('prochaineSortie') && (
-            <NextOuting />
+            <Ancre section="prochaineSortie">
+              <NextOuting />
+            </Ancre>
           )}
-          {sections.historique && visible('historique') && <History />}
+          {sections.historique && visible('historique') && (
+            <Ancre section="historique">
+              <History />
+            </Ancre>
+          )}
           {sections.itineraires && visible('listeItineraires') && (
-            <ItineraryList />
+            <Ancre section="listeItineraires">
+              <ItineraryList />
+            </Ancre>
           )}
-          {sections.reglages && visible('reglages') && <Settings />}
-          {sections.sauvegarde && visible('sauvegarde') && <Backup />}
+          {sections.reglages && visible('reglages') && (
+            <Ancre section="reglages">
+              <Settings />
+            </Ancre>
+          )}
+          {sections.sauvegarde && visible('sauvegarde') && (
+            <Ancre section="sauvegarde">
+              <Backup />
+            </Ancre>
+          )}
           <ModeSwitch />
           <InstallButton />
-          <footer className={styles.footer}>
+          <footer className={styles.footer} data-testid="pied-panneau">
             <a
               className={styles.pourquoiPied}
               href="pourquoi.html"
