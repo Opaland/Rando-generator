@@ -5,6 +5,7 @@ import {
   installerGeolocalisationPilotee,
   emettrePosition,
   suivisDePosition,
+  pointsEnBase,
 } from './helpers.ts'
 
 /**
@@ -115,6 +116,12 @@ test('une sortie interrompue est retrouvée au rechargement, en pause', async ({
   await marcher(page, 4)
   await expect(page.getByTestId('sortie-distance')).not.toContainText('0 m')
   const distanceAvant = await page.getByTestId('sortie-distance').textContent()
+
+  // On attend que les quatre points soient **sur le disque** : les chiffres
+  // à l'écran bougent dès la mémoire, l'écriture suit dans sa file. Ce
+  // test-ci porte sur la reprise, pas sur la latence d'écriture — et il
+  // prouve du même coup que les points y arrivent vraiment.
+  await expect.poll(() => pointsEnBase(page), { timeout: 10_000 }).toBe(4)
 
   await page.reload()
   await fermerLeGuide(page)

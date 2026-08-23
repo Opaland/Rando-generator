@@ -503,3 +503,45 @@ export async function suivisDePosition(page: Page): Promise<number> {
     (window as unknown as { __sentiersGeo: GeoPilotee }).__sentiersGeo.suivis(),
   )
 }
+
+/**
+ * Combien de points de la sortie en cours sont réellement sur le disque.
+ *
+ * Un test de reprise doit attendre l'écriture, et pas la deviner : les
+ * chiffres à l'écran bougent dès que le point est en mémoire, l'écriture
+ * suit dans sa file. Sur un téléphone l'écart est invisible — les positions
+ * arrivent toutes les quelques secondes — mais un test qui en émet quatre
+ * d'affilée puis recharge dans la foulée peut recharger avant la fin, et il
+ * mesure alors la latence d'écriture en croyant mesurer la reprise.
+ */
+export async function pointsEnBase(page: Page): Promise<number> {
+  return page.evaluate(
+    () =>
+      new Promise<number>((resolve) => {
+        const ouverture = indexedDB.open('sentiers')
+        ouverture.onerror = () => {
+          resolve(-1)
+        }
+        ouverture.onsuccess = () => {
+          const base = ouverture.result
+          if (!base.objectStoreNames.contains('enregistrementPoints')) {
+            base.close()
+            resolve(-1)
+            return
+          }
+          const compte = base
+            .transaction('enregistrementPoints', 'readonly')
+            .objectStore('enregistrementPoints')
+            .count()
+          compte.onsuccess = () => {
+            base.close()
+            resolve(compte.result)
+          }
+          compte.onerror = () => {
+            base.close()
+            resolve(-1)
+          }
+        }
+      }),
+  )
+}
