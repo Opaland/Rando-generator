@@ -11,11 +11,9 @@ import {
   libelleDeZone,
 } from '../core/overpass.ts'
 import {
-  parseGpx,
   GpxError,
   elevationGainMeters,
   trackFingerprint,
-  type ParsedGpx,
 } from '../core/gpx.ts'
 import {
   backupFilename,
@@ -56,7 +54,7 @@ import {
 import { fetchPoisOuEchec } from '../core/poi.ts'
 import { choisirPois, type SourcePois } from '../core/poisEmportes.ts'
 import { outingHighlights, type OutingHighlight } from '../core/outing.ts'
-import { FitError, looksLikeFit, parseFit } from '../core/fit.ts'
+import { FitError } from '../core/fit.ts'
 import {
   messagePointsHorsLimites,
   messageTropEspacee,
@@ -73,20 +71,8 @@ import {
   etatDuStockage,
   type EtatDuStockage,
 } from '../core/stockage.ts'
-import { TcxError, looksLikeTcx, parseTcx } from '../core/tcx.ts'
-import {
-  GeoJsonError,
-  looksLikeGeoJson,
-  parseGeoJsonTrails,
-  type GeoJsonTrail,
-} from '../core/geojson.ts'
-import {
-  ZipError,
-  entreesDeTrace,
-  listZipEntries,
-  looksLikeZip,
-  readZipEntry,
-} from '../core/zip.ts'
+import { TcxError } from '../core/tcx.ts'
+import { GeoJsonError } from '../core/geojson.ts'
 import {
   crossedMilestones,
   DEFAULT_COMPLETION_PCT,
@@ -103,6 +89,11 @@ import {
   type EtatSortie,
 } from './enregistrementSlice.ts'
 import { creerVeilleGeo } from './veilleGeo.ts'
+import {
+  developperArchives,
+  lireItineraires,
+  parseTraceFile,
+} from './lecture.ts'
 import {
   GEO_OPTIONS,
   geolocationErrorMessage,
@@ -506,132 +497,9 @@ function pause(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0))
 }
 
-/**
- * Lit un fichier de trace, GPX ou FIT. Le format est reconnu à la signature
- * du contenu, pas à l'extension : une montre qui nomme mal son export reste
- * lisible, et un fichier renommé en .fit ne trompe personne.
- */
-async function parseTraceFile(file: File): Promise<ParsedGpx> {
-  const buffer = await file.arrayBuffer()
-  if (looksLikeFit(buffer)) {
-    const fit = parseFit(buffer)
-    return {
-      points: fit.points,
-      elevations: fit.elevations,
-      date: fit.date,
-      pointsHorsLimites: fit.pointsHorsLimites,
-      times: fit.times,
-      hdops: fit.hdops,
-      precisionsMetres: fit.precisionsMetres,
-    }
-  }
-  // Le format est reconnu au contenu, pas à l'extension : un fichier renommé
-  // reste lisible, et un fichier mal nommé ne fait pas échouer l'import.
-  const texte = new TextDecoder().decode(buffer)
-  if (looksLikeTcx(texte)) return parseTcx(texte, new DOMParser())
-  return parseGpx(texte, new DOMParser())
-}
 
-/**
- * Nom de fichier lisible pour une entrée d'archive : sans son dossier, et
- * sans le `.gz` d'un `.gpx.gz` puisque le contenu, lui, est décompressé.
- */
-function nomDEntree(chemin: string): string {
-  const feuille = chemin.slice(chemin.lastIndexOf('/') + 1)
-  return feuille.toLowerCase().endsWith('.gz') ? feuille.slice(0, -3) : feuille
-}
 
-/**
- * Remplace chaque archive déposée par les traces qu'elle contient.
- *
- * C'est ce qui tient lieu de connecteur Strava ou Garmin : l'utilisateur
- * exporte ses données chez eux et dépose l'archive ici (issue #89). Ce qui
- * n'est pas une trace — CSV de profil, photos, métadonnées macOS — est
- * ignoré sans être compté comme une erreur : ce sont des fichiers qui ne
- * nous concernent pas, pas des fichiers ratés.
- */
-async function developperArchives(
-  fichiers: File[],
-  avancement: (nom: string, faits: number, total: number) => void,
-): Promise<{ fichiers: File[]; erreurs: string[] }> {
-  const sortie: File[] = []
-  const erreurs: string[] = []
-  for (const fichier of fichiers) {
-    let buffer: ArrayBuffer
-    try {
-      buffer = await fichier.arrayBuffer()
-    } catch {
-      erreurs.push(`${fichier.name} : lecture impossible.`)
-      continue
-    }
-    if (!looksLikeZip(buffer)) {
-      sortie.push(fichier)
-      continue
-    }
-    try {
-      const traces = entreesDeTrace(listZipEntries(buffer))
-      if (traces.length === 0) {
-        erreurs.push(
-          `${fichier.name} : aucune trace GPX, FIT ou TCX dans cette archive.`,
-        )
-        continue
-      }
-      for (const [index, entree] of traces.entries()) {
-        avancement(nomDEntree(entree.name), index, traces.length)
-        await pause()
-        try {
-          const contenu = await readZipEntry(buffer, entree)
-          sortie.push(
-            new File([contenu as BlobPart], nomDEntree(entree.name)),
-          )
-        } catch (error) {
-          erreurs.push(
-            error instanceof ZipError
-              ? `${nomDEntree(entree.name)} : ${error.message}`
-              : `${nomDEntree(entree.name)} : extraction impossible.`,
-          )
-        }
-      }
-    } catch (error) {
-      erreurs.push(
-        error instanceof ZipError
-          ? `${fichier.name} : ${error.message}`
-          : `${fichier.name} : archive illisible.`,
-      )
-    }
-  }
-  return { fichiers: sortie, erreurs }
-}
 
-/**
- * Lit un fichier d'itinéraires déposé dans « Mes itinéraires ».
- *
- * Un GeoJSON de sentiers — un PDIPR départemental, par exemple — décrit
- * plusieurs itinéraires d'un coup, là où un GPX n'en porte qu'un. Le format
- * est reconnu au contenu, pas à l'extension.
- */
-async function lireItineraires(
-  file: File,
-): Promise<{ trails: GeoJsonTrail[]; pointsHorsLimites: number }> {
-  const buffer = await file.arrayBuffer()
-  if (!looksLikeFit(buffer)) {
-    const texte = new TextDecoder().decode(buffer)
-    if (looksLikeGeoJson(texte)) {
-      let donnees: unknown
-      try {
-        donnees = JSON.parse(texte)
-      } catch {
-        throw new GeoJsonError('Ce fichier n’est pas un JSON valide.')
-      }
-      return { trails: parseGeoJsonTrails(donnees), pointsHorsLimites: 0 }
-    }
-  }
-  const trace = await parseTraceFile(file)
-  return {
-    trails: [{ name: null, lines: [trace.points] }],
-    pointsHorsLimites: trace.pointsHorsLimites,
-  }
-}
 
 /**
  * La persistance n'est demandée qu'une fois par session, et seulement

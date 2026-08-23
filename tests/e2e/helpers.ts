@@ -353,21 +353,34 @@ export async function fermerLeGuide(page: Page): Promise<void> {
   const guide = page.getByTestId('onboarding')
   const fermer = page.getByTestId('onboarding-fermer')
   if ((await guide.count()) === 0) return
-  // Le guide peut aussi s'en aller tout seul : au rechargement d'une page
-  // où il avait déjà été fermé, il est rendu **avant** qu'IndexedDB ait
-  // rendu le réglage, et il s'efface dès que celui-ci arrive. Cliquer sur
-  // un bouton en train de partir échoue — mesuré, uniquement quand la base
-  // met du temps à s'ouvrir, c'est-à-dire au milieu d'une suite chargée, ce
-  // qui donnait un échec qui ne se reproduisait pas isolément.
+
+  /*
+    Le guide peut s'en aller tout seul : au rechargement d'une page où il
+    avait déjà été fermé, il est rendu **avant** qu'IndexedDB ait rendu le
+    réglage, et il s'efface dès que celui-ci arrive.
+
+    La version précédente vérifiait qu'il était encore là, puis cliquait.
+    Entre ces deux `await`, il peut partir — et le clic attend alors
+    indéfiniment un bouton détaché. Mesuré : un échec sur la suite complète
+    du 23/08 au soir, jamais reproduit isolément, parce que la fenêtre ne
+    s'ouvre que quand la base met du temps.
+
+    Il n'y a pas d'ordre sûr entre ces deux vérifications ; il faut donc
+    cesser d'en chercher un. On boucle sur **l'état final voulu** — le guide
+    n'est plus là — en tentant le clic à chaque tour. Le `catch` n'avale pas
+    une assertion : il avale une tentative, dans une boucle dont la
+    convergence est, elle, assertée.
+  */
   await expect
     .poll(
-      async () => (await guide.count()) === 0 || (await fermer.isVisible()),
+      async () => {
+        if ((await guide.count()) === 0) return 0
+        await fermer.click({ timeout: 1_000 }).catch(() => undefined)
+        return guide.count()
+      },
       { message: 'le guide ne se décide ni à s’afficher ni à partir' },
     )
-    .toBe(true)
-  if ((await guide.count()) === 0) return
-  await fermer.click()
-  await expect(guide).toHaveCount(0)
+    .toBe(0)
 }
 
 /**
