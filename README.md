@@ -144,13 +144,27 @@ L'application s'installe et se relance **sans réseau** une fois visitée
 - l'application elle-même et son interface ;
 - les **tracés et traces GPX** déjà chargés (IndexedDB, indépendamment du
   service worker) ;
-- les **fonds de carte déjà consultés** — les autres tuiles resteront grises.
+- les **fonds de carte déjà consultés** — les autres tuiles resteront grises ;
+- ce qu'on a **emporté exprès** : la fiche d'un itinéraire porte un bouton
+  « Emporter cette randonnée » qui met de côté le fond de carte d'un corridor
+  de 500 m autour du tracé (zooms 12 à 16) et son profil altimétrique. Le
+  nombre de tuiles est annoncé avant, les octets reçus sont comptés pendant —
+  aucun poids n'est estimé, parce que personne n'a mesuré ce que pèse une
+  tuile de la Géoplateforme. Fermer la fiche arrête le téléchargement.
+
+  Ce qui est emporté **n'est pas rogné** : le cache de navigation, lui, est
+  borné à 600 tuiles et taillé du plus ancien, et y ranger un
+  téléchargement revenait à le laisser disparaître en silence. La
+  contrepartie est qu'il grossit à chaque randonnée emportée — l'écran
+  « Réglages » affiche la place occupée, et vider les données du site la
+  rend.
 
 Ne fonctionnent **pas** hors connexion, et ne sont pas présentés comme tels :
-charger une nouvelle zone (Overpass), le profil altimétrique (service IGN),
-les points d'intérêt. Ces réponses ne sont volontairement pas mises en cache :
-un relief ou des POI périmés ne valent pas mieux qu'un message clair. Un
-bandeau l'explique dès que la connexion tombe.
+charger une nouvelle zone (Overpass), et le relief ou les points d'intérêt
+d'un itinéraire **qu'on n'a pas emporté**. Rien n'est gardé pour avoir été
+regardé : un relief ou des POI périmés ne valent pas mieux qu'un message
+clair. Ce qui est gardé l'a été sur demande. Un bandeau l'explique dès que la
+connexion tombe.
 
 Sur téléphone, la carte occupe tout le cadre et le panneau de contrôle devient
 une feuille glissante à trois positions : repliée sur sa seule poignée — qui

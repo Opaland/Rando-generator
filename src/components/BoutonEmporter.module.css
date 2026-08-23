@@ -1,0 +1,11 @@
+.bloc {
+  display: grid;
+  gap: var(--espace-3);
+  justify-items: start;
+}
+
+.aide {
+  margin: 0;
+  font-size: var(--texte-appui);
+  color: var(--gris-vert);
+}
