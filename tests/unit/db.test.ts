@@ -27,6 +27,8 @@ describe('openSentiersDb', () => {
     expect(db.raw.version).toBe(DB_VERSION)
     expect(Array.from(db.raw.objectStoreNames).sort()).toEqual([
       'customItineraries',
+      'enregistrement',
+      'enregistrementPoints',
       'settings',
       'tracks',
       'zones',
