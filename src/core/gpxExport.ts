@@ -1,4 +1,4 @@
-import type { LonLat, Network } from './types.ts'
+import type { Itinerary, LonLat, Network } from './types.ts'
 
 /**
  * Export GPX : de quoi charger un itinéraire dans une montre, un GPS ou une
@@ -37,9 +37,52 @@ export function gpxAttributionFor(network: Network): GpxAttribution | null {
     case 'LOCAL':
       return METROPOLE_ATTRIBUTION
     case 'PERSO':
-      // Tracé de l'utilisateur : rien à attribuer, c'est le sien.
+      /*
+        Un tracé `PERSO` **peut** ne pas être celui de l'utilisateur.
+
+        Ce cas répondait `null` avec le commentaire « c'est le sien », et
+        c'était faux pour Léa : le PDIPR de son département arrive ici, sous
+        Licence Ouverte, laquelle oblige à l'attribution. Le réseau dit le
+        type de sentier, pas sa provenance — et les confondre produisait un
+        export muet.
+
+        La provenance se lit maintenant sur l'itinéraire (`attributionDe`).
+        Ce repli-ci ne vaut donc que pour ce qui a réellement été dessiné
+        dans l'application.
+      */
       return null
   }
+}
+
+/**
+ * La provenance d'un itinéraire : celle qu'il déclare, sinon celle que son
+ * réseau implique (issue #87).
+ *
+ * Une seule fonction nommée, consultée partout où l'on attribue — l'export
+ * GPX comme la fiche. Recopier ce choix est le mode d'échec de CLAUDE.md §4,
+ * et c'est déjà ce qui a produit le trou : l'export dérivait du réseau, la
+ * fiche affichait `details.source`, et personne ne couvrait le troisième cas.
+ */
+export function attributionDe(itinerary: Itinerary): GpxAttribution | null {
+  return itinerary.attribution ?? gpxAttributionFor(itinerary.network)
+}
+
+/**
+ * Ce qu'il faut dire quand on ne sait pas d'où vient un fichier importé.
+ *
+ * On ne l'invente pas — une attribution fausse est pire qu'absente. On
+ * prévient que l'export sera muet, et la personne décide de ce qu'elle en
+ * fait. Rien à dire pour un tracé dessiné à la main : il n'a pas de source
+ * manquante, il n'en a pas.
+ */
+export function mentionDeSource(itinerary: Itinerary): string | null {
+  if (attributionDe(itinerary)) return null
+  if (itinerary.importe !== true) return null
+  return (
+    'Ce fichier ne déclare pas sa source. Si cette donnée vient d’un ' +
+    'producteur public, son export GPX ne portera aucune attribution — ' +
+    'la plupart des licences ouvertes en exigent une.'
+  )
 }
 
 /** Un repère posé sur le tracé : une coupure d'étape, par exemple. */

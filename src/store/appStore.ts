@@ -1390,6 +1390,18 @@ export const useAppStore = create<AppState>()((set, get) => {
                 0,
               ),
               fetchedAt: new Date().toISOString(),
+              /*
+                La provenance suit l'itinéraire (issue #87). Sans elle, le
+                PDIPR que Léa importe s'exportait en GPX sans attribution —
+                ce que la Licence Ouverte interdit.
+
+                `importe` distingue un fichier déposé d'un tracé dessiné dans
+                l'application : les deux sont `PERSO`, et rien ne permettait
+                de dire « celui-ci vient de quelque part, et sa source
+                manque ».
+              */
+              attribution: lecture.source,
+              importe: true,
             }
             if (db) await db.saveCustomItinerary(itinerary)
             imported.push(itinerary)
@@ -1889,15 +1901,31 @@ export const useAppStore = create<AppState>()((set, get) => {
         detailItineraryId: null,
         celebration: null,
       })
-      // La base n'a jamais rien reçu de la démonstration : il n'y a rien à
-      // défaire, seulement à relire ce qui existait vraiment.
+      /*
+        La base n'a jamais rien reçu de la démonstration : il n'y a rien à
+        défaire, seulement à relire ce qui existait vraiment.
+
+        Les déclarations (#158) manquaient à cette relecture — elles
+        n'existaient pas quand elle a été écrite, et le commentaire affirmait
+        pourtant « rien n'est perdu ». Trouvé à la revue du sprint.
+
+        Le défaut est **latent et non atteignable aujourd'hui** : l'entrée de
+        la démonstration ne vit que dans le guide de premier lancement, qu'un
+        revenant — le seul à pouvoir avoir des déclarations — a déjà fermé.
+        C'est un accident de navigation qui protège, pas une garantie ; la
+        relecture est donc rendue symétrique de celle des traces plutôt que
+        laissée à cet accident.
+      */
       const db = await baseOuverte()
       if (db) {
-        const [tracks, customItineraries] = await Promise.all([
-          db.listTracks(),
-          db.listCustomItineraries(),
-        ])
-        set({ tracks, customItineraries })
+        const [tracks, customItineraries, parcoursDeclares] = await Promise.all(
+          [
+            db.listTracks(),
+            db.listCustomItineraries(),
+            db.listerParcoursDeclares(),
+          ],
+        )
+        set({ tracks, customItineraries, parcoursDeclares })
       }
       await recompute()
     },

@@ -70,6 +70,20 @@ export interface Itinerary {
   osmUpdatedAt?: string | null
   /** Présent uniquement pour les boucles locales open data (network LOCAL). */
   details?: LocalDetails
+  /**
+   * Provenance déclarée par le fichier d'origine, quand il en déclare une.
+   * L'emporte sur ce que le réseau laisserait supposer (issue #87).
+   */
+  attribution?: SourceItineraire | null
+  /**
+   * Vrai pour un itinéraire venu d'un fichier déposé, par opposition à un
+   * tracé dessiné dans l'application.
+   *
+   * La distinction n'existait pas : les deux étaient `PERSO`, et rien ne
+   * permettait de dire « celui-ci vient de quelque part, et sa source
+   * manque ». C'est elle qui permet de prévenir Léa sans rien inventer.
+   */
+  importe?: boolean
 }
 
 /** Échantillon de matching (un point tous les STEP mètres le long d'un way). */
@@ -149,6 +163,19 @@ export type PoiKind =
   | 'monument'
 
 /** Informations pratiques d'un POI, telles que taguées dans OSM. */
+/**
+ * Provenance déclarée d'un itinéraire (issue #87, revue globale du 23/08).
+ *
+ * Portée par l'itinéraire lui-même et non déduite de son réseau : Léa importe
+ * le PDIPR de son département, qui devient un tracé `PERSO` — et la Licence
+ * Ouverte oblige pourtant à l'attribution. Le réseau dit le type de sentier,
+ * pas d'où il vient.
+ */
+export interface SourceItineraire {
+  author: string
+  license: string
+}
+
 export interface PoiDetails {
   phone: string | null
   website: string | null

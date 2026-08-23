@@ -1,4 +1,4 @@
-import type { LonLat } from './types.ts'
+import type { LonLat, SourceItineraire } from './types.ts'
 
 /**
  * Lecture d'un GeoJSON de sentiers.
@@ -153,4 +153,34 @@ export function parseGeoJsonTrails(data: unknown): GeoJsonTrail[] {
     trails.push({ name: nomDe(feature.properties), lines })
   }
   return trails
+}
+
+/**
+ * La provenance que le fichier déclare, s'il en déclare une (issue #87).
+ *
+ * Léa importe le PDIPR de son département : la Licence Ouverte oblige à
+ * l'attribution, et l'itinéraire doit la porter jusqu'à son export GPX.
+ *
+ * **Rien n'est inventé ici.** La spécification GeoJSON ne prévoit aucun
+ * champ pour cela ; on accepte donc les clefs qu'on rencontre en pratique
+ * dans les exports open data français — `attribution`, `source`, et
+ * `license`/`licence` — plutôt qu'une seule qu'on aurait décrétée. Si
+ * aucune n'est là, on rend `null` : la fiche préviendra que l'export sera
+ * muet, ce qui vaut mieux qu'une attribution devinée.
+ *
+ * Une licence sans producteur n'attribue à personne : ce n'est pas une
+ * source, et on la refuse.
+ */
+export function sourceDeclaree(data: unknown): SourceItineraire | null {
+  if (typeof data !== 'object' || data === null) return null
+  const champs = data as Record<string, unknown>
+  const texte = (cle: string): string | null => {
+    const valeur = champs[cle]
+    return typeof valeur === 'string' && valeur.trim() !== ''
+      ? valeur.trim()
+      : null
+  }
+  const author = texte('attribution') ?? texte('source')
+  if (!author) return null
+  return { author, license: texte('license') ?? texte('licence') ?? '' }
 }

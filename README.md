@@ -158,6 +158,18 @@ celles-ci. Les déclarations partent dans la
 sauvegarde exportable, et se relisent depuis une sauvegarde antérieure sans
 erreur.
 
+### L'attribution suit la donnée
+
+Un itinéraire porte **sa** provenance, et non celle que son réseau laisserait
+supposer. Un GeoJSON qui déclare son producteur et sa licence — un PDIPR
+départemental, par exemple — les garde jusque dans le GPX exporté, comme le
+font déjà les tracés OpenStreetMap et les boucles de la Métropole.
+
+Quand un fichier importé **ne déclare rien**, l'application le dit au lieu de
+deviner : son export ne portera aucune attribution, et la plupart des licences
+ouvertes en exigent une. Une attribution fausse serait pire qu'absente
+(issue #87).
+
 ### Rendre à OpenStreetMap
 
 Une relation trouée est signalée — nombre de morceaux, kilomètres
