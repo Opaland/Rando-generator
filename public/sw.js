@@ -9,15 +9,28 @@
  *   - les tracés et traces GPX, déjà en IndexedDB indépendamment d'ici.
  *
  * Ce qui ne fonctionne pas hors connexion, et ne doit pas être présenté
- * comme tel : charger une nouvelle zone (Overpass), le profil altimétrique
- * (service IGN), les points d'intérêt. Ces réponses ne sont volontairement
- * pas mises en cache — un relief ou des POI périmés ne valent pas mieux
- * qu'un message clair.
+ * comme tel : charger une nouvelle zone (Overpass), et les points
+ * d'intérêt. Ces réponses ne sont pas mises en cache — un relief ou des POI
+ * périmés ne valent pas mieux qu'un message clair.
+ *
+ * Une exception, et une seule : **ce qu'on a téléchargé exprès**. Le bouton
+ * « Télécharger cette randonnée » (issue #153) envoie ici une liste
+ * d'adresses — les tuiles de son corridor et son profil altimétrique — et
+ * elles sont gardées dans un cache à part. La règle ci-dessus tient
+ * toujours : rien n'est gardé parce qu'on l'a regardé. Un profil qu'on a
+ * emporté volontairement n'est pas un profil périmé qu'on n'a pas demandé.
  */
 
 const VERSION = 'sentiers-v1'
 const CACHE_APP = `${VERSION}-app`
 const CACHE_TUILES = `${VERSION}-tuiles`
+/*
+ * Ce qu'on a demandé à emporter. Séparé des tuiles pour deux raisons : ce
+ * cache-ci n'est pas un LRU — on ne jette pas une randonnée qu'on a
+ * téléchargée pour partir demain — et un profil altimétrique n'a rien à
+ * faire dans une réserve dimensionnée pour des images.
+ */
+const CACHE_TERRAIN = `${VERSION}-terrain`
 
 /**
  * Liste des fichiers de l'application, réécrite au build par le greffon
@@ -37,6 +50,11 @@ const MAX_TUILES = 600
  * vérifie que les deux valeurs ne divergent pas.
  */
 const CONNECTIVITY_MESSAGE = 'sentiers:connectivity'
+
+/* Issue #153, recopiés depuis src/core/telechargement.ts pour la même
+ * raison, et gardés par le même genre de test. */
+const MESSAGE_PRECHARGER = 'sentiers:precharger'
+const MESSAGE_PROGRES = 'sentiers:telechargement'
 
 /*
  * Vrai dès qu'une requête de l'application a dû être servie depuis le cache
@@ -60,6 +78,11 @@ async function signalerSecours() {
  * s'exécutent. La réponse part sur le port du MessageChannel fourni.
  */
 self.addEventListener('message', (event) => {
+  if (event.data?.type === MESSAGE_PRECHARGER) {
+    const liste = Array.isArray(event.data.urls) ? event.data.urls : []
+    event.waitUntil(precharger(liste, event.source))
+    return
+  }
   if (event.data?.type !== CONNECTIVITY_MESSAGE) return
   const port = event.ports?.[0]
   const reponse = { type: CONNECTIVITY_MESSAGE, cacheFallback: secoursCache }
@@ -101,6 +124,17 @@ function estTuile(url) {
   return (
     (url.hostname === 'data.geopf.fr' && url.pathname.startsWith('/wmts')) ||
     url.hostname === 'tile.openstreetmap.org'
+  )
+}
+
+/*
+ * Le service altimétrique : même hôte que les tuiles IGN, mais pas sous
+ * `/wmts`. C'est cette différence d'un chemin qui le laissait hors de tout
+ * cache, et l'issue #153 la relève comme vérifiée.
+ */
+function estAltimetrie(url) {
+  return (
+    url.hostname === 'data.geopf.fr' && url.pathname.startsWith('/altimetrie')
   )
 }
 
@@ -173,6 +207,81 @@ self.addEventListener('fetch', (event) => {
   }
   if (estTuile(url)) {
     event.respondWith(cachePuisReseau(request, CACHE_TUILES))
+    return
   }
-  // Overpass, altimétrie, POI : laissés au réseau, jamais mis en cache.
+  if (estAltimetrie(url)) {
+    /*
+     * Réseau d'abord : un profil téléchargé la veille reste juste, mais
+     * autant prendre le frais quand il y a du réseau. Et surtout, on ne
+     * met **pas** en cache ce qui passe ici — seule la demande explicite
+     * de téléchargement remplit `CACHE_TERRAIN`. Sans cela, regarder un
+     * profil suffirait à le garder, et l'en-tête de ce fichier mentirait.
+     */
+    event.respondWith(reseauPuisTerrain(request))
+    return
+  }
+  // Overpass et les POI : laissés au réseau, jamais mis en cache.
 })
+
+/** Réseau d'abord, puis ce qu'on avait emporté — et rien de plus. */
+async function reseauPuisTerrain(request) {
+  try {
+    return await fetch(request)
+  } catch (erreur) {
+    const cache = await caches.open(CACHE_TERRAIN)
+    const emporte = await cache.match(request, OPTIONS_MATCH)
+    if (emporte) {
+      secoursCache = true
+      void signalerSecours()
+      return emporte
+    }
+    throw erreur
+  }
+}
+
+/*
+ * Télécharger une randonnée (issue #153).
+ *
+ * La page envoie la liste des adresses, le service worker les récupère une
+ * par une et rend compte à chaque pas. Deux choix méritent d'être écrits :
+ *
+ * - **on compte les octets réellement reçus**, on ne les estime pas. Le
+ *   nombre de tuiles est connu d'avance et exact ; leur poids ne l'est pas,
+ *   et personne ici n'a mesuré ce que pèse une tuile de la Géoplateforme.
+ *   Annoncer « environ 40 Mo » serait inventer un nombre que rien n'appuie ;
+ * - **une adresse qui échoue n'arrête pas les autres.** Une randonnée à
+ *   laquelle il manque trois tuiles reste une randonnée emportée ; s'arrêter
+ *   à la première erreur rendrait le bouton inutile sur un réseau moyen.
+ */
+async function precharger(liste, source) {
+  const rendreCompte = (etat) => {
+    source?.postMessage({ type: MESSAGE_PROGRES, ...etat })
+  }
+  const total = liste.length
+  let faites = 0
+  let octets = 0
+  let echecs = 0
+  for (const adresse of liste) {
+    try {
+      const url = new URL(adresse)
+      const cache = await caches.open(
+        estTuile(url) ? CACHE_TUILES : CACHE_TERRAIN,
+      )
+      const request = new Request(adresse, { mode: 'cors' })
+      const reponse = await fetch(request)
+      if (reponse && (reponse.ok || reponse.type === 'opaque')) {
+        const copie = reponse.clone()
+        await cache.put(request, reponse)
+        const corps = await copie.arrayBuffer()
+        octets += corps.byteLength
+      } else {
+        echecs += 1
+      }
+    } catch {
+      echecs += 1
+    }
+    faites += 1
+    rendreCompte({ faites, total, octets, echecs, fini: faites === total })
+  }
+  if (total === 0) rendreCompte({ faites: 0, total: 0, octets: 0, echecs: 0, fini: true })
+}
