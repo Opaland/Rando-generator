@@ -216,13 +216,31 @@ describe('parseGpx — bornes WGS84 (issue #167)', () => {
     expect(res.pointsHorsLimites).toBe(1)
   })
 
-  it('accepte les bornes exactes', () => {
-    const res = parseGpx(gpx(pt('90', '180') + pt('-90', '-180')), parser)
-    expect(res.points).toEqual([
-      [180, 90],
-      [-180, -90],
-    ])
+  /*
+    Les deux coins sont lus séparément, et c'est la garde du domaine (#170)
+    qui l'impose : mis dans le même tracé, un point à +180 suivi d'un point à
+    -180 forme un pas de 360° de longitude, que la projection mesure
+    40 000 km. Ce test-là portait sur les **bornes WGS84** (#167) — qu'un
+    point pile sur la limite ne soit pas compté hors limites — et non sur les
+    distances ; les séparer rend à chacun sa question.
+  */
+  it('accepte la borne nord-est exacte', () => {
+    const res = parseGpx(gpx(pt('90', '180')), parser)
+    expect(res.points).toEqual([[180, 90]])
     expect(res.pointsHorsLimites).toBe(0)
+  })
+
+  it('accepte la borne sud-ouest exacte', () => {
+    const res = parseGpx(gpx(pt('-90', '-180')), parser)
+    expect(res.points).toEqual([[-180, -90]])
+    expect(res.pointsHorsLimites).toBe(0)
+  })
+
+  /** Issue #170 : ce qu'on ne sait pas mesurer, on le refuse en le disant. */
+  it('refuse un tracé qui franchit le méridien 180°', () => {
+    expect(() =>
+      parseGpx(gpx(pt('-17', '179.999') + pt('-17', '-179.999')), parser),
+    ).toThrow(/180/)
   })
 
   it('compte aussi les points hors limites d’un parcours <rtept>', () => {

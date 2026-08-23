@@ -137,3 +137,34 @@ describe('parseFit — bornes WGS84 (issue #167)', () => {
     expect(fit.pointsHorsLimites).toBe(0)
   })
 })
+
+/**
+ * Issue #170 — le domaine où la géométrie est juste.
+ *
+ * Le lecteur FIT est le troisième, et c'est celui qu'on oublie : il ne
+ * partage ni son format ni son type d'erreur avec les deux autres. La
+ * règle est la même parce que la fonction l'est — `verifierDomaine`,
+ * nommée une fois et consultée trois (CLAUDE.md §4).
+ */
+describe('parseFit — domaine de validité (issue #170)', () => {
+  it('refuse un tracé qui franchit le méridien 180°', () => {
+    expect(() =>
+      parseFit(
+        buildFit([
+          { timestamp: 1, lat: -17, lon: 179.999 },
+          { timestamp: 2, lat: -17, lon: -179.999 },
+        ]),
+      ),
+    ).toThrow(FitError)
+  })
+
+  it('laisse passer un tracé qui longe l’antiméridien sans le franchir', () => {
+    const fit = parseFit(
+      buildFit([
+        { timestamp: 1, lat: -13.3, lon: 179.9 },
+        { timestamp: 2, lat: -13.31, lon: 179.95 },
+      ]),
+    )
+    expect(fit.points).toHaveLength(2)
+  })
+})

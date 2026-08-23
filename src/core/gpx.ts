@@ -1,4 +1,5 @@
 import { estDansLeMonde } from './coordonnees.ts'
+import { verifierDomaine } from './domaine.ts'
 import type { LonLat } from './types.ts'
 
 /** Erreur de lecture d'un fichier GPX, message affichable tel quel à l'utilisateur. */
@@ -107,6 +108,17 @@ export function parseGpx(xmlText: string, parser: XmlParser): ParsedGpx {
     parcours ?? trace
   const pointsHorsLimites =
     trace.pointsHorsLimites + (parcours?.pointsHorsLimites ?? 0)
+
+  /*
+    Le domaine où la géométrie est juste (issue #170).
+
+    Un tracé qui franchit ±180° est mesuré par une projection qui ne sait pas
+    l'enrouler : 212 m y deviennent 38 280 833 m, et le pourcentage de
+    complétion avec. Mieux vaut refuser en disant pourquoi que rendre un
+    chiffre faux sans le dire.
+  */
+  const horsDomaine = verifierDomaine(points)
+  if (horsDomaine) throw new GpxError(horsDomaine)
 
   const metadataTime = doc
     .getElementsByTagName('metadata')[0]

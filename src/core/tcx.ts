@@ -1,4 +1,5 @@
 import { estDansLeMonde } from './coordonnees.ts'
+import { verifierDomaine } from './domaine.ts'
 import type { ParsedGpx, XmlParser } from './gpx.ts'
 import type { LonLat } from './types.ts'
 
@@ -95,6 +96,12 @@ export function parseTcx(xmlText: string, parser: XmlParser): ParsedGpx {
     const instant = time ? Date.parse(time) : Number.NaN
     times.push(Number.isFinite(instant) ? instant : null)
   }
+
+  // Même garde que dans le lecteur GPX, et par la même fonction nommée : un
+  // tracé qui franchit ±180° sort du domaine où ces distances sont justes
+  // (issue #170). Deux lecteurs, une seule règle — CLAUDE.md §4.
+  const horsDomaine = verifierDomaine(points)
+  if (horsDomaine) throw new TcxError(horsDomaine)
 
   // <Id> porte l'heure de début déclarée de l'activité : plus fiable que
   // l'horodatage du premier point, qui peut précéder ou suivre le départ.
