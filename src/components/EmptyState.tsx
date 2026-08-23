@@ -53,8 +53,9 @@ export function EmptyState() {
                   partout passe devant (AUDIT_UX.md, constat U12). Une
                   correction de texte se fait sur toutes les surfaces, et
                   celle-ci en avait deux (CLAUDE.md §3). */}
-              <strong>Ajoutez vos fichiers GPX</strong> — vos sorties passées,
-              ou un parcours à faire dans « Mes itinéraires ».
+              <strong>Enregistrez votre sortie</strong>, ou ajoutez vos
+              fichiers GPX — vos sorties passées, ou un parcours à faire dans
+              « Mes itinéraires ».
             </li>
             <li>
               <strong>Lisez votre progression</strong> : carte colorée,

@@ -52,6 +52,17 @@ export function About({ open, onClose }: { open: boolean; onClose: () => void })
             appareil. Il n’y a ni compte, ni serveur applicatif.
           </p>
           <p>
+            C’est vrai aussi — et surtout — d’une{' '}
+            <strong>sortie que vous enregistrez</strong>. Pendant
+            l’enregistrement, votre position est relevée toutes les quelques
+            secondes et écrite dans le stockage de votre navigateur, pour
+            qu’une sortie survive à un écran verrouillé ou à un onglet fermé.
+            <strong> Elle n’est envoyée à personne</strong>, ni pendant, ni
+            après. Aucun serveur n’est contacté pour enregistrer, et il n’y a
+            rien à désactiver pour que ce soit vrai&nbsp;: il n’existe pas de
+            code qui le ferait.
+          </p>
+          <p>
             C’est vrai de vos traces, de vos réglages, de vos objectifs et de
             votre historique. Ce n’est pas vrai de tout&nbsp;: afficher une
             carte, c’est demander des images à quelqu’un. Le détail est

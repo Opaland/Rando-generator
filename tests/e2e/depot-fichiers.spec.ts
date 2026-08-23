@@ -45,7 +45,11 @@ test.describe('au doigt', () => {
     const guide = page.getByTestId('onboarding')
     await expect(guide).toBeVisible()
     await expect(guide).not.toContainText(/gliss/i)
-    await expect(guide).toContainText('Ajoutez vos fichiers GPX')
+    // Insensible à la casse : la phrase a été reprise quand
+    // l'enregistrement d'une sortie est passé devant (« Enregistrez votre
+    // sortie, ou ajoutez vos fichiers GPX »). Ce que ce test garde est que
+    // le chemin par fichier reste nommé, pas la majuscule d'un mot.
+    await expect(guide).toContainText(/ajoutez vos fichiers GPX/i)
   })
 })
 
