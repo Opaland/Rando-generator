@@ -196,6 +196,21 @@ ignorons. La fiche dit toujours sur quoi l'appréciation repose, et le dit
 autrement quand le dénivelé n'est pas publié : l'estimation ne porte alors que
 sur la distance, et un sentier court et raide paraîtrait facile (issue #156).
 
+### Une étape se décide au refuge
+
+Le découpage d'un long itinéraire cale ses coupures sur les **couchages**
+connus — refuges gardés et non gardés — plutôt que sur le kilomètre. Une
+étape en montagne se décide au refuge : couper tous les 22 km et faire dormir
+à 4 km de l'un d'eux est joli sur le papier et inutilisable sur le terrain.
+
+La coupure ne se déplace que de la **moitié d'une longueur d'étape** au plus.
+Ce n'est pas un réglage : c'est le plus grand déplacement qui garde les
+coupures dans l'ordre. Les abris météo (`shelter`) sont exclus — on n'y dort
+pas, et y envoyer quelqu'un se paierait en montagne.
+
+Quand aucun refuge n'est connu près des coupures, la fiche **le dit** au lieu
+de couper au kilomètre en silence (issue #161).
+
 ### Emporter son découpage
 
 Un long itinéraire est découpé en étapes calculées ; ce découpage s'exporte
