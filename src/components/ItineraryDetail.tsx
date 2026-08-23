@@ -105,11 +105,15 @@ export function ItineraryDetail() {
   /*
     Les coupures se calent sur les couchages quand il y en a (issue #161).
 
-    Une étape en montagne est décidée par le refuge, pas par le kilomètre :
+    Une étape est décidée par l'endroit où l'on dort, pas par le kilomètre :
     un découpage tous les 22 km qui fait dormir à 4 km d'un refuge est
     inutilisable sur le terrain. Quand aucun couchage n'est connu dans la
     fenêtre, la coupure reste au kilomètre — et la fiche le dit, plutôt que
     de laisser croire qu'elle a été choisie.
+
+    Le mot employé à l'écran est « couchage » et non « refuge », depuis que
+    les gîtes d'étape comptent : sur le chemin de Saint-Jacques, dire
+    « calée sur un refuge » aurait été faux à chaque coupure.
   */
   const couchages = couchagesLeLongDuTrace(poisBruts, itineraryCoords(itin))
   const etapes = calerSurCouchages(
@@ -325,14 +329,14 @@ export function ItineraryDetail() {
                   etapesCalees > 1
                     ? `dont ${String(etapesCalees)} coupures calées`
                     : 'dont une coupure calée'
-                } sur un refuge — ce ne sont pas les étapes d’un topo-guide.`
+                } sur un couchage — ce ne sont pas les étapes d’un topo-guide.`
               : poisLoading
                 ? `Découpage régulier calculé par l’application, en tranches d’environ ${String(
                     Math.round(DEFAULT_STAGE_METERS / 1_000),
-                  )} km — ce ne sont pas les étapes d’un topo-guide. Recherche des refuges en cours…`
+                  )} km — ce ne sont pas les étapes d’un topo-guide. Recherche des couchages en cours…`
                 : `Découpage régulier calculé par l’application, en tranches d’environ ${String(
                     Math.round(DEFAULT_STAGE_METERS / 1_000),
-                  )} km — ce ne sont pas les étapes d’un topo-guide. Aucun refuge connu près des coupures : elles tombent au kilomètre.`}
+                  )} km — ce ne sont pas les étapes d’un topo-guide. Aucun couchage connu près des coupures : elles tombent au kilomètre.`}
           </p>
           {/*
             Le plan sort de l'application (issue #161). Un seul fichier, à

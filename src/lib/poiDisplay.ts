@@ -7,6 +7,7 @@ export const POI_LABELS: Record<PoiKind, string> = {
   pass: 'Col',
   hut: 'Refuge gardé',
   bivouac: 'Couchage libre',
+  gite: 'Gîte d’étape',
   shelter: 'Abri (pause)',
   water: "Point d'eau",
   picnic: 'Pique-nique',
@@ -21,6 +22,10 @@ export const POI_COLORS: Record<PoiKind, string> = {
   pass: '#8c5a2b',
   hut: '#c8102e',
   bivouac: '#7d3c98',
+  /* Voisin du refuge gardé, dont il partage l'usage — on y dort, on y
+     réserve — mais nettement plus sombre : la distinction doit tenir sans
+     la couleur pour qui ne sépare pas le rouge du brun. */
+  gite: '#8e2f45',
   shelter: '#4a6b6b',
   water: '#1d6fa5',
   picnic: '#b3801a',
@@ -29,7 +34,15 @@ export const POI_COLORS: Record<PoiKind, string> = {
   monument: '#5a5a7a',
 }
 
-/** Catégories où l'on peut passer la nuit sans réservation ni gardien. */
+/**
+ * Catégories où l'on peut passer la nuit **sans réservation ni gardien**.
+ *
+ * Ni le refuge gardé ni le gîte d'étape n'y entrent, et pour la même
+ * raison : les deux se réservent, et les deux ferment. La question à
+ * laquelle cette liste répond est « où puis-je dormir ce soir sans avoir
+ * rien prévu » — y ajouter un gîte laisserait croire qu'on peut s'y
+ * présenter.
+ */
 export const POI_OVERNIGHT: PoiKind[] = ['bivouac']
 
 /**

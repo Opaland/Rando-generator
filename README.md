@@ -417,14 +417,24 @@ faire.
 - **Altimétrie et POI en meilleur effort** : ces deux appels réseau (service
   IGN, Overpass) ne bloquent jamais l'affichage de la fiche détail ; en cas
   d'échec, message clair et le reste (progression, carte) reste utilisable.
-- **Où dormir : trois catégories, pas une** — le wiki OSM distingue le refuge
-  gardé (`tourism=alpine_hut`, personnel et réservation), le couchage
-  autonome (`wilderness_hut`, `shelter_type=basic_hut|lean_to|rock_shelter`,
-  gratuit et sans gardien) et l'abri météo (`weather_shelter`, explicitement
-  *pas* prévu pour la nuit). Les mélanger enverrait quelqu'un dormir dans un
-  abri de crête ; ils sont donc séparés, et un avertissement rappelle que la
-  donnée OSM peut être périmée. Les abris sans `shelter_type` exploitable
-  (abribus…) sont écartés dès la requête.
+- **Où dormir : quatre catégories, pas une** — le wiki OSM distingue le refuge
+  gardé (`tourism=alpine_hut`, personnel et réservation), le gîte d'étape
+  (`tourism=hostel`, dortoirs et chambres partagées, sur réservation), le
+  couchage autonome (`wilderness_hut`,
+  `shelter_type=basic_hut|lean_to|rock_shelter`, gratuit et sans gardien) et
+  l'abri météo (`weather_shelter`, explicitement *pas* prévu pour la nuit).
+  Les mélanger enverrait quelqu'un dormir dans un abri de crête ; ils sont
+  donc séparés, et un avertissement rappelle que la donnée OSM peut être
+  périmée. Les abris sans `shelter_type` exploitable (abribus…) sont écartés
+  dès la requête.
+
+  Le gîte d'étape est arrivé le dernier, et par l'usage : le découpage en
+  étapes ne connaissait que le vocabulaire de la montagne, si bien qu'un
+  chemin de plaine comme celui de Saint-Jacques n'avait **aucun** couchage
+  connu sur quatre cents kilomètres. Écartés faute de pouvoir les cadrer :
+  `guest_house` et `chalet`, qui hébergent aussi des pèlerins mais
+  noieraient tout tracé passant par un bourg. Ce partage n'est pas mesuré —
+  il faudrait compter ce que chaque tag rapporte le long du GR 65.
 - **POI : `nwr` et boîtes découpées** — en montagne un refuge est souvent
   cartographié comme le polygone du bâtiment : n'interroger que les nœuds les
   rendait invisibles. On interroge donc nœuds, ways et relations avec

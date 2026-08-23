@@ -4,6 +4,7 @@ import type { GpxWaypoint } from './gpxExport.ts'
 import type {
   Itinerary,
   LonLat,
+  PoiKind,
   PointOfInterest,
   Sample,
   TrailWay,
@@ -344,12 +345,37 @@ export function calerSurCouchages(
 }
 
 /**
- * Les couchages d'un tracé, situés dessus et rangés dans l'ordre du parcours.
+ * Les catégories où l'on passe la nuit.
  *
- * `hut` et `bivouac` seulement : un `shelter` est un abri météo, prévu pour
- * une pause ou une urgence, pas pour la nuit. Y caler une étape enverrait
- * quelqu'un dormir où l'on ne dort pas — c'est le genre d'erreur qui se paie
- * en montagne, et la distinction existe déjà dans les données.
+ * Nommée plutôt que recopiée : la question « peut-on y dormir » se pose
+ * déjà à deux endroits — ici, pour caler une coupure, et dans
+ * `POI_OVERNIGHT` qui pose la question voisine mais différente (« sans
+ * réservation »). Trois gardes écrites à la main et une quatrième oubliée,
+ * c'est le mode d'échec de CLAUDE.md §4 ; il n'y aura pas de quatrième
+ * lecture de cette liste-ci.
+ */
+const EST_UN_COUCHAGE: ReadonlySet<PoiKind> = new Set<PoiKind>([
+  'hut',
+  'bivouac',
+  'gite',
+])
+
+/**
+ * Les endroits où l'on dort le long d'un tracé, dans l'ordre du parcours.
+ *
+ * Trois catégories, et la liste se lit comme une question : **peut-on y
+ * passer la nuit ?**
+ *
+ * - `hut`, le refuge gardé, et `bivouac`, la cabane ou le refuge non gardé —
+ *   le vocabulaire de la montagne, qui a fondé #161 ;
+ * - `gite`, le gîte d'étape, ajouté le 23/08. Sans lui, un chemin de plaine
+ *   comme celui de Saint-Jacques n'avait **aucun** couchage connu : ni
+ *   refuge gardé ni cabane sur quatre cents kilomètres, et un découpage qui
+ *   retombait au kilomètre sans jamais tomber où l'on dort.
+ *
+ * Un `shelter` reste dehors : c'est un abri météo, prévu pour une pause ou
+ * une urgence. Y caler une étape enverrait quelqu'un dormir où l'on ne dort
+ * pas, et la distinction existe déjà dans les données.
  */
 export function couchagesLeLongDuTrace(
   pois: PointOfInterest[],
@@ -358,7 +384,7 @@ export function couchagesLeLongDuTrace(
   const cumul = distancesCumuleesDuTrace(trace)
   const couchages: CouchageSitue[] = []
   for (const poi of pois) {
-    if (poi.kind !== 'hut' && poi.kind !== 'bivouac') continue
+    if (!EST_UN_COUCHAGE.has(poi.kind)) continue
     let meilleurIndex = 0
     let meilleureDistance = Infinity
     for (const [index, point] of trace.entries()) {
