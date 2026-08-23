@@ -125,7 +125,7 @@ export function buildPoiQuery(coords: LonLat[]): string {
     .map(({ south, west, north, east }) => {
       const bbox = `${south.toFixed(5)},${west.toFixed(5)},${north.toFixed(5)},${east.toFixed(5)}`
       return [
-        `  nwr["tourism"~"^(viewpoint|alpine_hut|wilderness_hut|picnic_site)$"](${bbox});`,
+        `  nwr["tourism"~"^(viewpoint|alpine_hut|wilderness_hut|picnic_site|hostel)$"](${bbox});`,
         `  nwr["natural"~"^(peak|spring|saddle)$"](${bbox});`,
         `  nwr["mountain_pass"="yes"](${bbox});`,
         `  nwr["amenity"="drinking_water"](${bbox});`,
@@ -167,6 +167,23 @@ function classify(tags: Record<string, string>): PoiKind | null {
       return 'bivouac'
     case 'picnic_site':
       return 'picnic'
+    /*
+      Gîte d'étape (demande du 23/08).
+
+      `tourism=hostel` est le tag recommandé côté français pour un gîte
+      d'étape. Il ramène aussi les auberges de jeunesse quand un tracé
+      traverse une ville — ce n'est pas une erreur : c'est bien un endroit
+      où l'on dort le long du chemin, et rien dans les données ne permet de
+      les distinguer honnêtement.
+
+      Écartés, faute de pouvoir les cadrer : `guest_house` (chambre d'hôtes)
+      et `chalet` (location saisonnière) hébergent aussi des pèlerins, mais
+      noieraient tout tracé passant par un bourg. Ce partage n'est pas
+      mesuré — il faudrait compter ce que chaque tag rapporte le long du
+      GR 65, et la machine de développement n'a pas accès à Overpass.
+    */
+    case 'hostel':
+      return 'gite'
   }
   if (tags.natural === 'peak') return 'peak'
   // Un col porte l'un ou l'autre tag selon les contributeurs — parfois les
@@ -255,6 +272,7 @@ function detailsOf(tags: Record<string, string>): PoiDetails {
 const KIND_ORDER: PoiKind[] = [
   'bivouac',
   'hut',
+  'gite',
   'shelter',
   'water',
   'pass',

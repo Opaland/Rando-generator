@@ -89,7 +89,7 @@ test('une coupure se cale sur le refuge, et la fiche le dit', async ({
   const etapes = page.getByTestId('detail-stages')
   await expect(etapes).toContainText('Refuge de l’Essai', { timeout: 15_000 })
   await expect(page.getByTestId('etapes-explication')).toContainText(
-    /calée?s? sur un refuge/,
+    /calée?s? sur un couchage/,
   )
 })
 
@@ -113,7 +113,71 @@ test('sans refuge connu, la fiche l’avoue', async ({ page }) => {
   await ouvrirLeGR(page)
 
   await expect(page.getByTestId('etapes-explication')).toContainText(
-    'Aucun refuge connu près des coupures',
+    'Aucun couchage connu près des coupures',
     { timeout: 15_000 },
+  )
+})
+
+/**
+ * Le cas de Cédric, en entier (demande du 23/08).
+ *
+ * > « pour les GR et GRP et les coupure faut faire les refuges ou préciser
+ * > les gites étapes (exemple chemin de saint jacques de compostelle) »
+ *
+ * Sur le chemin de Saint-Jacques il n'y a ni refuge gardé ni cabane : on
+ * dort en gîte d'étape. Le découpage ne connaissait que le vocabulaire de la
+ * montagne, et `tourism=hostel` n'était même pas demandé à Overpass — quatre
+ * cents kilomètres découpés au kilomètre, sans qu'aucune coupure ne tombe où
+ * l'on dort.
+ *
+ * Ce test sert exactement ce terrain-là : **un gîte, et rien d'autre**. Si le
+ * gîte cessait d'être demandé, ou cessait de compter comme un couchage, la
+ * fiche retomberait sur « Aucun couchage connu » et ce test serait rouge.
+ */
+function giteA18km(): unknown {
+  return {
+    elements: [
+      {
+        type: 'node',
+        id: 7002,
+        lat: 45.4,
+        lon: 4.5 + 18 / 78,
+        tags: {
+          tourism: 'hostel',
+          name: 'Gîte d’étape de l’Essai',
+          'capacity:beds': '18',
+        },
+      },
+    ],
+  }
+}
+
+test('sur un chemin sans refuge, la coupure se cale sur le gîte d’étape', async ({
+  page,
+}) => {
+  const overpass = await mockExternalNetwork(page)
+  await mockElevation(page)
+  overpass.setFixture(grLong())
+  await page.route('**/api/interpreter', (route) => {
+    const body = route.request().postData() ?? ''
+    if (body.includes('drinking_water')) {
+      // La requête doit avoir demandé les gîtes : sans cela, servir la
+      // réponse ne prouverait rien — le mock répondrait à une question que
+      // l'application ne pose pas (CLAUDE.md §1).
+      expect(body).toContain('hostel')
+      void route.fulfill({ json: giteA18km() })
+      return
+    }
+    void route.fallback()
+  })
+  await page.goto('/')
+  await ouvrirLeGR(page)
+
+  const etapes = page.getByTestId('detail-stages')
+  await expect(etapes).toContainText('Gîte d’étape de l’Essai', {
+    timeout: 15_000,
+  })
+  await expect(page.getByTestId('etapes-explication')).toContainText(
+    /calée?s? sur un couchage/,
   )
 })

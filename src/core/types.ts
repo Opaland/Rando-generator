@@ -152,6 +152,16 @@ export type PoiKind =
   | 'hut'
   /** Refuge non gardé, cabane, abri où dormir (wilderness_hut, basic_hut…). */
   | 'bivouac'
+  /**
+   * Gîte d'étape : dortoirs et chambres partagées, sur réservation.
+   *
+   * `tourism=hostel`, ce que le wiki OpenStreetMap français recommande pour
+   * un gîte d'étape — par opposition à `alpine_hut`, réservé au refuge de
+   * montagne isolé et gardé. Sans cette catégorie, un chemin de plaine comme
+   * celui de Saint-Jacques n'a aucun couchage connu, et son découpage en
+   * étapes retombe au kilomètre.
+   */
+  | 'gite'
   /** Abri météo : pause ou urgence, pas prévu pour la nuit. */
   | 'shelter'
   | 'water'
