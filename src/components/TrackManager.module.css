@@ -287,3 +287,37 @@
   color: inherit;
   cursor: pointer;
 }
+
+/*
+  Les itinéraires déclarés (issue #158) : une section, pas des lignes mêlées.
+
+  Le liseré à gauche est le même que celui du tableau de bord — un seul geste
+  visuel pour dire « autre nature de chiffre », plutôt qu'un par écran.
+*/
+.declarations {
+  margin-top: var(--espace-6);
+  padding-left: var(--espace-4);
+  border-left: 3px solid var(--gris-vert-clair);
+  display: grid;
+  gap: var(--espace-3);
+}
+
+.declarationsTitre {
+  margin: 0;
+  font-size: var(--texte-secondaire);
+  color: var(--gris-vert);
+}
+
+.declarationsAide {
+  margin: 0;
+  font-size: var(--texte-appui);
+  color: var(--gris-vert);
+}
+
+.declarationsListe {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--espace-3);
+}

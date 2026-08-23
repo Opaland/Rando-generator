@@ -178,3 +178,33 @@ test('un itinéraire coché est dessiné à part sur la carte', async ({ page })
   await page.getByTestId('declare-retirer').click()
   await expect.poll(declares, { timeout: 15_000 }).toBe(0)
 })
+
+/**
+ * La troisième pierre : le déclaratif dans « Mes sorties », **à part**.
+ *
+ * Ce que ce test tient : la section apparaît, elle nomme l'itinéraire, elle
+ * dit qu'il ne compte pas dans le pourcentage mesuré, et on peut y revenir.
+ */
+test('les déclarations ont leur section dans « Mes sorties »', async ({
+  page,
+}) => {
+  await mockExternalNetwork(page)
+  await page.goto('/')
+  await chargerLaZone(page)
+  await ouvrirLaFiche(page)
+  await page.getByTestId('declare-ouvrir').click()
+  await page.getByTestId('declare-valider').click()
+  await expect(page.getByTestId('declare-etat')).toBeVisible()
+  await page.getByTestId('itinerary-detail-close').click()
+
+  const section = page.getByTestId('declarations')
+  await expect(section).toBeVisible()
+  await expect(section).toContainText('GR 7')
+  await expect(section).toContainText('Déclarés sans trace (1)')
+  await expect(section).toContainText('ne comptent pas dans votre pourcentage')
+
+  // On peut revenir dessus depuis cette liste, en deux temps comme partout.
+  await section.getByRole('button', { name: /Retirer la déclaration/ }).click()
+  await section.getByRole('button', { name: /Confirmer/ }).click()
+  await expect(page.getByTestId('declarations')).toHaveCount(0)
+})

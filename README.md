@@ -152,7 +152,9 @@ l'ignorent — ils n'y ont pas accès.
 
 Sur la carte, un itinéraire coché est **discontinu** là où un itinéraire
 mesuré est plein, dans la couleur de son réseau : c'est le figuré qui
-distingue, pas une couleur de plus. Les déclarations partent dans la
+distingue, pas une couleur de plus. Dans « Mes sorties », les déclarations ont
+leur propre section, sous la liste des traces — pas des lignes mêlées à
+celles-ci. Les déclarations partent dans la
 sauvegarde exportable, et se relisent depuis une sauvegarde antérieure sans
 erreur.
 
