@@ -26,6 +26,37 @@ Il n'y a pas de raccourci : on enlève la correction, on relance, on vérifie
 que c'est rouge. Un test écrit après coup qui passe du premier coup est
 suspect jusqu'à preuve du contraire.
 
+## 1bis. Playwright appelle « visible » des choses que personne ne voit
+
+Trois fois dans la nuit du 22 au 23/08, un test est resté vert alors que le
+défaut était remis. Trois fois la même cause : **une assertion sur le DOM
+répondait à une autre question que celle qu'on croyait poser.**
+
+- **`toBeVisible` accepte un élément écrêté** par un ancêtre en
+  `overflow: hidden`. Le contenu d'une feuille repliée garde un rectangle non
+  vide : les quatre tests du constat U3 passaient sur un panneau haut de
+  52 px qui ne montrait rien.
+- **`toContainText` lit le `textContent`, `display: none` compris.** « Rien
+  ne parle de glisser » était affirmé sur un texte parfaitement présent
+  (constat U12).
+- **Une mesure prise pendant une transition ne dit rien de l'état final.** La
+  feuille met 0,2 s à changer de hauteur alors que `data-position` change
+  tout de suite : on relevait 821 px là où elle en fait 52. Deux fois, dans
+  deux constats différents.
+
+Ce qu'il faut demander à la place :
+
+- « qu'est-ce qui est **peint** ici ? » — `document.elementFromPoint` au
+  centre de l'élément, comparé à l'élément lui-même. C'est la mesure qui a
+  établi U1, U3 et U4, et c'est `estAlEcran` dans `tests/e2e/helpers.ts` ;
+- pour un texte qui doit disparaître, viser sa **visibilité** et non la
+  présence du mot ;
+- envelopper toute mesure d'un `expect.poll` quand une transition CSS peut
+  courir.
+
+La règle générale, dont ceci n'est qu'un cas : **une assertion qui pourrait
+passer pour une raison qu'on n'a pas voulue n'est pas une assertion.**
+
 ## 2. Ne pas inventer un seuil, et le dire quand on tranche quand même
 
 Un nombre caché derrière un mot rassurant est plus difficile à remettre en
