@@ -105,6 +105,13 @@ test.describe('sur grand écran', () => {
 
     const rendre = page.getByTestId('panneau-rendre')
     await expect(rendre).toBeVisible()
+
+    // Il se nomme, et sa cible se touche. Un chevron de 28 px sans étiquette
+    // se replie facilement et se retrouve mal (AUDIT_UX.md, constat U13).
+    await expect(rendre).toContainText('Zones, traces et réglages')
+    const boite = await rendre.boundingBox()
+    expect(boite?.height ?? 0, 'la cible est trop courte pour se viser').toBeGreaterThanOrEqual(44)
+
     await rendre.click()
     await expect(panneau).toBeVisible()
     await expect(rendre).toBeHidden()
