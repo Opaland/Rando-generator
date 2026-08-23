@@ -51,6 +51,23 @@ export function formatAnciennete(jours: number): string {
  * exactitude que la donnée OSM n'a pas.
  */
 export function formatDetour(meters: number): string {
+  return formatDistance(meters)
+}
+
+/**
+ * Une distance parcourue, lisible du premier pas au dernier kilomètre.
+ *
+ * Même formule que `formatDetour`, et c'est tout l'objet de cette
+ * extraction : l'écran de marche et la poignée de la feuille affichaient
+ * « 0,1 km » sur les cent premiers mètres d'une sortie, parce qu'ils
+ * passaient par `formatKm`. Deux formules pour le même genre de chiffre
+ * auraient fini par diverger (CLAUDE.md §4) ; `formatDetour` garde son nom
+ * là où il documente l'intention, et délègue.
+ *
+ * Sous le kilomètre, la dizaine de mètres suffit : un chiffre plus précis
+ * ferait croire à une exactitude que ni OSM ni le GPS n'ont.
+ */
+export function formatDistance(meters: number): string {
   const sain = Number.isFinite(meters) && meters > 0 ? meters : 0
   if (sain < 1_000) return `${Math.round(sain / 10) * 10} m`
   return `${kmFormat.format(sain / 1000)} km`

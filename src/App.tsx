@@ -6,6 +6,7 @@ import { Dashboard } from './components/Dashboard.tsx'
 import { EmptyState } from './components/EmptyState.tsx'
 import { Enregistreur } from './components/Enregistreur.tsx'
 import { temoinDeSortie } from './core/sortieEnCours.ts'
+import { PoigneeTexte } from './components/PoigneeTexte.tsx'
 import { History } from './components/History.tsx'
 import { ItineraryCard } from './components/ItineraryCard.tsx'
 import { ItineraryDetail } from './components/ItineraryDetail.tsx'
@@ -38,7 +39,6 @@ import {
 import { ZonePicker } from './components/ZonePicker.tsx'
 import { useEcranCompact } from './lib/ecran.ts'
 import { pourcentageMesurable } from './core/milestones.ts'
-import { formatPct } from './lib/format.ts'
 import { useAppStore } from './store/appStore.ts'
 import styles from './App.module.css'
 
@@ -306,10 +306,8 @@ function App() {
             }}
           >
             <span className={styles.poigneeBarre} aria-hidden="true" />
-            <span className={styles.poigneeTexte}>
-              {globalPct === null
-                ? 'Zones, traces et réglages'
-                : `${formatPct(globalPct)} parcourus`}
+            <span className={styles.poigneeTexte} data-testid="sheet-handle-texte">
+              <PoigneeTexte pourcentage={globalPct} />
             </span>
           </button>
           <DemoBanner />
