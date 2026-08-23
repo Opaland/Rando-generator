@@ -158,6 +158,14 @@ celles-ci. Les déclarations partent dans la
 sauvegarde exportable, et se relisent depuis une sauvegarde antérieure sans
 erreur.
 
+### Emporter son découpage
+
+Un long itinéraire est découpé en étapes calculées ; ce découpage s'exporte
+maintenant en GPX, avec un repère à chaque coupure — « Départ », « Fin
+d'étape 3 — 62,1 km », « Arrivée ». Un seul fichier, à waypoints, plutôt
+qu'un par étape : une montre en avale un, le tracé reste entier, et les
+coupures se lisent dessus (issue #161).
+
 ### Une grosse bibliothèque
 
 Mesuré le 23/08/2026 sur **800 activités** de 2 h 30 à un point par seconde,
