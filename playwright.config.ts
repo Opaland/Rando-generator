@@ -10,18 +10,22 @@ export default defineConfig({
    *
    * Le délai par test (30 s) ne protège de rien si ce qui bloque est en
    * dehors d'un test : un serveur de prévisualisation qui ne démarre pas,
-   * un navigateur qui ne rend pas la main, un exécutant figé. Le 23/08,
-   * l'étape e2e d'une PR de documentation seule est restée en cours
-   * cinquante minutes sur du code qui venait de passer en quatre minutes et
-   * demie, et rien dans la chaîne n'avait de raison de s'arrêter avant la
-   * limite de six heures de GitHub.
+   * un navigateur qui ne rend pas la main, un exécutant qui n'avance plus.
+   * Rien, dans la chaîne, n'avait de raison de s'arrêter avant la limite de
+   * six heures de GitHub.
    *
-   * Mesuré : 3,7 à 4,5 min en intégration continue, 8,6 min sur ma machine
-   * avec `--workers=1`. Vingt-cinq minutes laissent près de trois fois le
-   * pire cas connu, et transforment un blocage en rapport lisible plutôt
-   * qu'en exécutant tué.
+   * **Le nombre est au-dessus du pire cas observé, pas du cas ordinaire.**
+   * Mesuré : 3,7 à 4,5 min en intégration continue d'habitude, 8,6 min sur
+   * ma machine en `--workers=1` — et **cinquante minutes** le 23/08 sur un
+   * exécutant lent, run qui a fini par réussir. Une borne posée à vingt-cinq
+   * minutes, écrite avant de connaître ce chiffre, aurait transformé cette
+   * réussite en échec. Une porte qui rougit sur la lenteur d'une machine ne
+   * mesure plus le code.
+   *
+   * Soixante-dix minutes ne protègent donc pas de la lenteur, et c'est
+   * voulu : elles protègent de l'infini.
    */
-  globalTimeout: 25 * 60 * 1000,
+  globalTimeout: 70 * 60 * 1000,
   reporter: process.env.CI ? 'github' : 'list',
   use: {
     baseURL: 'http://localhost:4173',

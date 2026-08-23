@@ -6,11 +6,11 @@ on:
 
 # Une nouvelle poussée sur la même branche annule la précédente.
 #
-# Sans cela, un run bloqué garde un exécutant jusqu'à la limite de six
-# heures de GitHub, et les suivants font la queue derrière lui. C'est arrivé
-# le 23/08 : l'étape e2e d'une PR **de documentation seule** est restée en
-# cours cinquante minutes, sur exactement le code qui venait de passer en
-# quatre minutes et demie.
+# Sans cela, un run lent ou bloqué garde son exécutant et les suivants font
+# la queue derrière lui. Le 23/08, l'étape e2e d'une PR **de documentation
+# seule** a mis cinquante minutes, sur exactement le code qui venait de
+# passer en quatre minutes et demie — elle a fini par réussir, mais elle a
+# tenu la file pendant tout ce temps.
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -44,13 +44,20 @@ jobs:
         timeout-minutes: 10
       - name: Tests e2e
         run: npm run e2e
-        # Mesuré sur ce dépôt : la suite e2e prend de 3,7 à 4,5 minutes en
-        # intégration continue. Vingt minutes laissent donc quatre fois le
-        # pire cas observé, et bornent ce qui n'était pas borné — la
-        # configuration Playwright n'a pas de `globalTimeout`, et le délai
-        # par test ne protège pas d'un serveur de prévisualisation qui ne
-        # rend jamais la main.
-        timeout-minutes: 20
+        # Une borne, et une seule chose à ne pas rater : elle doit être
+        # au-dessus du pire cas **observé**, pas du cas ordinaire.
+        #
+        # Mesuré sur ce dépôt : 3,7 à 4,5 minutes d'habitude — mais un run
+        # du 23/08 a mis cinquante minutes sur un exécutant lent, et il a
+        # réussi. Une borne à vingt minutes, posée avant de connaître ce
+        # chiffre, aurait transformé une réussite en échec : c'est le
+        # contraire de ce qu'on veut d'une porte.
+        #
+        # Soixante-quinze minutes ne protègent donc pas de la lenteur, et
+        # c'est délibéré. Elles protègent de l'infini — la limite de six
+        # heures de GitHub — et rendent l'exécutant en une heure et quart au
+        # lieu d'une demi-journée.
+        timeout-minutes: 75
         env:
           CI: 'true'
       - name: Rapport Playwright en cas d'échec
