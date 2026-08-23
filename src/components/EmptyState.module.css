@@ -60,18 +60,21 @@
   padding-top: var(--espace-4);
 }
 
+/*
+  L'action principale de cette carte, et elle se peint comme les autres.
+
+  Ce bouton avait son propre remplissage vert-noir, quand « Ajouter un
+  itinéraire » — action principale elle aussi — est en rouge balisage.
+  Deux couleurs pour la même intention, et personne ne l'avait décidé
+  (AUDIT_UX.md, constat U9). Le commentaire d'origine justifiait l'emphase,
+  pas la couleur : « c'est le seul bouton de cette carte, il n'a pas à se
+  disputer l'attention » — ce que `.btn-primary` fait déjà.
+
+  Ne reste ici que ce qui est propre à cette carte : le bouton ne s'étire
+  pas sur toute la largeur.
+*/
 .demo {
-  /* Le premier « aha » avant le premier effort (issue #172) : c'est le seul
-     bouton de cette carte, il n'a pas à se disputer l'attention. */
   justify-self: start;
-  min-height: 44px;
-  padding: var(--espace-4) var(--espace-7);
-  border: 1px solid var(--vert-noir);
-  border-radius: var(--rayon-md);
-  background: var(--vert-noir);
-  color: var(--blanc-papier);
-  font: inherit;
-  font-weight: 600;
   cursor: pointer;
 }
 

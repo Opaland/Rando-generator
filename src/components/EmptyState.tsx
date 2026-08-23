@@ -51,7 +51,7 @@ export function EmptyState() {
         </ol>
         <button
           type="button"
-          className={styles.demo}
+          className={`btn-primary ${styles.demo}`}
           data-testid="voir-un-exemple"
           disabled={prepare}
           onClick={() => {

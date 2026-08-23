@@ -275,11 +275,32 @@ a:focus-visible,
   color: var(--danger-texte);
 }
 
+/*
+  Un bouton désactivé se lit comme désactivé, pas comme une autre couleur.
+
+  `opacity: 0.55` sur le rouge balisage posé sur le papier crème donne un
+  rose dont le contraste **effectif** est de 1,87:1 — le contraste nominal de
+  5,88 ne tient pas compte de l'opacité. Un contrôle désactivé est exempté du
+  critère WCAG 1.4.3, donc ce n'était pas une non-conformité ; mais il ne se
+  lisait pas comme « désactivé », il se lisait comme une troisième couleur de
+  marque, à côté du rouge de l'action et du vert-noir du guide (AUDIT_UX.md,
+  constat U9).
+
+  Le gris dit ce qu'il veut dire, et il le dit de la même façon pour les
+  trois familles de boutons.
+*/
 .btn-primary:disabled,
 .btn-secondary:disabled,
 .btn-link:disabled {
-  opacity: 0.55;
+  background: var(--gris-vert-clair);
+  border-color: var(--gris-vert-clair);
+  color: var(--gris-vert);
   cursor: not-allowed;
+}
+
+.btn-link:disabled {
+  background: none;
+  border-color: transparent;
 }
 
 .btn-icon-close {
