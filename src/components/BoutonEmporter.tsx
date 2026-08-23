@@ -7,7 +7,9 @@ import {
   type ProgresTelechargement,
 } from '../core/telechargement.ts'
 import type { LonLat } from '../core/types.ts'
-import { emporter } from '../lib/emporter.ts'
+import { emporter, emporterPois } from '../lib/emporter.ts'
+import { fetchPoisOuEchec } from '../core/poi.ts'
+import { useAppStore } from '../store/appStore.ts'
 import styles from './BoutonEmporter.module.css'
 
 /**
@@ -30,7 +32,14 @@ import styles from './BoutonEmporter.module.css'
  *   200 km compte des milliers de tuiles : rien ne doit continuer à
  *   marteler la Géoplateforme derrière un écran qu'on a quitté.
  */
-export function BoutonEmporter({ coords }: { coords: LonLat[] }) {
+export function BoutonEmporter({
+  coords,
+  itineraryId,
+}: {
+  coords: LonLat[]
+  itineraryId: number
+}) {
+  const base = useAppStore((s) => s.db)
   /*
     Calculé une fois au montage, et non à chaque rendu : parcourir le
     corridor d'un long tracé sur cinq zooms n'est pas gratuit. La fiche pose
@@ -45,6 +54,13 @@ export function BoutonEmporter({ coords }: { coords: LonLat[] }) {
   )
   const [progres, setProgres] = useState<ProgresTelechargement | null>(null)
   const [sansServiceWorker, setSansServiceWorker] = useState(false)
+  /*
+    Les points d'intérêt ne suivent pas le chemin des tuiles : Overpass
+    répond en `POST`, que le Cache API ne sait pas ranger. Ils partent donc
+    en parallèle, vers IndexedDB, et leur échec se dit séparément — il ne
+    rend pas la randonnée moins emportée.
+  */
+  const [poisEmportes, setPoisEmportes] = useState<boolean | null>(null)
   const arreter = useRef<(() => void) | null>(null)
 
   useEffect(
@@ -79,6 +95,19 @@ export function BoutonEmporter({ coords }: { coords: LonLat[] }) {
             return
           }
           arreter.current = stop
+          if (base) {
+            void emporterPois(
+              {
+                recuperer: (trace) => fetchPoisOuEchec(trace),
+                ecrire: (pois) => base.ecrirePoisEmportes(pois),
+                maintenant: () => new Date(),
+              },
+              itineraryId,
+              coords,
+            ).then(setPoisEmportes)
+          } else {
+            setPoisEmportes(false)
+          }
           setProgres({
             faites: 0,
             total: adresses.length,
@@ -108,6 +137,13 @@ export function BoutonEmporter({ coords }: { coords: LonLat[] }) {
           Le réseau a refusé {progres.echecs} tuile
           {progres.echecs > 1 ? 's' : ''} : autant de carrés gris là-bas.
           Relancez depuis une meilleure connexion pour les compléter.
+        </p>
+      )}
+      {poisEmportes === false && (
+        <p className={styles.aide} data-testid="emporter-sans-poi">
+          Les points d’intérêt n’ont pas pu être emportés : sans réseau, la
+          fiche n’aura ni points d’eau ni refuges. Le fond de carte et le
+          relief, eux, sont là.
         </p>
       )}
       {sansServiceWorker && (

@@ -1,3 +1,5 @@
+import type { PoisEmportes } from '../core/poisEmportes.ts'
+import type { LonLat, PointOfInterest } from '../core/types.ts'
 import {
   MESSAGE_ARRETER,
   MESSAGE_PRECHARGER,
@@ -79,5 +81,50 @@ export function emporter(
     arrete = true
     controleur.postMessage({ type: MESSAGE_ARRETER })
     debrancher()
+  }
+}
+
+/**
+ * Ce dont l'emport des POI a besoin, et rien de plus.
+ *
+ * Trois ports nommés plutôt qu'une base et un `fetch` : ce qui se décide
+ * ici — n'écrire que ce qui est une réponse — se vérifie alors sans
+ * navigateur ni réseau.
+ */
+export interface PortsPois {
+  recuperer: (coords: LonLat[]) => Promise<PointOfInterest[] | null>
+  ecrire: (pois: PoisEmportes) => Promise<void>
+  maintenant: () => Date
+}
+
+/**
+ * Met les points d'intérêt d'un itinéraire de côté (issue #153).
+ *
+ * Rend `true` si la réserve est constituée. Deux cas se ressemblent et ne
+ * doivent surtout pas être confondus :
+ *
+ * - Overpass répond **une liste vide** : c'est un fait sur ce sentier, et il
+ *   s'emporte comme un autre ;
+ * - Overpass **ne répond pas** : rien ne s'écrit. Ranger `[]` effacerait une
+ *   réserve constituée hier et la remplacerait par « il n'y a rien ici » —
+ *   un mensonge qui survivrait au retour du réseau.
+ */
+export async function emporterPois(
+  ports: PortsPois,
+  itineraryId: number,
+  coords: LonLat[],
+): Promise<boolean> {
+  try {
+    const pois = await ports.recuperer(coords)
+    if (pois === null) return false
+    await ports.ecrire({
+      itineraryId,
+      pois,
+      recuperesLe: ports.maintenant().toISOString(),
+    })
+    return true
+  } catch {
+    // Un POI est un bonus : son échec n'a pas à faire tomber le reste.
+    return false
   }
 }

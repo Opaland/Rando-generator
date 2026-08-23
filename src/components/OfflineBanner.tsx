@@ -93,9 +93,9 @@ export function OfflineBanner() {
     <p className={styles.banner} role="status" data-testid="offline-banner">
       <strong>Hors connexion.</strong> Vos traces, vos itinéraires, les fonds
       de carte déjà consultés et les randonnées que vous avez emportées
-      restent disponibles. Charger une nouvelle zone demandera du réseau — de
-      même que le relief et les points d’intérêt d’une randonnée que vous
-      n’avez pas emportée.
+      restent disponibles, points d’intérêt compris. Charger une nouvelle zone
+      demandera du réseau — de même que le relief et les points d’intérêt
+      d’une randonnée que vous n’avez pas emportée.
     </p>
   )
 }

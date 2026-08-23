@@ -52,7 +52,8 @@ import {
   ElevationError,
   type ProfilePoint,
 } from '../core/elevation.ts'
-import { fetchPois } from '../core/poi.ts'
+import { fetchPoisOuEchec } from '../core/poi.ts'
+import { choisirPois, type SourcePois } from '../core/poisEmportes.ts'
 import { outingHighlights, type OutingHighlight } from '../core/outing.ts'
 import { FitError, looksLikeFit, parseFit } from '../core/fit.ts'
 import {
@@ -325,6 +326,16 @@ export interface AppState extends EtatSortie, ActionsSortie {
   elevationHover: ProfilePoint | null
   pois: PointOfInterest[]
   poisLoading: boolean
+  /**
+   * D'où viennent les points affichés (issue #153).
+   *
+   * « emporte » n'est pas un détail d'implémentation : un point d'eau
+   * emporté il y a trois mois peut avoir été supprimé ou tari, et la fiche
+   * doit le dire. Une tuile périmée, elle, reste juste.
+   */
+  poisSource: SourcePois
+  /** Date de l'emport, quand les points en viennent. */
+  poisRecuperesLe: string | null
   view3D: boolean
   /** Coordonnée à centrer sur la carte (POI cliqué) ; consommée une fois par MapView. */
   focusTarget: LonLat | null
@@ -1095,6 +1106,8 @@ export const useAppStore = create<AppState>()((set, get) => {
     elevationLoading: false,
     pois: [],
     poisLoading: false,
+    poisSource: 'aucune',
+    poisRecuperesLe: null,
     view3D: false,
     focusTarget: null,
     focusBounds: null,
@@ -1742,6 +1755,8 @@ export const useAppStore = create<AppState>()((set, get) => {
               elevationLoading: false,
               pois: [],
               poisLoading: false,
+              poisSource: 'aucune',
+              poisRecuperesLe: null,
               view3D: false,
             }
           : {}),
@@ -1941,6 +1956,8 @@ export const useAppStore = create<AppState>()((set, get) => {
         elevationLoading: true,
         pois: [],
         poisLoading: true,
+        poisSource: 'aucune',
+        poisRecuperesLe: null,
       })
 
       const { itineraries, customItineraries } = get()
@@ -1971,8 +1988,24 @@ export const useAppStore = create<AppState>()((set, get) => {
           })
         })
 
-      void fetchPois(coords).then((pois) => {
-        if (applies()) set({ pois, poisLoading: false })
+      /*
+        Le réseau et la réserve sont demandés ensemble, et `choisirPois`
+        tranche. Les demander l'un après l'autre ferait attendre la réserve
+        — qui est instantanée — derrière un Overpass qui met dix secondes à
+        ne pas répondre, c'est-à-dire précisément dans le cas où elle sert.
+      */
+      void Promise.all([
+        fetchPoisOuEchec(coords),
+        baseOuverte().then((base) => base?.lirePoisEmportes(id) ?? null),
+      ]).then(([reseau, emportes]) => {
+        if (!applies()) return
+        const resultat = choisirPois(reseau, emportes ?? null)
+        set({
+          pois: resultat.pois,
+          poisSource: resultat.source,
+          poisRecuperesLe: resultat.recuperesLe,
+          poisLoading: false,
+        })
       })
     },
 
@@ -1986,6 +2019,8 @@ export const useAppStore = create<AppState>()((set, get) => {
         elevationLoading: false,
         pois: [],
         poisLoading: false,
+        poisSource: 'aucune',
+        poisRecuperesLe: null,
         view3D: false,
       })
     },
