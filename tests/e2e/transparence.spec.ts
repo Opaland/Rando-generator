@@ -47,6 +47,12 @@ test('« À propos » distingue ce qui sort de ce qui ne sort jamais', async ({
   const local = page.getByTestId('about-local')
   await expect(local).toContainText('traces')
   await expect(local).toContainText('ne quitte')
+  // Depuis #152, l'application relève une position toutes les quelques
+  // secondes pendant une sortie et l'écrit en base. C'est la donnée la plus
+  // sensible qu'elle manipule : la promesse doit la nommer, sans quoi elle
+  // ne porte que sur ce qui existait avant.
+  await expect(local).toContainText(/enregistr/i)
+  await expect(local).toContainText(/position/i)
   // La promesse tenue reste affirmée, sans être étendue à tout le reste.
   await expect(page.getByTestId('about-dialog')).not.toContainText(
     'Aucune ne part nulle part',
@@ -63,6 +69,30 @@ test('la page publique n’affirme plus que le site ignore votre venue', async (
   await expect(corps).not.toContainText('ne sait pas que vous êtes venu')
   await expect(corps).toContainText('Géoplateforme IGN')
   await expect(corps).toContainText('Overpass')
+})
+
+/**
+ * CLAUDE.md §3 — une correction de texte se fait sur **toutes** les
+ * surfaces, et on cherche la formule, pas le fichier. L'issue #168 en avait
+ * corrigé trois et oublié le README, la première chose que lit quelqu'un
+ * qui arrive sur le dépôt.
+ *
+ * Ici la formule est neuve plutôt que fausse : l'application sait
+ * enregistrer une sortie depuis cette nuit, et les surfaces publiques
+ * décrivaient encore un produit qui ne savait que lire des fichiers.
+ */
+test('les surfaces publiques disent que Sentiers enregistre une sortie', async ({
+  page,
+}) => {
+  await mockExternalNetwork(page)
+
+  await page.goto('/pourquoi.html')
+  await expect(page.locator('body')).toContainText(/enregistrez votre sortie/i)
+
+  await page.goto('/')
+  await expect(page.getByTestId('onboarding')).toContainText(
+    /enregistrez votre sortie/i,
+  )
 })
 
 test('le premier écran ne promet pas que rien ne part', async ({ page }) => {

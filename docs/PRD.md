@@ -88,6 +88,7 @@ supposé.
 
 | Récit | État | Critère d'acceptation |
 |---|---|---|
+| **Enregistrer une sortie** | ✅ | Démarrer / pause / terminer / abandonner ; survit à un onglet tué, reprise en pause ; la position ne quitte pas l'appareil. Batterie non mesurée (`docs/PROTOCOLE_BATTERIE.md`) |
 | Import GPX, FIT, TCX, archives ZIP Strava/Garmin | ✅ | Détection à la signature, pas à l'extension |
 | Export d'un itinéraire en GPX avec attribution ODbL | ✅ | |
 | Sauvegarde complète exportable et réimportable | ✅ #132 | Aller-retour vérifié sur base effacée ; restaurer ajoute sans écraser |

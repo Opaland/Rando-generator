@@ -2,9 +2,10 @@
 
 **Mesurez votre progression sur les itinéraires de randonnée balisés français.**
 
-Sentiers compare vos traces GPX aux tracés d'itinéraires (GR, GR de Pays, PR)
-issus d'OpenStreetMap et affiche votre complétion sur une carte et en
-statistiques : « j'ai parcouru 34 % du GR 7, 61 % des sentiers du Pilat ».
+Sentiers **enregistre votre sortie** — ou lit vos traces GPX — puis les
+compare aux tracés d'itinéraires (GR, GR de Pays, PR) issus d'OpenStreetMap
+et affiche votre complétion sur une carte et en statistiques : « j'ai
+parcouru 34 % du GR 7, 61 % des sentiers du Pilat ».
 
 - **Vos traces restent chez vous** : vos GPX ne quittent jamais votre
   navigateur, et le calcul de complétion s'y fait de bout en bout. Aucun
@@ -68,25 +69,34 @@ existant via `PW_CHROMIUM_PATH=/chemin/vers/chrome npm run e2e`.
    data métropolitain (réseau « Boucle », bleu-vert) s'ajoutent
    automatiquement aux itinéraires OSM — fichier embarqué avec le site
    (`public/data/`), aucun appel réseau supplémentaire.
-2. **Importer des GPX** (multi-fichiers, drag & drop). Les traces sont listées
+2. **Enregistrer une sortie** : « Démarrer », marcher, « Terminer ». La
+   sortie devient une trace comme les autres — appariée, comptée,
+   exportable. Elle se met en pause, s'abandonne sans rien laisser, et
+   **survit à un onglet tué** : rouverte, elle est retrouvée en pause, parce
+   qu'entre la mort de l'onglet et le retour, personne ne sait ce qui s'est
+   passé. La position relevée **ne quitte jamais le navigateur**, y compris
+   pendant l'enregistrement. La consommation de batterie n'est pas encore
+   mesurée, donc pas encore annoncée : `docs/PROTOCOLE_BATTERIE.md` dit ce
+   qu'il faut relever.
+3. **Importer des GPX** (multi-fichiers, drag & drop). Les traces sont listées
    avec nom, date, distance et D+, persistées localement ; un double import
    du même fichier est détecté et refusé. Sur un lot de fichiers, l'import
    annonce celui qu'il est en train de lire. **Déplier une trace** montre ce
    que cette sortie-là a fait avancer : quels itinéraires balisés, et de
    combien (un simple croisement de sentier, sous 300 m, n'est pas compté).
-3. **Créer « Mes itinéraires »** : importez le GPX d'un parcours *à faire*
+4. **Créer « Mes itinéraires »** : importez le GPX d'un parcours *à faire*
    (cartoguide, Visorando, tracé maison…) — il devient un itinéraire local
    avec sa propre progression, hors statistiques des réseaux OSM. Ou
    **tracez-le à la souris** (« Tracer sur la carte ») : chaque clic pose une
    étape accrochée au sentier le plus proche, et le tracé **suit les chemins
    affichés** entre les étapes (plus court chemin, calculé dans le
    navigateur).
-4. **Voir ses sorties** : la section « Mes sorties » totalise le nombre de
+5. **Voir ses sorties** : la section « Mes sorties » totalise le nombre de
    sorties, les kilomètres et le D+, et trace un histogramme des distances
    par mois (12 derniers mois). Les mois sans sortie sont conservés à zéro —
    une interruption est une information. Les traces sans date sont comptées
    dans les totaux et signalées comme absentes du graphique.
-5. **Lire sa progression** : carte colorée (gris = non parcouru, couleur du
+6. **Lire sa progression** : carte colorée (gris = non parcouru, couleur du
    balisage = parcouru — une légende compacte rappelle le code couleur par
    réseau), tableau de bord (% global, km faits/restants, répartition
    GR/GRP/PR, top 5), liste triable/filtrable. Sélectionner un itinéraire
@@ -95,16 +105,16 @@ existant via `PW_CHROMIUM_PATH=/chemin/vers/chrome npm run e2e`.
    des tronçons impraticables ou une géométrie OSM imparfaite ; le seuil est
    toujours annoncé, jamais présenté comme du 100 %. Les autres affichent ce
    qu'il reste avant le prochain jalon (25, 50, 75, 90, 100 %).
-6. **Trouver une sortie** : le panneau « Trouver une sortie » filtre par
+7. **Trouver une sortie** : le panneau « Trouver une sortie » filtre par
    longueur, durée, dénivelé, forme (boucle ou aller simple, déduite de la
    géométrie du tracé) et proximité de votre position. Aucun filtre ne
    s'applique à une donnée absente : un dénivelé inconnu n'est pas un
    dénivelé nul, et l'écarter ferait disparaître en silence la plupart des
    tracés OSM.
-7. **Prochaine sortie** : l'application propose le plus long tronçon non
+8. **Prochaine sortie** : l'application propose le plus long tronçon non
    parcouru d'un seul tenant, pondéré par la distance pour s'y rendre — un
    tronçon de 12 km à 200 km de chez soi n'est pas une proposition.
-8. **Fiche détail** : cliquer un tracé sur la carte ouvre un panneau avec son
+9. **Fiche détail** : cliquer un tracé sur la carte ouvre un panneau avec son
    **profil altimétrique** (service altimétrique IGN, Etalab 2.0 — D+/D−/
    min/max) — **survolez-le pour voir où l'on est** sur la carte, à la souris
    comme au clavier —, les **étapes** pour les itinéraires de plus de 30 km
@@ -113,14 +123,14 @@ existant via `PW_CHROMIUM_PATH=/chemin/vers/chrome npm run e2e`.
    et **« Incliner la carte »** — une caméra inclinée sur le tracé, pas un
    relief calculé depuis un modèle numérique de terrain. L'altimétrie et les
    POI sont des bonus : indisponibles, la fiche reste utilisable.
-9. **Se localiser** : le bouton « Ma position » affiche l'appareil sur la
+10. **Se localiser** : le bouton « Ma position » affiche l'appareil sur la
    carte et recentre dessus au premier relevé. La position est lue par le
    navigateur et **reste dans l'onglet** — ni enregistrée, ni transmise. La
    précision annoncée est affichée, et signalée quand elle est trop mauvaise
    pour situer quelqu'un sur un sentier.
-10. **Régler la précision de suivi GPS** (tolérance de matching, 25–100 m)
+11. **Régler la précision de suivi GPS** (tolérance de matching, 25–100 m)
     selon la précision de votre appareil ; tout est recalculé.
-11. **Emporter ou montrer** : chaque itinéraire s'exporte en **GPX** (avec son
+12. **Emporter ou montrer** : chaque itinéraire s'exporte en **GPX** (avec son
     attribution), et le tableau de bord enregistre un **bilan en image** —
     pourcentage global, itinéraires les plus avancés, période couverte. L'image
     est dessinée sur l'appareil et ne contient aucune coordonnée : des totaux
