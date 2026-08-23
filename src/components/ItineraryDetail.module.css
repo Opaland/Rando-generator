@@ -311,3 +311,10 @@
   font-size: var(--texte-secondaire);
   color: var(--vert-noir);
 }
+
+/* L'effort qualifié (issue #156) : une appréciation, pas un chiffre. */
+.effort {
+  margin: 0;
+  font-size: var(--texte-appui);
+  color: var(--gris-vert);
+}

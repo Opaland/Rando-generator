@@ -2,7 +2,9 @@ import { useMemo, useState } from 'react'
 import { useAppStore } from '../store/appStore.ts'
 import {
   ALL_FILTERS,
+  effortEstime,
   itineraryFacts,
+  libelleEffort,
   matchesFilters,
   type DiscoveryFilters,
 } from '../core/discovery.ts'
@@ -425,6 +427,20 @@ export function ItineraryList() {
                         <span> · {Math.round(facts.gainMeters)} m D+</span>
                       )}
                       {facts.shape === 'loop' && <span> · boucle</span>}
+                      {/*
+                        L'effort qualifié (issue #156) : « 420 m D+ » ne dit
+                        pas « facile » à qui débute. Le mot est posé à côté
+                        des chiffres, pas à leur place — celui qui sait les
+                        lire ne perd rien.
+                      */}
+                      <span
+                        className={styles.effort}
+                        data-testid="itineraire-effort"
+                        title={libelleEffort(facts)}
+                      >
+                        {' · '}
+                        {effortEstime(facts)}
+                      </span>
                     </span>
                   )}
                   <ProgressBalise

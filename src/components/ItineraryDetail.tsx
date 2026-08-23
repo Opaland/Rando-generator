@@ -11,6 +11,7 @@ import { NETWORK_BADGES } from '../lib/networkDisplay.ts'
 import { elevationStats } from '../core/elevation.ts'
 import { itineraryCoords } from '../core/mapdata.ts'
 import { situerPois } from '../core/poiDistance.ts'
+import { itineraryFacts, libelleEffort } from '../core/discovery.ts'
 import { mentionPoisEmportes } from '../core/poisEmportes.ts'
 import {
   DEFAULT_STAGE_METERS,
@@ -164,6 +165,13 @@ export function ItineraryDetail() {
         <p className={styles.km}>
           {formatKm(done)} parcourus · {formatKm(Math.max(0, total - done))}{' '}
           restants
+        </p>
+        {/*
+          L'effort qualifié (issue #156), avec ce sur quoi il repose — et non
+          le seul mot, qui pourrait passer pour une cotation.
+        */}
+        <p className={styles.effort} data-testid="detail-effort">
+          {libelleEffort(itineraryFacts(itin))}
         </p>
         <button
           type="button"

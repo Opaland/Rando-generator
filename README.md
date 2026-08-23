@@ -158,6 +158,19 @@ celles-ci. Les déclarations partent dans la
 sauvegarde exportable, et se relisent depuis une sauvegarde antérieure sans
 erreur.
 
+### Un mot à côté des chiffres
+
+« 420 m D+ » ne dit pas « facile » à qui débute. Chaque itinéraire porte donc
+une appréciation — **facile, moyen, soutenu** — posée à côté des chiffres et
+non à leur place, et dérivée de la durée déjà estimée (4 km/h à plat, 300 m
+de montée à l'heure).
+
+**Ce n'est pas une cotation.** Nous n'avons ni le droit ni la donnée d'une
+cotation FFRandonnée, qui tient compte de la technicité du terrain — que nous
+ignorons. La fiche dit toujours sur quoi l'appréciation repose, et le dit
+autrement quand le dénivelé n'est pas publié : l'estimation ne porte alors que
+sur la distance, et un sentier court et raide paraîtrait facile (issue #156).
+
 ### Emporter son découpage
 
 Un long itinéraire est découpé en étapes calculées ; ce découpage s'exporte
