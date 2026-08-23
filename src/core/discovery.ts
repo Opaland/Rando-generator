@@ -1,3 +1,4 @@
+import { formatDuration } from '../lib/format.ts'
 import { distanceMeters, distanceToSegmentMeters } from './geo.ts'
 import type { Itinerary, LonLat, TrailWay } from './types.ts'
 
@@ -237,4 +238,71 @@ export function matchesFilters(
   }
   if (filters.shape !== 'all' && facts.shape !== filters.shape) return false
   return true
+}
+
+/**
+ * Qualifier l'effort, pour qui ne sait pas encore lire « 420 m D+ »
+ * (issue #156).
+ *
+ * Un chiffre brut demande une expérience que celui qui débute n'a pas
+ * encore : c'est le même reproche que celui fait au vocabulaire du premier
+ * écran (#145), sous une autre forme.
+ *
+ * **Ce n'est pas une cotation.** Nous n'avons ni le droit ni la donnée d'une
+ * cotation FFRandonnée — leurs barèmes sont éditoriaux et protégés, et ils
+ * tiennent compte de la technicité du terrain, que nous ignorons
+ * complètement. Le libellé le dit, et un test interdit les mots qui
+ * laisseraient croire le contraire.
+ *
+ * ## D'où viennent les deux bornes
+ *
+ * Elles ne sont pas posées sur une difficulté, qui ne se mesure pas ici,
+ * mais sur la **durée déjà calculée** par `estimateMinutes` — laquelle
+ * repose sur 4 km/h à plat et 300 m de montée à l'heure, la règle de terrain
+ * française usuelle, écrite plus haut dans ce fichier.
+ *
+ * Ce sont donc des paliers d'affichage : ils ne changent rien à ce qui est
+ * calculé, seulement le mot posé dessus. CLAUDE.md §2 autorise à les
+ * trancher au jugement, à condition de les écrire — voici les pistes :
+ *
+ * - **retenue** : deux bornes sur la durée, à 2 h 30 et 5 h. Ce sont des
+ *   journées de marche — une matinée, une journée pleine, davantage — et
+ *   c'est la seule unité que quelqu'un qui débute sait déjà interpréter,
+ *   parce qu'elle ne parle pas de montagne mais d'emploi du temps ;
+ * - **écartée** : un indice composite (distance + D+ / 100, le
+ *   « kilomètre-effort »). Plus fin, mais il rend un nombre sans unité que
+ *   personne ne sait lire — on remplacerait un chiffre opaque par un autre ;
+ * - **écartée** : des bornes sur le seul dénivelé. C'est précisément le
+ *   chiffre que l'issue reproche de servir brut.
+ */
+export const SEUIL_FACILE_MINUTES = 150
+export const SEUIL_MOYEN_MINUTES = 300
+
+export type Effort = 'facile' | 'moyen' | 'soutenu'
+
+export function effortEstime(facts: ItineraryFacts): Effort {
+  if (facts.minutes <= SEUIL_FACILE_MINUTES) return 'facile'
+  if (facts.minutes <= SEUIL_MOYEN_MINUTES) return 'moyen'
+  return 'soutenu'
+}
+
+/**
+ * Le libellé complet : la qualification, et ce sur quoi elle repose.
+ *
+ * Le cas qui décide de son honnêteté est celui du dénivelé absent. Sans lui,
+ * l'estimation ne porte que sur la distance, et un sentier court et très
+ * raide serait annoncé « facile ». Le dire est la seule façon de ne pas
+ * tromper — et c'est la même règle que la fiche applique déjà à la
+ * potabilité d'une source (#123) : ce qu'OpenStreetMap tait, on le tait
+ * aussi, mais on dit qu'on le tait.
+ */
+export function libelleEffort(facts: ItineraryFacts): string {
+  const heures = formatDuration(facts.minutes)
+  const appui =
+    facts.minutesSource === 'published'
+      ? `${heures} annoncées par la source`
+      : facts.gainMeters === null
+        ? `${heures}, sur la distance seule — dénivelé non publié`
+        : `${heures} à ${String(FLAT_KMH)} km/h, D+ compris`
+  return `Effort estimé : ${effortEstime(facts)} (${appui})`
 }

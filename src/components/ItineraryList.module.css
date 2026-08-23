@@ -203,3 +203,8 @@
   color: var(--orange-grp);
   font-size: var(--texte-appui);
 }
+
+/* Le mot est posé à côté des chiffres, pas à leur place (issue #156). */
+.effort {
+  color: var(--gris-vert);
+}
