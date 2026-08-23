@@ -10,12 +10,26 @@
   color: var(--gris-vert);
 }
 
+/*
+  Deux colonnes tant qu'elles ont de quoi tenir, une seule sinon.
+
+  `repeat(2, …)` en dur donnait, dans la colonne de 307 px du palier
+  800–1100, des cellules de 130 px : « Rhône + Métropole de Lyon » s'y
+  cassait en trois lignes et « AUVERGNE-RHÔNE-ALPES, PAR DÉPARTEMENT » en
+  deux (AUDIT_UX.md, constat U8). Le défaut n'était pas la largeur de la
+  colonne — c'était d'y forcer deux cellules.
+
+  `auto-fit` avec un plancher laisse la grille compter elle-même. Le
+  plancher est mesuré, pas choisi : « Rhône + Métropole de Lyon » est le plus
+  long libellé de zone, et il tient sur deux lignes à partir de 150 px.
+
+  minmax(0, …) et non minmax(150px, …) sur la seconde borne : sans cela la
+  colonne ne descend pas sous la largeur du plus long nom en gros texte, et
+  le panneau déborde au lieu de laisser le texte passer à la ligne (#173).
+*/
 .zones {
   display: grid;
-  /* minmax(0, 1fr) et non 1fr : sans cela, la colonne ne descend pas
-     sous la largeur du plus long nom de zone, et le panneau déborde en
-     gros texte au lieu de laisser le texte passer à la ligne (#173). */
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
   gap: var(--espace-4);
 }
 
