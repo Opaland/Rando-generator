@@ -329,3 +329,60 @@ test.describe('sur grand écran, panneau replié', () => {
     await expect(bouton).toContainText(/\d/)
   })
 })
+
+/**
+ * Issue #172 — une démonstration doit rester visiblement une démonstration,
+ * et ne jamais rien écrire en base.
+ *
+ * L'import d'un fichier quitte la démonstration depuis #172 : « la
+ * démonstration s'efface au premier vrai fichier ». Démarrer une sortie est
+ * le geste le plus réel qui soit — il enregistre une position toutes les
+ * quelques secondes — et il ne le faisait pas. On se retrouvait avec une
+ * vraie trace rangée à côté de trois sorties fictives, dans le même
+ * pourcentage.
+ */
+test('démarrer une sortie quitte la démonstration', async ({ page }) => {
+  await mockExternalNetwork(page)
+  await installerGeolocalisationPilotee(page)
+  // Les boucles locales sont servies en doublure, comme dans
+  // `demonstration.spec.ts` : le jeu réel pèse 568 ko et
+  // `mockExternalNetwork` le coupe.
+  await page.route('**/data/boucles-metropole-lyon.json', (route) =>
+    route.fulfill({
+      json: {
+        type: 'FeatureCollection',
+        features: [1, 2, 3].map((gid) => ({
+          type: 'Feature',
+          properties: { gid, nom: `Boucle ${String(gid)}`, commune_depart: 'Lyon' },
+          geometry: {
+            type: 'MultiLineString',
+            coordinates: [
+              Array.from({ length: 30 }, (_, i) => [
+                4.8 + i * 0.001,
+                45.7 + gid * 0.02,
+              ]),
+            ],
+          },
+        })),
+      },
+    }),
+  )
+  await page.goto('/')
+
+  await page.getByTestId('voir-un-exemple').click()
+  await expect(page.getByTestId('demo-banner')).toBeVisible({ timeout: 15_000 })
+  const listeDesTraces = page.getByTestId('tracks-list').getByRole('listitem')
+  await expect.poll(() => listeDesTraces.count()).toBeGreaterThan(0)
+
+  await page.getByTestId('sortie-demarrer').click()
+
+  await expect(page.getByTestId('demo-banner')).toHaveCount(0)
+  // Les sorties fictives sont parties : ce qui reste sera compté avec la
+  // vraie sortie, et il ne doit rien y avoir d'inventé dedans.
+  await expect.poll(() => listeDesTraces.count(), { timeout: 15_000 }).toBe(0)
+
+  await marcher(page, 4)
+  await page.getByTestId('sortie-terminer').click()
+  await expect.poll(() => listeDesTraces.count(), { timeout: 15_000 }).toBe(1)
+  await expect(listeDesTraces.first()).toContainText('Sortie enregistrée')
+})
