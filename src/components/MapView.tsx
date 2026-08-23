@@ -12,8 +12,6 @@ import styles from './MapView.module.css'
 export function MapView() {
   const containerRef = useRef<HTMLDivElement | null>(null)
 
-  const itineraries = useAppStore((s) => s.itineraries)
-  const customItineraries = useAppStore((s) => s.customItineraries)
   const selectedItineraryId = useAppStore((s) => s.selectedItineraryId)
   const selectItinerary = useAppStore((s) => s.selectItinerary)
   const drawMode = useAppStore((s) => s.drawMode)
@@ -128,9 +126,20 @@ export function MapView() {
           essayez un autre navigateur pour voir la carte.
         </p>
       )}
-      {!mapError && (itineraries.length > 0 || customItineraries.length > 0) && (
-        <MapLegend />
-      )}
+      {/*
+        Ce qui rend une légende utile est décidé par la légende elle-même
+        (`core/legende`), et non ici. La condition vivait aux deux endroits :
+        `MapView` la montait dès qu'il y avait un itinéraire, `MapLegend`
+        décidait ensuite quoi montrer. La seconde question ne pouvait donc
+        jamais répondre « rien », et sa garde était du code mort — trouvé
+        parce qu'une mutation l'a supprimée sans faire rougir un test
+        (CLAUDE.md §4 et §6bis).
+
+        Effet de bord voulu : des traces importées sans zone chargée ont
+        maintenant leur légende — « parcouru » et « restant » veulent dire
+        quelque chose dès qu'une trace est là.
+      */}
+      {!mapError && <MapLegend />}
     </div>
   )
 }

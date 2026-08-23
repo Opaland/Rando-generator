@@ -39,6 +39,12 @@
 
 .states {
   display: flex;
+}
+
+/* Le filet ne sépare que s'il y a quelque chose au-dessus. Une légende
+   réduite aux seuls états — des traces importées, aucune zone chargée —
+   commençait par un trait suspendu. */
+.networks + .states {
   border-top: 1px solid var(--gris-vert-clair);
   padding-top: var(--espace-3);
 }
