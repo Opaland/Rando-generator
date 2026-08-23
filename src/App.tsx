@@ -348,14 +348,24 @@ function App() {
             type="button"
             className={styles.rendrePanneau}
             data-testid="panneau-rendre"
-            aria-label="Rouvrir le panneau de contrôle"
             aria-controls="panneau-de-controle"
             aria-expanded={false}
             onClick={() => {
               void setPanneauReplie(false)
             }}
           >
-            ›
+            {/*
+              Un chevron sans nom, large de 28 px, collé au bord : replier le
+              panneau se fait par curiosité, le retrouver était plus difficile
+              (AUDIT_UX.md, constat U13 — défaut introduit la veille par la
+              PR #213). Il se nomme maintenant, et il porte ce que le panneau
+              contient plutôt qu'un mot d'interface : c'est la même phrase que
+              la poignée de la feuille sur téléphone, pour la même raison.
+            */}
+            <span aria-hidden="true">›</span>
+            <span className={styles.rendrePanneauTexte}>
+              Zones, traces et réglages
+            </span>
           </button>
         )}
         <main className={styles.main}>

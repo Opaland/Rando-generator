@@ -153,11 +153,26 @@
   background: var(--gris-vert-clair);
 }
 
+/*
+  L'onglet qui rend le panneau replié.
+
+  Il faisait 28 px de large, sans étiquette, collé au bord : on repliait le
+  panneau par curiosité et on le retrouvait mal (AUDIT_UX.md, constat U13).
+  Il porte maintenant son nom, écrit à la verticale pour ne pas manger la
+  carte — un onglet, comme les dossiers d'un classeur.
+
+  Le texte dit ce que le panneau contient, pas ce que le bouton fait : c'est
+  la même phrase que la poignée de la feuille sur téléphone.
+*/
 .rendrePanneau {
   align-self: start;
   margin-top: var(--espace-7);
-  min-width: 28px;
-  min-height: 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--espace-4);
+  min-width: 30px;
+  padding: var(--espace-5) var(--espace-2);
   border: 1px solid var(--gris-vert-clair);
   border-left: none;
   border-radius: 0 var(--rayon-md) var(--rayon-md) 0;
@@ -169,8 +184,16 @@
   box-shadow: var(--ombre-panneau);
 }
 
+.rendrePanneauTexte {
+  writing-mode: vertical-rl;
+  font-size: var(--texte-appui);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
 .rendrePanneau:hover {
   color: var(--vert-noir);
+  border-color: var(--vert-noir);
 }
 
 /*
