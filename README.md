@@ -156,6 +156,14 @@ distingue, pas une couleur de plus. Les déclarations partent dans la
 sauvegarde exportable, et se relisent depuis une sauvegarde antérieure sans
 erreur.
 
+### Deux onglets, une seule base
+
+IndexedDB refuse de migrer tant qu'une page reste ouverte sur la version
+précédente. Sentiers ferme alors la connexion de l'ancienne page pour laisser
+passer la migration ; si c'est impossible, il le dit et propose de fermer les
+autres onglets — au lieu d'attendre sans fin, ce qu'il faisait avant, sans
+message et sans rien conserver de ce qu'on y importait.
+
 ### Le domaine où la géométrie est juste
 
 Les distances sont calculées par une projection équirectangulaire, qui ne

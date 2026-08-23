@@ -188,9 +188,63 @@ export async function openSentiersDb(
     )
   }
 
+  /*
+    Armé avant l'ouverture et appelé depuis `blocked` : `openDB` ne rejette
+    pas de lui-même dans ce cas, il attend. On court donc l'ouverture contre
+    ce refus explicite.
+  */
+  let rejeterCarBloquee: (() => void) | undefined
+  const bloquee = new Promise<never>((_, rejeter) => {
+    rejeterCarBloquee = () => {
+      rejeter(
+        new DbError(
+          'Une autre page de Sentiers est encore ouverte sur une version ' +
+            'précédente et empêche la mise à jour du stockage. Fermez les ' +
+            'autres onglets Sentiers, puis rechargez cette page.',
+        ),
+      )
+    }
+  })
+  // Sans cela, un rejet qui n'arrive jamais serait signalé comme non traité.
+  bloquee.catch(() => undefined)
+
   let raw: IDBPDatabase<SentiersSchema>
   try {
-    raw = await openDB<SentiersSchema>(name, DB_VERSION, {
+    // La course entoure l'ouverture elle-même : `openDB` n'aboutit pas quand
+    // elle est bloquée, donc tout ce qu'on écrirait après l'attendre ne
+    // s'exécuterait jamais. Posé après coup une première fois — le test est
+    // resté rouge et a désigné l'erreur.
+    raw = await Promise.race([
+      openDB<SentiersSchema>(name, DB_VERSION, {
+      /*
+        Deux onglets, deux versions de la base — trouvé à la revue du sprint.
+
+        IndexedDB refuse de migrer tant qu'une connexion à l'ancienne version
+        vit. Sans ces deux gestionnaires, `openDB` **n'aboutit jamais** :
+        mesuré, la promesse reste en attente indéfiniment. Elle ne lève pas —
+        donc aucun avertissement ne s'affiche, la base reste `null`, et tout
+        ce qu'on importe dans ce nouvel onglet est perdu en silence.
+
+        Le cas n'a rien de théorique : la base est passée de la version 3 à
+        la 5 en trois heures (#153 puis #158), et quelqu'un qui garde
+        Sentiers ouvert dans un onglet et rouvre le site dans un autre le
+        rencontre.
+
+        `blocking` s'exécute dans l'onglet **ancien** : il ferme sa connexion
+        pour laisser passer la migration. C'est le seul des deux qui répare
+        vraiment quelque chose — l'autre ne fait que ne plus mentir.
+      */
+      blocking() {
+        raw.close()
+      },
+      blocked() {
+        /*
+          On arrive ici quand la connexion ancienne n'a pas pu être fermée —
+          un onglet figé, ou une version antérieure à `blocking`. Mieux vaut
+          renoncer en disant quoi faire que d'attendre sans fin.
+        */
+        rejeterCarBloquee?.()
+      },
       upgrade(database, oldVersion) {
         // Migrations incrémentales : chaque version ajoute ses stores.
         if (oldVersion < 1) {
@@ -220,8 +274,13 @@ export async function openSentiersDb(
           })
         }
       },
-    })
-  } catch {
+      }),
+      bloquee,
+    ])
+  } catch (erreur) {
+    // Un refus explicite porte déjà son message : le remplacer par le
+    // message générique effacerait la seule chose utile qu'on sache dire.
+    if (erreur instanceof DbError) throw erreur
     throw new DbError(
       'Impossible d’ouvrir le stockage local (IndexedDB). ' +
         'Rechargez la page ; si le problème persiste, videz les données du site.',
