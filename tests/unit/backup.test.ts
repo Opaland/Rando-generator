@@ -391,3 +391,73 @@ describe('resumeFusion', () => {
     ).toMatch(/rien de nouveau/)
   })
 })
+
+/**
+ * Issue #170 — le quatrième chemin.
+ *
+ * Trois lecteurs de fichiers portent la garde du domaine ; la restauration
+ * de sauvegarde est le quatrième chemin par lequel des coordonnées entrent,
+ * et c'est déjà celui qu'on avait oublié pour la garde de démonstration
+ * (CLAUDE.md §4). Une sauvegarde peut venir d'une version antérieure à cette
+ * borne, ou avoir été modifiée à la main.
+ */
+describe('domaine de validité à la restauration (issue #170)', () => {
+  /** Construit l'archive gzip que `lireArchiveBackup` attend. */
+  async function archiveDe(parts: {
+    tracks: Track[]
+    customItineraries: Itinerary[]
+    settings: Record<string, never>
+  }): Promise<ArrayBuffer> {
+    const octets = await compresserBackup(
+      serialiserBackup(
+        buildBackup({ ...parts, exportedAt: '2026-01-01T00:00:00Z' }),
+      ),
+    )
+    return octets.buffer.slice(
+      octets.byteOffset,
+      octets.byteOffset + octets.byteLength,
+    ) as ArrayBuffer
+  }
+
+  it('écarte une trace qui franchit le méridien 180°', async () => {
+    const archive = await archiveDe({
+      tracks: [
+        {
+          id: 'pacifique',
+          filename: 'fidji.gpx',
+          points: [
+            [179.999, -17],
+            [-179.999, -17],
+          ],
+          date: null,
+          importedAt: '2026-01-01T00:00:00Z',
+        },
+      ],
+      customItineraries: [],
+      settings: {},
+    })
+    const relue = await lireArchiveBackup(archive)
+    expect(relue.tracks).toHaveLength(0)
+  })
+
+  it('garde une trace qui longe l’antiméridien sans le franchir', async () => {
+    const archive = await archiveDe({
+      tracks: [
+        {
+          id: 'wallis',
+          filename: 'wallis.gpx',
+          points: [
+            [179.9, -13.3],
+            [179.95, -13.31],
+          ],
+          date: null,
+          importedAt: '2026-01-01T00:00:00Z',
+        },
+      ],
+      customItineraries: [],
+      settings: {},
+    })
+    const relue = await lireArchiveBackup(archive)
+    expect(relue.tracks).toHaveLength(1)
+  })
+})

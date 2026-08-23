@@ -129,12 +129,28 @@ describe('parseTcx — bornes WGS84 (issue #167)', () => {
     expect(res.pointsHorsLimites).toBe(1)
   })
 
-  it('accepte les bornes exactes et ne compte rien', () => {
-    const res = parseTcx(tcx(point(90, 180) + point(-90, -180)), parser)
-    expect(res.points).toEqual([
-      [180, 90],
-      [-180, -90],
-    ])
+  /*
+    Séparés pour la même raison que dans `gpx.test.ts` : réunis, ces deux
+    coins forment un pas de 360° de longitude que la projection mesure
+    40 000 km, et la garde du domaine (#170) le refuse. La question posée ici
+    est celle des bornes WGS84 (#167), pas celle des distances.
+  */
+  it('accepte la borne nord-est exacte et ne compte rien', () => {
+    const res = parseTcx(tcx(point(90, 180)), parser)
+    expect(res.points).toEqual([[180, 90]])
     expect(res.pointsHorsLimites).toBe(0)
+  })
+
+  it('accepte la borne sud-ouest exacte et ne compte rien', () => {
+    const res = parseTcx(tcx(point(-90, -180)), parser)
+    expect(res.points).toEqual([[-180, -90]])
+    expect(res.pointsHorsLimites).toBe(0)
+  })
+
+  /** Issue #170 : le lecteur TCX porte la même garde que le lecteur GPX. */
+  it('refuse un tracé qui franchit le méridien 180°', () => {
+    expect(() =>
+      parseTcx(tcx(point(-17, 179.999) + point(-17, -179.999)), parser),
+    ).toThrow(/180/)
   })
 })

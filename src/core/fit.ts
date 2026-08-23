@@ -1,4 +1,5 @@
 import { estDansLeMonde } from './coordonnees.ts'
+import { verifierDomaine } from './domaine.ts'
 import type { LonLat } from './types.ts'
 
 /**
@@ -372,6 +373,12 @@ function finish(
   times: (number | null)[],
   precisionsMetres: (number | null)[],
 ): ParsedFit {
+  // Troisième lecteur, même règle, même fonction nommée (issue #170,
+  // CLAUDE.md §4). C'est celui qu'on oublie : il ne partage ni son format ni
+  // son type d'erreur avec les deux autres.
+  const horsDomaine = verifierDomaine(points)
+  if (horsDomaine) throw new FitError(horsDomaine)
+
   return {
     points,
     elevations,

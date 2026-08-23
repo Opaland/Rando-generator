@@ -136,6 +136,24 @@ existant via `PW_CHROMIUM_PATH=/chemin/vers/chrome npm run e2e`.
     est dessinée sur l'appareil et ne contient aucune coordonnée : des totaux
     et des noms d'itinéraires publics, rien d'autre.
 
+### Le domaine où la géométrie est juste
+
+Les distances sont calculées par une projection équirectangulaire, qui ne
+sait pas franchir le méridien 180° : mesuré, un segment de 212 m à cheval sur
+cette ligne est calculé **38 280 833 m**, et le pourcentage de complétion avec
+(issue #170).
+
+Plutôt que d'afficher un chiffre faux sans le dire, Sentiers **refuse** un
+tracé qui franchit ±180°, en expliquant pourquoi. La borne n'est pas « la
+France » — ce serait une frontière politique posée sur un défaut
+mathématique, et elle écarterait La Réunion, les Antilles ou la Guyane, où ce
+calcul est parfaitement sain. Ce qui est refusé, c'est ce qu'on ne sait pas
+mesurer.
+
+Les quatre chemins par lesquels des coordonnées entrent portent la même garde,
+par la même fonction nommée : les lecteurs GPX, TCX et FIT, et la restauration
+de sauvegarde.
+
 ### Hors connexion
 
 L'application s'installe et se relance **sans réseau** une fois visitée

@@ -1,5 +1,6 @@
+import { traverseAntimeridien } from './domaine.ts'
 import { trackFingerprint } from './gpx.ts'
-import type { Itinerary, Track } from './types.ts'
+import type { Itinerary, LonLat, Track } from './types.ts'
 
 /**
  * Sauvegarde complète, exportable et réimportable (issue #132).
@@ -166,7 +167,16 @@ function estTrace(valeur: unknown): valeur is Track {
     Array.isArray(points) &&
     // Une trace sans point ne dit rien et fausserait le compte des sorties.
     points.length > 0 &&
-    points.every(estPoint)
+    points.every(estPoint) &&
+    /*
+      Quatrième chemin par lequel des coordonnées entrent, et le plus facile
+      à oublier — c'est déjà `importerSauvegarde` qui manquait à la garde de
+      démonstration (CLAUDE.md §4). Une sauvegarde peut venir d'une version
+      antérieure à la borne du domaine (#170), ou avoir été modifiée à la
+      main : une trace qui franchit ±180° est écartée ici comme elle l'aurait
+      été à l'import.
+    */
+    !traverseAntimeridien(points as LonLat[])
   )
 }
 
