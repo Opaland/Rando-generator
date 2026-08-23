@@ -93,13 +93,37 @@ export function ItineraryDetail() {
       aria-label={`Détail de ${displayName(itin)}`}
       data-testid="itinerary-detail"
     >
+      {/*
+        Le titre tient sa ligne, l'action passe en dessous.
+
+        « Incliner la carte » prenait 145 px des 380 de la fiche, et le
+        sous-titre se cassait en trois lignes — « GR 7 — / Traversée du /
+        Pilat » (AUDIT_UX.md, constat U10). Le sous-titre est le seul endroit
+        qui nomme l'itinéraire en toutes lettres ; c'est lui qui doit avoir la
+        largeur, pas un bouton.
+
+        Écarté : raccourcir le libellé du bouton. Il avait été renommé de
+        « Vue 3D » précisément pour dire ce qu'il fait, et le raccourcir
+        reviendrait à défaire cela pour gagner des pixels.
+      */}
       <header className={styles.header}>
-        <span className={`${styles.badge} ${styles[itin.network]}`}>
-          {NETWORK_BADGES[itin.network]}
-        </span>
-        <div className={styles.titleBlock}>
-          <h3 className={styles.name}>{displayName(itin)}</h3>
-          {itin.ref && itin.name && <p className={styles.sub}>{itin.name}</p>}
+        <div className={styles.identite}>
+          <span className={`${styles.badge} ${styles[itin.network]}`}>
+            {NETWORK_BADGES[itin.network]}
+          </span>
+          <div className={styles.titleBlock}>
+            <h3 className={styles.name}>{displayName(itin)}</h3>
+            {itin.ref && itin.name && <p className={styles.sub}>{itin.name}</p>}
+          </div>
+          <button
+            type="button"
+            className="btn-icon-close"
+            aria-label="Fermer la fiche détail"
+            data-testid="itinerary-detail-close"
+            onClick={closeItineraryDetail}
+          >
+            ×
+          </button>
         </div>
         <button
           type="button"
@@ -109,15 +133,6 @@ export function ItineraryDetail() {
           onClick={toggleView3D}
         >
           {view3D ? 'Remettre à plat' : 'Incliner la carte'}
-        </button>
-        <button
-          type="button"
-          className="btn-icon-close"
-          aria-label="Fermer la fiche détail"
-          data-testid="itinerary-detail-close"
-          onClick={closeItineraryDetail}
-        >
-          ×
         </button>
       </header>
 
