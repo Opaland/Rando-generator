@@ -106,6 +106,14 @@ export function rappelGuideVisible(
 /** Ce que chaque mode laisse voir. */
 export interface Sections {
   zone: boolean
+  /**
+   * Enregistrer une sortie ne se replie pas en mode simple (issue #152).
+   *
+   * Le mode simple cache ce qui encombre, pas ce qui sert : quelqu'un qui a
+   * choisi l'affichage sobre est justement quelqu'un pour qui appuyer sur un
+   * bouton et marcher doit rester possible sans rien comprendre au reste.
+   */
+  enregistrement: boolean
   traces: boolean
   tableauDeBord: boolean
   itineraires: boolean
@@ -128,6 +136,7 @@ export function sectionsVisibles(mode: ModeAffichage): Sections {
   const complet = mode === 'complet'
   return {
     zone: true,
+    enregistrement: true,
     traces: true,
     tableauDeBord: true,
     itineraires: complet,

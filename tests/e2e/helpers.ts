@@ -350,8 +350,156 @@ export async function estAlEcran(page: Page, testId: string): Promise<boolean> {
  * fermé), pour qu'un même parcours de test serve dans les deux cas.
  */
 export async function fermerLeGuide(page: Page): Promise<void> {
+  const guide = page.getByTestId('onboarding')
   const fermer = page.getByTestId('onboarding-fermer')
-  if ((await fermer.count()) === 0) return
+  if ((await guide.count()) === 0) return
+  // Le guide peut aussi s'en aller tout seul : au rechargement d'une page
+  // où il avait déjà été fermé, il est rendu **avant** qu'IndexedDB ait
+  // rendu le réglage, et il s'efface dès que celui-ci arrive. Cliquer sur
+  // un bouton en train de partir échoue — mesuré, uniquement quand la base
+  // met du temps à s'ouvrir, c'est-à-dire au milieu d'une suite chargée, ce
+  // qui donnait un échec qui ne se reproduisait pas isolément.
+  await expect
+    .poll(
+      async () => (await guide.count()) === 0 || (await fermer.isVisible()),
+      { message: 'le guide ne se décide ni à s’afficher ni à partir' },
+    )
+    .toBe(true)
+  if ((await guide.count()) === 0) return
   await fermer.click()
-  await expect(page.getByTestId('onboarding')).toHaveCount(0)
+  await expect(guide).toHaveCount(0)
+}
+
+/**
+ * Une géolocalisation pilotée depuis le test (issue #152).
+ *
+ * `context.setGeolocation` de Playwright ne suffit pas ici, pour deux
+ * raisons mesurées :
+ *
+ * - **elle ne porte pas d'altitude.** `GeolocationCoordinates.altitude` reste
+ *   `null`, donc le dénivelé d'une sortie enregistrée serait toujours vide
+ *   et le test ne prouverait rien à son sujet ;
+ * - **déplacer la position pendant un suivi actif** a fait rendre
+ *   `POSITION_UNAVAILABLE` au navigateur d'intégration continue, ce qui
+ *   mettait la sortie en pause au milieu du parcours. Le défaut était dans
+ *   l'outil de mesure, pas dans l'application.
+ *
+ * On installe donc une implémentation qui ne fait que ce qu'on lui dit :
+ * chaque appel à `emettre` livre une position à tous les suivis en cours,
+ * exactement comme un relevé GPS.
+ */
+export interface PositionSimulee {
+  lon: number
+  lat: number
+  altitude?: number | null
+  precisionMetres?: number
+}
+
+export async function installerGeolocalisationPilotee(
+  page: Page,
+): Promise<void> {
+  await page.addInitScript(() => {
+    interface Abonne {
+      succes: PositionCallback
+      echec: PositionErrorCallback | null
+    }
+    const abonnes = new Map<number, Abonne>()
+    let prochainId = 1
+
+    const faux = {
+      watchPosition(succes: PositionCallback, echec?: PositionErrorCallback | null) {
+        const id = prochainId++
+        abonnes.set(id, { succes, echec: echec ?? null })
+        return id
+      },
+      clearWatch(id: number) {
+        abonnes.delete(id)
+      },
+      getCurrentPosition(succes: PositionCallback) {
+        void succes
+      },
+    }
+    Object.defineProperty(navigator, 'geolocation', {
+      configurable: true,
+      value: faux,
+    })
+    Object.defineProperty(window, '__sentiersGeo', {
+      configurable: true,
+      value: {
+        emettre(point: {
+          lon: number
+          lat: number
+          altitude: number | null
+          precisionMetres: number
+          instant: number
+        }) {
+          const position = {
+            coords: {
+              longitude: point.lon,
+              latitude: point.lat,
+              altitude: point.altitude,
+              accuracy: point.precisionMetres,
+              altitudeAccuracy: null,
+              heading: null,
+              speed: null,
+            },
+            timestamp: point.instant,
+          } as unknown as GeolocationPosition
+          for (const abonne of abonnes.values()) abonne.succes(position)
+        },
+        echouer(code: number) {
+          for (const abonne of abonnes.values()) {
+            abonne.echec?.({
+              code,
+              message: '',
+              PERMISSION_DENIED: 1,
+              POSITION_UNAVAILABLE: 2,
+              TIMEOUT: 3,
+            })
+          }
+        },
+        suivis: () => abonnes.size,
+      },
+    })
+  })
+}
+
+interface GeoPilotee {
+  emettre: (point: {
+    lon: number
+    lat: number
+    altitude: number | null
+    precisionMetres: number
+    instant: number
+  }) => void
+  echouer: (code: number) => void
+  suivis: () => number
+}
+
+/** Livre une position à l'application, comme un relevé GPS. */
+export async function emettrePosition(
+  page: Page,
+  point: PositionSimulee,
+): Promise<void> {
+  await page.evaluate(
+    (charge) => {
+      ;(window as unknown as { __sentiersGeo: GeoPilotee }).__sentiersGeo.emettre(
+        charge,
+      )
+    },
+    {
+      lon: point.lon,
+      lat: point.lat,
+      altitude: point.altitude ?? null,
+      precisionMetres: point.precisionMetres ?? 8,
+      instant: Date.now(),
+    },
+  )
+}
+
+/** Combien de suivis de position l'application a ouverts. */
+export async function suivisDePosition(page: Page): Promise<number> {
+  return page.evaluate(() =>
+    (window as unknown as { __sentiersGeo: GeoPilotee }).__sentiersGeo.suivis(),
+  )
 }

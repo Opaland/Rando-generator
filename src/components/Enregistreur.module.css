@@ -1,0 +1,80 @@
+.section {
+  display: grid;
+  gap: var(--espace-4);
+}
+
+.titre {
+  font-size: var(--texte-titre);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gris-vert);
+}
+
+.demarrer {
+  justify-self: start;
+  cursor: pointer;
+}
+
+.aide {
+  margin: 0;
+  font-size: var(--texte-appui);
+  color: var(--gris-vert);
+}
+
+.reprise,
+.erreur {
+  margin: 0;
+  font-size: var(--texte-secondaire);
+  padding: var(--espace-3) var(--espace-4);
+  border-radius: var(--rayon-md);
+  border-left: 4px solid var(--gris-vert);
+  background: var(--blanc-papier);
+}
+
+.erreur {
+  border-left-color: var(--rouge-balisage);
+}
+
+/*
+  Trois chiffres côte à côte, et la grille les compte elle-même : sur un
+  téléphone étroit ou en gros texte, ils passent à deux puis à un sans
+  qu'aucun point de rupture n'ait à être écrit (AUDIT_UX.md, constat U8, où
+  la même règle a servi pour la grille des zones).
+*/
+.chiffres {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(110px, 100%), 1fr));
+  gap: var(--espace-4);
+}
+
+.chiffre dt {
+  font-size: var(--texte-appui);
+  color: var(--gris-vert);
+}
+
+/* Le chiffre se lit à bout de bras, en marchant, au soleil. */
+.chiffre dd {
+  margin: 0;
+  font-size: var(--texte-titre-fort);
+  font-variant-numeric: tabular-nums;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-3);
+}
+
+.action {
+  cursor: pointer;
+}
+
+.abandonner {
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: var(--gris-vert);
+  text-decoration: underline;
+  padding: var(--espace-3);
+}

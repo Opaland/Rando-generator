@@ -64,6 +64,7 @@ describe('les quatre onglets', () => {
 describe('sectionsDeLOnglet', () => {
   const toutes = [
     'zone',
+    'enregistrement',
     'traces',
     'itinerairesPerso',
     'tableauDeBord',
