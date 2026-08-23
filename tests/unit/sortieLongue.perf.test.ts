@@ -80,49 +80,44 @@ describe('une sortie de quatre heures', () => {
   /**
    * Le vrai risque de la persistance : un coût qui grandit avec la sortie.
    *
-   * Réécrire le tableau complet à chaque position aurait été quadratique —
-   * la millième écriture coûtant mille fois la première. On ajoute donc les
-   * points un par un, et ce test vérifie que **la fin coûte comme le
-   * début**, ce qu'aucune relecture de code ne prouve.
+   * Réécrire le tableau complet à chaque position serait quadratique — la
+   * millième écriture coûtant mille fois la première, et le pire arrivant
+   * à la quatrième heure, quand la batterie est au plus bas. On ajoute donc
+   * les points un par un.
+   *
+   * **Ce test compte, il ne chronomètre pas.** Une première version
+   * comparait le temps des cent dernières écritures à celui des cent
+   * premières ; elle passait seule et échouait sous l'instrumentation de
+   * couverture, qui multiplie les deux sans les multiplier pareil. Un
+   * seuil de temps sur une machine partagée mesure la machine autant que le
+   * code. Le nombre d'enregistrements réellement remis à la base, lui, ne
+   * dépend de rien : sur une sortie de deux mille points, il en faut deux
+   * mille. En quadratique il en faudrait deux millions.
    */
-  it('écrit le dernier point au même prix que le premier', async () => {
+  it('n’écrit chaque point qu’une fois sur toute la sortie', async () => {
     const base: SentiersDb = await openSentiersDb('sentiers-perf-sortie')
     const e = sortieDe(2_000)
 
     // Le même geste que le store : un compteur en mémoire, avancé après
-    // chaque écriture réussie, et non un `count()` avant chaque point. La
-    // première version comptait à chaque tour, et c'est ce comptage — pas
-    // l'ajout — qui faisait grandir le prix : mesuré, 23 ms pour les cent
-    // premières écritures contre 95 ms pour les cent dernières.
-    let ecrits = await base.compterPointsEnregistres()
-    const chrono = async (depuis: number, jusqua: number): Promise<number> => {
-      const debut = performance.now()
-      for (let i = depuis; i < jusqua; i++) {
-        const partielle: Enregistrement = { ...e, points: e.points.slice(0, i + 1) }
-        const aEcrire = pointsAEcrire(partielle, ecrits)
-        await base.ajouterPointsEnregistres(aEcrire)
-        ecrits += aEcrire.length
-        await base.ecrireEntete(entete(partielle, partielle.points[i]?.instant ?? 0))
+    // chaque écriture, et non un `count()` avant chaque point — c'est ce
+    // comptage-là, et non l'ajout, qui faisait grandir le prix (mesuré :
+    // rapport de 1,6 à 2,8 entre les cent dernières écritures et les cent
+    // premières).
+    let ecrits = 0
+    let remisALaBase = 0
+    for (let i = 0; i < e.points.length; i++) {
+      const partielle: Enregistrement = {
+        ...e,
+        points: e.points.slice(0, i + 1),
       }
-      return performance.now() - debut
+      const aEcrire = pointsAEcrire(partielle, ecrits)
+      remisALaBase += aEcrire.length
+      await base.ajouterPointsEnregistres(aEcrire)
+      ecrits += aEcrire.length
+      await base.ecrireEntete(entete(partielle, partielle.points[i]?.instant ?? 0))
     }
 
-    const cent_premiers = await chrono(0, 100)
-    await chrono(100, 1_900)
-    const cent_derniers = await chrono(1_900, 2_000)
-
+    expect(remisALaBase).toBe(2_000)
     expect(await base.compterPointsEnregistres()).toBe(2_000)
-    // Ce que ce seuil garde, et ce qu'il ne garde pas.
-    //
-    // Il attrape le **quadratique** — réécrire tout le tableau à chaque
-    // position : vérifié par mutation, le test devient rouge et met cinq
-    // secondes au lieu de deux dixièmes.
-    //
-    // Il n'attrape pas les écarts plus fins. Relire `count()` avant chaque
-    // point fait passer le rapport de 1,6 à 2,8 — mesuré, et corrigé dans
-    // le store par un compteur en mémoire — mais ces deux nombres sont trop
-    // proches pour qu'une machine d'intégration partagée les sépare. Poser
-    // un seuil entre eux serait inventer une précision qu'on n'a pas.
-    expect(cent_derniers).toBeLessThan(cent_premiers * 2 + 40)
   })
 })

@@ -40,8 +40,18 @@ async function avecUneZone(page: Page): Promise<void> {
 
 test('depuis la carte, chaque onglet montre son contenu', async ({ page }) => {
   await avecUneZone(page)
+  // Ce qu'on vise dans chaque onglet est **ce qui l'ouvre**, et non une
+  // section quelconque : c'est la première chose que la personne doit voir.
+  //
+  // « Sorties » visait `gpx-dropzone`. Depuis que l'enregistrement ouvre cet
+  // onglet (#152), le dépôt de fichiers est descendu : mesuré à 390 × 844,
+  // feuille à mi-hauteur, sa boîte va de 711 à 891 alors que la feuille
+  // s'arrête à 788 — son centre tombe treize pixels sous le bord. Le test
+  // ne mesurait donc plus un invariant mais un coup de dé, et il l'a joué
+  // en intégration continue : rouge trois fois de suite après avoir été
+  // vert autant.
   const attendu = {
-    sorties: 'gpx-dropzone',
+    sorties: 'enregistreur',
     progression: 'global-pct',
     reglages: 'settings',
   } as const
