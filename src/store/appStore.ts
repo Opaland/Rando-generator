@@ -95,21 +95,12 @@ import { espacementTropGrand } from '../core/matching.ts'
 import { noterSortie, type EntreeJournal } from '../core/journalSortant.ts'
 import type { MatchResult } from '../core/matching.ts'
 import {
-  abandonner as abandonnerEnregistrement,
-  ajouterPoint,
-  demarrer as demarrerEnregistrement,
-  enregistreurVide,
-  reprendre as reprendreEnregistrement,
-  suspendre as suspendreEnregistrement,
-  terminer as terminerEnregistrement,
-  type Enregistrement,
-} from '../core/recorder.ts'
-import {
-  entete,
-  pointsAEcrire,
-  reprendreApresInterruption,
-} from '../core/reprise.ts'
-import { versTrace } from '../core/sortieEnCours.ts'
+  creerTrancheSortie,
+  etatSortieInitial,
+  type ActionsSortie,
+  type EtatSortie,
+} from './enregistrementSlice.ts'
+import { creerVeilleGeo } from './veilleGeo.ts'
 import {
   GEO_OPTIONS,
   geolocationErrorMessage,
@@ -206,7 +197,7 @@ export interface DoublonEnAttente {
   track: Track
 }
 
-export interface AppState {
+export interface AppState extends EtatSortie, ActionsSortie {
   // Persistance
   db: SentiersDb | null
   dbWarning: string | null
@@ -358,20 +349,9 @@ export interface AppState {
    * La sortie en cours d'enregistrement (issue #152).
    *
    * Une seule à la fois : on ne marche pas deux sentiers en même temps.
+   * L'état et les actions vivent dans `enregistrementSlice.ts` — le store
+   * ne fait que les héberger et leur prêter cinq fonctions.
    */
-  enregistrement: Enregistrement
-  /**
-   * Vrai quand la sortie a été retrouvée après une interruption, et pas
-   * démarrée par un geste. L'écran le dit : reprendre en pause sans
-   * expliquer pourquoi ressemblerait à un défaut.
-   */
-  sortieReprise: boolean
-  sortieErreur: string | null
-  demarrerSortie: () => void
-  suspendreSortie: () => void
-  poursuivreSortie: () => void
-  terminerSortie: () => Promise<void>
-  abandonnerSortie: () => Promise<void>
   userPosition: UserPosition | null
   geoWatching: boolean
   geoError: string | null
@@ -658,66 +638,6 @@ async function sortirDeLaDemonstration(
   if (get().demonstration) await get().arreterDemonstration()
 }
 
-/** Identifiant du suivi de position en cours (API navigateur). */
-let geoWatchId: number | null = null
-
-/**
- * Qui a besoin du GPS en ce moment.
- *
- * **Un seul `watchPosition` pour deux usages** : la carte, qui montre où
- * l'on est, et l'enregistrement, qui retient par où l'on est passé. Deux
- * suivis simultanés demanderaient deux fois la position haute précision au
- * système, et c'est la batterie qui paierait — sur une sortie de quatre
- * heures, cela se voit.
- *
- * Le suivi s'arrête quand plus personne ne le demande, et pas avant :
- * arrêter la carte ne doit pas arrêter l'enregistrement.
- */
-const veilleursGeo = new Set<'carte' | 'sortie'>()
-
-/**
- * Toutes les écritures de la sortie en cours passent par ici, dans l'ordre.
- *
- * Elles ne peuvent pas se chevaucher, et ce n'est pas une précaution
- * théorique : la première version effaçait l'ancien tampon **en parallèle**
- * des premières positions, et l'effacement gagnait la course. Une sortie
- * démarrée puis rechargée revenait vide — mesuré, quatre points écrits,
- * zéro relu. Le défaut ne se voyait qu'au rechargement, c'est-à-dire au
- * seul moment qui compte.
- *
- * La file règle aussi le comptage : `pointsAEcrire` compare au nombre de
- * points **du disque**, et deux lectures concurrentes de ce nombre auraient
- * fini par écrire deux fois le même point.
- */
-let chaineEcriture: Promise<void> = Promise.resolve()
-
-/**
- * Combien de points de la sortie en cours sont déjà sur le disque.
- *
- * `null` veut dire « on ne sait plus » : la valeur sera relue en base au
- * prochain tour. C'est l'état après une écriture ratée, et c'est le seul
- * moment où la question se repose.
- *
- * Ce compteur remplace une lecture de `count()` avant **chaque** point.
- * Mesuré sur une sortie de deux mille points : les cent dernières
- * écritures coûtaient 95 ms contre 23 ms pour les cent premières — un
- * facteur quatre qui grandissait avec la sortie, c'est-à-dire qui
- * s'aggravait à mesure que la batterie baissait. Ce n'était pas l'ajout qui
- * coûtait, c'était le comptage.
- *
- * Il reste exact parce que la file d'écriture sérialise tout : il n'avance
- * qu'après une écriture réussie, et se remet à `null` sinon.
- */
-let pointsEcrits: number | null = null
-
-function enfilerEcriture(tache: () => Promise<void>): Promise<void> {
-  const suivante = chaineEcriture.then(tache, tache).catch(() => {
-    // Une écriture ratée — quota, base fermée — ne bloque pas les suivantes.
-  })
-  chaineEcriture = suivante
-  return suivante
-}
-
 /** Zones dont le périmètre couvre la Métropole de Lyon (boucles locales). */
 const ZONES_WITH_LOCAL_BOUCLES = new Set(['rhone', 'trois'])
 
@@ -743,6 +663,61 @@ function fetchLocalBoucles(): Promise<Itinerary[]> {
 }
 
 export const useAppStore = create<AppState>()((set, get) => {
+  /**
+   * Un seul suivi de position pour deux usages : la carte, qui montre où
+   * l'on est, et l'enregistrement, qui retient par où l'on est passé. Le
+   * comptage des demandeurs vit dans `veilleGeo.ts`, où il s'éprouve sans
+   * navigateur.
+   *
+   * L'ordre des deux consommateurs compte : l'enregistrement passe avant le
+   * recentrage de la carte, parce que perdre un point coûte plus cher qu'un
+   * cadrage tardif.
+   */
+  const veille = creerVeilleGeo({
+    geolocation: () =>
+      'geolocation' in navigator ? navigator.geolocation : null,
+    options: GEO_OPTIONS,
+    surPosition: (position) => {
+      sortie.surPosition(position)
+      positionPourLaCarte(position)
+    },
+    surErreur: (erreur) => {
+      sortie.surErreurGeo(erreur)
+      erreurPourLaCarte(erreur)
+    },
+  })
+
+  /**
+   * L'enregistrement d'une sortie (issue #152), avec des ports étroits.
+   *
+   * Cinq fonctions, et pas le store entier : c'est ce qui permet de dérouler
+   * la mécanique complète dans un test unitaire — file d'écriture, compteur
+   * de points, reprise après un onglet tué, passage en pause sur erreur GPS.
+   */
+  const sortie = creerTrancheSortie({
+    lire: () => get(),
+    poser: (partiel) => {
+      set(partiel)
+    },
+    base: () => get().db,
+    rangerTrace: async (trace) => {
+      set((etat) => ({ tracks: [...etat.tracks, trace] }))
+      const base = get().db
+      if (base) {
+        try {
+          await base.saveTrack(trace)
+        } catch {
+          // Quota dépassé : la trace reste en mémoire pour cette session.
+        }
+      }
+      await recompute()
+    },
+    quitterDemonstration: () => {
+      void sortirDeLaDemonstration(get)
+    },
+    veille,
+  })
+
   // Graphe de routage mémoïsé sur l'identité des tableaux d'itinéraires :
   // le reconstruire à chaque clic de tracé serait inutilement coûteux sur
   // une grosse zone (des dizaines de milliers de sommets).
@@ -1133,9 +1108,7 @@ export const useAppStore = create<AppState>()((set, get) => {
     userPosition: null,
     geoWatching: false,
     geoError: null,
-    enregistrement: enregistreurVide(),
-    sortieReprise: false,
-    sortieErreur: null,
+    ...etatSortieInitial(),
 
     async init() {
       let db: SentiersDb | null = null
@@ -1234,29 +1207,7 @@ export const useAppStore = create<AppState>()((set, get) => {
         ),
       }))
 
-      // Une sortie qu'on n'a jamais terminée attend en base. On la
-      // retrouve **en pause** : l'onglet a pu mourir il y a trois heures,
-      // et personne ne sait ce qui s'est passé pendant ce temps
-      // (`core/reprise.ts` explique pourquoi ce choix-là).
-      //
-      // Elle ne s'impose qu'à un enregistreur au repos : si la personne a
-      // déjà démarré une sortie pendant que la base s'ouvrait, c'est la
-      // sienne qui compte — la même course que sur les réglages, réglée de
-      // la même façon (revue du sprint 6).
-      try {
-        const tete = await db.lireEntete()
-        const repris = tete
-          ? reprendreApresInterruption(tete, await db.lirePointsEnregistres())
-          : null
-        if (repris && get().enregistrement.etat === 'repos') {
-          // Ce qui a été relu est exactement ce qui est sur le disque.
-          pointsEcrits = repris.points.length
-          set({ enregistrement: repris, sortieReprise: true })
-          await db.ecrireEntete(entete(repris, Date.now()))
-        }
-      } catch {
-        // Un tampon illisible ne doit pas empêcher l'application d'ouvrir.
-      }
+      await sortie.reprendreAuDemarrage(db)
 
       // Rattrapage : ce qui a été importé pendant l'ouverture de la base n'y a
       // pas été écrit, faute de base à ce moment-là. Sans cela la trace
@@ -2188,11 +2139,11 @@ export const useAppStore = create<AppState>()((set, get) => {
 
     toggleGeolocation() {
       if (get().geoWatching) {
-        arreterVeille('carte')
+        veille.arreter('carte')
         set({ geoWatching: false, userPosition: null, geoError: null })
         return
       }
-      if (!demarrerVeille('carte')) {
+      if (!veille.demarrer('carte')) {
         set({
           geoError: 'Votre navigateur ne fournit pas la localisation.',
         })
@@ -2201,130 +2152,16 @@ export const useAppStore = create<AppState>()((set, get) => {
       set({ geoWatching: true, geoError: null })
     },
 
-    /**
-     * Démarrer une sortie (issue #152).
-     *
-     * Ce qui était en base est effacé d'abord : une nouvelle sortie remplace
-     * l'ancienne, et laisser traîner un tampon à moitié écrit ferait
-     * proposer une reprise pour une randonnée déjà rangée.
-     */
-    demarrerSortie() {
-      if (get().enregistrement.etat !== 'repos') return
-      if (!demarrerVeille('sortie')) {
-        set({ sortieErreur: 'Votre navigateur ne fournit pas la localisation.' })
-        return
-      }
-      // La démonstration s'efface au premier geste réel — c'est ce que fait
-      // déjà l'import d'un fichier depuis l'issue #172, et démarrer une
-      // sortie est plus réel encore : ça enregistre une position toutes les
-      // quelques secondes. Sans cela, une vraie trace allait se ranger à
-      // côté de trois sorties fictives, dans le même pourcentage.
-      void sortirDeLaDemonstration(get)
-      const debut = demarrerEnregistrement(enregistreurVide(), Date.now())
-      set({ enregistrement: debut, sortieReprise: false, sortieErreur: null })
-      void enfilerEcriture(async () => {
-        const base = get().db
-        if (!base) return
-        await base.effacerEnregistrement()
-        pointsEcrits = 0
-        await base.ecrireEntete(entete(debut, Date.now()))
-      })
-    },
-
-    suspendreSortie() {
-      const suspendu = suspendreEnregistrement(get().enregistrement, Date.now())
-      set({ enregistrement: suspendu })
-      void ecrireEnteteSortie(suspendu)
-    },
-
-    poursuivreSortie() {
-      const repris = reprendreEnregistrement(get().enregistrement, Date.now())
-      if (repris.etat === 'enregistrement') demarrerVeille('sortie')
-      set({ enregistrement: repris, sortieReprise: false })
-      void ecrireEnteteSortie(repris)
-    },
-
-    /**
-     * Finir la sortie, et la ranger avec les autres.
-     *
-     * C'est le point de jonction : à partir d'ici, une sortie enregistrée
-     * est une trace comme une autre — appariée, comptée, exportable — et
-     * rien en aval n'a besoin de savoir d'où elle vient.
-     */
-    async terminerSortie() {
-      const fini = terminerEnregistrement(get().enregistrement, Date.now())
-      arreterVeille('sortie')
-      const trace = versTrace(fini, `sortie-${String(fini.demarreA ?? 0)}`)
-      set({ enregistrement: enregistreurVide(), sortieReprise: false })
-      const base = get().db
-      if (base) {
-        await enfilerEcriture(async () => {
-          await base.effacerEnregistrement()
-          pointsEcrits = 0
-        })
-      }
-      // Une sortie sans le moindre point ne produit rien : il n'y a rien à
-      // apparier, et une trace vide dans l'historique ne dit rien à personne.
-      if (!trace) return
-      set((etat) => ({ tracks: [...etat.tracks, trace] }))
-      if (base) {
-        try {
-          await base.saveTrack(trace)
-        } catch {
-          // Quota dépassé : la trace reste en mémoire pour cette session.
-        }
-      }
-      await recompute()
-    },
-
-    async abandonnerSortie() {
-      arreterVeille('sortie')
-      set({
-        enregistrement: abandonnerEnregistrement(get().enregistrement),
-        sortieReprise: false,
-        sortieErreur: null,
-      })
-      const base = get().db
-      if (base) {
-        await enfilerEcriture(async () => {
-          await base.effacerEnregistrement()
-          pointsEcrits = 0
-        })
-      }
-    },
-  }
-
-  /** Écrit l'en-tête, et se tait si la base n'est pas là. */
-  function ecrireEnteteSortie(e: Enregistrement): Promise<void> {
-    return enfilerEcriture(async () => {
-      const base = get().db
-      if (!base) return
-      await base.ecrireEntete(entete(e, Date.now()))
-    })
+    ...sortie.actions,
   }
 
   /**
-   * Ce que fait chaque position reçue, pour les deux usages à la fois.
+   * Ce que la carte fait d'une position reçue.
    *
-   * L'ordre compte : l'enregistrement passe avant le recentrage de la
-   * carte, parce que perdre un point coûte plus cher qu'un cadrage tardif.
+   * La sortie en enregistre une copie de son côté (`enregistrementSlice`) ;
+   * ici on ne s'occupe que du point bleu et du premier cadrage.
    */
-  function surPosition(position: GeolocationPosition): void {
-    const enCours = get().enregistrement
-    if (enCours.etat === 'enregistrement') {
-      const suivant = ajouterPoint(enCours, {
-        lon: position.coords.longitude,
-        lat: position.coords.latitude,
-        instant: position.timestamp,
-        precisionMetres: position.coords.accuracy,
-        altitude: position.coords.altitude,
-      })
-      if (suivant !== enCours) {
-        set({ enregistrement: suivant })
-        void ecrirePointsEnAttente(suivant)
-      }
-    }
-
+  function positionPourLaCarte(position: GeolocationPosition): void {
     if (!get().geoWatching) return
     const next: UserPosition = {
       lon: position.coords.longitude,
@@ -2338,61 +2175,11 @@ export const useAppStore = create<AppState>()((set, get) => {
     if (isFirstFix) get().focusOn([next.lon, next.lat])
   }
 
-  /**
-   * Écrit sur le disque les points que le disque n'a pas encore vus.
-   *
-   * Le compte de référence est celui de la base, pas un compteur en
-   * mémoire — et la file d'écriture garantit que ce compte est lu au moment
-   * où il est vrai.
-   */
-  function ecrirePointsEnAttente(e: Enregistrement): Promise<void> {
-    return enfilerEcriture(async () => {
-      const base = get().db
-      if (!base) return
-      try {
-        pointsEcrits ??= await base.compterPointsEnregistres()
-        const aEcrire = pointsAEcrire(e, pointsEcrits)
-        await base.ajouterPointsEnregistres(aEcrire)
-        pointsEcrits += aEcrire.length
-      } catch {
-        // Quota ou base fermée : la sortie continue en mémoire, et on ne
-        // sait plus où en est le disque. Le prochain point relira le compte
-        // et réécrira ce qui manque.
-        pointsEcrits = null
-      }
+  function erreurPourLaCarte(error: GeolocationPositionError): void {
+    set({
+      geoWatching: false,
+      userPosition: null,
+      geoError: geolocationErrorMessage(error.code),
     })
-  }
-
-  function surErreurGeo(error: GeolocationPositionError): void {
-    geoWatchId = null
-    veilleursGeo.clear()
-    const message = geolocationErrorMessage(error.code)
-    set({ geoWatching: false, userPosition: null, geoError: message })
-    // L'enregistrement, lui, n'est pas jeté : ce qui a été marché a été
-    // écrit. Il passe en pause, comme après un onglet tué, et attend.
-    const enCours = get().enregistrement
-    if (enCours.etat === 'enregistrement') {
-      const suspendu = suspendreEnregistrement(enCours, Date.now())
-      set({ enregistrement: suspendu, sortieErreur: message })
-      void ecrireEnteteSortie(suspendu)
-    }
-  }
-
-  function demarrerVeille(qui: 'carte' | 'sortie'): boolean {
-    if (!('geolocation' in navigator)) return false
-    veilleursGeo.add(qui)
-    geoWatchId ??= navigator.geolocation.watchPosition(
-      surPosition,
-      surErreurGeo,
-      GEO_OPTIONS,
-    )
-    return true
-  }
-
-  function arreterVeille(qui: 'carte' | 'sortie'): void {
-    veilleursGeo.delete(qui)
-    if (veilleursGeo.size > 0) return
-    if (geoWatchId !== null) navigator.geolocation.clearWatch(geoWatchId)
-    geoWatchId = null
   }
 })
