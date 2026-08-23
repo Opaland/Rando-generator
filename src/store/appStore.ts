@@ -2214,6 +2214,12 @@ export const useAppStore = create<AppState>()((set, get) => {
         set({ sortieErreur: 'Votre navigateur ne fournit pas la localisation.' })
         return
       }
+      // La démonstration s'efface au premier geste réel — c'est ce que fait
+      // déjà l'import d'un fichier depuis l'issue #172, et démarrer une
+      // sortie est plus réel encore : ça enregistre une position toutes les
+      // quelques secondes. Sans cela, une vraie trace allait se ranger à
+      // côté de trois sorties fictives, dans le même pourcentage.
+      void sortirDeLaDemonstration(get)
       const debut = demarrerEnregistrement(enregistreurVide(), Date.now())
       set({ enregistrement: debut, sortieReprise: false, sortieErreur: null })
       void enfilerEcriture(async () => {
