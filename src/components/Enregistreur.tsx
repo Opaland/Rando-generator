@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
 import { useAppStore } from '../store/appStore.ts'
 import { actionsPossibles } from '../core/recorder.ts'
 import { chiffresDeLaSortie } from '../core/sortieEnCours.ts'
-import { formatChrono, formatKm } from '../lib/format.ts'
+import { formatChrono, formatDistance } from '../lib/format.ts'
+import { useHorloge } from '../lib/useHorloge.ts'
 import styles from './Enregistreur.module.css'
 
 /**
@@ -28,9 +28,6 @@ import styles from './Enregistreur.module.css'
  *   d'un relevé à l'autre. La moyenne, elle, veut dire quelque chose.
  */
 
-/** Un rythme d'affichage, pas de mesure : les points arrivent quand ils veulent. */
-const BATTEMENT_MS = 1000
-
 export function Enregistreur() {
   const enregistrement = useAppStore((s) => s.enregistrement)
   const sortieReprise = useAppStore((s) => s.sortieReprise)
@@ -43,18 +40,11 @@ export function Enregistreur() {
 
   // Les chiffres avancent avec l'horloge, pas avec les positions : entre
   // deux relevés il peut s'écouler dix secondes, et un compteur figé
-  // pendant dix secondes ressemble à une application plantée.
-  const [maintenant, setMaintenant] = useState(() => Date.now())
+  // pendant dix secondes ressemble à une application plantée. La minuterie
+  // est nommée une fois et partagée avec la poignée de la feuille, qui
+  // affiche la même durée (CLAUDE.md §4).
   const enMarche = enregistrement.etat === 'enregistrement'
-  useEffect(() => {
-    if (!enMarche) return
-    const battement = setInterval(() => {
-      setMaintenant(Date.now())
-    }, BATTEMENT_MS)
-    return () => {
-      clearInterval(battement)
-    }
-  }, [enMarche])
+  const maintenant = useHorloge(enMarche)
 
   const actions = actionsPossibles(enregistrement)
   const chiffres = chiffresDeLaSortie(enregistrement, maintenant)
@@ -100,7 +90,7 @@ export function Enregistreur() {
             <div className={styles.chiffre}>
               <dt>Distance</dt>
               <dd data-testid="sortie-distance">
-                {formatKm(chiffres.distanceMetres)}
+                {formatDistance(chiffres.distanceMetres)}
               </dd>
             </div>
             <div className={styles.chiffre}>
