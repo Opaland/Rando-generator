@@ -5,6 +5,7 @@ import { CustomItineraries } from './components/CustomItineraries.tsx'
 import { Dashboard } from './components/Dashboard.tsx'
 import { EmptyState } from './components/EmptyState.tsx'
 import { Enregistreur } from './components/Enregistreur.tsx'
+import { temoinDeSortie } from './core/sortieEnCours.ts'
 import { History } from './components/History.tsx'
 import { ItineraryCard } from './components/ItineraryCard.tsx'
 import { ItineraryDetail } from './components/ItineraryDetail.tsx'
@@ -92,6 +93,7 @@ function App() {
   const panneauReplie = useAppStore((s) => s.panneauReplie)
   const setPanneauReplie = useAppStore((s) => s.setPanneauReplie)
   const sections = sectionsVisibles(modeAffichage)
+  const enregistrement = useAppStore((s) => s.enregistrement)
   const donnees = {
     itineraires: hasZoneData,
     itinerairesPerso: hasCustomData,
@@ -401,7 +403,11 @@ function App() {
       </div>
 
       {onglets && (
-        <BarreOnglets actif={ongletActif} onChange={changerDOnglet} />
+        <BarreOnglets
+          actif={ongletActif}
+          onChange={changerDOnglet}
+          sortie={temoinDeSortie(enregistrement)}
+        />
       )}
 
       <About

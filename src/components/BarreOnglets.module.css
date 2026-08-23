@@ -84,3 +84,36 @@
    une barre masquée pendant que les sections sont filtrées coûte l'accès à
    trois quarts de l'application. `tests/unit/pointDeRupture.test.ts` garde
    la règle absente. */
+
+/*
+  Témoin de sortie en cours.
+
+  La barre d'onglets est la seule chose toujours visible sur un téléphone :
+  c'est donc ici que se dit qu'un enregistrement tourne pendant qu'on
+  regarde la carte. Sans lui, on range son téléphone en croyant avoir
+  terminé, et le GPS tourne jusqu'à la nuit.
+
+  Rouge balisage plein en marche, contour seul en pause — la même
+  distinction que sur un enregistreur, et elle se lit sans couleur pour qui
+  ne distingue pas le rouge : plein contre creux est une différence de
+  forme.
+*/
+.icone {
+  position: relative;
+}
+
+.temoin {
+  position: absolute;
+  top: -2px;
+  right: -8px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--rouge-balisage);
+  border: 2px solid var(--blanc-papier);
+}
+
+.temoinPause {
+  background: var(--blanc-papier);
+  border-color: var(--rouge-balisage);
+}

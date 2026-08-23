@@ -4,6 +4,7 @@ import {
   buildTrailGeoJSON,
   buildTracksGeoJSON,
 } from '../../core/mapdata.ts'
+import { traceProvisoire } from '../../core/sortieEnCours.ts'
 import { useAppStore } from '../../store/appStore.ts'
 import { poisToGeoJSON } from './style.ts'
 
@@ -86,6 +87,7 @@ export function useMapSources(
   const matching = useAppStore((s) => s.matching)
   const customMatching = useAppStore((s) => s.customMatching)
   const tracks = useAppStore((s) => s.tracks)
+  const enregistrement = useAppStore((s) => s.enregistrement)
   const pois = useAppStore((s) => s.pois)
   const userPosition = useAppStore((s) => s.userPosition)
   const elevationHover = useAppStore((s) => s.elevationHover)
@@ -111,20 +113,34 @@ export function useMapSources(
       done.features.push(...custom.done.features)
       void map.getSource<GeoJSONSource>('trails')?.setData(base)
       void map.getSource<GeoJSONSource>('trails-done')?.setData(done)
-      void map
-        .getSource<GeoJSONSource>('tracks')
-        ?.setData(buildTracksGeoJSON(tracks))
+      // La sortie en cours passe par la même source que les traces
+      // importées : une seule couche, un seul style. Sans elle, on marche
+      // deux heures en regardant une carte vide.
+      const provisoire = traceProvisoire(enregistrement)
+      const tracesDessinees = buildTracksGeoJSON(
+        provisoire ? [...tracks, provisoire] : tracks,
+      )
+      void map.getSource<GeoJSONSource>('tracks')?.setData(tracesDessinees)
       void map.getSource<GeoJSONSource>('pois')?.setData(poisToGeoJSON(pois))
       // Témoin pour les tests e2e : quelles données ont été appliquées, et
       // sur quelle génération de style (permet de vérifier la ré-application
       // après le repli de fond de carte).
       ;(
         window as {
-          __sentiersTrailStats?: { base: number; done: number; styleEpoch: number }
+          __sentiersTrailStats?: {
+            base: number
+            done: number
+            traces: number
+            styleEpoch: number
+          }
         }
       ).__sentiersTrailStats = {
         base: base.features.length,
         done: done.features.length,
+        // La source `tracks` porte les traces importées **et** la sortie en
+        // cours : c'est le seul moyen, sans WebGL, de vérifier qu'on la
+        // dessine pendant qu'on la marche.
+        traces: tracesDessinees.features.length,
         styleEpoch,
       }
     }
@@ -137,6 +153,7 @@ export function useMapSources(
     matching,
     customMatching,
     tracks,
+    enregistrement,
     pois,
     ready,
     styleEpoch,

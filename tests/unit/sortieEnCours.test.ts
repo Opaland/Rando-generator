@@ -1,8 +1,11 @@
 import { describe, it, expect } from 'vitest'
 import {
+  ID_TRACE_PROVISOIRE,
   chiffresDeLaSortie,
   deniveleParcouru,
   distanceParcourue,
+  temoinDeSortie,
+  traceProvisoire,
   versTrace,
 } from '../../src/core/sortieEnCours.ts'
 import {
@@ -260,5 +263,87 @@ describe('la trace produite à la fin', () => {
     let e = sortieDeTroisPoints()
     e = terminer(e, T0 + 4_000)
     expect(versTrace(e, 'sortie-1')?.filename).toBe('Sortie enregistrée')
+  })
+})
+
+
+/**
+ * La sortie qu'on est en train de marcher, dessinée sur la carte.
+ *
+ * Sans elle, on marche deux heures en regardant une carte vide : le produit
+ * s'appelle Sentiers, et il ne montrait le sentier qu'une fois la sortie
+ * rangée. La trace provisoire passe par la même source que les traces
+ * importées — une seule couche, un seul style, rien à tenir en double.
+ */
+describe('la trace provisoire', () => {
+  it('rend null tant qu’il n’y a pas de quoi tracer une ligne', () => {
+    expect(traceProvisoire(enregistreurVide())).toBeNull()
+    const unSeulPoint = ajouterPoint(
+      demarrer(enregistreurVide(), T0),
+      point(0, T0),
+    )
+    expect(traceProvisoire(unSeulPoint)).toBeNull()
+  })
+
+  it('dessine la sortie dès le deuxième point', () => {
+    const e = sortieDeTroisPoints()
+    const trace = traceProvisoire(e)
+    expect(trace?.id).toBe(ID_TRACE_PROVISOIRE)
+    expect(trace?.points).toEqual([
+      [4.8, 45.75],
+      [4.801, 45.75],
+      [4.802, 45.75],
+    ])
+  })
+
+  it('continue de se dessiner pendant une pause : elle a bien été marchée', () => {
+    const e = suspendre(sortieDeTroisPoints(), T0 + 4_000)
+    expect(traceProvisoire(e)?.points).toHaveLength(3)
+  })
+
+  /**
+   * Une fois terminée, la sortie est rangée comme trace : la dessiner deux
+   * fois la ferait apparaître en double sur la carte, et compter deux fois
+   * si quelqu'un s'avisait un jour de la faire compter.
+   */
+  it('s’efface dès que la sortie est terminée', () => {
+    const e = terminer(sortieDeTroisPoints(), T0 + 4_000)
+    expect(traceProvisoire(e)).toBeNull()
+  })
+
+  it('ne se dessine pas sans instant de départ', () => {
+    const e = sortieDeTroisPoints()
+    expect(traceProvisoire({ ...e, demarreA: null })).toBeNull()
+  })
+
+  it('ne porte pas de date : elle n’est pas encore une sortie', () => {
+    const trace = traceProvisoire(sortieDeTroisPoints())
+    expect(trace?.date).toBeNull()
+  })
+})
+
+
+describe('le témoin de sortie', () => {
+  it('ne dit rien au repos ni après la fin', () => {
+    expect(temoinDeSortie(enregistreurVide())).toBeNull()
+    expect(temoinDeSortie(terminer(sortieDeTroisPoints(), T0 + 4_000))).toBeNull()
+  })
+
+  /**
+   * Une sortie en pause mérite son témoin autant qu'une sortie en marche :
+   * c'est même celle qu'on oublie, puisque la pause est le moment où l'on
+   * range son téléphone en croyant avoir fini.
+   */
+  it('distingue la marche de la pause, et se tait pour aucune des deux', () => {
+    expect(temoinDeSortie(sortieDeTroisPoints())).toBe('enregistrement')
+    expect(temoinDeSortie(suspendre(sortieDeTroisPoints(), T0 + 4_000))).toBe(
+      'pause',
+    )
+  })
+
+  it('parle avant même la première position', () => {
+    expect(temoinDeSortie(demarrer(enregistreurVide(), T0))).toBe(
+      'enregistrement',
+    )
   })
 })
