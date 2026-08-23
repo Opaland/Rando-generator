@@ -1,5 +1,5 @@
-import { formatPct } from '../lib/format.ts'
-import type { Itinerary } from './types.ts'
+import { displayName, formatPct } from '../lib/format.ts'
+import type { Itinerary, Network } from './types.ts'
 
 /**
  * « J'ai fait celui-là » — le parcours déclaré, sans trace GPX (issue #158).
@@ -118,4 +118,53 @@ export function libelleCompletion(chiffres: {
   return `${formatPct(chiffres.pctMesure)} mesurés · ${formatPct(
     chiffres.pctDeclare,
   )} déclarés`
+}
+
+/** Une déclaration telle que « Mes sorties » la montre. */
+export interface DeclarationListee {
+  itineraryId: number
+  nom: string
+  network: Network
+  metres: number
+  date: string | null
+}
+
+/**
+ * Les déclarations, prêtes à lister — dans leur **propre section** (issue
+ * #158, troisième pierre).
+ *
+ * Une section à part, et non des lignes glissées dans la liste des traces :
+ * celle-ci est bâtie sur des `Track`, dont chaque entrée porte une géométrie
+ * réelle, une longueur mesurée, un détail de sortie et une suppression. Y
+ * mêler du déclaratif reviendrait à confondre deux natures dans le seul
+ * endroit où l'on compare ses sorties entre elles — c'est le même principe
+ * que les deux chiffres du tableau de bord.
+ *
+ * Les sans-date vont en fin de liste, et non au hasard : « je ne sais plus
+ * quand » est une réponse, pas une donnée manquante, et elle mérite un rang
+ * décidé.
+ */
+export function listerDeclarations(
+  itineraries: Itinerary[],
+  declares: ParcoursDeclare[],
+): DeclarationListee[] {
+  const parId = new Map(itineraries.map((i) => [i.osmRelationId, i]))
+  const listees: DeclarationListee[] = []
+  for (const d of declares) {
+    const itin = parId.get(d.itineraryId)
+    if (!itin) continue
+    listees.push({
+      itineraryId: d.itineraryId,
+      nom: displayName(itin),
+      network: itin.network,
+      metres: itin.totalMeters,
+      date: d.date,
+    })
+  }
+  return listees.sort((a, b) => {
+    if (a.date === b.date) return 0
+    if (a.date === null) return 1
+    if (b.date === null) return -1
+    return a.date < b.date ? 1 : -1
+  })
 }

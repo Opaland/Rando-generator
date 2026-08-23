@@ -3,6 +3,7 @@ import { useAppStore } from '../store/appStore.ts'
 import { etoilesDeSortie } from '../core/affichage.ts'
 import { formatKm, importProgressLabel } from '../lib/format.ts'
 import { outingLabel } from '../core/outing.ts'
+import { listerDeclarations } from '../core/declaratif.ts'
 import {
   preparerHistorique,
   chercherHistorique,
@@ -20,6 +21,10 @@ const SUCCESS_TIMEOUT_MS = 4000
 
 export function TrackManager() {
   const tracks = useAppStore((s) => s.tracks)
+  const itineraires = useAppStore((s) => s.itineraries)
+  const itinerairesPersos = useAppStore((s) => s.customItineraries)
+  const parcoursDeclares = useAppStore((s) => s.parcoursDeclares)
+  const retirerParcoursDeclare = useAppStore((s) => s.retirerParcoursDeclare)
   const importErrors = useAppStore((s) => s.importErrors)
   const importGpxFiles = useAppStore((s) => s.importGpxFiles)
   const importProgress = useAppStore((s) => s.importProgress)
@@ -53,6 +58,14 @@ export function TrackManager() {
   // cents traces de dix mille points, le rendu recalculait huit millions de
   // distances pour peindre une liste (issue #175).
   const historique = useMemo(() => preparerHistorique(tracks), [tracks])
+  const declarations = useMemo(
+    () =>
+      listerDeclarations(
+        [...itineraires, ...itinerairesPersos],
+        parcoursDeclares,
+      ),
+    [itineraires, itinerairesPersos, parcoursDeclares],
+  )
   const groupes = useMemo(
     () =>
       organiserHistorique(
@@ -347,6 +360,46 @@ export function TrackManager() {
             })
           )}
         </>
+      )}
+      {/*
+        Les itinéraires déclarés (issue #158), dans leur propre section.
+
+        Pas des lignes glissées dans la liste ci-dessus : celle-ci est bâtie
+        sur des traces, dont chaque entrée porte une géométrie réelle, une
+        longueur mesurée et un détail de sortie. Mêler les deux natures ici
+        reviendrait à les confondre dans le seul endroit où l'on compare ses
+        sorties entre elles.
+      */}
+      {declarations.length > 0 && (
+        <section className={styles.declarations} data-testid="declarations">
+          <h3 className={styles.declarationsTitre}>
+            Déclarés sans trace ({declarations.length})
+          </h3>
+          <p className={styles.declarationsAide}>
+            Cochés à la main depuis leur fiche. Ils ne comptent pas dans votre
+            pourcentage mesuré.
+          </p>
+          <ul className={styles.declarationsListe}>
+            {declarations.map((d) => (
+              <li key={d.itineraryId} className={styles.item}>
+                <span className={styles.itemInfo}>
+                  <span className={styles.filename}>{d.nom}</span>
+                  <span className={styles.itemMeta}>
+                    {d.date
+                      ? new Date(d.date).toLocaleDateString('fr-FR')
+                      : 'date inconnue'}
+                    {' · '}
+                    {formatKm(d.metres)}
+                  </span>
+                </span>
+                <ConfirmDeleteButton
+                  label={`Retirer la déclaration ${d.nom}`}
+                  onConfirm={() => void retirerParcoursDeclare(d.itineraryId)}
+                />
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
     </details>
   )
