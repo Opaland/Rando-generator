@@ -5,6 +5,23 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
+  /**
+   * Une borne à la suite entière, et pas seulement à chaque test.
+   *
+   * Le délai par test (30 s) ne protège de rien si ce qui bloque est en
+   * dehors d'un test : un serveur de prévisualisation qui ne démarre pas,
+   * un navigateur qui ne rend pas la main, un exécutant figé. Le 23/08,
+   * l'étape e2e d'une PR de documentation seule est restée en cours
+   * cinquante minutes sur du code qui venait de passer en quatre minutes et
+   * demie, et rien dans la chaîne n'avait de raison de s'arrêter avant la
+   * limite de six heures de GitHub.
+   *
+   * Mesuré : 3,7 à 4,5 min en intégration continue, 8,6 min sur ma machine
+   * avec `--workers=1`. Vingt-cinq minutes laissent près de trois fois le
+   * pire cas connu, et transforment un blocage en rapport lisible plutôt
+   * qu'en exécutant tué.
+   */
+  globalTimeout: 25 * 60 * 1000,
   reporter: process.env.CI ? 'github' : 'list',
   use: {
     baseURL: 'http://localhost:4173',

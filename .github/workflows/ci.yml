@@ -4,6 +4,17 @@ on:
   push:
   pull_request:
 
+# Une nouvelle poussée sur la même branche annule la précédente.
+#
+# Sans cela, un run bloqué garde un exécutant jusqu'à la limite de six
+# heures de GitHub, et les suivants font la queue derrière lui. C'est arrivé
+# le 23/08 : l'étape e2e d'une PR **de documentation seule** est restée en
+# cours cinquante minutes, sur exactement le code qui venait de passer en
+# quatre minutes et demie.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   checks:
     runs-on: ubuntu-latest
@@ -33,6 +44,13 @@ jobs:
         timeout-minutes: 10
       - name: Tests e2e
         run: npm run e2e
+        # Mesuré sur ce dépôt : la suite e2e prend de 3,7 à 4,5 minutes en
+        # intégration continue. Vingt minutes laissent donc quatre fois le
+        # pire cas observé, et bornent ce qui n'était pas borné — la
+        # configuration Playwright n'a pas de `globalTimeout`, et le délai
+        # par test ne protège pas d'un serveur de prévisualisation qui ne
+        # rend jamais la main.
+        timeout-minutes: 20
         env:
           CI: 'true'
       - name: Rapport Playwright en cas d'échec
