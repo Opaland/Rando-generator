@@ -1,5 +1,7 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
 import type { Itinerary, Track } from '../core/types.ts'
+import type { PointBrut } from '../core/recorder.ts'
+import type { EnteteEnregistrement } from '../core/reprise.ts'
 
 /** Erreur de persistance, message affichable tel quel à l'utilisateur. */
 export class DbError extends Error {
@@ -10,7 +12,7 @@ export class DbError extends Error {
 }
 
 export const DB_NAME = 'sentiers'
-export const DB_VERSION = 2
+export const DB_VERSION = 3
 
 /** Durée de vie du cache des tracés : 30 jours. */
 export const CACHE_TTL_MS = 30 * 24 * 3600 * 1000
@@ -59,12 +61,33 @@ export type SettingKey =
   /** 0 ou 1 : le panneau latéral a-t-il été replié sur grand écran ? */
   | 'panneauReplie'
 
+/**
+ * Clef unique de l'en-tête de la sortie en cours.
+ *
+ * Une seule sortie s'enregistre à la fois : on ne marche pas deux sentiers
+ * en même temps, et deux tampons concurrents ne poseraient que des
+ * questions sans réponse — lequel reprendre, lequel jeter.
+ */
+export const CLEF_ENREGISTREMENT = 'encours'
+
 interface SentiersSchema extends DBSchema {
   zones: { key: string; value: CachedZone }
   tracks: { key: string; value: Track }
   settings: { key: string; value: number | string }
   /** Itinéraires créés par l'utilisateur (ids négatifs, réseau PERSO). */
   customItineraries: { key: number; value: Itinerary }
+  /** L'état de la sortie en cours, sans ses points (issue #152). */
+  enregistrement: { key: string; value: EnteteEnregistrement }
+  /**
+   * Les points de la sortie en cours, un par enregistrement.
+   *
+   * Un magasin séparé, et une clef auto-incrémentée : on **ajoute** un
+   * point, on ne réécrit jamais le tableau. Chaque écriture coûte le même
+   * prix à la quatrième heure qu'à la première, là où réécrire l'ensemble
+   * aurait coûté de plus en plus cher à mesure que la sortie s'allonge —
+   * c'est-à-dire précisément quand la batterie est la plus basse.
+   */
+  enregistrementPoints: { key: number; value: PointBrut }
 }
 
 /**
@@ -99,6 +122,13 @@ export interface SentiersDb {
   deleteCustomItinerary(id: number): Promise<void>
   getSetting(key: SettingKey): Promise<number | string | undefined>
   setSetting(key: SettingKey, value: number | string): Promise<void>
+  /** Issue #152 — le tampon de la sortie en cours. */
+  ecrireEntete(tete: EnteteEnregistrement): Promise<void>
+  lireEntete(): Promise<EnteteEnregistrement | undefined>
+  ajouterPointsEnregistres(points: PointBrut[]): Promise<void>
+  compterPointsEnregistres(): Promise<number>
+  lirePointsEnregistres(): Promise<PointBrut[]>
+  effacerEnregistrement(): Promise<void>
 }
 
 export interface OpenDbOptions {
@@ -140,6 +170,12 @@ export async function openSentiersDb(
         if (oldVersion < 2) {
           database.createObjectStore('customItineraries', {
             keyPath: 'osmRelationId',
+          })
+        }
+        if (oldVersion < 3) {
+          database.createObjectStore('enregistrement')
+          database.createObjectStore('enregistrementPoints', {
+            autoIncrement: true,
           })
         }
       },
@@ -185,6 +221,46 @@ export async function openSentiersDb(
     },
     async setSetting(key, value) {
       await raw.put('settings', value, key)
+    },
+    async ecrireEntete(tete) {
+      await raw.put('enregistrement', tete, CLEF_ENREGISTREMENT)
+    },
+    lireEntete() {
+      return raw.get('enregistrement', CLEF_ENREGISTREMENT)
+    },
+    /**
+     * Les points nouveaux, en **une seule transaction**.
+     *
+     * Un `put` par point ouvrirait autant de transactions, et une mort de
+     * l'onglet au milieu laisserait une suite trouée. Ici, ou tout le lot
+     * est écrit, ou rien ne l'est — et ce qui manque sera simplement
+     * réécrit au tour suivant, puisque `pointsAEcrire` compare au compte
+     * réel du disque.
+     */
+    async ajouterPointsEnregistres(points) {
+      if (points.length === 0) return
+      const tx = raw.transaction('enregistrementPoints', 'readwrite')
+      for (const point of points) await tx.store.add(point)
+      await tx.done
+    },
+    compterPointsEnregistres() {
+      return raw.count('enregistrementPoints')
+    },
+    lirePointsEnregistres() {
+      // `getAll` sur une clef auto-incrémentée rend l'ordre d'insertion :
+      // c'est l'ordre du sentier, et c'est celui qu'attend le matching.
+      return raw.getAll('enregistrementPoints')
+    },
+    async effacerEnregistrement() {
+      const tx = raw.transaction(
+        ['enregistrement', 'enregistrementPoints'],
+        'readwrite',
+      )
+      await Promise.all([
+        tx.objectStore('enregistrement').clear(),
+        tx.objectStore('enregistrementPoints').clear(),
+        tx.done,
+      ])
     },
   }
 }
