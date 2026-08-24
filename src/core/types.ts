@@ -6,7 +6,14 @@ export type LonLat = [number, number]
  * des collectivités (ex. Métropole de Lyon) — pas des PR® FFRandonnée ;
  * PERSO : itinéraires créés par l'utilisateur.
  */
-export type Network = 'GR' | 'GRP' | 'PR' | 'LOCAL' | 'PERSO'
+/**
+ * Le réseau de balisage d'un itinéraire.
+ *
+ * `INCONNU` n'est pas un sixième réseau : c'est l'aveu qu'OpenStreetMap ne
+ * dit pas de quel réseau il s'agit. Il existe parce que `PR` servait de
+ * corbeille et affirmait un balisage jamais constaté (issue #284).
+ */
+export type Network = 'GR' | 'GRP' | 'PR' | 'LOCAL' | 'PERSO' | 'INCONNU'
 
 export interface TrailWay {
   osmWayId: number

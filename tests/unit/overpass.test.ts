@@ -251,7 +251,11 @@ describe('parseOverpassResponse', () => {
     )
     expect(res.map((i) => i.osmRelationId)).toEqual([3])
     expect(res[0]!.ref).toBeNull()
-    expect(res[0]!.network).toBe('PR')
+    // Une relation sans le moindre tag ne déclare aucun réseau : elle ressort
+    // `INCONNU`, et non `PR` (issue #284). C'est le cas le plus pur du
+    // défaut — l'application n'avait strictement rien lu, et affirmait
+    // pourtant « Promenade et Randonnée, circuit local balisé ».
+    expect(res[0]!.network).toBe('INCONNU')
   })
 })
 

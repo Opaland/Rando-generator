@@ -221,3 +221,52 @@ que la seconde passe laisse ouvert est suivi en issues : #158 (cocher un
 itinéraire à la main), #159 (mesurer une grosse bibliothèque), #160 (lien
 vers l'éditeur OSM), #161 (étapes calées sur les refuges, export du plan),
 #153 (préparer hors connexion).
+
+
+---
+
+# Deux personas nés du backlog — 25/08
+
+Les six premiers venaient de l'idée qu'on se faisait du produit. Ces deux-ci
+viennent d'issues ouvertes qu'aucun des six ne savait juger : personne, dans
+la liste, ne randonne hors du système fédéral français, et personne ne se
+demande si le chemin est roulable.
+
+## Anne-Marie, 58 ans, Munster (Haut-Rhin)
+
+Marche tous les dimanches depuis trente ans, sur les sentiers du **Club
+Vosgien**. Elle ne dit jamais « je fais un GR » : elle dit « je prends le
+rectangle rouge jusqu'au Hohneck, puis le disque bleu ». La forme et la
+couleur peintes sur l'arbre *sont* son système de navigation — pas un
+supplément décoratif au nom de l'itinéraire.
+
+Ce qu'elle attend : reconnaître sur l'écran ce qu'elle verra sur l'arbre.
+
+Ce qui la fait fermer l'application : qu'un sentier qu'elle connaît par cœur
+soit appelé « PR » et peint en jaune, alors qu'il est balisé d'un losange
+rouge. Ce n'est pas une imprécision à ses yeux, c'est une **erreur de
+balisage** — la chose qui, en montagne, envoie les gens ailleurs.
+
+Ce qu'elle ne demande pas : qu'on lui traduise son balisage en GR/GRP/PR.
+Elle demande qu'on ne le traduise pas.
+
+## Nadia, 44 ans, Villeurbanne
+
+Sort avec sa fille de onze ans, en fauteuil tout-terrain. Elle ne cherche
+pas « un parcours accessible » — l'étiquette ne veut rien dire et elle a
+appris à s'en méfier. Elle cherche trois nombres : **la pente maximale, la
+largeur, et ce qu'il y a sous les roues**.
+
+Ce qu'elle attend : le revêtement et le dénivelé, qui sont dans OSM, et une
+façon d'écarter d'un coup ce qui monte à plus de 8 %.
+
+Ce qui la fait fermer l'application : un pictogramme « accessible » posé sur
+un sentier qu'elle n'a pas pu faire. Une donnée absente, elle sait la lire.
+Une promesse fausse lui coûte une journée et une déception à sa fille.
+
+Ce qu'elle ne demande pas : qu'on décide à sa place. Elle demande les
+chiffres, et l'aveu quand ils manquent.
+
+**Ces deux personas jugent des sprints 2 et 4.** Ils ont été écrits *avant*
+l'exécution, pour ne pas être taillés sur mesure autour de ce qui aura été
+livré.

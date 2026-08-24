@@ -29,7 +29,17 @@ import {
  * relit à chaque fois. L'ordre suit celui de `NETWORK_LABELS` : du réseau le
  * plus structurant au plus local, puis ce que la personne a tracé.
  */
-const ORDRE: readonly Network[] = ['GR', 'GRP', 'PR', 'LOCAL', 'PERSO']
+const ORDRE: readonly Network[] = [
+  'GR',
+  'GRP',
+  'PR',
+  'LOCAL',
+  'PERSO',
+  // En dernier, parce que ce n'est pas un réseau mais une absence de réseau
+  // (issue #284) : la légende descend du plus structurant au plus local, puis
+  // à ce que la personne a tracé, et finit par ce qu'on ne sait pas nommer.
+  'INCONNU',
+]
 
 /**
  * L'ordre des familles de terrain : du plus roulant au moins roulant, comme

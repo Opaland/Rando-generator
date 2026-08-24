@@ -23,7 +23,20 @@ import styles from './ItineraryList.module.css'
 
 type SortKey = 'pct' | 'name' | 'length' | 'duration'
 
-const NETWORKS: Network[] = ['GR', 'GRP', 'PR', 'LOCAL']
+/**
+ * Les réseaux filtrables. Écrite à la main et non dérivée du type : `PERSO`
+ * n'a rien à faire ici — les itinéraires persos ont leur propre section.
+ *
+ * `INCONNU` y figure au contraire, et c'est tout l'intérêt du #284 : pouvoir
+ * demander « montre-moi ce dont on ne sait rien » — ou l'inverse, ne garder
+ * que ce qui est déclaré balisé avant de choisir sa sortie du dimanche.
+ *
+ * `tests/unit/reseauxFiltrables.test.ts` garde cette liste : TypeScript ne
+ * voit rien passer quand un réseau s'ajoute au type sans s'ajouter ici, et
+ * c'est exactement le mode d'échec du §4 — une condition transverse recopiée
+ * à la main plutôt que nommée.
+ */
+const NETWORKS: Network[] = ['GR', 'GRP', 'PR', 'LOCAL', 'INCONNU']
 
 interface Plage {
   label: string

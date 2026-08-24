@@ -136,6 +136,10 @@
   background: var(--vert-noir);
 }
 
+.INCONNU {
+  background: var(--prune-inconnu);
+}
+
 .titleBlock {
   flex: 1;
   min-width: 0;

@@ -43,7 +43,14 @@ const NETWORK_PRIORITY: Record<Network, number> = {
   GRP: 1,
   PR: 2,
   LOCAL: 3,
+  /*
+    Le plus petit nombre gagne la couleur d'un chemin partagé. `INCONNU`
+    ferme donc la marche : un tronçon emprunté à la fois par un GR et par une
+    relation sans réseau déclaré se peint en GR. Le contraire ferait perdre
+    une information certaine au profit d'une absence d'information.
+  */
   PERSO: 4,
+  INCONNU: 5,
 }
 
 function lineFeature<P>(coordinates: LonLat[], properties: P): LineFeature<P> {
