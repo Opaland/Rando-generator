@@ -2,12 +2,86 @@
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 0;
+  /*
+    Sur téléphone, la fiche se pose **au-dessus** de la poignée et de la barre
+    d'onglets, pas dessous.
+
+    Elle valait `bottom: 0`, et son plan (6) passe sous celui de la feuille
+    (9) et de la barre (10) : les cent huit derniers pixels de la fiche
+    étaient peints par la poignée repliée et par les onglets. Sur les
+    422 px qu'elle occupe, un quart était recouvert — mesuré par
+    `elementFromPoint` le 24/08, sur dix points du quadrillage.
+
+    C'est très probablement ce que décrivait « le profil des terrains est
+    coupé à moitié » : la fin de la fiche n'existait pas à l'écran, et rien
+    ne le disait.
+
+    Monter le plan de la fiche aurait été l'autre réponse, et elle est
+    fausse : la barre d'onglets recouverte, c'est la navigation qui devient
+    inatteignable (constat U2), et une poignée recouverte, c'est le panneau
+    qu'on ne peut plus rouvrir. Ces deux-là doivent rester au-dessus. C'est
+    donc à la fiche de leur laisser leur bande.
+  */
+  bottom: calc(
+    var(--hauteur-poignee) + var(--hauteur-onglets) +
+      env(safe-area-inset-bottom, 0px)
+  );
   z-index: var(--z-overlay-detail);
-  /* Sur téléphone, la fiche ne prend pas plus de la moitié du cadre : on lit
-     le détail d'un itinéraire en le gardant sous les yeux (issue #80). */
-  max-height: min(50vh, 480px);
+  /*
+    L'empreinte totale ne dépasse pas la moitié du cadre.
+
+    L'issue #80 pose la règle : « la fiche ne prend pas plus de la moitié du
+    cadre : on lit le détail d'un itinéraire en le gardant sous les yeux ».
+    C'est une promesse sur ce que la **carte** garde, pas sur la hauteur d'un
+    élément — et depuis que la fiche se pose au-dessus de la poignée et des
+    onglets, ces deux bandes font partie de son empreinte : elles recouvrent
+    la carte elles aussi.
+
+    Compter la seule fiche laissait cinq cent trente pixels de carte mangés
+    sur sept cent quatre-vingt-huit — deux tiers. Le cadrage n'arrivait plus
+    à placer le tracé au-dessus, et `mobile.spec.ts` l'a dit : le tracé dont
+    on lit la fiche se retrouvait dessous, ce que #80 existe pour empêcher.
+  */
+  max-height: calc(
+    var(--hauteur-fiche) - var(--hauteur-poignee) - var(--hauteur-onglets)
+  );
   overflow-y: auto;
+  /* Le défilement s'arrête à la fiche : sans cela, arriver au bout entraîne
+     la carte derrière, qui se met à zoomer sous le doigt. */
+  overscroll-behavior: contain;
+
+  /*
+    Ombres de défilement : le bord annonce qu'il continue.
+
+    Sans marque, un texte coupé au ras du bord se lit comme un texte fini —
+    c'est ce qui a fait dire « coupé à moitié » plutôt que « il faut faire
+    défiler » (retour du 24/08). Le navigateur ne dessine plus de barre de
+    défilement permanente, donc rien ne le disait.
+
+    Technique sans JavaScript : deux dégradés en `local` (qui défilent avec le
+    contenu) masquent deux ombres en `scroll` (qui restent collées au cadre).
+    En haut de course, le dégradé opaque recouvre l'ombre haute ; au milieu,
+    les deux ombres apparaissent ; en bas, la basse disparaît. La marque dit
+    donc *où l'on en est*, pas seulement qu'il y a du contenu — ce qu'un
+    dégradé fixe n'aurait pas su faire.
+  */
+  background-image:
+    linear-gradient(var(--blanc-papier) 30%, rgba(250, 247, 242, 0)),
+    linear-gradient(rgba(250, 247, 242, 0), var(--blanc-papier) 70%),
+    linear-gradient(rgba(30, 43, 35, 0.16), rgba(30, 43, 35, 0)),
+    linear-gradient(rgba(30, 43, 35, 0), rgba(30, 43, 35, 0.16));
+  background-position:
+    0 0,
+    0 100%,
+    0 0,
+    0 100%;
+  background-repeat: no-repeat;
+  background-size:
+    100% 28px,
+    100% 28px,
+    100% 10px,
+    100% 10px;
+  background-attachment: local, local, scroll, scroll;
   background: var(--blanc-papier);
   border-top: 1px solid var(--gris-vert-clair);
   border-top: 5px solid var(--rouge-balisage);
@@ -253,11 +327,30 @@
   .panel {
     left: auto;
     right: 12px;
+    /* Au-dessus du point de rupture, ni poignée ni barre en travers : la
+       fiche revient se poser à douze pixels du bord, et reprend toute la
+       hauteur — il n'y a pas d'empreinte à partager avec quoi que ce soit. */
+    /* Au-dessus du point de rupture, ni poignée ni barre en travers : la
+       fiche revient se poser à douze pixels du bord, et reprend toute la
+       hauteur — il n'y a pas d'empreinte à partager. */
     bottom: 12px;
-    width: min(380px, calc(100% - 24px));
+    width: min(var(--largeur-fiche), calc(100% - 24px));
     border-radius: var(--rayon-lg);
     border-top-width: 1px;
     border-left: 5px solid var(--rouge-balisage);
+    /*
+      Sur grand écran, la fiche prend la hauteur qu'il y a.
+
+      Le plafond de `min(50vh, 480px)` était une décision de téléphone —
+      « on garde la carte sous les yeux » (issue #80) — appliquée là où elle
+      n'a pas de sens : 400 px de fenêtre pour 2 334 px de contenu, avec une
+      colonne de droite entièrement vide en dessous. La carte reste visible
+      de toute façon : la fiche n'occupe que 380 px de large sur 1 280.
+
+      Le `calc` réserve les douze pixels du haut comme ceux du bas : la
+      fiche est posée dans le cadre, pas collée à ses bords.
+    */
+    max-height: calc(100% - 24px);
   }
 }
 

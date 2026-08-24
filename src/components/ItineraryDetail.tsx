@@ -1,4 +1,5 @@
 import { useAppStore } from '../store/appStore.ts'
+import { useDeborde } from '../lib/deborde.ts'
 import {
   displayName,
   formatAnciennete,
@@ -44,6 +45,14 @@ import { bandesDeRevetement } from '../core/revetement.ts'
  * calculé à partir d'un modèle numérique de terrain).
  */
 export function ItineraryDetail() {
+  /*
+    Appelé ici, et non près de son usage : le composant rend `null` quand
+    aucun itinéraire n'est ouvert, et un crochet placé après ce retour ne
+    serait appelé qu'un rendu sur deux. React l'interdit, et le lint le dit —
+    mais la raison vaut d'être écrite : ce n'est pas une convention, c'est ce
+    qui garde l'ordre des crochets stable d'un rendu à l'autre.
+  */
+  const [poserLePanneau, deborde] = useDeborde()
   const detailItineraryId = useAppStore((s) => s.detailItineraryId)
   const itineraries = useAppStore((s) => s.itineraries)
   const customItineraries = useAppStore((s) => s.customItineraries)
@@ -133,9 +142,18 @@ export function ItineraryDetail() {
 
   return (
     <aside
+      ref={poserLePanneau}
       className={styles.panel}
       aria-label={`Détail de ${displayName(itin)}`}
       data-testid="itinerary-detail"
+      /* Mesuré, donc testable — et lu par le CSS pour ne rien afficher de
+         plus quand tout tient. */
+      data-deborde={deborde ? 'oui' : 'non'}
+      /* Une zone défilante doit être atteignable au clavier : sans focus,
+         les flèches ne font rien et le contenu caché le reste (WCAG 2.1.1).
+         Focalisable seulement quand il y a réellement à défiler — un arrêt
+         de tabulation qui ne mène nulle part est du bruit. */
+      tabIndex={deborde ? 0 : undefined}
     >
       {/*
         Le titre tient sa ligne, l'action passe en dessous.

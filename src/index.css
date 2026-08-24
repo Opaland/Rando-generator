@@ -133,6 +133,12 @@
      cette hauteur, et deux nombres séparés dérivent en silence — le mien
      disait déjà 56 px pour une barre qui en fait 50. */
   --hauteur-onglets: 56px;
+  /* Largeur et hauteur de la fiche détail, pour que ce qui doit s'écarter
+     d'elle dérive des mêmes nombres qu'elle — et non d'une copie qui
+     vieillira. Les deux sont repris tels quels dans
+     `ItineraryDetail.module.css`. */
+  --largeur-fiche: 380px;
+  --hauteur-fiche: min(50vh, 480px);
   /* Hauteur de la feuille repliée : juste sa poignée. Posée ici parce que
      deux choses en dépendent — la feuille elle-même, et les commandes de la
      carte qui doivent rester au-dessus d'elle pour ne pas cacher

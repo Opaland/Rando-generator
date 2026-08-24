@@ -151,6 +151,7 @@ function App() {
    */
   const [demandeDAncre, setDemandeDAncre] = useState(0)
   const panneauRef = useRef<HTMLElement>(null)
+  const detailOuvert = useAppStore((s) => s.detailItineraryId)
   const compact = useEcranCompact()
   // La barre existe à toutes les largeurs depuis le 23/08 : sur PC aussi, la
   // navigation principale doit être visible sans qu'on la cherche.
@@ -193,6 +194,21 @@ function App() {
     racine.dataset['mode'] = modeAffichage
     racine.dataset['grosTexte'] = grosTexte ? 'oui' : 'non'
   }, [modeAffichage, grosTexte])
+
+  /*
+    Une fiche ouverte occupe un coin de la carte, et les commandes ancrées à
+    ce coin doivent s'écarter. Posé sur la racine plutôt que passé en
+    propriété : `LocateButton` est ailleurs dans l'arbre, et c'est déjà là
+    que vivent `data-mode` et `data-maquette`.
+
+    Une seule source — l'identifiant de la fiche ouverte — plutôt qu'une
+    condition recopiée dans chaque commande qui doit bouger (CLAUDE.md §4).
+  */
+  useEffect(() => {
+    const racine = document.documentElement
+    if (detailOuvert !== null) racine.dataset['fiche'] = 'ouverte'
+    else delete racine.dataset['fiche']
+  }, [detailOuvert])
   const [aboutOpen, setAboutOpen] = useState(false)
   /**
    * null = personne n'a touché la poignée, la position se déduit de l'état

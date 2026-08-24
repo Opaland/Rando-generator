@@ -42,3 +42,22 @@ describe('margeBassePanneau', () => {
     expect(margeBassePanneau(cadre, ailleurs)).toBe(0)
   })
 })
+
+/**
+ * Une piste essayée le 24/08, et écartée.
+ *
+ * Je croyais que le cadrage réservait pour un panneau à moitié rempli — la
+ * fiche grandit après son ouverture, le profil et les points d'intérêt
+ * arrivant du réseau. J'ai ajouté un paramètre lisant le plafond CSS, et
+ * écrit ces tests-ci autour.
+ *
+ * Aucune injection ne les faisait rougir, pas même en retenant l'altimétrie
+ * deux secondes pour fabriquer la fiche lente : sur téléphone le contenu
+ * d'entrée dépasse déjà le plafond, atteint dès le premier rendu ; sur grand
+ * écran la marge vaut zéro. Le mécanisme ne pouvait pas servir, et il est
+ * parti avec ses tests.
+ *
+ * Le vrai défaut était que la fiche mangeait les deux tiers de la carte.
+ * Ce qui reste ici est le souvenir de la piste, pour qu'on ne la reprenne
+ * pas en croyant l'inventer.
+ */

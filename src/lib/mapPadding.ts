@@ -22,6 +22,31 @@ export interface Rect {
  */
 export const PART_LARGEUR_GENANTE = 0.8
 
+/*
+  Une piste essayée le 24/08, et écartée — parce qu'aucun test ne pouvait la
+  distinguer de son absence.
+
+  La fiche grandit après son ouverture : le profil altimétrique et les points
+  d'intérêt sont deux appels réseau qui répondent quand ils veulent. J'ai cru
+  que le cadrage, fait une seule fois, réservait donc pour un panneau à moitié
+  rempli, et j'ai ajouté un paramètre `hauteurMax` lisant le plafond CSS.
+
+  Trois injections plus tard, aucune ne rougissait — y compris en retenant
+  l'altimétrie deux secondes pour fabriquer exprès la fiche lente. La raison
+  est géométrique et vaut d'être écrite : sur téléphone, le contenu d'entrée
+  de la fiche (titre, pourcentage, boutons) dépasse déjà son plafond, qui est
+  donc atteint dès le premier rendu ; sur grand écran, la fiche ne barre pas
+  la carte et cette marge vaut zéro de toute façon. Le mécanisme ne pouvait
+  pas servir.
+
+  Le vrai défaut était ailleurs : la fiche mangeait les deux tiers de la
+  carte, et c'est son empreinte qui a été bornée (`ItineraryDetail.module.css`).
+
+  Écrit ici plutôt que gardé en code : un mécanisme qu'aucun test ne
+  distingue de son absence est une affirmation sans preuve, et il vieillira
+  comme telle (CLAUDE.md §4bis).
+*/
+
 export function margeBassePanneau(
   cadre: Rect,
   panneau: Rect | null | undefined,

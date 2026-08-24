@@ -1,6 +1,26 @@
+/*
+  Le profil est rendu au rapport où il est composé.
+
+  Il valait `height: 70px` pour un `viewBox` de 320 × 100 — rapport 3,2
+  dessiné, 4,9 rendu — avec `preserveAspectRatio="none"`. Trente pour cent de
+  hauteur perdus en silence, et avec eux le relief : une montée de 300 m et
+  une de 200 m se ressemblaient. « Le profil des terrains est coupé à
+  moitié », dit le retour du 24/08, et c'est la bonne description.
+
+  `aspect-ratio` plutôt qu'une hauteur : les deux nombres viennent alors du
+  même endroit que le `viewBox`, et ne peuvent plus diverger d'un
+  redimensionnement à l'autre. `preserveAspectRatio="none"` reste voulu — x
+  est une distance, y une altitude, les deux n'ont pas la même unité et
+  l'exagération verticale est ce qui rend un profil lisible — mais elle ne
+  doit pas être *subie*.
+
+  Le plancher de 96 px vient de la mesure : en dessous, les neuf unités de
+  bande de revêtement tombent sous six pixels et deviennent une ligne.
+*/
 .chart {
   width: 100%;
-  height: 70px;
+  aspect-ratio: 320 / 100;
+  min-height: 96px;
   display: block;
 }
 
