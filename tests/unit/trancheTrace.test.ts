@@ -19,6 +19,25 @@ import type { Itinerary, LonLat } from '../../src/core/types.ts'
 
 const construits: number[] = []
 
+/** Les promesses d'altimétrie en attente, résolues par le test. */
+const altimetriesEnAttente: {
+  resoudre: (p: { elevations: (number | null)[] }) => void
+  rejeter: (e: unknown) => void
+}[] = []
+
+vi.mock('../../src/core/elevation.ts', async () => {
+  const vrai = await vi.importActual<
+    typeof import('../../src/core/elevation.ts')
+  >('../../src/core/elevation.ts')
+  return {
+    ...vrai,
+    fetchElevationProfile: () =>
+      new Promise<{ elevations: (number | null)[] }>((resolve, reject) => {
+        altimetriesEnAttente.push({ resoudre: resolve, rejeter: reject })
+      }),
+  }
+})
+
 vi.mock('../../src/core/routing.ts', async () => {
   const vrai = await vi.importActual<
     typeof import('../../src/core/routing.ts')
@@ -54,10 +73,11 @@ function segment(id: number, depart: LonLat): Itinerary {
 }
 
 /** Un banc minimal : l'état du tracé, et rien d'autre du store. */
-function banc(balises: Itinerary[]) {
+function banc(balises: Itinerary[], ficheOuverte = false) {
   let etat: EtatTrace = { ...TRACE_VIDE }
   const enregistres: Itinerary[] = []
   let perso: Itinerary[] = []
+  let fermetures = 0
   const actions = trancheTrace({
     set: (partiel) => {
       etat = { ...etat, ...partiel }
@@ -65,8 +85,10 @@ function banc(balises: Itinerary[]) {
     etatTrace: () => etat,
     itinerairesDuGraphe: () => ({ balises, perso }),
     prochainIdentifiantPerso: () => -1,
-    ficheOuverte: () => false,
-    fermerLaFiche: () => undefined,
+    ficheOuverte: () => ficheOuverte,
+    fermerLaFiche: () => {
+      fermetures += 1
+    },
     enregistrerLeTrace: (itineraire) => {
       enregistres.push(itineraire)
       perso = [...perso, itineraire]
@@ -78,6 +100,7 @@ function banc(balises: Itinerary[]) {
     actions,
     etat: () => etat,
     enregistres,
+    fermetures: () => fermetures,
     changerLesPerso: (suivants: Itinerary[]) => {
       perso = suivants
     },
@@ -135,7 +158,30 @@ describe('la remise à zéro du tracé', () => {
 
     b.actions.toggleDrawMode() // on ferme
     b.actions.toggleDrawMode() // on rouvre
-    expect(b.etat()).toEqual({ ...TRACE_VIDE, drawMode: true })
+
+    /*
+      Les valeurs sont écrites **en toutes lettres**, et non comparées à
+      `TRACE_VIDE`.
+
+      La première version disait `toEqual({ ...TRACE_VIDE, drawMode: true })`.
+      Elle comparait l'état à la table qu'elle prétendait vérifier : fausser
+      la table faussait les deux côtés, et le test restait vert. Trouvé par la
+      vague de mutation du 24/08 — `drawPath: []` remplacé par
+      `['Stryker was here']` a survécu, et deux voisins avec lui.
+
+      C'est le §1 sous une forme qu'on ne voit pas en relisant : un test qui
+      prend pour oracle la constante qu'il contrôle ne peut pas échouer sur
+      elle. La redondance est ici la seule chose qui teste quelque chose.
+    */
+    expect(b.etat()).toEqual({
+      drawMode: true,
+      drawWaypointKeys: [],
+      drawWaypoints: [],
+      drawPath: [],
+      drawError: null,
+      drawGainMeters: null,
+      drawGainLoading: false,
+    })
   })
 
   it('un point hors réseau le dit, sans toucher au tracé', () => {
@@ -180,5 +226,184 @@ describe('enregistrer un tracé', () => {
     b.actions.addDrawPoint([4.503, 45.4])
     await b.actions.saveDrawnItinerary('   ')
     expect((b.enregistres[0] as Itinerary).name).toBe('Itinéraire tracé')
+  })
+})
+
+/**
+ * Ce que la vague de mutation a montré n'être couvert par aucun test unitaire.
+ *
+ * Cinquante-sept mutants de ce module ne rencontraient **aucun** test :
+ * `allerRetourTrace`, `bouclerTrace`, `undoDrawPoint`, le dénivelé estimé, et
+ * la fermeture de la fiche à l'ouverture du mode tracé. Ils étaient couverts
+ * par `tests/e2e/tracer.spec.ts`, que Stryker ne voit pas — « non couvert »
+ * n'y voulait donc pas dire « non testé », mais « testé par un exécutant que
+ * la vague ignore ».
+ *
+ * Les couvrir ici a un intérêt propre, et c'est ce qui rendait l'extraction
+ * de la tranche utile : ces chemins-là demandent un réseau qui ne répond pas,
+ * un service muet, un point hors du graphe — trois situations qu'un test de
+ * bout en bout met dix lignes à fabriquer et une seconde à jouer.
+ */
+describe('ouvrir le mode tracé', () => {
+  beforeEach(() => {
+    construits.length = 0
+    altimetriesEnAttente.length = 0
+  })
+
+  it('ferme la fiche détail, qui occupe la même zone d’écran', () => {
+    const b = banc([segment(1, [4.5, 45.4])], true)
+    b.actions.toggleDrawMode()
+    expect(b.fermetures()).toBe(1)
+  })
+
+  it('ne ferme rien quand aucune fiche n’est ouverte', () => {
+    const b = banc([segment(1, [4.5, 45.4])], false)
+    b.actions.toggleDrawMode()
+    expect(b.fermetures()).toBe(0)
+  })
+
+  /** Refermer le mode tracé n'a aucune raison de fermer une fiche. */
+  it('ne ferme pas la fiche quand on quitte le mode tracé', () => {
+    const b = banc([segment(1, [4.5, 45.4])], true)
+    b.actions.toggleDrawMode()
+    b.actions.toggleDrawMode()
+    expect(b.fermetures()).toBe(1)
+  })
+})
+
+describe('compléter un tracé', () => {
+  beforeEach(() => {
+    construits.length = 0
+    altimetriesEnAttente.length = 0
+  })
+
+  it('l’aller-retour repasse par où l’on est venu', () => {
+    const b = banc([segment(1, [4.5, 45.4])])
+    b.actions.toggleDrawMode()
+    b.actions.addDrawPoint([4.5, 45.4])
+    b.actions.addDrawPoint([4.503, 45.4])
+    const etapes = b.etat().drawWaypointKeys.length
+    b.actions.allerRetourTrace()
+    // n étapes deviennent 2n−1 : on revient sans repasser deux fois au bout.
+    expect(b.etat().drawWaypointKeys).toHaveLength(etapes * 2 - 1)
+  })
+
+  it('un aller-retour sur une seule étape ne fait rien', () => {
+    const b = banc([segment(1, [4.5, 45.4])])
+    b.actions.toggleDrawMode()
+    b.actions.addDrawPoint([4.5, 45.4])
+    const avant = b.etat().drawWaypointKeys
+    b.actions.allerRetourTrace()
+    expect(b.etat().drawWaypointKeys).toBe(avant)
+  })
+
+  it('défaire retire la dernière étape et rien d’autre', () => {
+    const b = banc([segment(1, [4.5, 45.4])])
+    b.actions.toggleDrawMode()
+    b.actions.addDrawPoint([4.5, 45.4])
+    b.actions.addDrawPoint([4.502, 45.4])
+    b.actions.addDrawPoint([4.503, 45.4])
+    expect(b.etat().drawWaypointKeys).toHaveLength(3)
+    b.actions.undoDrawPoint()
+    expect(b.etat().drawWaypointKeys).toHaveLength(2)
+    expect(b.etat().drawWaypoints).toHaveLength(2)
+    expect(b.etat().drawPath.length).toBeGreaterThan(0)
+  })
+
+  /**
+   * Le dénivelé affiché décrit le tracé d'avant : le garder sous le nouveau
+   * serait un chiffre juste, appliqué à autre chose.
+   */
+  it('modifier le tracé efface le dénivelé estimé', async () => {
+    const b = banc([segment(1, [4.5, 45.4])])
+    b.actions.toggleDrawMode()
+    b.actions.addDrawPoint([4.5, 45.4])
+    b.actions.addDrawPoint([4.503, 45.4])
+    const attente = b.actions.estimerDeniveleTrace()
+    altimetriesEnAttente[0]?.resoudre({ elevations: [800, 850, 900] })
+    await attente
+    expect(b.etat().drawGainMeters).toBeGreaterThan(0)
+
+    b.actions.undoDrawPoint()
+    expect(b.etat().drawGainMeters).toBeNull()
+  })
+})
+
+describe('estimer le dénivelé', () => {
+  beforeEach(() => {
+    construits.length = 0
+    altimetriesEnAttente.length = 0
+  })
+
+  function tracéDeDeuxPoints() {
+    const b = banc([segment(1, [4.5, 45.4])])
+    b.actions.toggleDrawMode()
+    b.actions.addDrawPoint([4.5, 45.4])
+    b.actions.addDrawPoint([4.503, 45.4])
+    return b
+  }
+
+  it('ne demande rien tant qu’il n’y a pas deux points', async () => {
+    const b = banc([segment(1, [4.5, 45.4])])
+    b.actions.toggleDrawMode()
+    b.actions.addDrawPoint([4.5, 45.4])
+    await b.actions.estimerDeniveleTrace()
+    expect(altimetriesEnAttente).toHaveLength(0)
+  })
+
+  it('ne lance pas deux requêtes pour un même tracé', async () => {
+    const b = tracéDeDeuxPoints()
+    const premiere = b.actions.estimerDeniveleTrace()
+    await b.actions.estimerDeniveleTrace()
+    expect(altimetriesEnAttente).toHaveLength(1)
+    altimetriesEnAttente[0]?.resoudre({ elevations: [800, 810] })
+    await premiere
+  })
+
+  /**
+   * Un service qui répond **sans une seule altitude** n'est pas une panne,
+   * mais ce n'est pas un chiffre non plus. Le dire, plutôt que d'afficher
+   * zéro — qui serait un dénivelé plausible et faux.
+   */
+  it('un relief indisponible se dit, au lieu d’annoncer zéro', async () => {
+    const b = tracéDeDeuxPoints()
+    const attente = b.actions.estimerDeniveleTrace()
+    altimetriesEnAttente[0]?.resoudre({ elevations: [null, null] })
+    await attente
+    expect(b.etat().drawGainMeters).toBeNull()
+    expect(b.etat().drawError).toMatch(/relief/i)
+    expect(b.etat().drawGainLoading).toBe(false)
+  })
+
+  it('une panne du service laisse le tracé enregistrable', async () => {
+    const b = tracéDeDeuxPoints()
+    const attente = b.actions.estimerDeniveleTrace()
+    altimetriesEnAttente[0]?.rejeter(new Error('réseau'))
+    await attente
+    expect(b.etat().drawGainMeters).toBeNull()
+    expect(b.etat().drawError).toMatch(/enregistrable/i)
+    expect(b.etat().drawGainLoading).toBe(false)
+    expect(b.etat().drawPath.length).toBeGreaterThan(0)
+  })
+})
+
+/**
+ * Deux points suffisent : c'est le plus petit tracé qui ait un sens, et le
+ * mutant qui passait `< 2` à `<= 2` le refusait sans que rien ne s'en
+ * aperçoive.
+ */
+describe('le plus petit tracé enregistrable', () => {
+  beforeEach(() => {
+    construits.length = 0
+    altimetriesEnAttente.length = 0
+  })
+
+  it('deux étapes suffisent à enregistrer', async () => {
+    const b = banc([segment(1, [4.5, 45.4])])
+    b.actions.toggleDrawMode()
+    b.actions.addDrawPoint([4.5, 45.4])
+    b.actions.addDrawPoint([4.501, 45.4])
+    await b.actions.saveDrawnItinerary('deux points')
+    expect(b.enregistres).toHaveLength(1)
   })
 })
