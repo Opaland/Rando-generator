@@ -36,8 +36,9 @@ export async function hasMap(page: Page): Promise<boolean> {
 export async function waitForMapReady(page: Page): Promise<void> {
   await page.waitForFunction(
     () =>
-      (window as unknown as { __sentiersMap?: { loaded: () => boolean } })
-        .__sentiersMap?.loaded() === true,
+      (
+        window as unknown as { __sentiersMap?: { loaded: () => boolean } }
+      ).__sentiersMap?.loaded() === true,
     undefined,
     { timeout: 30_000 },
   )
@@ -56,7 +57,9 @@ export async function clickOnMap(
   // clic quasi nulle sur une géométrie « line » de 2 px).
   await page.waitForFunction(
     () =>
-      !(window as unknown as { __sentiersMap?: MapLike }).__sentiersMap?.isMoving(),
+      !(
+        window as unknown as { __sentiersMap?: MapLike }
+      ).__sentiersMap?.isMoving(),
   )
   const mapBox = await page.getByTestId('map').boundingBox()
   if (!mapBox) throw new Error('Carte introuvable')
@@ -249,7 +252,9 @@ export function buildGpx(
   const lat = 45.4 + offsetNorthMeters / 111_195
   const points: string[] = []
   for (let lon = 4.5; lon <= 4.5301; lon += 0.0002) {
-    points.push(`<trkpt lat="${lat.toFixed(7)}" lon="${lon.toFixed(4)}"></trkpt>`)
+    points.push(
+      `<trkpt lat="${lat.toFixed(7)}" lon="${lon.toFixed(4)}"></trkpt>`,
+    )
   }
   return `<?xml version="1.0" encoding="UTF-8"?>
 <gpx version="1.1" creator="e2e" xmlns="http://www.topografix.com/GPX/1/1">
@@ -420,7 +425,10 @@ export async function installerGeolocalisationPilotee(
     let prochainId = 1
 
     const faux = {
-      watchPosition(succes: PositionCallback, echec?: PositionErrorCallback | null) {
+      watchPosition(
+        succes: PositionCallback,
+        echec?: PositionErrorCallback | null,
+      ) {
         const id = prochainId++
         abonnes.set(id, { succes, echec: echec ?? null })
         return id
@@ -496,9 +504,9 @@ export async function emettrePosition(
 ): Promise<void> {
   await page.evaluate(
     (charge) => {
-      ;(window as unknown as { __sentiersGeo: GeoPilotee }).__sentiersGeo.emettre(
-        charge,
-      )
+      ;(
+        window as unknown as { __sentiersGeo: GeoPilotee }
+      ).__sentiersGeo.emettre(charge)
     },
     {
       lon: point.lon,
@@ -557,4 +565,61 @@ export async function pointsEnBase(page: Page): Promise<number> {
         }
       }),
   )
+}
+
+/**
+ * Bascule le gros texte comme une personne le fait : par le réglage.
+ *
+ * Le geste vit ici depuis que deux sondes le font — les règles d'écran et le
+ * contraste rendu. Une manœuvre recopiée dans deux fichiers se corrige dans
+ * un seul le jour où l'interface bouge (CLAUDE.md §4), et celle-ci a déjà
+ * changé une fois : le réglage vit dans un accordéon replié, si bien
+ * qu'atteindre la section ne suffisait pas.
+ *
+ * L'ordre compte, et il n'est pas devinable : sur téléphone, la fiche ouverte
+ * recouvre le panneau des réglages. La préférence se pose **avant** d'ouvrir
+ * quoi que ce soit.
+ */
+export async function activerLeGrosTexte(
+  page: Page,
+  compact: boolean,
+): Promise<void> {
+  const bascule = page.getByTestId('gros-texte')
+  const section = page.getByTestId('mode-affichage')
+  await expect
+    .poll(
+      async () => {
+        if (await bascule.isVisible().catch(() => false)) return true
+        // Le réglage vit dans un accordéon replié : atteindre la section ne
+        // suffit pas, il faut l'ouvrir. C'est aussi ce que fait une personne,
+        // et le test l'avait oublié.
+        if (await section.isVisible().catch(() => false)) {
+          await section
+            .locator('summary')
+            .click()
+            .catch(() => undefined)
+        }
+        if (compact) {
+          const onglet = page.getByTestId('onglet-reglages')
+          if (await onglet.isVisible().catch(() => false)) {
+            await onglet.click().catch(() => undefined)
+          }
+          const poignee = page.getByTestId('sheet-handle')
+          if (await poignee.isVisible().catch(() => false)) {
+            await poignee.click().catch(() => undefined)
+          }
+        }
+        return false
+      },
+      { timeout: 25_000 },
+    )
+    .toBe(true)
+  await bascule.check()
+  // L'attribut est posé sur la racine : l'attendre, plutôt que de supposer
+  // que le clic a déjà repeint.
+  await expect
+    .poll(() =>
+      page.evaluate(() => document.documentElement.dataset['grosTexte']),
+    )
+    .toBe('oui')
 }

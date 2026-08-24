@@ -6,6 +6,31 @@
      à la balise, pas aux surfaces. */
   --blanc-balisage: #fff;
   --jaune-pr: #d9a400;
+  /* Le même jaune, mais **lisible en tant que texte**.
+
+     Un seul jeton ne peut pas satisfaire les deux emplois, et la mesure le
+     dit sans appel : sur le papier de l'application,
+
+       #d9a400 en texte  → 2,12:1   (WCAG 1.4.3 AA en demande 4,5)
+       #8a6800 en texte  → 4,84:1
+
+     et sous un texte sombre, exactement l'inverse :
+
+       encre sur #d9a400 → 6,50:1
+       encre sur #8a6800 → 2,85:1
+
+     Le gros texte assombrissait `--jaune-pr` pour la première raison, et
+     cassait la seconde : le badge « PR » y tombait à 2,85:1, mesuré par
+     `tests/e2e/contraste-rendu.spec.ts`. En taille normale, c'étaient les
+     étoiles qui tombaient à 2,12:1 — jamais vues, parce qu'aucun état
+     ausculté ne les affiche.
+
+     Chaque mode satisfaisait un emploi et cassait l'autre. Les deux valeurs
+     existent donc en même temps, chacune nommée pour ce qu'elle sert : le
+     jaune de balisage reste le jaune de balisage — c'est celui du tracé sur
+     la carte, et il ne doit pas changer avec une préférence de taille de
+     texte. */
+  --jaune-pr-lisible: #8a6800;
   /* Orange foncé : garde un ratio de contraste ≥ 4,5:1 avec du texte blanc. */
   --orange-grp: #b34a08;
   /* Boucles locales open data (Métropole de Lyon…) : bleu-vert distinct du
@@ -673,7 +698,13 @@ aside :is(button, label, p, li, h2, h3, span, output) {
   --gris-vert: #3d4a40;
   --gris-vert-clair: #d6dad2;
   --orange-grp: #8f3a06;
-  --jaune-pr: #8a6800;
+  /*
+    `--jaune-pr` n'est plus assombri ici. Il l'a été, et cela **cassait** le
+    badge « PR » : un aplat de balisage porte un texte sombre, et
+    l'assombrir fait tomber le couple de 6,5:1 à 2,85:1. Le besoin de départ
+    — un jaune lisible en tant que texte — est servi par
+    `--jaune-pr-lisible`, qui vaut la même chose dans les deux modes.
+  */
 }
 
 /* Les bordures d'un pixel disparaissent quand on a du mal à voir : elles

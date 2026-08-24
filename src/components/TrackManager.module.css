@@ -214,7 +214,11 @@
   margin: 0 0 var(--espace-3);
   font-size: var(--texte-vedette);
   line-height: 1;
-  color: var(--jaune-pr);
+  /* Du jaune **en tant que texte** : c'est l'emploi qui demande la valeur
+     sombre. Le jaune de balisage y donnait 2,12:1 sur le papier, très en
+     dessous des 4,5 de WCAG 1.4.3 AA, et personne ne l'avait vu — aucun état
+     ausculté n'affiche d'étoiles. */
+  color: var(--jaune-pr-lisible);
   letter-spacing: 2px;
 }
 

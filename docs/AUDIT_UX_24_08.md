@@ -141,9 +141,6 @@ C'est le seul endroit où la promesse du produit est *montrée*. Il est dans
 
 Dit ici pour ne pas laisser croire l'audit complet :
 
-- **le contraste texte / fond**, mesuré à l'écran plutôt que dans la
-  palette. Les jetons sont gardés par `couleurs.test.ts`, mais rien ne
-  vérifie ce que donne un texte gris sur un fond clair *après* composition ;
 - **le mode simple** (issue #173), qui cache des sections : les règles
   d'écran n'y tournent pas ;
 - **les états d'erreur et les états vides**, qui sont ceux où l'on se sent
@@ -165,6 +162,26 @@ et toutes deux ont trouvé du réel :
 - **ce qui reste atteignable au clavier.** Feuille repliée à 52 px, la
   tabulation traversait **vingt-six** éléments qu'aucun pixel ne montrait.
   `overflow: hidden` cache sans retirer.
+
+Et une troisième, `tests/e2e/contraste-rendu.spec.ts` :
+
+- **le contraste réellement rendu.** Un seul jeton, `--jaune-pr`, portait deux
+  emplois qui demandent des valeurs opposées : lisible *en tant que texte* sur
+  le papier, il doit être sombre (2,12:1 clair contre 4,84:1 sombre) ; porteur
+  d'un texte sombre sur un aplat, il doit être clair (6,50:1 contre 2,85:1).
+  Le mode gros texte l'assombrissait, ce qui réglait le premier et cassait le
+  second. **Chaque mode satisfaisait un emploi et cassait l'autre**, et
+  personne ne l'avait vu.
+
+  La sonde rendue a mesuré le badge « PR » à 2,85:1 en gros texte. Elle
+  n'atteint pas les étoiles de qualité — il faut une trace importée et notée —
+  et celles-ci étaient à 2,12:1 depuis le début : c'est la garde de palette,
+  dans `couleurs.test.ts`, qui les couvre. Les deux ne se remplacent pas.
+
+  Cette sonde s'est aussi trouvé un défaut à elle-même : sa première version
+  exigeait que chaque texte soit dans le cadre et peint, et ne mesurait plus
+  que trente-huit textes sur deux cent cinquante — verte, en ne regardant
+  presque rien. Le contraste ne dépend pas du défilement.
 
 ### La question qui reste, et pourquoi elle n'est pas tranchée
 
