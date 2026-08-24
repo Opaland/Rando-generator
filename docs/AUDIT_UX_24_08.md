@@ -144,14 +144,45 @@ Dit ici pour ne pas laisser croire l'audit complet :
 - **le contraste texte / fond**, mesuré à l'écran plutôt que dans la
   palette. Les jetons sont gardés par `couleurs.test.ts`, mais rien ne
   vérifie ce que donne un texte gris sur un fond clair *après* composition ;
-- **la visibilité du focus** sur chaque élément atteignable au clavier.
-  `--anneau-focus` existe et le gros texte l'épaissit ; personne n'a vérifié
-  qu'aucun élément ne l'a perdu ;
-- **l'ordre de tabulation**, en particulier quand la fiche s'ouvre par-dessus
-  la carte ;
 - **le mode simple** (issue #173), qui cache des sections : les règles
   d'écran n'y tournent pas ;
 - **les états d'erreur et les états vides**, qui sont ceux où l'on se sent
   le plus perdu et que la sonde ne traverse jamais.
 
 Chacun est une sonde à écrire, pas un paragraphe à ajouter ici.
+
+### Ce qui a été ausculté depuis
+
+Deux des cinq surfaces ont leur sonde, `tests/e2e/regles-de-clavier.spec.ts`,
+et toutes deux ont trouvé du réel :
+
+- **la visibilité du focus.** `--anneau-focus` existait, le gros texte
+  l'épaississait, et il ne posait rien : la valeur était de forme
+  `box-shadow`, employée en `outline`. Une substitution de `var()` invalide
+  ne laisse pas gagner la règle du dessous — elle ramène la propriété à sa
+  valeur initiale. Trois éléments n'avaient plus de liseré du tout, et
+  l'onglet actif n'avait plus rien ;
+- **ce qui reste atteignable au clavier.** Feuille repliée à 52 px, la
+  tabulation traversait **vingt-six** éléments qu'aucun pixel ne montrait.
+  `overflow: hidden` cache sans retirer.
+
+### La question qui reste, et pourquoi elle n'est pas tranchée
+
+**Un élément recouvert par un panneau ouvert doit-il rester atteignable au
+clavier ?**
+
+Le cas concret : sur téléphone, feuille à mi-hauteur, l'attribution de la
+carte est derrière. La tabulation y va, on ne la voit pas. Mais la carte
+elle-même est à moitié visible et parfaitement utilisable, et la rendre
+inerte serait pire.
+
+Il n'y a pas de mesure qui tranche cela : le même fait — « c'est derrière un
+panneau » — est un défaut dans un cas et le fonctionnement normal dans
+l'autre. La sonde du clavier ne pose donc la question que là où la mise en
+page a **délibérément fermé** quelque chose. Une règle qui rougirait sur un
+panneau qui recouvre la carte finirait désactivée, et emporterait le reste
+avec elle.
+
+Ce qu'il faudrait pour décider : regarder quelqu'un se servir de
+l'application au clavier, feuille ouverte, et voir s'il perd le fil. C'est
+une session, pas un test.

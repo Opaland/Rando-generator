@@ -1,4 +1,11 @@
-import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react'
 import { About } from './components/About.tsx'
 import { Backup } from './components/Backup.tsx'
 import { CustomItineraries } from './components/CustomItineraries.tsx'
@@ -30,6 +37,7 @@ import { BarreOnglets } from './components/BarreOnglets.tsx'
 import {
   ancreDeLOnglet,
   ancreDeSection,
+  contenuHorsDAtteinte,
   dispositionDemandee,
   positionInitiale,
   positionPourOnglet,
@@ -107,7 +115,9 @@ function App() {
    * à parcourir. `pourcentageMesurable` porte la question une seule fois.
    */
   const globalPct = useAppStore((s) =>
-    pourcentageMesurable(s.matching?.global) ? (s.matching?.global.pct ?? null) : null,
+    pourcentageMesurable(s.matching?.global)
+      ? (s.matching?.global.pct ?? null)
+      : null,
   )
   const zoneRestoredAtStartup = useAppStore((s) => s.zoneRestoredAtStartup)
   const modeAffichage = useAppStore((s) => s.modeAffichage)
@@ -151,6 +161,7 @@ function App() {
    */
   const [demandeDAncre, setDemandeDAncre] = useState(0)
   const panneauRef = useRef<HTMLElement>(null)
+  const contenuRef = useRef<HTMLDivElement>(null)
   const detailOuvert = useAppStore((s) => s.detailItineraryId)
   const compact = useEcranCompact()
   // La barre existe à toutes les largeurs depuis le 23/08 : sur PC aussi, la
@@ -222,6 +233,25 @@ function App() {
       guideAffiche: guideDemarrageVisible(donnees, guideFerme),
       zoneRestauree: zoneRestoredAtStartup,
     })
+
+  /**
+   * Ce qui est replié n'est pas atteignable au clavier.
+   *
+   * Mesuré : feuille repliée à 52 px, la tabulation traversait vingt-six
+   * éléments qu'aucun pixel ne montrait. `overflow: hidden` cache sans
+   * retirer, et le parcours de tabulation ne regarde même pas cela.
+   *
+   * `inert` est posé par le DOM plutôt que par un attribut JSX : React 18 ne
+   * connaît pas `inert` comme propriété booléenne et le rendrait en chaîne,
+   * où `inert="false"` vaut *inerte* — l'exact contraire de ce qu'on écrit.
+   *
+   * La règle qui décide vient du cœur, où elle s'éprouve, et sert aussi à
+   * dire ce qui est peint : c'est la même condition, elle n'est pas recopiée.
+   */
+  useEffect(() => {
+    const contenu = contenuRef.current
+    if (contenu) contenu.inert = contenuHorsDAtteinte(position, compact)
+  }, [position, compact])
 
   /**
    * Changer d'onglet, c'est demander à voir ce qu'il contient.
@@ -400,82 +430,96 @@ function App() {
             }}
           >
             <span className={styles.poigneeBarre} aria-hidden="true" />
-            <span className={styles.poigneeTexte} data-testid="sheet-handle-texte">
+            <span
+              className={styles.poigneeTexte}
+              data-testid="sheet-handle-texte"
+            >
               <PoigneeTexte pourcentage={globalPct} />
             </span>
           </button>
-          <DemoBanner />
-          {/* Le mode simple cache, il n'enlève pas : la carte, les traces et
+          {/*
+            Tout ce que la feuille repliée ne montre pas vit ici, dans un seul
+            conteneur, pour qu'une seule ligne le mette hors d'atteinte. La
+            poignée reste dehors : c'est le seul geste qui rouvre.
+
+            La grille et son écart sont repris à l'identique du panneau — le
+            conteneur ne change rien à la mise en page, il ne fait que donner
+            une prise.
+          */}
+          <div ref={contenuRef} className={styles.contenuFeuille}>
+            <DemoBanner />
+            {/* Le mode simple cache, il n'enlève pas : la carte, les traces et
               le tableau de bord restent, tout le reste se replie (#173). */}
-          {sections.zone && visible('zone') && (
-            <Ancre section="zone">
-              <ZonePicker />
-            </Ancre>
-          )}
-          {sections.enregistrement && visible('enregistrement') && (
-            <Ancre section="enregistrement">
-              <Enregistreur />
-            </Ancre>
-          )}
-          {sections.traces && visible('traces') && (
-            <Ancre section="traces">
-              <TrackManager />
-            </Ancre>
-          )}
-          {sections.itineraires && visible('itinerairesPerso') && (
-            <Ancre section="itinerairesPerso">
-              <CustomItineraries />
-            </Ancre>
-          )}
-          {sections.tableauDeBord && visible('tableauDeBord') && (
-            <Ancre section="tableauDeBord">
-              <Dashboard />
-            </Ancre>
-          )}
-          {sections.objectifs && visible('objectifs') && (
-            <Ancre section="objectifs">
-              <Objectifs />
-            </Ancre>
-          )}
-          {sections.prochaineSortie && visible('prochaineSortie') && (
-            <Ancre section="prochaineSortie">
-              <NextOuting />
-            </Ancre>
-          )}
-          {sections.historique && visible('historique') && (
-            <Ancre section="historique">
-              <History />
-            </Ancre>
-          )}
-          {sections.itineraires && visible('listeItineraires') && (
-            <Ancre section="listeItineraires">
-              <ItineraryList />
-            </Ancre>
-          )}
-          {sections.reglages && visible('reglages') && (
-            <Ancre section="reglages">
-              <Settings />
-            </Ancre>
-          )}
-          {sections.sauvegarde && visible('sauvegarde') && (
-            <Ancre section="sauvegarde">
-              <Backup />
-            </Ancre>
-          )}
-          <ModeSwitch />
-          <InstallButton />
-          <footer className={styles.footer} data-testid="pied-panneau">
-            <a
-              className={styles.pourquoiPied}
-              href="pourquoi.html"
-              data-testid="pourquoi-link-pied"
-            >
-              Pourquoi Sentiers&nbsp;?
-            </a>
-            Itinéraires © les contributeurs OpenStreetMap (ODbL) · Fond de
-            carte © IGN (Etalab 2.0) · GR®, GR de Pays® et PR® sont des
-            marques de la FFRandonnée.
-          </footer>
+            {sections.zone && visible('zone') && (
+              <Ancre section="zone">
+                <ZonePicker />
+              </Ancre>
+            )}
+            {sections.enregistrement && visible('enregistrement') && (
+              <Ancre section="enregistrement">
+                <Enregistreur />
+              </Ancre>
+            )}
+            {sections.traces && visible('traces') && (
+              <Ancre section="traces">
+                <TrackManager />
+              </Ancre>
+            )}
+            {sections.itineraires && visible('itinerairesPerso') && (
+              <Ancre section="itinerairesPerso">
+                <CustomItineraries />
+              </Ancre>
+            )}
+            {sections.tableauDeBord && visible('tableauDeBord') && (
+              <Ancre section="tableauDeBord">
+                <Dashboard />
+              </Ancre>
+            )}
+            {sections.objectifs && visible('objectifs') && (
+              <Ancre section="objectifs">
+                <Objectifs />
+              </Ancre>
+            )}
+            {sections.prochaineSortie && visible('prochaineSortie') && (
+              <Ancre section="prochaineSortie">
+                <NextOuting />
+              </Ancre>
+            )}
+            {sections.historique && visible('historique') && (
+              <Ancre section="historique">
+                <History />
+              </Ancre>
+            )}
+            {sections.itineraires && visible('listeItineraires') && (
+              <Ancre section="listeItineraires">
+                <ItineraryList />
+              </Ancre>
+            )}
+            {sections.reglages && visible('reglages') && (
+              <Ancre section="reglages">
+                <Settings />
+              </Ancre>
+            )}
+            {sections.sauvegarde && visible('sauvegarde') && (
+              <Ancre section="sauvegarde">
+                <Backup />
+              </Ancre>
+            )}
+            <ModeSwitch />
+            <InstallButton />
+            <footer className={styles.footer} data-testid="pied-panneau">
+              <a
+                className={styles.pourquoiPied}
+                href="pourquoi.html"
+                data-testid="pourquoi-link-pied"
+              >
+                Pourquoi Sentiers&nbsp;?
+              </a>
+              Itinéraires © les contributeurs OpenStreetMap (ODbL) · Fond de
+              carte © IGN (Etalab 2.0) · GR®, GR de Pays® et PR® sont des
+              marques de la FFRandonnée.
+            </footer>
+          </div>
         </aside>
         {panneauLarge && panneauReplie && (
           <button

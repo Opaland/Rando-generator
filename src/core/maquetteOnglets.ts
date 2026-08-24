@@ -269,3 +269,33 @@ export function positionInitiale({
 }): PositionFeuille {
   return guideAffiche || zoneRestauree ? 'repliee' : 'moitie'
 }
+
+/**
+ * Ce qui est replié n'est pas atteignable au clavier.
+ *
+ * Mesuré le 24/08 sur 390 × 844, feuille repliée à 52 px : la tabulation
+ * traversait **vingt-six** éléments qu'aucun pixel ne montrait — les quinze
+ * boutons de zone, les six itinéraires en vedette, deux champs de saisie,
+ * deux en-têtes d'accordéon et le lien de pied de page. On appuie sur Entrée
+ * sans savoir sur quoi, et l'un de ces boutons charge un département entier.
+ *
+ * `overflow: hidden` cache sans retirer : c'est exactement le mode d'échec du
+ * §1bis, vu depuis le clavier plutôt que depuis un test — un élément écrêté
+ * garde un rectangle valide, et le parcours de tabulation ne regarde même pas
+ * cela.
+ *
+ * La règle vit ici parce qu'elle décide de deux choses à la fois — ce qui est
+ * peint, et ce qui est atteignable — et qu'une condition consultée à deux
+ * titres se nomme (§4).
+ *
+ * Sur grand écran, la feuille n'existe pas : la position y garde sa dernière
+ * valeur, si bien qu'on peut arriver en large avec `repliee` en mémoire sans
+ * que rien ne soit replié. Le panneau replié de grand écran, lui, porte
+ * `hidden`, qui retire déjà du parcours.
+ */
+export function contenuHorsDAtteinte(
+  position: PositionFeuille,
+  compact: boolean,
+): boolean {
+  return compact && position === 'repliee'
+}
