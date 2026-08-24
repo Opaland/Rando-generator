@@ -19,6 +19,16 @@
 .row input[type='range'] {
   flex: 1;
   accent-color: var(--rouge-balisage);
+  /*
+    Seize pixels de haut, mesurés le 24/08.
+
+    C'est le curseur qui règle la tolérance de matching — le nombre qui
+    décide de ce qui compte comme parcouru. On le déplace au doigt, souvent
+    plusieurs fois de suite pour comparer, et le navigateur ne donne au
+    pouce que la hauteur du rail. La hauteur est portée à la cible, la barre
+    reste fine : c'est la zone de saisie qui grandit, pas le trait.
+  */
+  min-height: var(--cible-mini);
 }
 
 .value {

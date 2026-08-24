@@ -144,8 +144,18 @@
 }
 
 .zoom button {
-  min-width: 28px;
-  min-height: 28px;
+  /*
+    Vingt-huit pixels avant le 24/08 — et invisibles pour l'audit, qui
+    n'auscultait que l'écran d'accueil : ces commandes n'existent que dans
+    une fiche ouverte. C'est l'élargissement de la sonde aux trois états de
+    l'application qui les a montrées.
+
+    Le jeton et non un nombre : une feuille de composant qui pose son propre
+    plancher annule silencieusement le plancher tactile global, une classe
+    battant toujours un sélecteur d'élément.
+  */
+  min-width: var(--cible-mini);
+  min-height: var(--cible-mini);
   padding: 0 var(--espace-3);
   border: 1px solid var(--gris-vert-clair);
   border-radius: var(--rayon-sm);

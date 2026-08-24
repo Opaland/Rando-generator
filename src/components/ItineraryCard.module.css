@@ -35,9 +35,16 @@
 }
 
 /* Sur mobile, la fiche résumé est une feuille ancrée en bas (elle ne masque
-   pas la carte) ; à partir de 640px, on revient à la petite carte flottante
-   en haut à gauche, plus adaptée à un écran large. */
-@media (min-width: 640px) {
+   pas la carte) ; au-dessus du point de rupture, on revient à la petite carte
+   flottante en haut à gauche, plus adaptée à un écran large.
+
+   Le seuil valait 640 px, quand celui de l'application vaut 800
+   (`src/lib/ecran.ts`). Entre les deux, les surcouches se croyaient sur
+   grand écran pendant que React servait la feuille glissante et la barre
+   d'onglets : à 800 px pile, la poignée était peinte par-dessus la fiche
+   détail, mesuré le 24/08. C'est la même famille de défaut que le constat
+   U2 — deux seuils qui décident de la même chose et ne sont pas d'accord. */
+@media (min-width: 801px) {
   .card {
     left: 12px;
     right: auto;

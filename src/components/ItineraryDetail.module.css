@@ -323,7 +323,7 @@
   white-space: nowrap;
 }
 
-@media (min-width: 640px) {
+@media (min-width: 801px) {
   .panel {
     left: auto;
     right: 12px;

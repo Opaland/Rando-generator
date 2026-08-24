@@ -152,6 +152,13 @@
   font-size: var(--texte-secondaire);
   color: var(--gris-vert);
   letter-spacing: 0.02em;
+  /* Vingt pixels avant le 24/08 : ce `summary` ne portait pas la classe
+     commune `.acc-summary` et avait échappé au plancher. Nommer la règle
+     plutôt que la recopier aurait été mieux — mais la classe commune porte
+     aussi une mise en page (flex, chevron) que ce bloc-ci ne veut pas. */
+  min-height: var(--cible-mini);
+  display: flex;
+  align-items: center;
 }
 
 .discoveryGrid {

@@ -31,13 +31,13 @@
   « à côté ». Le bouton remonte alors au-dessus d'elle — voir la règle
   suivante.
 */
-@media (min-width: 640px) {
+@media (min-width: 801px) {
   :root[data-fiche='ouverte'] .wrapper {
     right: calc(12px + var(--largeur-fiche) + 12px);
   }
 }
 
-@media (max-width: 639px) {
+@media (max-width: 800px) {
   :root[data-fiche='ouverte'] .wrapper {
     bottom: calc(
       12px + var(--hauteur-fiche) + var(--hauteur-poignee) +
@@ -105,7 +105,7 @@
 
 /* Sur mobile, la fiche détail occupe le bas de l'écran : on remonte le
    bouton pour qu'il reste atteignable au pouce. */
-@media (max-width: 639px) {
+@media (max-width: 800px) {
   .wrapper {
     bottom: 8px;
     right: 8px;

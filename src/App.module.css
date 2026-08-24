@@ -37,6 +37,10 @@
 }
 
 .aboutLink {
+  /* Trente pixels avant le 24/08. Ce sont les deux seules commandes de
+     l'en-tête : les rater renvoie sur la carte, qui prend le geste pour un
+     déplacement. */
+  min-height: var(--cible-mini);
   border: 1px solid rgba(250, 247, 242, 0.4);
   background: none;
   color: var(--blanc-papier);
@@ -66,6 +70,13 @@
  */
 .pourquoiPied {
   display: none;
+}
+
+/* Vingt pixels de haut dans le pied du panneau : c'est un lien de plein
+   droit, pas un mot dans une phrase, et il se vise. */
+.footer .pourquoiPied {
+  min-height: var(--cible-mini);
+  align-items: center;
 }
 
 .footer {

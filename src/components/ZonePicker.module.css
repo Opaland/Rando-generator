@@ -35,6 +35,10 @@
 
 .zone,
 .zoneActive {
+  /* Quarante pixels : quatre de moins que le plancher tactile, mesurés le
+     24/08. Une zone se choisit une fois par sortie, souvent avec des gants —
+     c'est exactement le geste que quatre pixels manqués font rater. */
+  min-height: var(--cible-mini);
   padding: var(--espace-4) var(--espace-5);
   border-radius: var(--rayon-md);
   border: 1px solid var(--gris-vert);

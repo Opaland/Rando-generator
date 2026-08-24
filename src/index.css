@@ -132,6 +132,24 @@
      posée ici plutôt que recopiée : la feuille doit réserver exactement
      cette hauteur, et deux nombres séparés dérivent en silence — le mien
      disait déjà 56 px pour une barre qui en fait 50. */
+  /*
+    Le plancher d'une cible, en un jeton.
+
+    Trente-deux pixels au curseur, quarante-quatre au doigt — les deux
+    seuils des normes (WCAG 2.5.8 pose 24 px au minimum, 2.5.5 pose 44 ; 32
+    est le seul des trois qui soit tranché au jugement, pour qu'une ligne de
+    titre respire sans dévaster une interface dense de bureau).
+
+    Un jeton et non une valeur en dur, parce qu'une classe de composant bat
+    toujours un sélecteur d'élément : un `min-height: 32px` posé dans une
+    feuille de composant annulait silencieusement le plancher tactile global.
+    C'est arrivé le 24/08 à `about-open` et au lien du pied — deux commandes
+    restées à 32 px sous le doigt pendant que la règle générale disait 44.
+
+    Une feuille de composant qui a besoin d'un plancher lit donc ce jeton.
+    Elle ne peut plus descendre en dessous sans le dire.
+  */
+  --cible-mini: 32px;
   --hauteur-onglets: 56px;
   /* Largeur et hauteur de la fiche détail, pour que ce qui doit s'écarter
      d'elle dérive des mêmes nombres qu'elle — et non d'une copie qui
@@ -336,6 +354,28 @@ a:focus-visible,
 /* Sections repliables du panneau latéral (accordéon sur mobile, cf. .sidebar
    dans App.module.css). Le <summary> reprend le titre <h2> existant : pas de
    doublon de texte, juste un chevron indiquant l'état ouvert/fermé. */
+/*
+  Le plancher des cibles, posé là où toutes les surfaces le lisent.
+
+  Mesuré le 24/08 par `tests/e2e/regles-d-ecran.spec.ts` : tous les en-têtes
+  d'accordéon faisaient vingt-trois pixels de haut. Ce sont pourtant les
+  commandes les plus employées de l'application — ouvrir « Mes traces »,
+  replier « Itinéraires » — et il fallait les viser au pixel près.
+
+  Deux seuils, ceux des normes, et pas un troisième inventé :
+
+  - **44 px sur un pointeur grossier** (WCAG 2.5.5, niveau AAA). C'est un
+    doigt, et l'audit mobile de ce dépôt le pose déjà pour la barre
+    d'onglets ;
+  - **32 px ailleurs**, au-dessus du plancher de 24 px de WCAG 2.5.8 (AA,
+    ajouté en 2.2 précisément parce que 44 px partout dévaste une interface
+    dense de bureau). Vingt-quatre est le minimum toléré ; trente-deux est ce
+    qu'il faut pour qu'une ligne de titre respire, et c'est le seul des trois
+    nombres qui soit tranché au jugement.
+
+  `pointer: coarse` plutôt que la largeur : c'est le geste qui décide de la
+  taille de la cible, pas la place disponible. Une tablette large se touche.
+*/
 .acc-summary {
   display: flex;
   align-items: center;
@@ -343,6 +383,65 @@ a:focus-visible,
   gap: var(--espace-4);
   cursor: pointer;
   list-style: none;
+  min-height: var(--cible-mini);
+}
+
+@media (pointer: coarse) {
+  /*
+    Au doigt, une cible fait quarante-quatre pixels. Une règle, un endroit.
+
+    Mesuré le 24/08 par `tests/e2e/regles-d-ecran.spec.ts` : tous les en-têtes
+    d'accordéon faisaient vingt-trois pixels, les boutons de zone quarante, le
+    curseur de tolérance seize. Ce sont les commandes les plus employées de
+    l'application, et il fallait les viser au pixel près — avec des gants,
+    sur un sentier.
+
+    La liste est ici plutôt qu'éparpillée dans les feuilles de composants,
+    parce que c'est **une** règle. Trois gardes recopiées et une quatrième
+    oubliée est le mode d'échec que CLAUDE.md §4 décrit, et il s'est produit
+    ici même : `discoverySummary` avait échappé au plancher pour n'avoir pas
+    porté la classe commune des accordéons.
+
+    Ce qui reste dehors, et pourquoi :
+
+    - **un lien dans une phrase** — c'est du texte cliquable, pas une cible ;
+      l'agrandir casserait le paragraphe, et WCAG 2.5.8 l'exclut nommément ;
+    - **les liens d'attribution de MapLibre** — même raison de fond, et une
+      raison technique par-dessus : ce sont des boîtes en ligne, sur
+      lesquelles `min-height` n'a aucun effet. Le dire est plus utile que de
+      poser une règle qui ne s'applique pas.
+
+    Les **boutons** de MapLibre, eux, entrent dans la règle : zoom, boussole,
+    bascule d'attribution. Ils sont dans notre DOM et sous notre doigt.
+  */
+  :root {
+    --cible-mini: 44px;
+  }
+
+  .acc-summary,
+  button,
+  a[href],
+  summary,
+  [role='button'],
+  input[type='range'] {
+    min-height: var(--cible-mini);
+  }
+
+  /* Une cible n'est pas qu'une hauteur : la bascule d'attribution de
+     MapLibre fait vingt-quatre pixels de large. */
+  .maplibregl-ctrl button {
+    min-width: var(--cible-mini);
+  }
+
+  /* Le texte courant garde ses liens à sa taille : ce sont des mots, et un
+     mot de quarante-quatre pixels de haut au milieu d'un paragraphe déplace
+     la ligne au lieu de la servir. */
+  p a,
+  li a,
+  span a,
+  .maplibregl-ctrl-attrib a {
+    min-height: 0;
+  }
 }
 
 .acc-summary::-webkit-details-marker {

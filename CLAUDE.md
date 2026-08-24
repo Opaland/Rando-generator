@@ -199,6 +199,58 @@ assertée.
 
 ---
 
+## 6quater. Un contrôle qu'il faut penser à lire ne garde rien
+
+`dist/` est servi par Playwright, pas les sources. Le §6 le dit, et la
+parade était « vérifier `✓ built` dans la sortie ».
+
+Dans la nuit du 23 au 24/08, le piège s'est refermé **trois fois** :
+
+- une injection de défaut a cassé `tsc -b` ; `dist/` est resté à la version
+  d'avant et le test est passé au vert en prouvant le contraire de ce qu'on
+  lui demandait ;
+- un import inutilisé a cassé le build pendant quatre commandes de suite.
+  **J'ai vu l'erreur, je l'ai lue, et j'ai continué** ;
+- une correction de point de rupture a paru sans effet vingt minutes durant,
+  pour la même raison.
+
+La leçon n'est pas « mieux vérifier ». C'est que la vérification était à la
+charge de celui qui a déjà tort. `.claude/hooks/dist-a-jour.sh` refuse
+maintenant de lancer Playwright sur un `dist/` plus vieux que les sources.
+
+Ce qui vaut pour tout garde-fou : **s'il faut le lire, il ne garde rien.**
+
+## 6quinquies. Un test qui ne regarde qu'un écran ne garde qu'un écran
+
+Les règles d'écran (`tests/e2e/regles-d-ecran.spec.ts`) posent cinq
+questions mesurables — qu'est-ce qui est peint par-dessus quoi, qu'est-ce
+qui est écrasé, qu'est-ce qui déborde sans le dire, qu'est-ce qu'on ne peut
+pas toucher, qu'est-ce qui sort du cadre — à trois largeurs et dans trois
+états.
+
+Les trois états ne sont pas décoratifs. La première version n'auscultait
+que l'écran d'accueil : une injection remettant le profil écrasé passait au
+vert, parce que le profil n'existe pas encore à ce moment-là. Élargie aux
+états, la même sonde a trouvé du neuf le jour même — les cinq commandes de
+zoom du profil, à 28 px.
+
+**Une sonde se juge sur ce qu'elle trouve quand on remet un défaut, pas sur
+le nombre de ses assertions.**
+
+## 6sexies. Ce qui est mesurable se mesure ; le reste se décide, et se dit
+
+L'audit d'interface ne dit pas si une couleur est jolie ni si un texte est
+clair : ces choses se décident. Il ne garde que ce qui a une réponse en
+chiffres — un contraste, un ΔE, une hauteur en pixels, un rectangle peint.
+
+Et quand un seuil vient d'une norme publiée, on la nomme : 44 px est
+WCAG 2.5.5, 24 px est WCAG 2.5.8. Le seul nombre tranché au jugement dans
+tout le plancher des cibles est le 32 px du curseur, et il est écrit comme
+tel. Un seuil emprunté n'a pas le même statut qu'un seuil inventé, et
+confondre les deux est ce que le §2 interdit.
+
+---
+
 ## 7. Le déploiement se vérifie avant, pas après
 
 Ne rien empiler sur un `main` rouge. Le hook de démarrage l'annonce quand il
