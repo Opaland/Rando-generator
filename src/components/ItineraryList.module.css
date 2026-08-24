@@ -104,6 +104,23 @@
   background: var(--bleu-local);
 }
 
+.INCONNU {
+  background: var(--prune-inconnu);
+}
+
+/*
+  Les itinéraires persos ont leur propre liste (`CustomItineraries`) et
+  n'arrivent pas ici aujourd'hui : cette classe est une précaution, pas une
+  correction. Elle coûte trois lignes, et son absence coûterait un badge
+  perso peint en rouge de GR — parce que `styles[itin.network]` rend
+  `undefined` sans se plaindre, et que le fond par défaut est celui des GR.
+
+  Trouvé par `tests/unit/badgesDeReseau.test.ts` à son premier passage.
+*/
+.PERSO {
+  background: var(--vert-noir);
+}
+
 .rowMain {
   display: grid;
   gap: var(--espace-2);

@@ -231,6 +231,16 @@ export function About({ open, onClose }: { open: boolean; onClose: () => void })
             données ouvertes par des collectivités, et vos{' '}
             <strong>itinéraires personnels</strong> — importés ou tracés ici.
           </p>
+          <p>
+            Enfin, une partie des itinéraires d’OpenStreetMap{' '}
+            <strong>ne déclare aucun réseau</strong>. Sentiers les affiche à
+            part, sous le nom «&nbsp;réseau non déclaré&nbsp;», plutôt que de
+            les ranger d’office parmi les PR&nbsp;: ce peut être un circuit
+            balisé que personne n’a qualifié, comme un tracé qui n’a jamais
+            porté la moindre marque sur un arbre. La différence se voit sur
+            le terrain, et l’application n’est pas en mesure de la trancher à
+            votre place.
+          </p>
         </section>
 
         <section>

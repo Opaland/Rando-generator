@@ -482,6 +482,7 @@ function computeCompletion(
     PR: emptyStats(),
     LOCAL: emptyStats(),
     PERSO: emptyStats(),
+    INCONNU: emptyStats(),
   }
 
   for (const sample of samples) {

@@ -7,6 +7,7 @@ const NETWORK_COLORS: Record<Network, string> = {
   PR: 'var(--jaune-pr)',
   LOCAL: 'var(--bleu-local)',
   PERSO: 'var(--vert-noir)',
+  INCONNU: 'var(--prune-inconnu)',
 }
 
 /**

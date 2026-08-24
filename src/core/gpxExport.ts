@@ -30,9 +30,15 @@ const METROPOLE_ATTRIBUTION: GpxAttribution = {
  */
 export function gpxAttributionFor(network: Network): GpxAttribution | null {
   switch (network) {
+    // `INCONNU` est dans le même groupe que les trois réseaux déclarés, et
+    // ce n'est pas un oubli : ne pas savoir de quel réseau il s'agit ne
+    // change rien à la **provenance**. La géométrie vient d'OpenStreetMap,
+    // et l'exporter sans le dire serait une violation d'ODbL. L'attribution
+    // suit la source, jamais le classement.
     case 'GR':
     case 'GRP':
     case 'PR':
+    case 'INCONNU':
       return OSM_ATTRIBUTION
     case 'LOCAL':
       return METROPOLE_ATTRIBUTION

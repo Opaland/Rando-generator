@@ -486,7 +486,17 @@ export function ItineraryDetail() {
                 `${formatDetour(poi.detourMeters)} de détour`,
                 mentionEau(poi.details),
                 capacity && `${capacity} places`,
-                openingHours && `ouvert ${openingHours}`,
+                // « ouvert Mo-Sa 08:00-19:00 » affirmait l'état du monde à
+                // partir d'une déclaration : `opening_hours` est ce qu'un
+                // contributeur a saisi un jour, pas ce que la porte fait
+                // aujourd'hui. En montagne la fermeture saisonnière est la
+                // règle et n'y figure presque jamais. Se fier à ce mot, c'est
+                // arriver devant une supérette fermée avec un sac vide.
+                //
+                // « annoncé » remet la phrase à qui la tient (CLAUDE.md §4bis :
+                // une justification est une affirmation, et celle-ci était
+                // fausse dès qu'un horaire vieillissait).
+                openingHours && `annoncé ouvert ${openingHours}`,
                 elevation && `${elevation} m`,
                 operator,
                 phone,

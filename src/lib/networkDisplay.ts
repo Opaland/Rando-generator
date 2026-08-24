@@ -17,6 +17,37 @@ export const NETWORK_COLORS: Record<Network, string> = {
   // PR pour ne pas confondre deux sources différentes sur la carte.
   LOCAL: '#1d7a8c',
   PERSO: '#1e2b23',
+  /*
+    Réseau non déclaré (issue #284) : une prune sourde, choisie pour ne
+    ressembler à aucun balisage réel — aucune fédération française ne balise
+    dans ce registre.
+
+    C'est un seuil de **présentation** — il ne change rien à ce qui est
+    calculé — donc il se tranche au jugement, à condition d'écrire les pistes
+    envisagées et écartées (CLAUDE.md §2) :
+
+    - garder le jaune du PR : c'était le défaut lui-même, en plus discret ;
+    - un jaune désaturé : trop proche du PR sur un écran de téléphone au
+      soleil, et la distinction ne survivrait pas au premier reflet ;
+    - **un gris neutre** — l'idée évidente, et la seule qui ait été écartée
+      par la mesure plutôt que par le raisonnement. `#5f5a50` était écrit,
+      puis `tests/unit/terrainCouleurs.test.ts` l'a refusé : ΔE 12,8 du
+      « dur » et 16,5 de l'« autre » des bandes de terrain, pour un seuil de
+      20. Les gris de la carte étaient déjà pris ; l'incertitude ne pouvait
+      pas être grise sans se confondre avec un revêtement ;
+    - le même jaune en trait pointillé, l'incertitude dite par la forme
+      plutôt que par la couleur. C'est la meilleure réponse, et elle reste à
+      faire : elle demande un motif de tiret par réseau dans MapLibre, et la
+      légende aurait de toute façon besoin d'une couleur.
+
+    La valeur est mesurée, pas choisie à l'œil :
+
+      blanc sur #882a5a → 8,31:1   (WCAG 1.4.3 AA en demande 4,5)
+      #882a5a sur le papier → 7,78:1
+      ΔE le plus court contre **les vingt et une** couleurs déjà prises
+      (réseaux, terrain, POI, base) → 30,6, pour un seuil de 20
+  */
+  INCONNU: '#882a5a',
 }
 
 export const NETWORK_LABELS: Record<Network, string> = {
@@ -25,6 +56,7 @@ export const NETWORK_LABELS: Record<Network, string> = {
   PR: 'PR',
   LOCAL: 'Boucle locale',
   PERSO: 'Itinéraire perso',
+  INCONNU: 'Réseau non déclaré',
 }
 
 /** Texte court des badges (les libellés longs cassent la mise en page). */
@@ -34,6 +66,10 @@ export const NETWORK_BADGES: Record<Network, string> = {
   PR: 'PR',
   LOCAL: 'Boucle',
   PERSO: 'PERSO',
+  // « ? » plutôt que « NC » ou « Autre » : le point d'interrogation dit
+  // l'incertitude sans jargon et sans occuper la place d'un mot. « Autre »
+  // affirmerait qu'il y a un autre balisage, ce qu'on ne sait pas non plus.
+  INCONNU: '?',
 }
 
 /**
@@ -51,6 +87,8 @@ export const NETWORK_EXPLANATIONS: Record<Network, string> = {
   LOCAL:
     'Boucle communale publiée en open data par une collectivité (Métropole de Lyon, par exemple).',
   PERSO: 'Itinéraire que vous avez importé ou tracé vous-même.',
+  INCONNU:
+    'OpenStreetMap ne déclare aucun réseau pour cet itinéraire. Ce peut être un PR balisé que personne n’a qualifié, comme un tracé sans le moindre balisage sur le terrain : à vérifier avant de partir.',
 }
 
 /**

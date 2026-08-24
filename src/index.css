@@ -36,6 +36,20 @@
   /* Boucles locales open data (Métropole de Lyon…) : bleu-vert distinct du
      jaune PR pour ne pas confondre deux sources sur la carte. */
   --bleu-local: #1d7a8c;
+  /* Réseau non déclaré (issue #284) : ni un balisage, ni une couleur de
+     marque — l'aveu qu'OpenStreetMap ne dit pas de quel réseau il s'agit.
+
+     Une prune sourde, parce que les gris étaient déjà pris : le premier choix
+     était `#5f5a50`, refusé par `tests/unit/terrainCouleurs.test.ts` à ΔE
+     12,8 du « dur » des bandes de terrain, pour un seuil de 20. Aucune
+     fédération française ne balise en prune, ce qui est exactement ce
+     qu'on veut dire.
+
+     Mesuré :
+       blanc sur #882a5a → 8,31:1   (WCAG 1.4.3 AA en demande 4,5)
+       #882a5a sur le papier → 7,78:1
+       ΔE minimal contre les vingt et une couleurs déjà prises → 30,6 */
+  --prune-inconnu: #882a5a;
   --blanc-papier: #faf7f2;
   --vert-noir: #1e2b23;
   --gris-vert: #5a6b5d;

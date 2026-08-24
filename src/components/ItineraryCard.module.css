@@ -103,6 +103,10 @@
   background: var(--vert-noir);
 }
 
+.INCONNU {
+  background: var(--prune-inconnu);
+}
+
 .sub {
   margin: 0;
   font-size: var(--texte-secondaire);

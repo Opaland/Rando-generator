@@ -24,6 +24,9 @@ const NETWORK_LABELS: Record<Network, string> = {
   // Les itinéraires persos ont leur propre section : jamais affichés ici
   // (leur total reste à 0 dans le matching des réseaux OSM).
   PERSO: 'Mes itinéraires',
+  // Le tableau de bord compte des kilomètres, pas des promesses : au pluriel
+  // ici, parce qu'il en agrège plusieurs (issue #284).
+  INCONNU: 'Réseau non déclaré',
 }
 
 export function Dashboard() {

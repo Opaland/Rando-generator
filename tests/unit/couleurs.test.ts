@@ -24,6 +24,7 @@ const VARIABLES: Record<Network, string> = {
   PR: '--jaune-pr',
   LOCAL: '--bleu-local',
   PERSO: '--vert-noir',
+  INCONNU: '--prune-inconnu',
 }
 
 describe('couleurs de réseau', () => {
