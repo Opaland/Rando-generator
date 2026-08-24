@@ -1,4 +1,5 @@
 import { useAppStore } from '../store/appStore.ts'
+import { useDeborde } from '../lib/deborde.ts'
 import {
   displayName,
   formatAnciennete,
@@ -6,7 +7,7 @@ import {
   formatKm,
   formatPct,
 } from '../lib/format.ts'
-import { POI_LABELS, POI_OVERNIGHT, mentionEau } from '../lib/poiDisplay.ts'
+import { POI_COLORS, POI_LABELS, POI_OVERNIGHT, mentionEau } from '../lib/poiDisplay.ts'
 import { NETWORK_BADGES } from '../lib/networkDisplay.ts'
 import { elevationStats } from '../core/elevation.ts'
 import { itineraryCoords } from '../core/mapdata.ts'
@@ -44,6 +45,14 @@ import { bandesDeRevetement } from '../core/revetement.ts'
  * calculé à partir d'un modèle numérique de terrain).
  */
 export function ItineraryDetail() {
+  /*
+    Appelé ici, et non près de son usage : le composant rend `null` quand
+    aucun itinéraire n'est ouvert, et un crochet placé après ce retour ne
+    serait appelé qu'un rendu sur deux. React l'interdit, et le lint le dit —
+    mais la raison vaut d'être écrite : ce n'est pas une convention, c'est ce
+    qui garde l'ordre des crochets stable d'un rendu à l'autre.
+  */
+  const [poserLePanneau, deborde] = useDeborde()
   const detailItineraryId = useAppStore((s) => s.detailItineraryId)
   const itineraries = useAppStore((s) => s.itineraries)
   const customItineraries = useAppStore((s) => s.customItineraries)
@@ -133,9 +142,18 @@ export function ItineraryDetail() {
 
   return (
     <aside
+      ref={poserLePanneau}
       className={styles.panel}
       aria-label={`Détail de ${displayName(itin)}`}
       data-testid="itinerary-detail"
+      /* Mesuré, donc testable — et lu par le CSS pour ne rien afficher de
+         plus quand tout tient. */
+      data-deborde={deborde ? 'oui' : 'non'}
+      /* Une zone défilante doit être atteignable au clavier : sans focus,
+         les flèches ne font rien et le contenu caché le reste (WCAG 2.1.1).
+         Focalisable seulement quand il y a réellement à défiler — un arrêt
+         de tabulation qui ne mène nulle part est du bruit. */
+      tabIndex={deborde ? 0 : undefined}
     >
       {/*
         Le titre tient sa ligne, l'action passe en dessous.
@@ -482,6 +500,26 @@ export function ItineraryDetail() {
                       focusOn([poi.lon, poi.lat])
                     }}
                   >
+                    {/*
+                      La pastille de la liste est celle de la carte.
+
+                      Sans elle, le code couleur n'était lisible nulle part :
+                      douze teintes peintes par MapLibre, et aucune légende.
+                      Retrouver sur la carte le refuge qu'on vient de lire
+                      demandait de deviner. La couleur vient de la même
+                      constante que le marqueur, si bien que les deux ne
+                      peuvent pas diverger.
+
+                      `aria-hidden` : le libellé juste à côté dit déjà la
+                      catégorie. Une pastille annoncée en plus ne ferait que
+                      répéter, et une couleur ne se lit pas à voix haute.
+                    */}
+                    <span
+                      className={styles.poiPastille}
+                      style={{ background: POI_COLORS[poi.kind] }}
+                      aria-hidden="true"
+                      data-testid={`poi-pastille-${poi.kind}`}
+                    />
                     <span className={styles.poiKind}>{POI_LABELS[poi.kind]}</span>
                     <span className={styles.poiName}>
                       {poi.name ?? POI_LABELS[poi.kind]}

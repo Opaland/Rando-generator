@@ -11,6 +11,12 @@
             "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/porte-avant-commit.sh\"",
             "timeout": 180,
             "statusMessage": "Porte avant commit : lint, typecheck, tests…"
+          },
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/dist-a-jour.sh\"",
+            "timeout": 20,
+            "statusMessage": "dist/ est-il à jour ?"
           }
         ]
       }

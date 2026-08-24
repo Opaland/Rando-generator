@@ -86,7 +86,8 @@ export function useMapCamera(
       .querySelector('[data-testid="itinerary-detail"]')
       ?.getBoundingClientRect()
     // Ce que la fiche recouvre réellement du bas de la carte : la règle vit
-    // dans lib/mapPadding, où elle est vérifiée sur les deux dispositions.
+    // dans lib/mapPadding, où elle est vérifiée sur les deux dispositions —
+    // et où une piste écartée est écrite, pour qu'on ne la reprenne pas.
     const recouvre = margeBassePanneau(cadre, panneau)
     map.fitBounds(bounds, {
       padding: {

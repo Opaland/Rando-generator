@@ -14,6 +14,38 @@
   max-width: min(280px, calc(100% - 24px));
 }
 
+/*
+  Le bouton s'écarte quand la fiche est ouverte.
+
+  Mesuré le 24/08 sur 1 280 × 800 : « Ma position » était peint par-dessus la
+  fiche, effaçant une ligne de texte — selon le défilement, le bouton
+  « Emporter cette randonnée » ou la mention qui dit sur combien de kilomètres
+  les revêtements ont été mesurés.
+
+  Ce n'est pas un problème de plan : le bouton doit rester au-dessus de la
+  carte, et son palier le dit. C'est un problème de place — deux objets
+  ancrés au même coin. La fiche ne bouge pas ; c'est le bouton qui s'écarte,
+  parce qu'il est le plus petit et qu'il n'a rien à perdre en se déplaçant.
+
+  Sous le point de rupture, la fiche prend toute la largeur : il n'y a pas de
+  « à côté ». Le bouton remonte alors au-dessus d'elle — voir la règle
+  suivante.
+*/
+@media (min-width: 801px) {
+  :root[data-fiche='ouverte'] .wrapper {
+    right: calc(12px + var(--largeur-fiche) + 12px);
+  }
+}
+
+@media (max-width: 800px) {
+  :root[data-fiche='ouverte'] .wrapper {
+    bottom: calc(
+      12px + var(--hauteur-fiche) + var(--hauteur-poignee) +
+        var(--hauteur-onglets) + env(safe-area-inset-bottom, 0px)
+    );
+  }
+}
+
 .button,
 .buttonActive {
   display: inline-flex;
@@ -73,7 +105,7 @@
 
 /* Sur mobile, la fiche détail occupe le bas de l'écran : on remonte le
    bouton pour qu'il reste atteignable au pouce. */
-@media (max-width: 639px) {
+@media (max-width: 800px) {
   .wrapper {
     bottom: 8px;
     right: 8px;

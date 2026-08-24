@@ -79,12 +79,6 @@ describe('le point de rupture, en JS et en CSS', () => {
    * tous les deux à N : deux règles qui se croient complémentaires se
    * recouvrent sur un pixel. Le complément de `max-width: N` est
    * `min-width: N + 1`, jamais `min-width: N`.
-   *
-   * L'égalité stricte est voulue. Les paliers intermédiaires — trois
-   * `min-width: 640px` dans les fiches — chevauchent eux aussi le compact,
-   * et c'est leur travail : ils disent « à partir de 640 px, on peut se
-   * permettre ceci », y compris sur un téléphone large. Seule une borne
-   * posée *sur* le point de rupture prétend en être le complément.
    */
   it('ne pose aucune borne `min-width` sur le point de rupture lui-même', () => {
     const fautives: string[] = []
@@ -96,6 +90,48 @@ describe('le point de rupture, en JS et en CSS', () => {
       }
     }
     expect(fautives).toEqual([])
+  })
+})
+
+/**
+ * Aucune surface ne se croit sur grand écran avant que l'application n'y soit.
+ *
+ * Ce test remplace un commentaire qui disait le contraire, et qui avait
+ * cessé d'être vrai. Il tolérait les `min-width: 640px` des surcouches
+ * flottantes — fiche détail, carte-résumé, tiroir de tracé, bouton de
+ * position — au motif qu'un palier intermédiaire dit seulement « à partir de
+ * 640 px on peut se permettre ceci ».
+ *
+ * C'était faux, et la mesure l'a dit le 24/08. Ces quatre paliers ne
+ * décidaient pas d'un détail : ils décidaient de **l'ancrage**. Entre 640 et
+ * 800 px, les surcouches se posaient en petits panneaux flottants d'écran
+ * large, pendant que React servait encore la feuille glissante et la barre
+ * d'onglets. À 800 px pile, la poignée était peinte par-dessus la fiche
+ * détail — quatre points du quadrillage, `elementFromPoint` à l'appui.
+ *
+ * C'est la même famille que le constat U2 : deux seuils qui décident de la
+ * même chose et ne sont pas d'accord. La règle est donc mécanique et sans
+ * exception — **une média-requête `min-width` vaut au moins un pixel de plus
+ * que le point de rupture** — plutôt qu'une liste de cas tolérés, qui
+ * demanderait à quelqu'un de se souvenir pourquoi.
+ *
+ * Un palier au-dessus du point de rupture reste permis : `App.module.css`
+ * en a un à 801/1100 pour la colonne intermédiaire, et il ne contredit rien.
+ */
+describe('les paliers des surcouches', () => {
+  it('ne traitent jamais comme « large » une largeur que l’application dit compacte', () => {
+    const fautives: string[] = []
+    for (const [nom, css] of TOUTES) {
+      for (const borne of bornes(css)) {
+        if (borne.sens === 'min' && borne.valeur <= LARGEUR_COMPACTE_MAX) {
+          fautives.push(`${nom} : min-width ${String(borne.valeur)}px`)
+        }
+      }
+    }
+    expect(
+      fautives,
+      `paliers sous le point de rupture : ${fautives.join(', ')}`,
+    ).toEqual([])
   })
 })
 
