@@ -30,15 +30,6 @@ import { polylineLengthMeters } from '../core/sampling.ts'
 import { itineraryCoords } from '../core/mapdata.ts'
 import { parseBouclesGeoJSON } from '../core/boucles.ts'
 import {
-  buildRoutingGraph,
-  clefsAllerRetour,
-  clefsBouclees,
-  routeThrough,
-  snapToNetwork,
-  type RoutingGraph,
-} from '../core/routing.ts'
-import {
-  elevationStats,
   fetchElevationProfile,
   ElevationError,
   type ProfilePoint,
@@ -105,6 +96,12 @@ import {
   type SettingKey,
 } from '../db/database.ts'
 import { ecrireReglage } from '../db/reglages.ts'
+import {
+  TRACE_VIDE,
+  trancheTrace,
+  type ActionsTrace,
+  type EtatTrace,
+} from './trancheTrace.ts'
 import { computeMatching } from './matchingClient.ts'
 
 /**
@@ -180,7 +177,8 @@ export interface DoublonEnAttente {
   track: Track
 }
 
-export interface AppState extends EtatSortie, ActionsSortie {
+export interface AppState
+  extends EtatSortie, ActionsSortie, EtatTrace, ActionsTrace {
   // Persistance
   db: SentiersDb | null
   dbWarning: string | null
@@ -336,19 +334,6 @@ export interface AppState extends EtatSortie, ActionsSortie {
   /** Cadre à cadrer sur la carte (étape d'un long itinéraire) ; consommé une fois. */
   focusBounds: [LonLat, LonLat] | null
 
-  // Tracé d'itinéraire accroché aux sentiers affichés
-  drawMode: boolean
-  /** Clés de nœuds du graphe pour chaque étape posée. */
-  drawWaypointKeys: string[]
-  /** Coordonnées des étapes, pour les afficher sur la carte. */
-  drawWaypoints: LonLat[]
-  /** Tracé calculé qui suit les chemins entre les étapes. */
-  drawPath: LonLat[]
-  drawError: string | null
-  /** D+ estimé du tracé en cours, null tant qu'on ne l'a pas demandé. */
-  drawGainMeters: number | null
-  drawGainLoading: boolean
-
   // Position de l'utilisateur (API du navigateur, jamais transmise)
   /**
    * La sortie en cours d'enregistrement (issue #152).
@@ -433,16 +418,6 @@ export interface AppState extends EtatSortie, ActionsSortie {
   clearFocusTarget: () => void
   focusOnBounds: (bounds: [LonLat, LonLat]) => void
   clearFocusBounds: () => void
-  toggleDrawMode: () => void
-  addDrawPoint: (point: LonLat) => void
-  undoDrawPoint: () => void
-  /** Complète le tracé par le retour, en suivant le même chemin. */
-  allerRetourTrace: () => void
-  /** Referme le tracé sur son point de départ, par les chemins. */
-  bouclerTrace: () => void
-  /** Estime le dénivelé du tracé en cours (une seule requête, à la demande). */
-  estimerDeniveleTrace: () => Promise<void>
-  saveDrawnItinerary: (name: string) => Promise<void>
   toggleGeolocation: () => void
 }
 
@@ -597,57 +572,6 @@ export const useAppStore = create<AppState>()((set, get) => {
     },
     veille,
   })
-
-  // Graphe de routage mémoïsé sur l'identité des tableaux d'itinéraires :
-  // le reconstruire à chaque clic de tracé serait inutilement coûteux sur
-  // une grosse zone (des dizaines de milliers de sommets).
-  let routingCache: {
-    itineraries: Itinerary[]
-    customItineraries: Itinerary[]
-    graph: RoutingGraph
-  } | null = null
-
-  function routingGraph(): RoutingGraph {
-    const { itineraries, customItineraries } = get()
-    if (
-      routingCache &&
-      routingCache.itineraries === itineraries &&
-      routingCache.customItineraries === customItineraries
-    ) {
-      return routingCache.graph
-    }
-    const graph = buildRoutingGraph([...itineraries, ...customItineraries])
-    routingCache = { itineraries, customItineraries, graph }
-    return graph
-  }
-
-  /**
-   * Applique une nouvelle suite d'étapes au tracé en cours (aller-retour,
-   * boucle). Si le routage échoue, on ne garde rien de la tentative : un
-   * tracé à moitié modifié serait pire que pas de bouton du tout.
-   */
-  function appliquerClefs(keys: string[], quoi: 'aller-retour' | 'boucle') {
-    const actuelles = get().drawWaypointKeys
-    if (keys === actuelles || keys.length === actuelles.length) return
-    const graph = routingGraph()
-    const path = routeThrough(graph, keys)
-    if (!path) {
-      set({
-        drawError:
-          quoi === 'boucle'
-            ? 'Aucun chemin ne ramène au point de départ dans les tracés affichés.'
-            : 'Impossible de refaire le trajet en sens inverse dans les tracés affichés.',
-      })
-      return
-    }
-    set({
-      drawWaypointKeys: keys,
-      drawWaypoints: keys.map((k) => graph.nodes.get(k) as LonLat),
-      drawPath: path,
-      drawError: null,
-      drawGainMeters: null,
-    })
-  }
 
   /** Prochain identifiant libre pour un itinéraire perso (ids négatifs). */
   function nextCustomId(): number {
@@ -1028,13 +952,7 @@ export const useAppStore = create<AppState>()((set, get) => {
     view3D: false,
     focusTarget: null,
     focusBounds: null,
-    drawMode: false,
-    drawWaypointKeys: [],
-    drawWaypoints: [],
-    drawPath: [],
-    drawError: null,
-    drawGainMeters: null,
-    drawGainLoading: false,
+    ...TRACE_VIDE,
     userPosition: null,
     geoWatching: false,
     geoError: null,
@@ -2077,132 +1995,29 @@ export const useAppStore = create<AppState>()((set, get) => {
       set({ focusBounds: null })
     },
 
-    toggleDrawMode() {
-      const active = !get().drawMode
-      // La fiche détail occupe la même zone d'écran que le panneau de tracé.
-      if (active && get().detailItineraryId !== null) {
+    ...trancheTrace({
+      set,
+      etatTrace: () => get(),
+      itinerairesDuGraphe: () => ({
+        balises: get().itineraries,
+        perso: get().customItineraries,
+      }),
+      prochainIdentifiantPerso: nextCustomId,
+      ficheOuverte: () => get().detailItineraryId !== null,
+      fermerLaFiche: () => {
         get().closeItineraryDetail()
-      }
-      set({
-        drawMode: active,
-        drawWaypointKeys: [],
-        drawWaypoints: [],
-        drawPath: [],
-        drawError: null,
-        drawGainMeters: null,
-        drawGainLoading: false,
-      })
-    },
-
-    addDrawPoint(point) {
-      if (!get().drawMode) return
-      const graph = routingGraph()
-      const key = snapToNetwork(graph, point)
-      if (!key) {
-        set({
-          drawError:
-            'Aucun sentier à proximité de ce point : cliquez plus près d’un tracé affiché.',
-        })
-        return
-      }
-      const keys = [...get().drawWaypointKeys, key]
-      const path = routeThrough(graph, keys)
-      if (!path) {
-        set({
-          drawError:
-            'Impossible de relier ce point au précédent en suivant les chemins : les deux tronçons ne se rejoignent pas dans les données affichées.',
-        })
-        return
-      }
-      set({
-        drawWaypointKeys: keys,
-        drawWaypoints: keys.map((k) => graph.nodes.get(k) as LonLat),
-        drawPath: path,
-        drawError: null,
-        // Le tracé a changé : le dénivelé affiché ne le décrit plus.
-        drawGainMeters: null,
-      })
-    },
-
-    allerRetourTrace() {
-      appliquerClefs(clefsAllerRetour(get().drawWaypointKeys), 'aller-retour')
-    },
-
-    bouclerTrace() {
-      appliquerClefs(clefsBouclees(get().drawWaypointKeys), 'boucle')
-    },
-
-    async estimerDeniveleTrace() {
-      const { drawPath } = get()
-      if (drawPath.length < 2 || get().drawGainLoading) return
-      set({ drawGainLoading: true, drawError: null })
-      try {
-        // Une seule requête, à la fin : une par clic ferait vingt appels
-        // pour un chiffre qui n'intéresse qu'au moment d'enregistrer.
-        const profile = await fetchElevationProfile(drawPath)
-        const stats = elevationStats(profile.elevations)
-        set({
-          drawGainMeters: stats ? Math.round(stats.gain) : null,
-          // Un service qui répond sans une seule altitude n'est pas une
-          // panne, mais ce n'est pas un chiffre non plus : le dire.
-          ...(stats
-            ? {}
-            : {
-                drawError:
-                  'Le relief n’est pas disponible sur ce tracé : il reste enregistrable sans son dénivelé.',
-              }),
-        })
-      } catch (error) {
-        set({
-          drawGainMeters: null,
-          drawError:
-            error instanceof ElevationError
-              ? error.message
-              : 'Le service altimétrique n’a pas répondu : le tracé reste enregistrable sans son dénivelé.',
-        })
-      } finally {
-        set({ drawGainLoading: false })
-      }
-    },
-
-    undoDrawPoint() {
-      const keys = get().drawWaypointKeys.slice(0, -1)
-      const graph = routingGraph()
-      set({
-        drawWaypointKeys: keys,
-        drawWaypoints: keys.map((k) => graph.nodes.get(k) as LonLat),
-        drawPath: routeThrough(graph, keys) ?? [],
-        drawError: null,
-        drawGainMeters: null,
-      })
-    },
-
-    async saveDrawnItinerary(name) {
-      const { drawPath, db } = get()
-      if (drawPath.length < 2) return
-      const id = nextCustomId()
-      const itinerary: Itinerary = {
-        osmRelationId: id,
-        ref: null,
-        name: name.trim() || 'Itinéraire tracé',
-        network: 'PERSO',
-        ways: [{ osmWayId: id, coords: drawPath }],
-        totalMeters: polylineLengthMeters(drawPath),
-        fetchedAt: new Date().toISOString(),
-      }
-      if (db) await db.saveCustomItinerary(itinerary)
-      set((state) => ({
-        customItineraries: [...state.customItineraries, itinerary],
-        drawMode: false,
-        drawWaypointKeys: [],
-        drawWaypoints: [],
-        drawPath: [],
-        drawError: null,
-        drawGainMeters: null,
-        selectedItineraryId: id,
-      }))
-      await recompute()
-    },
+      },
+      async enregistrerLeTrace(itineraire) {
+        const { db } = get()
+        if (db) await db.saveCustomItinerary(itineraire)
+        set((state) => ({
+          customItineraries: [...state.customItineraries, itineraire],
+          ...TRACE_VIDE,
+          selectedItineraryId: itineraire.osmRelationId,
+        }))
+        await recompute()
+      },
+    }),
 
     toggleGeolocation() {
       if (get().geoWatching) {
