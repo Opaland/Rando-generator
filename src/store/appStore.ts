@@ -27,15 +27,7 @@ import { GeocodeError, chercherLieux, type Lieu } from '../core/geocode.ts'
 import { resumeObjectif, type ResumeObjectif } from '../core/objectifs.ts'
 import type { ParcoursDeclare } from '../core/declaratif.ts'
 import { polylineLengthMeters } from '../core/sampling.ts'
-import { itineraryCoords } from '../core/mapdata.ts'
 import { parseBouclesGeoJSON } from '../core/boucles.ts'
-import {
-  fetchElevationProfile,
-  ElevationError,
-  type ProfilePoint,
-} from '../core/elevation.ts'
-import { fetchPoisOuEchec } from '../core/poi.ts'
-import { choisirPois, type SourcePois } from '../core/poisEmportes.ts'
 import { outingHighlights, type OutingHighlight } from '../core/outing.ts'
 import { FitError } from '../core/fit.ts'
 import {
@@ -78,14 +70,7 @@ import {
   parseTraceFile,
 } from './lecture.ts'
 import { GEO_OPTIONS, geolocationErrorMessage } from '../core/geolocation.ts'
-import type {
-  ElevationProfile,
-  Itinerary,
-  LonLat,
-  PointOfInterest,
-  Track,
-  UserPosition,
-} from '../core/types.ts'
+import type { Itinerary, LonLat, Track, UserPosition } from '../core/types.ts'
 import { DEFAULT_TOLERANCE_METERS, STEP_METERS } from '../core/types.ts'
 import {
   openSentiersDb,
@@ -102,6 +87,12 @@ import {
   type ActionsTrace,
   type EtatTrace,
 } from './trancheTrace.ts'
+import {
+  FICHE_FERMEE,
+  trancheFiche,
+  type ActionsFiche,
+  type EtatFiche,
+} from './trancheFiche.ts'
 import { computeMatching } from './matchingClient.ts'
 
 /**
@@ -178,7 +169,13 @@ export interface DoublonEnAttente {
 }
 
 export interface AppState
-  extends EtatSortie, ActionsSortie, EtatTrace, ActionsTrace {
+  extends
+    EtatSortie,
+    ActionsSortie,
+    EtatTrace,
+    ActionsTrace,
+    EtatFiche,
+    ActionsFiche {
   // Persistance
   db: SentiersDb | null
   dbWarning: string | null
@@ -309,31 +306,6 @@ export interface AppState
     loading: boolean
   } | null
 
-  // Fiche détail (profil altimétrique + points d'intérêt + vue 3D)
-  detailItineraryId: number | null
-  elevationProfile: ElevationProfile | null
-  elevationError: string | null
-  elevationLoading: boolean
-  /** Point survolé sur le profil altimétrique, à marquer sur la carte. */
-  elevationHover: ProfilePoint | null
-  pois: PointOfInterest[]
-  poisLoading: boolean
-  /**
-   * D'où viennent les points affichés (issue #153).
-   *
-   * « emporte » n'est pas un détail d'implémentation : un point d'eau
-   * emporté il y a trois mois peut avoir été supprimé ou tari, et la fiche
-   * doit le dire. Une tuile périmée, elle, reste juste.
-   */
-  poisSource: SourcePois
-  /** Date de l'emport, quand les points en viennent. */
-  poisRecuperesLe: string | null
-  view3D: boolean
-  /** Coordonnée à centrer sur la carte (POI cliqué) ; consommée une fois par MapView. */
-  focusTarget: LonLat | null
-  /** Cadre à cadrer sur la carte (étape d'un long itinéraire) ; consommé une fois. */
-  focusBounds: [LonLat, LonLat] | null
-
   // Position de l'utilisateur (API du navigateur, jamais transmise)
   /**
    * La sortie en cours d'enregistrement (issue #152).
@@ -381,7 +353,6 @@ export interface AppState
   setTolerance: (value: number) => Promise<void>
   setCompletionPct: (value: number) => Promise<void>
   selectItinerary: (id: number | null) => void
-  setElevationHover: (point: ProfilePoint | null) => void
   toggleOutingDetail: (trackId: string) => Promise<void>
   dismissCelebration: () => void
   clearImportErrors: () => void
@@ -411,13 +382,6 @@ export interface AppState
   setGrosTexte: (actif: boolean) => Promise<void>
   setGuideFerme: (ferme: boolean) => Promise<void>
   setPanneauReplie: (replie: boolean) => Promise<void>
-  openItineraryDetail: (id: number) => void
-  closeItineraryDetail: () => void
-  toggleView3D: () => void
-  focusOn: (coords: LonLat) => void
-  clearFocusTarget: () => void
-  focusOnBounds: (bounds: [LonLat, LonLat]) => void
-  clearFocusBounds: () => void
   toggleGeolocation: () => void
 }
 
@@ -429,7 +393,6 @@ let outingSequence = 0
  * vient simplement de charger.
  */
 let pctsPrecedents: Map<number, number> | null = null
-let detailSequence = 0
 /**
  * Relit la liste des objectifs épinglés. Elle est stockée en JSON parce que
  * le magasin de réglages ne connaît que des nombres et des chaînes ; un
@@ -936,20 +899,11 @@ export const useAppStore = create<AppState>()((set, get) => {
     customMatching: null,
     matchingBusy: false,
     selectedItineraryId: null,
-    detailItineraryId: null,
     importProgress: null,
     zoneRestoredAtStartup: false,
     celebration: null,
     outingDetail: null,
-    elevationProfile: null,
-    elevationHover: null,
-    elevationError: null,
-    elevationLoading: false,
-    pois: [],
-    poisLoading: false,
-    poisSource: 'aucune',
-    poisRecuperesLe: null,
-    view3D: false,
+    ...FICHE_FERMEE,
     focusTarget: null,
     focusBounds: null,
     ...TRACE_VIDE,
@@ -1683,24 +1637,9 @@ export const useAppStore = create<AppState>()((set, get) => {
         // Changer la sélection depuis la liste ferme une fiche détail
         // ouverte pour un AUTRE itinéraire (elle n'a plus de sujet cohérent).
         ...(state.detailItineraryId !== null && state.detailItineraryId !== id
-          ? {
-              detailItineraryId: null,
-              elevationProfile: null,
-              elevationHover: null,
-              elevationError: null,
-              elevationLoading: false,
-              pois: [],
-              poisLoading: false,
-              poisSource: 'aucune',
-              poisRecuperesLe: null,
-              view3D: false,
-            }
+          ? FICHE_FERMEE
           : {}),
       }))
-    },
-
-    setElevationHover(point) {
-      set({ elevationHover: point })
     },
 
     /**
@@ -1893,107 +1832,21 @@ export const useAppStore = create<AppState>()((set, get) => {
       set({ importDoublons: [] })
     },
 
-    openItineraryDetail(id) {
-      const sequence = ++detailSequence
-      set({
-        detailItineraryId: id,
-        selectedItineraryId: id,
-        view3D: false,
-        elevationProfile: null,
-        elevationHover: null,
-        elevationError: null,
-        elevationLoading: true,
-        pois: [],
-        poisLoading: true,
-        poisSource: 'aucune',
-        poisRecuperesLe: null,
-      })
-
-      const { itineraries, customItineraries } = get()
-      const itinerary =
-        itineraries.find((i) => i.osmRelationId === id) ??
-        customItineraries.find((i) => i.osmRelationId === id)
-      const coords = itinerary ? itineraryCoords(itinerary) : []
-      const applies = () =>
-        sequence === detailSequence && get().detailItineraryId === id
-
-      if (coords.length < 2) {
-        set({ elevationLoading: false, poisLoading: false })
-        return
-      }
-
-      void fetchElevationProfile(coords)
-        .then((profile) => {
-          if (applies())
-            set({ elevationProfile: profile, elevationLoading: false })
-        })
-        .catch((error: unknown) => {
-          if (!applies()) return
-          set({
-            elevationLoading: false,
-            elevationError:
-              error instanceof ElevationError
-                ? error.message
-                : 'Profil altimétrique indisponible.',
-          })
-        })
-
-      /*
-        Le réseau et la réserve sont demandés ensemble, et `choisirPois`
-        tranche. Les demander l'un après l'autre ferait attendre la réserve
-        — qui est instantanée — derrière un Overpass qui met dix secondes à
-        ne pas répondre, c'est-à-dire précisément dans le cas où elle sert.
-      */
-      void Promise.all([
-        fetchPoisOuEchec(coords),
-        baseOuverte().then((base) => base?.lirePoisEmportes(id) ?? null),
-      ]).then(([reseau, emportes]) => {
-        if (!applies()) return
-        const resultat = choisirPois(reseau, emportes ?? null)
-        set({
-          pois: resultat.pois,
-          poisSource: resultat.source,
-          poisRecuperesLe: resultat.recuperesLe,
-          poisLoading: false,
-        })
-      })
-    },
-
-    closeItineraryDetail() {
-      detailSequence += 1
-      set({
-        detailItineraryId: null,
-        elevationProfile: null,
-        elevationHover: null,
-        elevationError: null,
-        elevationLoading: false,
-        pois: [],
-        poisLoading: false,
-        poisSource: 'aucune',
-        poisRecuperesLe: null,
-        view3D: false,
-      })
-    },
-
-    toggleView3D() {
-      set((state) => ({ view3D: !state.view3D }))
-    },
-
-    focusOn(coords) {
-      set({ focusTarget: coords })
-    },
-
-    clearFocusTarget() {
-      set({ focusTarget: null })
-    },
-
-    focusOnBounds(bounds) {
-      set({ focusBounds: bounds })
-    },
-
-    clearFocusBounds() {
-      set({ focusBounds: null })
-    },
+    ...trancheFiche({
+      set,
+      etatFiche: () => get(),
+      itineraireParId: (id) => {
+        const { itineraries, customItineraries } = get()
+        return (
+          itineraries.find((i) => i.osmRelationId === id) ??
+          customItineraries.find((i) => i.osmRelationId === id)
+        )
+      },
+      poisEmportes: async (id) => {
+        const base = await baseOuverte()
+        return (await base?.lirePoisEmportes(id)) ?? null
+      },
+    }),
 
     ...trancheTrace({
       set,
