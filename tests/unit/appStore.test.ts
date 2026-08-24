@@ -327,6 +327,31 @@ describe('loadZone', () => {
     expect(etat.matching?.global.pct).toBe(0)
   })
 
+  /**
+   * Overpass interrompu en cours de route rend ce qu'il avait déjà trouvé,
+   * accompagné d'un `remark`. Rien à l'écran ne distingue ce morceau de zone
+   * d'une zone entière — et la complétion calculée dessus est surestimée,
+   * puisque le dénominateur manque des itinéraires jamais rendus.
+   */
+  it('signale une zone rendue en partie par Overpass', async () => {
+    fetchMock.mockImplementation((url: string) =>
+      Promise.resolve(
+        url.includes('interpreter')
+          ? reponseOverpass({ ...pilat, remark: 'Please note: ...' })
+          : new Response('{}', { status: 200 }),
+      ),
+    )
+    await useAppStore.getState().init()
+    await useAppStore.getState().loadZone('pilat')
+    const etat = useAppStore.getState()
+    // Les données sont gardées : mieux vaut une zone incomplète que rien.
+    expect(etat.itineraries).toHaveLength(3)
+    expect(
+      etat.zoneError,
+      'une zone tronquée passe pour complète, et gonfle les pourcentages',
+    ).toMatch(/en partie|surestim/i)
+  })
+
   it('réutilise le cache au second chargement', async () => {
     await useAppStore.getState().init()
     await useAppStore.getState().loadZone('pilat')

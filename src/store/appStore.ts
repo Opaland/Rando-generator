@@ -730,6 +730,15 @@ export const useAppStore = create<AppState>()((set, get) => {
             zoneError:
               'Aucun itinéraire balisé trouvé dans cette zone sur OpenStreetMap. Réessayez avec « Actualiser les tracés », ou choisissez une autre zone.',
           })
+        } else if (data.remark !== undefined) {
+          // Overpass a rendu des données **et** un motif : il a interrompu la
+          // requête en cours de route. Ce qui est à l'écran est un morceau de
+          // la zone, et rien ne le distingue d'une zone complète — sauf de le
+          // dire. Une complétion calculée là-dessus serait fausse par excès.
+          set({
+            zoneError:
+              'Les serveurs OpenStreetMap ont interrompu la requête : cette zone n’est affichée qu’en partie. Vos pourcentages sont donc surestimés. Essayez un secteur plus petit pour l’avoir en entier.',
+          })
         }
         await recompute()
       } catch (error) {

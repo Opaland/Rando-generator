@@ -241,6 +241,11 @@ interface OverpassElement {
 
 export interface OverpassResponse {
   elements: OverpassElement[]
+  /**
+   * Le motif rendu par le serveur quand la requête n'a pas abouti — ou pas
+   * entièrement. Présent avec des données, il annonce un résultat partiel.
+   */
+  remark?: string
 }
 
 function isOverpassResponse(data: unknown): data is OverpassResponse {
@@ -249,6 +254,35 @@ function isOverpassResponse(data: unknown): data is OverpassResponse {
     data !== null &&
     Array.isArray((data as { elements?: unknown }).elements)
   )
+}
+
+/**
+ * Overpass ne signale pas ses échecs par un code HTTP.
+ *
+ * Une requête qui dépasse son délai ou sa mémoire répond **200**, avec un
+ * corps JSON bien formé dont `elements` est un tableau vide et dont `remark`
+ * porte le motif — « runtime error: Query timed out… », « …run out of
+ * memory… ». Rien dans la forme ne distingue cette réponse d'une zone
+ * réellement sans sentier.
+ *
+ * Le code ne lisait pas `remark`, et la conséquence était pire qu'une erreur :
+ * l'application annonçait « Aucun itinéraire balisé trouvé dans cette zone sur
+ * OpenStreetMap » pour un département qui en compte des milliers. Un miroir
+ * en échec coupait aussi la bascule vers le second, puisqu'il passait pour
+ * un succès.
+ *
+ * La règle ne devine rien du texte du motif — il est en anglais, sa forme
+ * n'est pas contractuelle, et chercher « error » dedans serait inventer un
+ * seuil (CLAUDE.md §2). Elle s'appuie sur ce que le serveur a rendu :
+ *
+ * - `remark` **et aucune donnée** : la requête n'a rien produit et le serveur
+ *   dit pourquoi. C'est un échec de miroir, on essaie le suivant ;
+ * - `remark` **avec des données** : un résultat partiel. On le garde — mieux
+ *   vaut une zone incomplète que pas de zone — et le motif reste attaché à
+ *   la réponse pour que l'appelant puisse le dire.
+ */
+function estUnEchecDeserveur(data: OverpassResponse): boolean {
+  return data.remark !== undefined && data.elements.length === 0
 }
 
 /**
@@ -407,6 +441,8 @@ export async function fetchOverpass(
     options.fetchFn ?? ((url, init) => fetch(url, init))
   const mirrors = options.mirrors ?? OVERPASS_MIRRORS
   const timeoutMs = options.timeoutMs ?? OVERPASS_TIMEOUT_MS
+  /** Le motif du dernier miroir ayant répondu qu'il n'y arrivait pas. */
+  let dernierMotif: string | undefined
 
   for (const [mirrorIndex, mirror] of mirrors.entries()) {
     options.onAttempt?.(mirrorIndex, mirrors.length)
@@ -427,10 +463,26 @@ export async function fetchOverpass(
       })
       if (!response.ok) continue
       const data: unknown = await lireCorps(response, options.onProgress)
-      if (isOverpassResponse(data)) return data
+      if (!isOverpassResponse(data)) continue
+      if (estUnEchecDeserveur(data)) {
+        dernierMotif = data.remark
+        continue
+      }
+      return data
     } catch {
       // Miroir injoignable ou réponse illisible : on tente le suivant.
     }
+  }
+
+  // Un serveur qui a répondu, mais en disant qu'il n'y arrivait pas, n'est pas
+  // un serveur injoignable : le conseil « réessayez dans quelques minutes »
+  // serait faux — une zone trop vaste le restera à la tentative suivante.
+  if (dernierMotif !== undefined) {
+    throw new OverpassError(
+      'Cette zone est trop vaste pour les serveurs OpenStreetMap : la requête ' +
+        'a été interrompue avant d’aboutir. Essayez un secteur plus petit — ' +
+        'une recherche autour d’une ville, ou un itinéraire par son nom.',
+    )
   }
 
   throw new OverpassError(
