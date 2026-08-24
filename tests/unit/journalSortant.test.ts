@@ -56,10 +56,22 @@ describe('classerSortie', () => {
   it('range les fichiers du site à part', () => {
     // Ce ne sont pas des tiers : c'est l'application qui se charge
     // elle-même. Les mêler aux services fausserait le chiffre montré.
-    expect(classerSortie('/Rando-generator/boucles.json').destination).toBe('site')
-    expect(classerSortie('https://opaland.github.io/Rando-generator/app.js').destination).toBe(
-      'site',
-    )
+    //
+    // L'origine est passée en argument depuis le 24/08 : elle valait
+    // `opaland.github.io` en dur, ce qui aurait fait dénoncer ses propres
+    // fichiers à l'application dès qu'elle serait servie d'ailleurs. Ce test
+    // dit maintenant la bonne chose — « ce qui vient de chez moi est à
+    // moi » — au lieu de « ce qui vient de GitHub Pages est à moi ».
+    const origine = 'https://opaland.github.io'
+    expect(
+      classerSortie('/Rando-generator/boucles.json', origine).destination,
+    ).toBe('site')
+    expect(
+      classerSortie(
+        'https://opaland.github.io/Rando-generator/app.js',
+        origine,
+      ).destination,
+    ).toBe('site')
   })
 
   it('avoue une destination qu’il ne sait pas classer', () => {
@@ -152,5 +164,72 @@ describe('noterSortie', () => {
     const journal: never[] = []
     noterSortie(journal, 'https://overpass-api.de/api/interpreter')
     expect(journal).toHaveLength(0)
+  })
+})
+
+/**
+ * L'origine n'est plus une adresse en dur (24/08 — « on va mettre
+ * l'application sur un serveur »).
+ *
+ * `classerSortie` comparait l'hôte à `opaland.github.io`, écrit deux fois
+ * dans le module : une fois comme base de résolution des URL relatives, une
+ * fois comme test d'appartenance. Servie depuis n'importe quel autre serveur,
+ * l'application aurait classé **ses propres fichiers** en « destination
+ * inconnue ».
+ *
+ * Ce n'est pas un détail d'affichage. Ce compteur est le seul endroit où la
+ * promesse de l'en-tête est *montrée* plutôt qu'affirmée (issue #178), et il
+ * aurait dénoncé l'origine qui le sert. Un compteur de vie privée qui crie au
+ * loup sur lui-même n'est pas seulement faux : il rend inaudible le jour où
+ * une vraie fuite apparaît.
+ */
+describe('l’origine qui sert l’application', () => {
+  it('reconnaît ses propres fichiers, quel que soit le serveur', () => {
+    for (const origine of [
+      'https://opaland.github.io',
+      'https://sentiers.example.org',
+      'http://192.168.1.20:8080',
+      'http://localhost:4173',
+    ]) {
+      expect(
+        classerSortie(`${origine}/assets/index-abc123.js`, origine).destination,
+      ).toBe('site')
+    }
+  })
+
+  it('résout les chemins relatifs contre l’origine qui sert', () => {
+    expect(
+      classerSortie('/data/boucles.json', 'https://sentiers.example.org')
+        .destination,
+    ).toBe('site')
+    expect(
+      classerSortie('./sw.js', 'https://sentiers.example.org').destination,
+    ).toBe('site')
+  })
+
+  /**
+   * Le point qui donne sa valeur au compteur : une origine **voisine** n'est
+   * pas la sienne. Un sous-domaine qui se mettrait à recevoir des requêtes
+   * doit être dit, pas absorbé.
+   */
+  it('ne prend pas un hôte voisin pour le sien', () => {
+    expect(
+      classerSortie(
+        'https://mesure.sentiers.example.org/collect',
+        'https://sentiers.example.org',
+      ).destination,
+    ).toBe('inconnue')
+  })
+
+  /**
+   * Sans origine fournie — dans un test, un worker, un rendu côté serveur —
+   * la fonction ne doit pas se taire ni inventer : elle continue de classer
+   * les tiers correctement, et c'est tout ce qu'on lui demande alors.
+   */
+  it('reste utile quand personne ne lui dit d’où elle est servie', () => {
+    expect(
+      classerSortie('https://overpass-api.de/api/interpreter').destination,
+    ).toBe('sentiers')
+    expect(classerSortie('/assets/app.js').destination).toBe('site')
   })
 })

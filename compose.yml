@@ -1,0 +1,61 @@
+# Sentiers, en un fichier.
+#
+#   docker compose up -d --build
+#
+# Il n'y a rien d'autre : ni base de données, ni file d'attente, ni cache
+# partagé, ni variable d'environnement contenant un secret. L'application
+# est un tas de fichiers statiques, et la seule chose que le serveur ajoute
+# est la capacité de poser des en-têtes — ce que GitHub Pages ne permet pas,
+# et ce qui transforme la promesse de vie privée en règle appliquée par le
+# navigateur.
+#
+# Ce fichier est délibérément sans proxy inverse ni certificat. Les mettre
+# ici obligerait à décider du nom de domaine, de l'émetteur du certificat et
+# du pare-feu à la place de qui déploie — trois choix qui ne se devinent pas.
+# `docs/DEPLOIEMENT.md` donne la marche à suivre pour Caddy et pour Traefik,
+# et dit ce qu'il faut vérifier après.
+
+services:
+  sentiers:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: sentiers:latest
+    container_name: sentiers
+    restart: unless-stopped
+    # Publié sur la boucle locale seulement : c'est le proxy inverse qui
+    # expose au monde, avec son certificat. Publier sur 0.0.0.0 servirait
+    # l'application en clair sur toutes les interfaces, et le HSTS posé par
+    # le proxy n'y pourrait rien.
+    ports:
+      - '127.0.0.1:8080:8080'
+    # Rien à écrire : le conteneur ne produit aucun fichier, et un système de
+    # fichiers en lecture seule retire au passage tout ce qu'un exploit
+    # pourrait vouloir y déposer. `/var/cache/nginx` et `/var/run` sont les
+    # deux seuls endroits où nginx écrit vraiment.
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx:uid=101,gid=101
+      - /var/run:uid=101,gid=101
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    # `NET_BIND_SERVICE` n'est pas nécessaire : nginx écoute sur 8080, un
+    # port non privilégié, et tourne sous l'utilisateur `nginx`.
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--spider', 'http://127.0.0.1:8080/sante']
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    logging:
+      # Les journaux d'accès d'un site public grossissent vite, et ils
+      # contiennent des adresses IP — c'est-à-dire une donnée personnelle,
+      # dans une application dont l'argument est de n'en collecter aucune.
+      # Bornés ici ; `docs/DEPLOIEMENT.md` explique comment les couper tout à
+      # fait, ce qui est le réglage cohérent avec le produit.
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
