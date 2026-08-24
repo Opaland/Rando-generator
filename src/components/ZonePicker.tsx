@@ -1,5 +1,9 @@
-import { useEffect, useState, type FormEvent } from 'react'
-import { FEATURED_ROUTES, ZONES } from '../core/overpass.ts'
+import { Fragment, useEffect, useState, type FormEvent } from 'react'
+import {
+  FEATURED_ROUTES,
+  ZONES,
+  type ZoneGroup,
+} from '../core/overpass.ts'
 import { formatOctets } from '../lib/format.ts'
 import { useAppStore } from '../store/appStore.ts'
 import styles from './ZonePicker.module.css'
@@ -11,6 +15,22 @@ const STAGE_TEXT: Record<'requesting' | 'retrying' | 'processing', string> = {
     'Premier serveur injoignable, nouvelle tentative sur un second serveur…',
   processing: 'Réponse reçue, traitement des tracés…',
 }
+
+/**
+ * Les groupes de zones, dans l'ordre où ils s'affichent.
+ *
+ * Deux blocs identiques étaient copiés-collés — le même `<p>`, le même
+ * `<div role="group">`, le même bouton, à un filtre près. Ajouter le massif
+ * vosgien (#286) en aurait fait un troisième, et la troisième copie est
+ * toujours celle qui diverge (CLAUDE.md §4). L'identifiant du groupe sert
+ * aussi d'ancre `aria-labelledby`, ce qui garantit qu'un groupe ajouté
+ * ici arrive nommé pour un lecteur d'écran, et pas seulement peint.
+ */
+const GROUPES: { id: ZoneGroup; titre: string }[] = [
+  { id: 'proche', titre: 'Autour de chez moi' },
+  { id: 'aura', titre: 'Auvergne-Rhône-Alpes, par département' },
+  { id: 'vosges', titre: 'Massif vosgien, par département' },
+]
 
 export function ZonePicker() {
   const zoneKey = useAppStore((s) => s.zoneKey)
@@ -175,47 +195,32 @@ export function ZonePicker() {
         </ul>
       )}
 
-      <p className={styles.groupTitle} id="proches-title">
-        Ou une zone entière
-      </p>
-      <div
-        className={styles.zones}
-        role="group"
-        aria-labelledby="proches-title"
-      >
-        {ZONES.filter((zone) => zone.group === 'proche').map((zone) => (
-          <button
-            key={zone.id}
-            type="button"
-            className={zoneKey === zone.id ? styles.zoneActive : styles.zone}
-            aria-pressed={zoneKey === zone.id}
-            data-testid={`zone-${zone.id}`}
-            disabled={zoneLoading}
-            onClick={() => void loadZone(zone.id)}
+      {GROUPES.map((groupe) => (
+        <Fragment key={groupe.id}>
+          <p className={styles.groupTitle} id={`${groupe.id}-title`}>
+            {groupe.titre}
+          </p>
+          <div
+            className={styles.zones}
+            role="group"
+            aria-labelledby={`${groupe.id}-title`}
           >
-            {zone.label}
-          </button>
-        ))}
-      </div>
-
-      <p className={styles.groupTitle} id="aura-title">
-        Auvergne-Rhône-Alpes, par département
-      </p>
-      <div className={styles.zones} role="group" aria-labelledby="aura-title">
-        {ZONES.filter((zone) => zone.group === 'aura').map((zone) => (
-          <button
-            key={zone.id}
-            type="button"
-            className={zoneKey === zone.id ? styles.zoneActive : styles.zone}
-            aria-pressed={zoneKey === zone.id}
-            data-testid={`zone-${zone.id}`}
-            disabled={zoneLoading}
-            onClick={() => void loadZone(zone.id)}
-          >
-            {zone.label}
-          </button>
-        ))}
-      </div>
+            {ZONES.filter((zone) => zone.group === groupe.id).map((zone) => (
+              <button
+                key={zone.id}
+                type="button"
+                className={zoneKey === zone.id ? styles.zoneActive : styles.zone}
+                aria-pressed={zoneKey === zone.id}
+                data-testid={`zone-${zone.id}`}
+                disabled={zoneLoading}
+                onClick={() => void loadZone(zone.id)}
+              >
+                {zone.label}
+              </button>
+            ))}
+          </div>
+        </Fragment>
+      ))}
 
       <p className={styles.groupTitle} id="featured-title">
         Grands itinéraires

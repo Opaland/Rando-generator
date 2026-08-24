@@ -427,3 +427,16 @@
   font-size: var(--texte-appui);
   color: var(--gris-vert);
 }
+
+/*
+  Le balisage réel, sous le nom de l'itinéraire (#286).
+
+  Même registre que `.sub` — c'est un complément au titre, pas un fait
+  chiffré — mais distinct, parce qu'il dit autre chose : `.sub` porte le nom
+  long, celui-ci porte ce qu'on aura devant les yeux sur l'arbre.
+*/
+.balisage {
+  font-size: var(--texte-appui);
+  color: var(--gris-vert);
+  margin: var(--espace-1) 0 0;
+}

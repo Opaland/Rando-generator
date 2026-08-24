@@ -18,7 +18,7 @@ export const OVERPASS_MIRRORS = [
 export const OVERPASS_TIMEOUT_MS = 180_000
 
 /** Regroupement des zones dans l'UI. */
-export type ZoneGroup = 'proche' | 'aura'
+export type ZoneGroup = 'proche' | 'aura' | 'vosges'
 
 export interface OverpassZone {
   id: string
@@ -59,6 +59,27 @@ const AURA_DEPARTEMENTS: { id: string; label: string; name: string }[] = [
   { id: 'haute-savoie', label: 'Haute-Savoie', name: 'Haute-Savoie' },
 ]
 
+/**
+ * Le massif vosgien (#286), demandé par Cédric le 24/08.
+ *
+ * Il déborde cinq départements sur trois régions : le découper autrement
+ * qu'administrativement supposerait une limite de massif qu'OSM ne porte pas
+ * sous une forme stable. On charge donc département par département, comme
+ * pour Auvergne-Rhône-Alpes, et pour la même raison : une requête couvrant
+ * tout le massif dépasserait le délai d'Overpass.
+ *
+ * Ce n'est **pas** « le Club Vosgien » : c'est la géographie où il balise.
+ * Le balisage lui-même se lit sur chaque itinéraire, par `osmc:symbol`, et
+ * ne dépend d'aucune zone.
+ */
+const VOSGES_DEPARTEMENTS: { id: string; label: string; name: string }[] = [
+  { id: 'vosges', label: 'Vosges', name: 'Vosges' },
+  { id: 'haut-rhin', label: 'Haut-Rhin', name: 'Haut-Rhin' },
+  { id: 'bas-rhin', label: 'Bas-Rhin', name: 'Bas-Rhin' },
+  { id: 'moselle', label: 'Moselle', name: 'Moselle' },
+  { id: 'haute-saone', label: 'Haute-Saône', name: 'Haute-Saône' },
+]
+
 /** Zones prédéfinies proposées dans l'UI. */
 export const ZONES: OverpassZone[] = [
   {
@@ -91,6 +112,12 @@ export const ZONES: OverpassZone[] = [
     label: dept.label,
     areaSelectors: [departementSelector(dept.name)],
     group: 'aura' as const,
+  })),
+  ...VOSGES_DEPARTEMENTS.map((dept) => ({
+    id: dept.id,
+    label: dept.label,
+    areaSelectors: [departementSelector(dept.name)],
+    group: 'vosges' as const,
   })),
 ]
 
@@ -365,6 +392,11 @@ export function parseOverpassResponse(
       ),
       fetchedAt,
       osmUpdatedAt: element.timestamp ?? null,
+      // Ce qui est peint sur l'arbre (#286). Deux champs seulement, et
+      // seulement quand ils existent : le cache de zone ne grossit pas de
+      // deux `null` par relation.
+      ...(tags['osmc:symbol'] ? { osmcSymbol: tags['osmc:symbol'] } : {}),
+      ...(tags.operator ? { operator: tags.operator } : {}),
     })
   }
   return itineraries
