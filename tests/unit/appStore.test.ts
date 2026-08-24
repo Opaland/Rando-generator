@@ -1488,3 +1488,65 @@ describe('un réglage est durable dès que la main est rendue (#203)', () => {
     }
   })
 })
+
+/**
+ * Trouvé à la revue du sprint du 24/08, et de mon fait.
+ *
+ * La première version de `db/reglages.ts` sondait la disponibilité du
+ * magasin par une **écriture d'essai, à chaque appel** — lecture comprise.
+ * Deux conséquences, dont la seconde est un vrai défaut :
+ *
+ * - dix-neuf écritures `localStorage` pour un démarrage et un seul réglage
+ *   changé, dont une seule réelle ;
+ * - un magasin **plein** refuse d'écrire mais lit très bien. La sonde
+ *   échouait, la lecture retombait sur IndexedDB, et rendait la valeur
+ *   d'avant la reprise : le réglage semblait revenir tout seul en arrière —
+ *   exactement le défaut que #203 venait de corriger.
+ *
+ * Une capacité d'écriture ne se demande qu'au moment d'écrire.
+ */
+describe('lire un réglage n’écrit rien (revue du sprint)', () => {
+  beforeEach(() => {
+    vi.stubGlobal('indexedDB', new IDBFactory())
+    useAppStore.setState({ ...etatInitial }, true)
+    oublierReglagesTouches()
+  })
+
+  it('un démarrage et un réglage n’écrivent que ce qu’on leur demande', async () => {
+    await useAppStore.getState().init()
+    let ecritures = 0
+    const espion = vi
+      .spyOn(Storage.prototype, 'setItem')
+      .mockImplementation(() => {
+        ecritures += 1
+      })
+    try {
+      await useAppStore.getState().setGrosTexte(true)
+    } finally {
+      espion.mockRestore()
+    }
+    expect(ecritures, 'des écritures de sonde se sont glissées').toBe(1)
+  })
+
+  /**
+   * Le cas qui donne sa valeur au test : un magasin qui refuse d'écrire mais
+   * accepte de lire doit **rendre ce qu'il contient**, et non retomber sur la
+   * copie périmée d'IndexedDB.
+   */
+  it('un magasin plein continue de rendre ce qu’il a déjà', async () => {
+    await useAppStore.getState().init()
+    await useAppStore.getState().setCompletionPct(90)
+
+    const espion = vi
+      .spyOn(Storage.prototype, 'setItem')
+      .mockImplementation(() => {
+        throw new DOMException('plein', 'QuotaExceededError')
+      })
+    try {
+      const db = useAppStore.getState().db
+      expect(await db!.getSetting('completionPct')).toBe(90)
+    } finally {
+      espion.mockRestore()
+    }
+  })
+})

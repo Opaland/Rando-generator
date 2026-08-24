@@ -53,35 +53,59 @@ import type { SettingKey } from './database.ts'
 const PREFIXE = 'sentiers.reglage.'
 
 /**
- * Le magasin, ou `null` s'il refuse.
+ * Le magasin, ou `null` s'il n'existe pas.
  *
  * Lu à chaque appel plutôt que capturé une fois : les tests remplacent
  * `globalThis.localStorage`, et une capture au chargement du module figerait
  * le premier vu. Le coût est un accès de propriété.
  *
  * L'accès lui-même peut **lever** — Safari en navigation privée, un
- * navigateur configuré pour refuser le stockage. C'est pourquoi la lecture
- * est enveloppée : un `typeof` ne suffit pas.
+ * navigateur configuré pour refuser le stockage. C'est pourquoi il est
+ * enveloppé : un `typeof` ne suffit pas.
+ *
+ * Cette fonction ne **teste pas** que le magasin accepte d'écrire : c'est à
+ * chaque opération de le découvrir, dans son propre `try`. La première
+ * version sondait ici, par une écriture d'essai, et cela a coûté deux
+ * choses — mesurées à la revue du sprint :
+ *
+ * - **dix-neuf écritures pour un démarrage et un réglage, dont une seule
+ *   réelle.** Chaque lecture écrivait sa clef d'essai puis l'effaçait ;
+ * - plus grave, **une lecture pouvait devenir fausse.** Un magasin plein
+ *   refuse d'écrire mais lit très bien : la sonde échouait, la lecture
+ *   retombait sur IndexedDB, et rendait la valeur d'avant la reprise. Le
+ *   réglage semblait revenir tout seul en arrière — exactement le défaut
+ *   que #203 corrigeait.
+ *
+ * Une capacité d'écriture ne se demande qu'au moment d'écrire.
  */
 function magasin(): Storage | null {
   try {
-    const local = (globalThis as { localStorage?: Storage }).localStorage
-    if (!local) return null
-    // Une écriture d'essai : la présence de l'objet ne dit pas qu'il accepte.
-    // Mesuré nécessaire — Safari en navigation privée expose l'API et lève
-    // à la première écriture.
-    const sonde = `${PREFIXE}__essai`
-    local.setItem(sonde, '1')
-    local.removeItem(sonde)
-    return local
+    return (globalThis as { localStorage?: Storage }).localStorage ?? null
   } catch {
     return null
   }
 }
 
-/** Vrai si les réglages peuvent vivre dans `localStorage`. */
+/**
+ * Vrai si les réglages peuvent vivre dans `localStorage`.
+ *
+ * Ici la question porte bien sur l'**écriture** — c'est la migration qui la
+ * pose, et elle n'a rien à recopier vers un magasin qui refusera. La sonde
+ * est donc une vraie écriture, et elle n'a lieu qu'une fois : Safari en
+ * navigation privée expose l'API et lève à la première écriture, si bien
+ * qu'un `typeof` répondrait « oui » à tort.
+ */
 export function reglagesSynchronesDisponibles(): boolean {
-  return magasin() !== null
+  const local = magasin()
+  if (!local) return false
+  try {
+    const sonde = `${PREFIXE}__essai`
+    local.setItem(sonde, '1')
+    local.removeItem(sonde)
+    return true
+  } catch {
+    return false
+  }
 }
 
 /**
@@ -91,7 +115,12 @@ export function reglagesSynchronesDisponibles(): boolean {
 export function lireReglage(clef: SettingKey): number | string | undefined {
   const local = magasin()
   if (!local) return undefined
-  const brut = local.getItem(PREFIXE + clef)
+  let brut: string | null
+  try {
+    brut = local.getItem(PREFIXE + clef)
+  } catch {
+    return undefined
+  }
   if (brut === null) return undefined
   /*
     Le type compte. `completionPct` vaut 95 et non « 95 » : `lireDrapeau`

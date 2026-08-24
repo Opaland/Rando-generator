@@ -7,10 +7,11 @@ import styles from './Backup.module.css'
 /**
  * Sauvegarde complète : l'exporter, la relire ailleurs (issue #132).
  *
- * Tout vit dans l'IndexedDB du navigateur. Rien ne suit d'un appareil à
- * l'autre, et vider les données du site efface des années de traces. C'est le
- * prix de « vos traces ne quittent jamais votre navigateur » — et un prix
- * doit être annoncé, pas découvert.
+ * Tout vit dans le navigateur — les traces et les zones dans IndexedDB, les
+ * sept réglages dans le stockage local depuis #203. Rien ne suit d'un
+ * appareil à l'autre, et vider les données du site efface des années de
+ * traces. C'est le prix de « vos traces ne quittent jamais votre
+ * navigateur » — et un prix doit être annoncé, pas découvert.
  */
 export function Backup() {
   const tracks = useAppStore((s) => s.tracks)
