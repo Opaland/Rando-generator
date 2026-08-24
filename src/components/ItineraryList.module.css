@@ -75,7 +75,7 @@
 }
 
 .rowSelected {
-  box-shadow: var(--anneau-focus);
+  box-shadow: var(--anneau-selection);
 }
 
 .badge {

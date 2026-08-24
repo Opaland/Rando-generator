@@ -71,7 +71,30 @@
   --ombre-flottante: 0 2px 10px rgba(30, 43, 35, 0.22); /* au-dessus de la carte */
   --ombre-panneau: 0 4px 18px rgba(30, 43, 35, 0.25); /* dialogues, accueil */
   --ombre-feuille: 0 -3px 16px rgba(30, 43, 35, 0.22); /* feuille mobile, qui monte */
-  --anneau-focus: 0 0 0 1px var(--rouge-balisage);
+  /* Deux formes pour deux propriétés, et il a fallu les séparer.
+
+     `--anneau-focus` valait `0 0 0 1px var(--rouge-balisage)` — quatre
+     longueurs et une couleur, c'est-à-dire une valeur de `box-shadow`. Trois
+     feuilles l'employaient en `outline`, où cette valeur n'a aucun sens.
+
+     Le résultat n'est pas « la déclaration est ignorée ». Une substitution de
+     `var()` qui produit une valeur invalide rend la déclaration *invalide au
+     moment du calcul* : la propriété retombe alors à sa **valeur initiale**,
+     au lieu de laisser gagner la règle générale du dessous. `outline-style`
+     revient à `none`, et le liseré de focus disparaît complètement — y
+     compris celui que `button:focus-visible` posait deux règles plus haut.
+
+     Mesuré sur l'onglet actif : `outline: none 0px` alors que
+     `:focus-visible` s'applique, et pas un pixel ne changeait à l'écran
+     quand la tabulation s'y arrêtait. Une erreur de syntaxe aurait été moins
+     grave — elle, la cascade la rattrape.
+
+     Les deux jetons portent donc leur emploi dans leur nom, et
+     `tests/unit/jetonsDeFocus.test.ts` refuse qu'on les échange. */
+  --contour-focus: 2px solid var(--rouge-balisage);
+  /* Le liseré de la ligne **choisie** dans une liste — ni un focus, ni un
+     survol. Il portait le nom du focus sans jamais servir au focus. */
+  --anneau-selection: 0 0 0 1px var(--rouge-balisage);
 
   /* Typographie : pas de police distante (les données ne quittent pas le
      navigateur, les requêtes de polices non plus). */

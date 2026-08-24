@@ -267,7 +267,7 @@
 }
 
 .anneeTitre:focus-visible {
-  outline: var(--anneau-focus);
+  outline: var(--contour-focus);
 }
 
 .anneeCompte {
