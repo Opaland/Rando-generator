@@ -109,22 +109,27 @@
    Les couleurs disent une famille, pas un jugement : rien ici ne prétend
    qu'un sol est praticable ou non — c'est la personne qui décide, avec les
    informations sous les yeux. */
+/* Les mêmes quatre couleurs que sur la carte, depuis le 24/08 : deux
+   surfaces qui parlent du même sol ne peuvent pas en parler de deux façons.
+   Elles employaient auparavant `--jaune-pr` et `--bleu-local`, c'est-à-dire
+   les couleurs du balisage — sans conséquence sous une courbe, intenable
+   sur la carte. */
 .bande[data-famille='dur'] {
-  fill: var(--gris-vert);
+  fill: var(--terrain-dur);
 }
 
 .bande[data-famille='stabilise'] {
-  fill: var(--jaune-pr);
+  fill: var(--terrain-stabilise);
 }
 
 .bande[data-famille='naturel'] {
-  fill: var(--bleu-local);
+  fill: var(--terrain-naturel);
 }
 
 /* Une valeur qu'OSM connaît mais que la table ne classe pas. Neutre, pour
    ne pas la faire passer pour l'une des trois familles. */
 .bande[data-famille='autre'] {
-  fill: var(--gris-vert-clair);
+  fill: var(--terrain-autre);
 }
 
 /* L'inconnu est hachuré, jamais coloré : une couleur pleine se lirait comme

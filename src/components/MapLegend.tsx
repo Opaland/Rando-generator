@@ -5,6 +5,11 @@ import {
   NETWORK_EXPLANATIONS,
   NETWORK_LABELS,
 } from '../lib/networkDisplay.ts'
+import {
+  TERRAIN_COLORS,
+  TERRAIN_LABELS,
+  TERRAIN_TIRETS,
+} from '../lib/revetementDisplay.ts'
 import styles from './MapLegend.module.css'
 
 /**
@@ -22,7 +27,13 @@ export function MapLegend() {
   const itineraires = useAppStore((s) => s.itineraries)
   const itinerairesPerso = useAppStore((s) => s.customItineraries)
   const aDesTraces = useAppStore((s) => s.tracks.length > 0)
-  const contenu = contenuLegende({ itineraires, itinerairesPerso, aDesTraces })
+  const itineraireRegarde = useAppStore((s) => s.detailItineraryId)
+  const contenu = contenuLegende({
+    itineraires,
+    itinerairesPerso,
+    aDesTraces,
+    itineraireRegarde,
+  })
 
   // Rien à nommer : pas de cadre vide posé sur la carte.
   if (contenu.vide) return null
@@ -46,6 +57,35 @@ export function MapLegend() {
                 style={{ background: NETWORK_COLORS[network] }}
               />
               {NETWORK_LABELS[network]}
+            </li>
+          ))}
+        </ul>
+      )}
+      {contenu.terrains.length > 0 && (
+        /*
+          Le terrain, nommé seulement quand la bande est là.
+
+          Elle n'existe que pour l'itinéraire dont la fiche est ouverte, et
+          la règle de ce module ne bouge pas : la légende ne nomme que ce qui
+          est dessiné. Nommer les cinq familles en permanence referait le
+          constat U6.
+
+          « Autre » porte le motif tireté, pas seulement sa teinte : la
+          distinction doit tenir sans la couleur, et le témoin de la légende
+          doit ressembler à ce qui est peint sur la carte.
+        */
+        <ul className={styles.terrains} data-testid="legende-terrain">
+          {contenu.terrains.map((famille) => (
+            <li key={famille} className={styles.item} data-famille={famille}>
+              <span
+                className={styles.bande}
+                style={{
+                  background: TERRAIN_TIRETS.includes(famille)
+                    ? `repeating-linear-gradient(90deg, ${String(TERRAIN_COLORS[famille])} 0 4px, transparent 4px 8px)`
+                    : (TERRAIN_COLORS[famille] ?? undefined),
+                }}
+              />
+              {TERRAIN_LABELS[famille]}
             </li>
           ))}
         </ul>

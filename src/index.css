@@ -149,6 +149,24 @@
     Une feuille de composant qui a besoin d'un plancher lit donc ce jeton.
     Elle ne peut plus descendre en dessous sans le dire.
   */
+  /*
+    Le terrain, en quatre jetons.
+
+    Les bandes du profil peignaient « stabilisé » en `--jaune-pr` et
+    « naturel » en `--bleu-local` — les couleurs du balisage. Invisible tant
+    que ces bandes vivaient sous une courbe ; intenable dès qu'elles sont
+    posées sur la carte, où un liseré jaune le long d'un GR se lit comme un
+    PR qui le longe.
+
+    Les valeurs sont les mêmes qu'en JavaScript (`lib/revetementDisplay.ts`) :
+    MapLibre ne lit pas ces propriétés, le profil ne lit pas la constante, et
+    `couleurs.test.ts` empêche les deux de diverger. L'inconnu n'a pas de
+    jeton : il ne se peint pas.
+  */
+  --terrain-dur: #59636b;
+  --terrain-stabilise: #a87a30;
+  --terrain-naturel: #3f6b45;
+  --terrain-autre: #7c837c;
   --cible-mini: 32px;
   --hauteur-onglets: 56px;
   /* Largeur et hauteur de la fiche détail, pour que ce qui doit s'écarter

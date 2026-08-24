@@ -14,7 +14,12 @@ import {
   GRIS_VERT,
   PAPIER,
 } from '../../lib/couleursPartagees.ts'
-import type { PointOfInterest } from '../../core/types.ts'
+import type { Itinerary, PointOfInterest } from '../../core/types.ts'
+import { segmentsDeRevetement } from '../../core/revetement.ts'
+import {
+  TERRAIN_COLORS,
+  TERRAIN_TIRETS,
+} from '../../lib/revetementDisplay.ts'
 
 /**
  * Fond de carte, couches et utilitaires GeoJSON de la carte.
@@ -63,6 +68,7 @@ export function baseStyle(tiles: string, attribution: string): StyleSpecificatio
       trails: { type: 'geojson', data: emptyCollection() },
       'trails-done': { type: 'geojson', data: emptyCollection() },
       'trails-declares': { type: 'geojson', data: emptyCollection() },
+      'trails-revetement': { type: 'geojson', data: emptyCollection() },
       tracks: { type: 'geojson', data: emptyCollection() },
       pois: { type: 'geojson', data: emptyCollection() },
       draw: { type: 'geojson', data: emptyCollection() },
@@ -100,6 +106,66 @@ export function baseStyle(tiles: string, attribution: string): StyleSpecificatio
           'line-opacity': 0.45,
         },
         layout: { 'line-cap': 'round', 'line-join': 'round' },
+      },
+      {
+        /*
+          Le terrain, en bande le long du tracé (demande du 24/08).
+
+          Le revêtement n'existait que dans le profil altimétrique — c'est-à-
+          dire seulement quand on ouvre une fiche, et seulement en regardant
+          ailleurs que la carte. « Il faudrait également avoir la couleur du
+          terrain sur la carte », et c'était juste : ce qu'on a sous les
+          pieds se décide en regardant où l'on va.
+
+          **Une bande décalée, et non le tracé recoloré.** La couleur du
+          tracé dit le réseau — c'est le code le plus ancien de
+          l'application, celui qu'on lit sur les arbres. La remplacer par le
+          revêtement échangerait une information contre une autre. Le décalage
+          reprend le vocabulaire du profil, où la bande court sous la courbe
+          sans la remplacer.
+
+          Trois pixels sous le tracé : assez pour se lire au zoom où l'on
+          regarde un sentier, assez peu pour rester attaché à lui.
+        */
+        id: 'trails-revetement',
+        type: 'line',
+        source: 'trails-revetement',
+        filter: ['!=', ['get', 'tirets'], true],
+        paint: {
+          'line-color': ['get', 'couleur'] as unknown as ExpressionSpecification,
+          'line-width': 2.5,
+          'line-offset': 4,
+          'line-opacity': 0.85,
+        },
+        layout: { 'line-cap': 'butt', 'line-join': 'round' },
+      },
+      {
+        /*
+          « Autre revêtement » : la même bande, en tirets.
+
+          Cette famille est une valeur qu'OpenStreetMap connaît mais que la
+          table ne classe pas. Son travail est d'avoir l'air neutre — donc
+          d'être grise, donc d'être proche du gris de « dur ». Trois essais
+          l'ont confirmé : la rapprocher assez pour être distinguée lui
+          faisait perdre sa neutralité.
+
+          Elle se distingue donc par la **forme**, ce qui tient sans la
+          couleur — pour qui ne sépare pas les gris comme pour qui regarde au
+          soleil. C'est la même distinction que le témoin d'enregistrement,
+          plein en marche et creux en pause.
+        */
+        id: 'trails-revetement-autre',
+        type: 'line',
+        source: 'trails-revetement',
+        filter: ['==', ['get', 'tirets'], true],
+        paint: {
+          'line-color': ['get', 'couleur'] as unknown as ExpressionSpecification,
+          'line-width': 2.5,
+          'line-offset': 4,
+          'line-opacity': 0.85,
+          'line-dasharray': [3, 3],
+        },
+        layout: { 'line-cap': 'butt', 'line-join': 'round' },
       },
       {
         /*
@@ -268,4 +334,39 @@ export function poisToGeoJSON(pois: PointOfInterest[]): FeatureCollection {
       },
     })),
   }
+}
+
+/**
+ * Le terrain d'un itinéraire, prêt à peindre.
+ *
+ * La couleur est calculée ici plutôt que dans une expression MapLibre : le
+ * code couleur vit dans `lib/revetementDisplay.ts`, avec ses règles
+ * mesurées, et une table `match` recopiée dans le style aurait été la
+ * cinquième copie que CLAUDE.md §4 décrit.
+ *
+ * `null` ne se peint pas — l'inconnu n'a pas de couleur, et deux tiers d'un
+ * parcours n'ont pas de revêtement renseigné. Peindre l'ignorance la ferait
+ * passer pour une valeur.
+ */
+export function revetementToGeoJSON(
+  itineraries: Itinerary[],
+): FeatureCollection {
+  const features: FeatureCollection['features'] = []
+  for (const itin of itineraries) {
+    for (const segment of segmentsDeRevetement(itin)) {
+      const couleur = TERRAIN_COLORS[segment.famille]
+      if (couleur === null) continue
+      features.push({
+        type: 'Feature',
+        geometry: { type: 'LineString', coordinates: segment.coords },
+        properties: {
+          famille: segment.famille,
+          origine: segment.origine,
+          couleur,
+          tirets: TERRAIN_TIRETS.includes(segment.famille),
+        },
+      })
+    }
+  }
+  return { type: 'FeatureCollection', features }
 }

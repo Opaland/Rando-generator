@@ -1,5 +1,5 @@
 import { polylineLengthMeters } from './sampling.ts'
-import type { Itinerary } from './types.ts'
+import type { Itinerary, LonLat } from './types.ts'
 
 /**
  * Le revêtement d'un itinéraire, porté le long du profil (issue #179).
@@ -256,6 +256,48 @@ export function bandesDeRevetement(itinerary: Itinerary): Bande[] {
     curseur += longueur
   }
   return bandes
+}
+
+/** Un tronçon de tracé, avec sa géométrie et ce qu'on sait de son sol. */
+export interface SegmentRevetement {
+  coords: LonLat[]
+  famille: FamilleRevetement
+  origine: OrigineRevetement
+  /** Valeur OSM brute ; `null` si déduite ou absente. */
+  surface: string | null
+}
+
+/**
+ * Le revêtement **en géométrie**, pour la carte (demande du 24/08).
+ *
+ * Ce n'est pas `bandesDeRevetement` sous un autre nom. Les bandes travaillent
+ * en distance cumulée et **fusionnent les voisins équivalents**, sans quoi un
+ * long itinéraire rendrait des centaines de rectangles identiques sous la
+ * courbe du profil.
+ *
+ * Sur la carte, fusionner deux tronçons voisins reviendrait à recoller leurs
+ * géométries — ce qui suppose qu'elles se touchent, et un itinéraire OSM
+ * troué ne le garantit pas (c'est même exactement ce que
+ * `assessItinerary` signale). Chaque tronçon reste donc un segment, et la
+ * carte peint autant de lignes qu'il y a de ways.
+ *
+ * L'inconnu est rendu comme le reste : c'est à l'affichage de décider de ne
+ * rien peindre, pas au calcul. Mélanger les deux ôterait à la carte le moyen
+ * de dire « ici, on ne sait pas » le jour où elle voudrait le dire.
+ */
+export function segmentsDeRevetement(
+  itinerary: Itinerary,
+): SegmentRevetement[] {
+  const segments: SegmentRevetement[] = []
+  for (const way of itinerary.ways) {
+    // Un tronçon d'un seul point n'a pas de longueur : le dessiner produirait
+    // un artefact ponctuel qui ressemble à un repère.
+    if (way.coords.length < 2) continue
+    if (polylineLengthMeters(way.coords) <= 0) continue
+    const { famille, origine, surface } = revetementDuChemin(way.tags)
+    segments.push({ coords: way.coords, famille, origine, surface })
+  }
+  return segments
 }
 
 export interface Couverture {

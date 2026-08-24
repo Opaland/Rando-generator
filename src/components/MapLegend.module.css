@@ -96,3 +96,23 @@
     bottom: auto;
   }
 }
+
+/* Les familles de terrain, sous les réseaux : on lit d'abord quel sentier,
+   ensuite ce qu'on y a sous les pieds. */
+.terrains {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-2) var(--espace-5);
+}
+
+/* Un trait, pas une pastille : ce qui est peint sur la carte est une bande
+   le long du tracé, et le témoin doit lui ressembler. */
+.bande {
+  flex: none;
+  width: 16px;
+  height: 3px;
+  border-radius: 1px;
+}
