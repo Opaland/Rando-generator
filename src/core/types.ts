@@ -75,6 +75,16 @@ export interface Itinerary {
    * requête ne demande les métadonnées.
    */
   osmUpdatedAt?: string | null
+  /**
+   * Le balisage tel qu'OpenStreetMap le décrit (`osmc:symbol`), brut.
+   *
+   * Gardé sous sa forme d'origine plutôt que traduit à l'écriture : la table
+   * de traduction s'enrichira, et une zone en cache pendant trente jours
+   * garderait sinon la description du jour où elle a été écrite (#286).
+   */
+  osmcSymbol?: string | null
+  /** L'organisme qui balise, quand OSM le nomme (ex. « Club Vosgien »). */
+  operator?: string | null
   /** Présent uniquement pour les boucles locales open data (network LOCAL). */
   details?: LocalDetails
   /**

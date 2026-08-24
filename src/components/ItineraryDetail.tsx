@@ -9,6 +9,7 @@ import {
 } from '../lib/format.ts'
 import { POI_COLORS, POI_LABELS, POI_OVERNIGHT, mentionEau } from '../lib/poiDisplay.ts'
 import { NETWORK_BADGES } from '../lib/networkDisplay.ts'
+import { decrireBalisage } from '../core/balisage.ts'
 import { elevationStats } from '../core/elevation.ts'
 import { itineraryCoords } from '../core/mapdata.ts'
 import { situerPois } from '../core/poiDistance.ts'
@@ -77,6 +78,7 @@ export function ItineraryDetail() {
     customItineraries.find((i) => i.osmRelationId === detailItineraryId)
   if (!itin) return null
 
+  const balisage = decrireBalisage(itin.osmcSymbol ?? undefined)
   const relevantMatching = itin.network === 'PERSO' ? customMatching : matching
   const result = relevantMatching?.results.find(
     (r) => r.itineraryId === detailItineraryId,
@@ -176,6 +178,22 @@ export function ItineraryDetail() {
           <div className={styles.titleBlock}>
             <h3 className={styles.name}>{displayName(itin)}</h3>
             {itin.ref && itin.name && <p className={styles.sub}>{itin.name}</p>}
+            {/*
+              Ce qui est peint sur l'arbre (#286).
+
+              Pour Anne-Marie, qui marche au rectangle rouge du Club Vosgien,
+              c'est l'information de navigation — pas un détail. Elle est
+              affichée là où elle sert, contre le nom, et **seulement quand
+              on a su la lire** : `decrireBalisage` rend `null` sur une forme
+              ou une couleur absentes de sa table, et la ligne disparaît
+              plutôt que d'annoncer une marque approximative.
+            */}
+            {balisage && (
+              <p className={styles.balisage} data-testid="detail-balisage">
+                Balisé&nbsp;: {balisage}
+                {itin.operator ? ` — ${itin.operator}` : ''}
+              </p>
+            )}
           </div>
           <button
             type="button"

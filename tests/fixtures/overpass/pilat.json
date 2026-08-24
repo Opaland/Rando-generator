@@ -1,1 +1,230 @@
-{"version": 0.6, "generator": "Overpass API (fixture enregistrée pour les tests — données synthétiques au format réel)", "elements": [{"type": "relation", "id": 1001, "timestamp": "2019-04-02T08:15:00Z", "tags": {"type": "route", "route": "hiking", "network": "nwn", "ref": "GR 7", "name": "GR 7 — Traversée du Pilat"}, "members": [{"type": "way", "ref": 100, "role": "", "geometry": [{"lat": 45.4, "lon": 4.5}, {"lat": 45.4, "lon": 4.505}, {"lat": 45.4, "lon": 4.51}]}, {"type": "way", "ref": 100, "role": "", "geometry": [{"lat": 45.4, "lon": 4.5}, {"lat": 45.4, "lon": 4.505}, {"lat": 45.4, "lon": 4.51}]}, {"type": "way", "ref": 101, "role": "", "geometry": [{"lat": 45.4, "lon": 4.51}, {"lat": 45.4, "lon": 4.52}]}, {"type": "way", "ref": 200, "role": "", "geometry": [{"lat": 45.4, "lon": 4.52}, {"lat": 45.4, "lon": 4.53}]}, {"type": "node", "ref": 9001, "role": "guidepost"}, {"type": "way", "ref": 999, "role": ""}]}, {"type": "relation", "id": 1002, "tags": {"type": "route", "route": "hiking", "network": "lwn", "name": "Sentier des Crêtes"}, "members": [{"type": "way", "ref": 200, "role": "", "geometry": [{"lat": 45.4, "lon": 4.52}, {"lat": 45.4, "lon": 4.53}]}, {"type": "way", "ref": 300, "role": "", "geometry": [{"lat": 45.4, "lon": 4.53}, {"lat": 45.41, "lon": 4.53}]}]}, {"type": "relation", "id": 1003, "tags": {"type": "route", "route": "hiking", "ref": "GRP Tour du Pilat", "name": "Tour du Pilat"}, "members": [{"type": "way", "ref": 400, "role": "", "geometry": [{"lat": 45.45, "lon": 4.6}, {"lat": 45.45, "lon": 4.61}]}]}, {"type": "relation", "id": 1004, "tags": {"type": "route", "route": "hiking", "name": "Relation sans géométrie"}, "members": [{"type": "node", "ref": 9002, "role": "guidepost"}]}, {"type": "way", "id": 100, "tags": {"surface": "asphalt", "highway": "residential"}}, {"type": "way", "id": 101, "tags": {"highway": "tertiary"}}, {"type": "way", "id": 200, "tags": {"surface": "gravel", "highway": "track"}}, {"type": "way", "id": 300, "tags": {"highway": "track"}}, {"type": "way", "id": 400, "tags": {"surface": "compacted", "highway": "track"}}, {"type": "way", "id": 999, "tags": {"highway": "cycleway"}}]}
+{
+  "version": 0.6,
+  "generator": "Overpass API (fixture enregistrée pour les tests — données synthétiques au format réel)",
+  "elements": [
+    {
+      "type": "relation",
+      "id": 1001,
+      "timestamp": "2019-04-02T08:15:00Z",
+      "tags": {
+        "type": "route",
+        "route": "hiking",
+        "network": "nwn",
+        "ref": "GR 7",
+        "name": "GR 7 — Traversée du Pilat"
+      },
+      "members": [
+        {
+          "type": "way",
+          "ref": 100,
+          "role": "",
+          "geometry": [
+            {
+              "lat": 45.4,
+              "lon": 4.5
+            },
+            {
+              "lat": 45.4,
+              "lon": 4.505
+            },
+            {
+              "lat": 45.4,
+              "lon": 4.51
+            }
+          ]
+        },
+        {
+          "type": "way",
+          "ref": 100,
+          "role": "",
+          "geometry": [
+            {
+              "lat": 45.4,
+              "lon": 4.5
+            },
+            {
+              "lat": 45.4,
+              "lon": 4.505
+            },
+            {
+              "lat": 45.4,
+              "lon": 4.51
+            }
+          ]
+        },
+        {
+          "type": "way",
+          "ref": 101,
+          "role": "",
+          "geometry": [
+            {
+              "lat": 45.4,
+              "lon": 4.51
+            },
+            {
+              "lat": 45.4,
+              "lon": 4.52
+            }
+          ]
+        },
+        {
+          "type": "way",
+          "ref": 200,
+          "role": "",
+          "geometry": [
+            {
+              "lat": 45.4,
+              "lon": 4.52
+            },
+            {
+              "lat": 45.4,
+              "lon": 4.53
+            }
+          ]
+        },
+        {
+          "type": "node",
+          "ref": 9001,
+          "role": "guidepost"
+        },
+        {
+          "type": "way",
+          "ref": 999,
+          "role": ""
+        }
+      ]
+    },
+    {
+      "type": "relation",
+      "id": 1002,
+      "tags": {
+        "type": "route",
+        "route": "hiking",
+        "network": "lwn",
+        "name": "Sentier des Crêtes",
+        "osmc:symbol": "red:white:red_bar",
+        "operator": "Club Vosgien"
+      },
+      "members": [
+        {
+          "type": "way",
+          "ref": 200,
+          "role": "",
+          "geometry": [
+            {
+              "lat": 45.4,
+              "lon": 4.52
+            },
+            {
+              "lat": 45.4,
+              "lon": 4.53
+            }
+          ]
+        },
+        {
+          "type": "way",
+          "ref": 300,
+          "role": "",
+          "geometry": [
+            {
+              "lat": 45.4,
+              "lon": 4.53
+            },
+            {
+              "lat": 45.41,
+              "lon": 4.53
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "relation",
+      "id": 1003,
+      "tags": {
+        "type": "route",
+        "route": "hiking",
+        "ref": "GRP Tour du Pilat",
+        "name": "Tour du Pilat"
+      },
+      "members": [
+        {
+          "type": "way",
+          "ref": 400,
+          "role": "",
+          "geometry": [
+            {
+              "lat": 45.45,
+              "lon": 4.6
+            },
+            {
+              "lat": 45.45,
+              "lon": 4.61
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "relation",
+      "id": 1004,
+      "tags": {
+        "type": "route",
+        "route": "hiking",
+        "name": "Relation sans géométrie"
+      },
+      "members": [
+        {
+          "type": "node",
+          "ref": 9002,
+          "role": "guidepost"
+        }
+      ]
+    },
+    {
+      "type": "way",
+      "id": 100,
+      "tags": {
+        "surface": "asphalt",
+        "highway": "residential"
+      }
+    },
+    {
+      "type": "way",
+      "id": 101,
+      "tags": {
+        "highway": "tertiary"
+      }
+    },
+    {
+      "type": "way",
+      "id": 200,
+      "tags": {
+        "surface": "gravel",
+        "highway": "track"
+      }
+    },
+    {
+      "type": "way",
+      "id": 300,
+      "tags": {
+        "highway": "track"
+      }
+    },
+    {
+      "type": "way",
+      "id": 400,
+      "tags": {
+        "surface": "compacted",
+        "highway": "track"
+      }
+    },
+    {
+      "type": "way",
+      "id": 999,
+      "tags": {
+        "highway": "cycleway"
+      }
+    }
+  ]
+}
