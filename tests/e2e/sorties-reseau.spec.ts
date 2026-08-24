@@ -91,13 +91,39 @@ test('le compteur montre ce qui est sorti, service par service', async ({
   await expect(page.getByTestId('sorties-inconnues')).toHaveCount(0)
 })
 
-test('une destination non répertoriée est dénoncée, pas absorbée', async ({
+/**
+ * Une dépendance qui se mettrait à téléphoner n'arrive **plus jusqu'au
+ * compteur** : le navigateur la refuse avant (24/08).
+ *
+ * Ce test affirmait autre chose, et il avait raison de le faire tant que
+ * l'application était servie par GitHub Pages, qui ne permet aucun en-tête.
+ * Le compteur était alors la seule défense : il ne pouvait pas empêcher
+ * l'appel, seulement le montrer.
+ *
+ * Depuis que `deploy/csp.conf` est servie — en production par nginx, en
+ * prévisualisation par Vite, donc ici — il y a deux défenses, et la première
+ * est plus forte que la seconde :
+ *
+ * 1. **la politique refuse**, avant que la requête ne parte ;
+ * 2. **le compteur dénonce**, pour ce que la politique laisse passer.
+ *
+ * Ce test garde la première, qui est celle qui protège vraiment. La seconde
+ * garde son propre test — `tests/unit/journalSortant.test.ts`, « avoue une
+ * destination qu'il ne sait pas classer » — et les deux listes sont
+ * comparées dans les deux sens par `tests/unit/csp.test.ts` : un hôte permis
+ * par la politique mais inconnu du compteur ne peut pas exister.
+ *
+ * Écrire ici « le compteur dénonce » aurait été maintenir une affirmation
+ * qui ne s'éprouve plus (CLAUDE.md §4bis) : la requête n'atteint jamais
+ * l'observateur, et le test serait passé pour une raison qu'on n'a pas
+ * voulue.
+ */
+test('une destination non répertoriée est refusée par le navigateur', async ({
   page,
 }) => {
-  // C'est ce cas qui donne sa valeur au compteur. S'il rangeait l'inconnu
-  // dans « divers », il rassurerait sans informer — et deviendrait faux le
-  // jour où une dépendance ouvrirait un canal que personne n'a voulu.
   await mockExternalNetwork(page)
+  // La doublure répondrait — c'est bien le navigateur, et non l'absence de
+  // serveur en face, qui doit faire échouer l'appel.
   await page.route('https://analytics.example.com/**', (route) =>
     route.fulfill({ status: 200, body: '{}' }),
   )
@@ -107,14 +133,17 @@ test('une destination non répertoriée est dénoncée, pas absorbée', async ({
     timeout: 15_000,
   })
 
-  // Une dépendance qui se mettrait à téléphoner : l'appel passe par le
-  // `fetch` de la page, donc par l'observateur.
-  await page.evaluate(async () => {
-    await fetch('https://analytics.example.com/collect?x=1')
+  const refus = await page.evaluate(async () => {
+    try {
+      await fetch('https://analytics.example.com/collect?x=1')
+      return 'passée'
+    } catch (erreur) {
+      return erreur instanceof TypeError ? 'refusée' : 'autre'
+    }
   })
 
-  await page.getByRole('button', { name: 'À propos' }).click()
-  const alerte = page.getByTestId('sorties-inconnues')
-  await expect(alerte).toBeVisible()
-  await expect(alerte).toContainText('analytics.example.com')
+  expect(
+    refus,
+    'la politique de sécurité doit refuser un hôte non déclaré',
+  ).toBe('refusée')
 })

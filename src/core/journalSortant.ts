@@ -52,17 +52,84 @@ const CONNUS: { hote: RegExp; chemin?: RegExp; destination: Destination }[] = [
   { hote: /(^|\.)data\.grandlyon\.com$/, destination: 'sentiers' },
 ]
 
-export function classerSortie(url: string): { destination: Destination; hote: string } {
+/**
+ * L'origine qui sert l'application, quand personne ne la précise.
+ *
+ * Elle valait `https://opaland.github.io`, écrit en dur — deux fois. Servie
+ * depuis un autre serveur, l'application aurait classé **ses propres
+ * fichiers** en « destination inconnue » : le seul endroit où la promesse de
+ * l'en-tête est montrée plutôt qu'affirmée (issue #178) aurait dénoncé
+ * l'origine qui le sert.
+ *
+ * Un compteur de vie privée qui crie au loup sur lui-même n'est pas
+ * seulement faux : il rend inaudible le jour où une vraie fuite apparaît.
+ *
+ * Le repli sur `http://localhost` sert les contextes sans `location` — un
+ * test, un ouvrier, un rendu hors navigateur. Il ne rend pas la fonction
+ * fausse : les tiers continuent d'être classés, et c'est tout ce qu'on lui
+ * demande alors.
+ */
+function origineParDefaut(): string {
+  const emplacement = (globalThis as { location?: { origin?: string } })
+    .location
+  return emplacement?.origin ?? 'http://localhost'
+}
+
+/**
+ * Les hôtes que l'application contacte réellement, à plat.
+ *
+ * Dérivée de `CONNUS` plutôt que recopiée : la politique de sécurité de
+ * contenu (`deploy/csp.conf`) est comparée à cette liste dans les deux sens
+ * par `tests/unit/csp.test.ts`. Un hôte oublié dans la politique casse
+ * l'application chez la personne ; un hôte en trop ouvre une porte que
+ * personne n'a demandée.
+ *
+ * `data.grandlyon.com` n'y figure pas : les boucles de la Métropole sont un
+ * fichier servi par le site, et l'adresse n'apparaît que dans l'attribution
+ * — un lien qu'on suit, pas une requête qu'on émet. La distinction compte,
+ * puisque c'est elle qui décide si l'hôte doit être joignable.
+ */
+export const HOTES_CONTACTES: readonly string[] = [
+  'overpass-api.de',
+  'overpass.kumi.systems',
+  'data.geopf.fr',
+  'tile.openstreetmap.org',
+  'api-adresse.data.gouv.fr',
+]
+
+export function classerSortie(
+  url: string,
+  origine: string = origineParDefaut(),
+): { destination: Destination; hote: string } {
+  let base: URL
+  try {
+    base = new URL(origine)
+  } catch {
+    base = new URL('http://localhost')
+  }
   let analysee: URL
   try {
     // Une URL relative est un fichier du site : il n'y a pas d'autre origine
     // depuis laquelle l'application soit servie.
-    analysee = new URL(url, 'https://opaland.github.io/')
+    analysee = new URL(url, base)
   } catch {
     return { destination: 'site', hote: '' }
   }
   const hote = analysee.hostname
-  if (hote === 'opaland.github.io' || hote === 'localhost' || hote === '127.0.0.1') {
+  /*
+    Comparaison sur l'**origine entière**, et non sur l'hôte seul.
+
+    Un sous-domaine qui se mettrait à recevoir des requêtes doit être dit,
+    pas absorbé : c'est exactement la forme que prend une mesure d'audience
+    ajoutée par une dépendance. `mesure.sentiers.example.org` n'est pas
+    `sentiers.example.org`.
+  */
+  if (analysee.origin === base.origin) {
+    return { destination: 'site', hote }
+  }
+  // Le développement local reste du site : les tests et la prévisualisation
+  // servent depuis un port qui varie, et les dénoncer n'apprendrait rien.
+  if (hote === 'localhost' || hote === '127.0.0.1') {
     return { destination: 'site', hote }
   }
   for (const connu of CONNUS) {

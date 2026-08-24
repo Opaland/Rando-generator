@@ -1,0 +1,120 @@
+# Construit l'image de production et l'éprouve — en conteneur, pas sur parole.
+#
+# Le Dockerfile et la configuration nginx n'ont pas pu être construits sur la
+# machine de développement : pas de démon Docker. Plutôt que d'annoncer une
+# image qui « devrait » marcher, ce flux la construit, la démarre, et
+# interroge les en-têtes réellement servis.
+#
+# Ce qu'il vérifie est exactement ce qui casse en silence :
+#
+#   - nginx démarre. La configuration inclut `csp.conf` **hors** de
+#     `conf.d/`, que l'image officielle charge au niveau `http` où la
+#     directive `set` est interdite. Posé au mauvais endroit, nginx refuse de
+#     démarrer — et on ne l'apprendrait qu'au déploiement ;
+#   - la politique de sécurité est servie, et sur les pages **et** sur les
+#     ressources ;
+#   - le service worker n'est pas mis en cache. C'est le piège des
+#     applications hors ligne : un `sw.js` caché fige tout, correctif urgent
+#     compris ;
+#   - `pourquoi.html` est servie telle quelle. Le repli de routage vers
+#     `index.html` avalerait une vraie seconde page si l'ordre des règles
+#     était inversé.
+
+name: Image de production
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Dockerfile'
+      - 'compose.yml'
+      - 'deploy/**'
+      - '.dockerignore'
+      - '.github/workflows/image.yml'
+      - 'package-lock.json'
+  pull_request:
+    paths:
+      - 'Dockerfile'
+      - 'compose.yml'
+      - 'deploy/**'
+      - '.dockerignore'
+      - '.github/workflows/image.yml'
+  workflow_dispatch:
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Construire l'image
+        run: docker build -t sentiers:ci .
+
+      - name: Démarrer le conteneur
+        run: |
+          docker run -d --name sentiers-ci -p 8080:8080 sentiers:ci
+          # Attendre que le point de santé réponde plutôt que dormir un temps
+          # fixe : une attente arbitraire est soit trop courte sur une machine
+          # lente, soit du temps perdu sur une machine rapide.
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8080/sante >/dev/null 2>&1; then
+              echo "prêt après ${i}s"; exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::le conteneur n'a pas répondu en 30 s"
+          docker logs sentiers-ci
+          exit 1
+
+      - name: La politique de sécurité est servie
+        run: |
+          entetes=$(curl -fsSI http://127.0.0.1:8080/)
+          echo "$entetes"
+          echo "$entetes" | grep -qi 'content-security-policy' \
+            || { echo "::error::pas de politique sur la page"; exit 1; }
+          # Sur les ressources aussi : nginx n'hérite pas les `add_header`
+          # d'un bloc parent dès qu'un bloc enfant en pose un, et c'est la
+          # cause la plus fréquente d'une politique qui disparaît à moitié.
+          actif=$(curl -fsS http://127.0.0.1:8080/ | grep -o '/assets/[^"]*\.js' | head -1)
+          curl -fsSI "http://127.0.0.1:8080${actif}" | grep -qi 'content-security-policy' \
+            || { echo "::error::pas de politique sur les ressources"; exit 1; }
+
+      - name: Le service worker n'est pas mis en cache
+        run: |
+          entetes=$(curl -fsSI http://127.0.0.1:8080/sw.js)
+          echo "$entetes"
+          echo "$entetes" | grep -i 'cache-control' | grep -qi 'no-cache' \
+            || { echo "::error::sw.js mis en cache : l'application se figerait"; exit 1; }
+
+      - name: Les ressources empreintées sont immuables
+        run: |
+          actif=$(curl -fsS http://127.0.0.1:8080/ | grep -o '/assets/[^"]*\.js' | head -1)
+          curl -fsSI "http://127.0.0.1:8080${actif}" | grep -qi 'immutable' \
+            || { echo "::error::les ressources empreintées ne sont pas immuables"; exit 1; }
+
+      - name: La seconde page n'est pas avalée par le repli
+        run: |
+          corps=$(curl -fsS http://127.0.0.1:8080/pourquoi.html)
+          echo "$corps" | grep -qi 'vos données chez vous' \
+            || { echo "::error::pourquoi.html est servie par le repli SPA"; exit 1; }
+
+      - name: Une adresse inconnue retombe sur l'application
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/une/route/qui/nexiste/pas)
+          [ "$code" = "200" ] \
+            || { echo "::error::le repli SPA ne fonctionne pas (code $code)"; exit 1; }
+
+      - name: Le conteneur ne tourne pas en root
+        run: |
+          utilisateur=$(docker exec sentiers-ci id -un)
+          echo "utilisateur : $utilisateur"
+          [ "$utilisateur" != "root" ] \
+            || { echo "::error::le conteneur tourne en root"; exit 1; }
+
+      - name: Journaux du conteneur (toujours)
+        if: always()
+        run: docker logs sentiers-ci || true
+
+      - name: Arrêter
+        if: always()
+        run: docker rm -f sentiers-ci || true

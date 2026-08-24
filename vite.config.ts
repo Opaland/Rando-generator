@@ -1,5 +1,6 @@
 /// <reference types="vitest/config" />
 import { readdir, readFile, writeFile } from 'node:fs/promises'
+import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
@@ -53,10 +54,46 @@ function precacheServiceWorker(): Plugin {
   }
 }
 
+/**
+ * La politique de sécurité de contenu, lue là où elle est écrite.
+ *
+ * `deploy/csp.conf` est la source unique : nginx l'inclut en production, et
+ * le serveur de prévisualisation la sert ici. Les tests de bout en bout
+ * tournent donc contre la politique **réelle** — une politique éprouvée
+ * seulement en production est une politique éprouvée par les gens.
+ *
+ * La lecture est synchrone et volontairement bruyante : si le fichier
+ * manque ou si sa forme change, la configuration doit échouer au démarrage
+ * plutôt que de servir en silence une page sans politique. Un garde-fou
+ * qu'on ne remarque pas quand il tombe ne garde rien (CLAUDE.md §6quater).
+ */
+function politiqueDeSecurite(): string {
+  const brut = readFileSync(path.resolve('deploy/csp.conf'), 'utf8')
+  const trouve = /^set \$csp "([^"]+)";/m.exec(brut)
+  if (!trouve?.[1]) {
+    throw new Error(
+      'deploy/csp.conf : directive `set $csp "…";` introuvable. ' +
+        'La prévisualisation servirait une page sans politique de sécurité, ' +
+        'et les tests de bout en bout ne la vérifieraient plus.',
+    )
+  }
+  return trouve[1]
+}
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), precacheServiceWorker()],
   base: './',
+  /*
+    Les mêmes en-têtes qu'en production, sur le serveur de prévisualisation.
+
+    C'est lui que Playwright interroge : sans cette ligne, les 285 tests
+    tourneraient contre une page sans politique, et la première fois que
+    quelqu'un l'éprouverait serait en production.
+  */
+  preview: {
+    headers: { 'Content-Security-Policy': politiqueDeSecurite() },
+  },
   build: {
     // maplibre-gl pèse ~900 kB minifié à lui seul : seuil relevé en
     // connaissance de cause plutôt qu'un warning permanent.

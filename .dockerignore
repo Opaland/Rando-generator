@@ -1,0 +1,13 @@
+# Ce qui n'a rien à faire dans le contexte de construction : il est envoyé au
+# démon Docker à chaque build, et `node_modules` à lui seul le multiplie par
+# dix.
+node_modules
+dist
+.git
+.github
+coverage
+reports
+test-results
+playwright-report
+.stryker-tmp
+*.log
