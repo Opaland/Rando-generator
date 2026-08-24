@@ -90,10 +90,7 @@ describe('cas 3 — GPS très bruité', () => {
   it('un bruit de ±15 m autour du sentier crédite encore l’essentiel', () => {
     const rand = rng(42)
     const points = traceParallele(0).map(
-      ([lon, lat]): LonLat => [
-        lon,
-        lat + (rand() * 30 - 15) * METER_LAT,
-      ],
+      ([lon, lat]): LonLat => [lon, lat + (rand() * 30 - 15) * METER_LAT],
     )
     const pct = match([sentierDroit()], points).global.pct
     expect(pct).toBeGreaterThan(90)
@@ -102,10 +99,7 @@ describe('cas 3 — GPS très bruité', () => {
   it('LIMITE : un bruit de ±60 m crédite encore 100 % du sentier', () => {
     const rand = rng(7)
     const points = traceParallele(0).map(
-      ([lon, lat]): LonLat => [
-        lon,
-        lat + (rand() * 120 - 60) * METER_LAT,
-      ],
+      ([lon, lat]): LonLat => [lon, lat + (rand() * 120 - 60) * METER_LAT],
     )
     const pct = match([sentierDroit()], points).global.pct
     // MESURÉ : les segments entre points bruités zigzaguent à travers le
@@ -135,14 +129,143 @@ describe('cas 7 & 12 — sentiers parallèles proches', () => {
     expect(gr2?.pct ?? 0).toBe(0)
   })
 
-  it('LIMITE : séparés de 15 m, l’autre sentier est aussi crédité', () => {
+  it('séparés de 15 m, seul celui qu’on a suivi est crédité (#151)', () => {
     const itins = [sentierDroit(1, 10, 0), sentierDroit(2, 20, 15)]
     const res = match(itins, traceParallele(0))
+    const gr1 = res.results.find((r) => r.itineraryId === 1)
     const gr2 = res.results.find((r) => r.itineraryId === 2)
-    // 15 m < confirmMeters (0.4 × 50 = 20 m) : la confirmation de proximité
-    // ne peut pas distinguer deux sentiers plus proches que 20 m. Limite
-    // documentée — inverser ce test si un jour le tie-break est implémenté.
-    expect(gr2?.pct ?? 0).toBeGreaterThan(95)
+    /*
+      Ce test portait le contraire, et il était annoté LIMITE : 15 m est sous
+      `confirmMeters` (0,4 × 50 = 20 m), si bien que la confirmation de
+      proximité ne pouvait pas distinguer les deux sentiers et créditait les
+      deux à plus de 95 %.
+
+      Le départage tranche désormais : à chaque échantillon, le sentier le
+      plus proche de la trace l'emporte, et celui qui perd **partout** n'est
+      pas crédité. Baisser `confirmMeters` aurait été l'autre voie, et
+      l'issue l'écarte : elle casserait les traces à GPS ordinaire, qui sont
+      la majorité.
+    */
+    expect(gr1?.pct ?? 0).toBeGreaterThan(95)
+    expect(gr2?.pct ?? 100).toBeLessThan(5)
+  })
+})
+
+/**
+ * Le départage de #151 retire des crédits : il faut donc autant garder ce
+ * qu'il **ne doit pas** retirer que ce qu'il retire.
+ *
+ * La règle est « un même rival est plus proche à *chacun* des échantillons ».
+ * Ce « chacun » n'est pas de la prudence décorative : c'est ce qui évite
+ * d'inventer une marge, ce que le §2 interdit pour un seuil qui change ce qui
+ * est calculé. Les trois cas ci-dessous sont les trois façons dont une règle
+ * plus gourmande — une moyenne, une majorité — retirerait à tort.
+ */
+describe('#151 — ce que le départage ne doit pas retirer', () => {
+  /**
+   * OSM contient des géométries dupliquées : un même chemin tracé deux fois à
+   * quelques mètres près. Les deux itinéraires sont réellement parcourus, et
+   * le plus proche **alterne** d'un échantillon à l'autre.
+   *
+   * L'alternance n'est pas décorative, c'est tout le test. Une première
+   * version posait les deux sentiers de part et d'autre d'une trace centrée :
+   * les distances étaient égales, « strictement plus proche » n'était jamais
+   * vrai, et le test restait vert sous une règle qui retirait un passage dès
+   * qu'un rival gagnait une seule fois. Il ne mesurait rien (CLAUDE.md §1bis).
+   * Ici la trace zigzague entre les deux, chacun gagne un échantillon sur
+   * deux, et aucun ne gagne partout — ce que la règle exige pour retirer.
+   */
+  it('deux tracés quasi confondus restent tous deux crédités', () => {
+    const itins = [sentierDroit(1, 10, 0), sentierDroit(2, 20, 4)]
+    const zigzag = traceParallele(0).map(
+      ([lon, lat], i): LonLat => [lon, lat + (i % 2 === 0 ? 1 : 3) * METER_LAT],
+    )
+    const res = match(itins, zigzag)
+    const gr1 = res.results.find((r) => r.itineraryId === 1)
+    const gr2 = res.results.find((r) => r.itineraryId === 2)
+    expect(
+      gr1?.pct ?? 0,
+      'le sentier du bas a été retiré alors qu’il gagne un échantillon sur deux',
+    ).toBeGreaterThan(95)
+    expect(
+      gr2?.pct ?? 0,
+      'le sentier du haut a été retiré alors qu’il gagne un échantillon sur deux',
+    ).toBeGreaterThan(95)
+  })
+
+  /**
+   * Un chemin partagé par deux itinéraires — un GR et un GRP sur le même
+   * tronçon — n'a qu'un jeu d'échantillons : il ne se dispute rien avec
+   * lui-même, et les deux itinéraires restent crédités.
+   *
+   * **Ce test ne mesure pas le départage, et ne prétend pas le faire.** Les
+   * passages sont groupés par `wayId` : un chemin partagé n'en produit qu'un,
+   * `departagerLesPassages` sort sur son garde-fou `passages.length < 2` et
+   * la règle n'est jamais atteinte. Vérifié en injectant deux défauts (union
+   * au lieu de l'intersection, exclusion de soi retirée) : les autres tests
+   * du bloc virent au rouge, celui-ci reste vert.
+   *
+   * Ce qu'il garde est réel et vaut d'être gardé — le crédit passe par le
+   * chemin, pas par l'itinéraire, donc un tronçon commun compte pour les
+   * deux. Mais c'est une garde de non-régression sur `computeCompletion`,
+   * pas une garde sur #151, et l'écrire ailleurs serait mentir sur ce qui
+   * est couvert (CLAUDE.md §4bis).
+   */
+  it('un chemin partagé crédite les deux itinéraires qui l’empruntent', () => {
+    const partage = { osmWayId: 10, coords: sentierDroit().ways[0]!.coords }
+    const itins: Itinerary[] = [
+      { ...sentierDroit(1), ways: [partage] },
+      { ...sentierDroit(2), ways: [partage] },
+    ]
+    const res = match(itins, traceParallele(0))
+    expect(
+      res.results.find((r) => r.itineraryId === 1)?.pct ?? 0,
+    ).toBeGreaterThan(95)
+    expect(
+      res.results.find((r) => r.itineraryId === 2)?.pct ?? 0,
+    ).toBeGreaterThan(95)
+  })
+
+  /**
+   * Le sentier du milieu perd contre son voisin de gauche sur la première
+   * moitié et contre celui de droite sur la seconde. Deux rivaux différents
+   * qui gagnent chacun une moitié ne prouvent rien — c'est la signature d'un
+   * carrefour, pas celle d'un sentier qu'on n'a pas pris. La règle exige
+   * **un même** rival partout, et ce test le tient.
+   */
+  it('deux rivaux qui gagnent chacun une moitié ne suffisent pas', () => {
+    const milieu = sentierDroit(2, 20, 0)
+    // Deux voisins à 10 m, chacun ne couvrant qu'une moitié de la longueur.
+    const gauche: Itinerary = {
+      ...sentierDroit(1, 10, 10),
+      ways: [
+        {
+          osmWayId: 10,
+          coords: [
+            [LON_START, LAT + 10 * METER_LAT],
+            [4.55, LAT + 10 * METER_LAT],
+          ],
+        },
+      ],
+    }
+    const droite: Itinerary = {
+      ...sentierDroit(3, 30, 10),
+      ways: [
+        {
+          osmWayId: 30,
+          coords: [
+            [4.55, LAT + 10 * METER_LAT],
+            [LON_END, LAT + 10 * METER_LAT],
+          ],
+        },
+      ],
+    }
+    // La trace suit les voisins, à 10 m du sentier du milieu.
+    const res = match([gauche, milieu, droite], traceParallele(10))
+    expect(
+      res.results.find((r) => r.itineraryId === 2)?.pct ?? 0,
+      'le sentier du milieu a été retiré par deux rivaux différents',
+    ).toBeGreaterThan(50)
   })
 })
 
@@ -220,8 +343,12 @@ describe('cas 11 — sentiers superposés (way partagé)', () => {
       ways: [shared],
     }
     const res = match([gr, pr], traceParallele(0))
-    expect(res.results.find((r) => r.itineraryId === 1)?.pct).toBeGreaterThan(95)
-    expect(res.results.find((r) => r.itineraryId === 5)?.pct).toBeGreaterThan(95)
+    expect(res.results.find((r) => r.itineraryId === 1)?.pct).toBeGreaterThan(
+      95,
+    )
+    expect(res.results.find((r) => r.itineraryId === 5)?.pct).toBeGreaterThan(
+      95,
+    )
     // Le global ne compte le way qu'une fois : ~7,8 km, pas 15,6.
     expect(res.global.totalMeters).toBeLessThan(9000)
   })
