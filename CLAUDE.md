@@ -233,6 +233,40 @@ maintenant de lancer Playwright sur un `dist/` plus vieux que les sources.
 
 Ce qui vaut pour tout garde-fou : **s'il faut le lire, il ne garde rien.**
 
+**Et le 25/08, ce garde-fou-là s'est fait avoir à son tour.** Un hook
+`PreToolUse` juge la commande *avant* qu'elle s'exécute — or une seule
+commande peut modifier les sources **puis** lancer Playwright : un
+`python3 - <<PY` qui réécrit un fichier, suivi d'un `npm run build && npx
+playwright test`.
+
+Au moment où le hook regarde, `dist/` est encore à jour : les sources ne
+seront modifiées qu'une milliseconde plus tard, par la commande qu'il vient
+d'autoriser. Le build a échoué sur deux imports devenus inutiles, `dist/`
+est resté à la version d'avant, et trois tests sont passés au vert en
+prouvant le contraire de ce qu'on leur demandait — pendant une vérification
+du §1, c'est-à-dire à l'endroit exact où l'on se croyait le plus prudent.
+
+La parade est dans `playwright.config.ts` : `globalSetup` s'exécute **dans**
+le processus de test, au démarrage. Il n'y a plus d'intervalle entre la
+vérification et l'usage. Le hook garde sa raison d'être — il refuse plus
+tôt, avec un message plus utile — mais il ne pouvait pas être le seul.
+
+La leçon générale : **un contrôle placé avant l'action ne garde que ce que
+l'action n'a pas encore changé.** Quand une même commande fait les deux, le
+contrôle doit vivre là où l'action se produit.
+
+**Corollaire, trouvé une heure plus tard le même jour : ne jamais
+reconstruire pendant qu'une porte tourne.** `npm run preview` sert `dist/`
+depuis le disque, à chaque requête — pas une copie prise au démarrage. Un
+`npm run build` lancé pendant les e2e change donc l'application **sous** les
+tests en cours : ceux d'avant ont éprouvé une version, ceux d'après une
+autre, et rien dans le rapport ne dit où passe la frontière.
+
+Le contrôle du démarrage ne peut rien contre ça — il a déjà répondu, et il
+avait raison au moment où il a répondu. La seule parade est de tenir une
+porte pour indivisible : tant qu'elle tourne, l'arbre ne bouge pas. Un
+résultat obtenu autrement se jette, il ne se discute pas.
+
 ## 6quinquies. Un test qui ne regarde qu'un écran ne garde qu'un écran
 
 Les règles d'écran (`tests/e2e/regles-d-ecran.spec.ts`) posent cinq

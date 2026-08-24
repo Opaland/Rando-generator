@@ -25,6 +25,16 @@ export default defineConfig({
    * Soixante-dix minutes ne protègent donc pas de la lenteur, et c'est
    * voulu : elles protègent de l'infini.
    */
+  /*
+    Refuse de démarrer sur un `dist/` périmé (CLAUDE.md §6quater).
+
+    Le hook `.claude/hooks/dist-a-jour.sh` pose la même question, mais avant
+    l'exécution de la commande — et une commande qui modifie les sources puis
+    lance Playwright passe donc au travers. Ce contrôle-ci s'exécute dans le
+    processus, au démarrage : il n'y a plus d'intervalle entre la
+    vérification et l'usage. Voir l'en-tête du fichier pour le raté daté.
+  */
+  globalSetup: './tests/e2e/dist-a-jour.ts',
   globalTimeout: 70 * 60 * 1000,
   reporter: process.env.CI ? 'github' : 'list',
   use: {
