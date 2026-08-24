@@ -478,3 +478,24 @@
     max-height: calc(48vh - var(--hauteur-onglets));
   }
 }
+
+/*
+  Le contenu de la feuille, dans un conteneur unique.
+
+  Il n'existe que pour donner une prise : quand la feuille est repliée, une
+  seule ligne le met `inert`, et les vingt-six éléments qu'elle cachait
+  quittent le parcours de tabulation d'un coup. Vingt-six gardes recopiées
+  auraient été vingt-six occasions d'en oublier une (CLAUDE.md §4).
+
+  La grille et l'écart sont repris à l'identique de `.sidebar` : le conteneur
+  ne déplace rien, il enveloppe. Sans cela, les sections se seraient
+  retrouvées collées dans une seule cellule de la grille du panneau.
+*/
+.contenuFeuille {
+  display: grid;
+  gap: var(--espace-8);
+  align-content: start;
+  /* Le panneau a une grille à une colonne ; sans cette borne, une section au
+     contenu large étirerait la cellule et ferait déborder la feuille. */
+  min-width: 0;
+}

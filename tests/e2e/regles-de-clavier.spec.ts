@@ -34,10 +34,15 @@ import {
  * Mesuré avant correction, onglet actif : `outline: none 0px` alors que
  * `:focus-visible` s'applique, et **pas un pixel** ne changeait.
  *
- * ## Ce que cette sonde ne demande pas
+ * ## La deuxième question
  *
- * Elle ne demande pas si le focus va *au bon endroit*, ni s'il entre dans ce
- * qui est replié — c'est une autre question, et elle a sa propre sonde.
+ * Un élément peut être parfaitement focusable et parfaitement invisible.
+ * Mesuré le 24/08, feuille repliée à 52 px : la tabulation traversait
+ * **vingt-six** éléments qu'aucun pixel ne montrait. `overflow: hidden` cache
+ * sans retirer, et le parcours de tabulation ne regarde même pas cela.
+ *
+ * C'est le §1bis vu depuis le clavier : un élément écrêté garde un rectangle
+ * valide, et personne ne le lui demande.
  */
 
 const LARGEURS = [
@@ -214,3 +219,118 @@ for (const vue of LARGEURS) {
     })
   })
 }
+
+/**
+ * Deuxième question : la tabulation entre-t-elle dans ce qui est replié ?
+ *
+ * On la pose là où elle a une réponse nette — sur ce que la mise en page a
+ * délibérément fermé. « Recouvert par un panneau ouvert » est une autre
+ * question, plus difficile, et elle est écrite comme telle dans
+ * `docs/AUDIT_UX_24_08.md` plutôt que tranchée ici : un panneau qui recouvre
+ * la carte n'est pas un défaut, et une règle qui rougirait dessus finirait
+ * désactivée.
+ */
+test.describe('rien de replié n’est atteignable — téléphone', () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true })
+
+  test('la tabulation ne descend pas dans la feuille fermée', async ({
+    page,
+  }) => {
+    await atteindre(page)
+
+    /*
+      Replier comme une personne le fait : la poignée cycle. On boucle sur
+      l'état final voulu plutôt que sur un nombre de clics — `data-position`
+      change tout de suite, la hauteur met 0,2 s à suivre, et un compte de
+      clics supposerait un état de départ (§6ter).
+    */
+    const feuille = page.getByTestId('sidebar')
+    const poignee = page.getByTestId('sheet-handle')
+    await expect
+      .poll(
+        async () => {
+          const position = await feuille.getAttribute('data-position')
+          if (position === 'repliee') return 'repliee'
+          await poignee.click({ timeout: 2_000 }).catch(() => undefined)
+          return position
+        },
+        { message: 'la feuille ne se replie pas' },
+      )
+      .toBe('repliee')
+    await expect
+      .poll(() =>
+        feuille.evaluate((e) => Math.round(e.getBoundingClientRect().height)),
+      )
+      .toBeLessThan(80)
+
+    const replies: string[] = []
+    const vus: string[] = []
+    for (let i = 0; i < ARRETS_MAX; i++) {
+      await page.keyboard.press('Tab')
+      const arret = await arretCourant(page)
+      if (!arret) break
+      if (i > 0 && vus[0] === arret.quoi) break
+      vus.push(arret.quoi)
+      // Ce qui est dans la feuille et n'est pas la poignée était replié.
+      const dansLaFeuille = await page.evaluate(() => {
+        const el = document.activeElement
+        const feuilleEl = document.querySelector('[data-testid="sidebar"]')
+        const poigneeEl = document.querySelector('[data-testid="sheet-handle"]')
+        if (!el || !feuilleEl || !poigneeEl) return false
+        return (
+          feuilleEl.contains(el) && !poigneeEl.contains(el) && el !== poigneeEl
+        )
+      })
+      if (dansLaFeuille) replies.push(arret.quoi)
+    }
+
+    expect(
+      vus.length,
+      'la tabulation n’atteint plus rien du tout',
+    ).toBeGreaterThan(2)
+    expect(
+      replies,
+      `feuille repliée, le focus descend quand même sur : ${replies.join(' | ')}`,
+    ).toEqual([])
+  })
+
+  /**
+   * L'autre moitié de la règle, et celle qui l'empêche d'être un mur : ce qui
+   * est mis hors d'atteinte doit y revenir. Une garde qui ne se lève jamais
+   * casse l'application au lieu de la protéger, et se remarquerait tard.
+   */
+  test('tout redevient atteignable dès que la feuille s’ouvre', async ({
+    page,
+  }) => {
+    await atteindre(page)
+    const feuille = page.getByTestId('sidebar')
+    const poignee = page.getByTestId('sheet-handle')
+    await expect
+      .poll(async () => {
+        const position = await feuille.getAttribute('data-position')
+        if (position === 'repliee') return 'repliee'
+        await poignee.click({ timeout: 2_000 }).catch(() => undefined)
+        return position
+      })
+      .toBe('repliee')
+    await expect
+      .poll(async () => {
+        const position = await feuille.getAttribute('data-position')
+        if (position !== 'repliee') return 'ouverte'
+        await poignee.click({ timeout: 2_000 }).catch(() => undefined)
+        return position
+      })
+      .toBe('ouverte')
+
+    // Un bouton de zone est le premier élément de la feuille : s'il répond au
+    // clavier, la feuille entière est rendue.
+    await expect
+      .poll(() =>
+        page.getByTestId('zone-pilat').evaluate((el) => {
+          ;(el as HTMLElement).focus()
+          return document.activeElement === el
+        }),
+      )
+      .toBe(true)
+  })
+})
