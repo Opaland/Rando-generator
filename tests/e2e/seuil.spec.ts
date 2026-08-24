@@ -36,46 +36,41 @@ test('le seuil « bouclé » se règle, se voit, et survit au rechargement', asy
   await page.getByTestId('completion-100').check()
   await expect(boucles).toContainText('au moins 100 % parcourus')
 
-  // Le réglage se garde, comme la tolérance — mais il faut d'abord qu'il
-  // soit écrit. `setCompletionPct` met l'état à jour synchronement, puis
-  // écrit dans IndexedDB sans que l'interface attende cette écriture :
-  // recharger dans cette fenêtre annule la transaction en cours, et le
-  // réglage est perdu.
-  //
-  // Mesuré : la suite complète prenait ce test en défaut environ une fois
-  // sur deux, jamais lorsqu'il était lancé seul — et toute lecture de la
-  // base intercalée avant le rechargement le faisait passer à tous les
-  // coups, une transaction de lecture attendant les écritures déjà ouvertes
-  // sur le même magasin. C'est cette lecture-là qui manquait au test, pas
-  // une attente arbitraire : « survit au rechargement » suppose « a été
-  // écrit », et le test ne vérifiait que la seconde moitié de la phrase.
-  await expect.poll(() => seuilEnBase(page), { timeout: 5_000 }).toBe(100)
+  /*
+    Le rechargement suit le clic **sans rien attendre entre les deux**, et
+    c'est exactement le geste que décrit l'issue #203.
 
+    Le test attendait auparavant que le réglage soit écrit avant de recharger.
+    Cette attente corrigeait le test et non le produit : la fenêtre restait
+    ouverte pour une personne, qui elle ne lit pas IndexedDB avant d'appuyer
+    sur « recharger ». Les réglages sont écrits dans `localStorage` depuis
+    #203, dont l'écriture est synchrone par contrat — il n'y a plus de fenêtre
+    à attendre.
+
+    La preuve déterministe est ailleurs : `tests/unit/appStore.test.ts`
+    constate que la valeur est écrite quand le setter rend la main. Ici, on
+    vérifie que le geste complet tient, dans un vrai navigateur.
+  */
   await page.reload()
   await expect(page.getByTestId('completion-100')).toBeChecked({
     timeout: 15_000,
   })
+
+  // Et là où il est écrit : dans le magasin synchrone, pas dans IndexedDB.
+  expect(await seuilEnregistre(page)).toBe(100)
 })
 
-/** Lit le seuil réellement écrit dans IndexedDB, sans passer par le store. */
-async function seuilEnBase(page: Page): Promise<unknown> {
-  return page.evaluate(
-    async () =>
-      await new Promise<unknown>((resolve) => {
-        const requete = indexedDB.open('sentiers')
-        requete.onsuccess = () => {
-          const transaction = requete.result.transaction('settings', 'readonly')
-          const lecture = transaction.objectStore('settings').get('completionPct')
-          lecture.onsuccess = () => {
-            resolve(lecture.result)
-          }
-          lecture.onerror = () => {
-            resolve(null)
-          }
-        }
-        requete.onerror = () => {
-          resolve(null)
-        }
-      }),
-  )
+/**
+ * Lit le seuil réellement enregistré, sans passer par le store.
+ *
+ * Il vivait dans le magasin `settings` d'IndexedDB ; il vit dans
+ * `localStorage` depuis #203. Ce test lisait donc la bonne question au
+ * mauvais endroit, et rendait `undefined` — une valeur qu'un `toBe(100)`
+ * refuse, heureusement.
+ */
+async function seuilEnregistre(page: Page): Promise<unknown> {
+  return page.evaluate(() => {
+    const brut = localStorage.getItem('sentiers.reglage.completionPct')
+    return brut === null ? null : (JSON.parse(brut) as unknown)
+  })
 }

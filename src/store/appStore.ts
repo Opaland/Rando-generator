@@ -10,11 +10,7 @@ import {
   ZONES,
   libelleDeZone,
 } from '../core/overpass.ts'
-import {
-  GpxError,
-  elevationGainMeters,
-  trackFingerprint,
-} from '../core/gpx.ts'
+import { GpxError, elevationGainMeters, trackFingerprint } from '../core/gpx.ts'
 import {
   backupFilename,
   buildBackup,
@@ -27,11 +23,7 @@ import {
   BackupError,
 } from '../core/backup.ts'
 import { downloadBlob } from '../lib/download.ts'
-import {
-  GeocodeError,
-  chercherLieux,
-  type Lieu,
-} from '../core/geocode.ts'
+import { GeocodeError, chercherLieux, type Lieu } from '../core/geocode.ts'
 import { resumeObjectif, type ResumeObjectif } from '../core/objectifs.ts'
 import type { ParcoursDeclare } from '../core/declaratif.ts'
 import { polylineLengthMeters } from '../core/sampling.ts'
@@ -94,10 +86,7 @@ import {
   lireItineraires,
   parseTraceFile,
 } from './lecture.ts'
-import {
-  GEO_OPTIONS,
-  geolocationErrorMessage,
-} from '../core/geolocation.ts'
+import { GEO_OPTIONS, geolocationErrorMessage } from '../core/geolocation.ts'
 import type {
   ElevationProfile,
   Itinerary,
@@ -115,6 +104,7 @@ import {
   type SentiersDb,
   type SettingKey,
 } from '../db/database.ts'
+import { ecrireReglage } from '../db/reglages.ts'
 import { computeMatching } from './matchingClient.ts'
 
 /**
@@ -497,10 +487,6 @@ function pause(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0))
 }
 
-
-
-
-
 /**
  * La persistance n'est demandée qu'une fois par session, et seulement
  * lorsqu'il y a quelque chose à protéger (issue #169).
@@ -542,7 +528,9 @@ function fetchLocalBoucles(): Promise<Itinerary[]> {
     `${import.meta.env.BASE_URL}data/boucles-metropole-lyon.json`,
   )
     .then((response) => (response.ok ? response.json() : null))
-    .then((data: unknown) => parseBouclesGeoJSON(data, new Date().toISOString()))
+    .then((data: unknown) =>
+      parseBouclesGeoJSON(data, new Date().toISOString()),
+    )
     .catch(() => [])
     .then((boucles) => {
       // Un échec ne se mémorise pas. Hors ligne au premier chargement, les
@@ -698,7 +686,9 @@ export const useAppStore = create<AppState>()((set, get) => {
       const franchis = pctsPrecedents
         ? crossedMilestones(pctsPrecedents, result.results)
         : []
-      pctsPrecedents = new Map(result.results.map((r) => [r.itineraryId, r.pct]))
+      pctsPrecedents = new Map(
+        result.results.map((r) => [r.itineraryId, r.pct]),
+      )
       // Un seul franchissement annoncé à la fois : le plus haut. L'annonce
       // reste ensuite jusqu'à ce que l'utilisateur la referme — mais pas
       // au-delà de ce qu'elle raconte. L'effacer à chaque calcul la faisait
@@ -916,6 +906,51 @@ export const useAppStore = create<AppState>()((set, get) => {
   async function persistLastZone(zoneKey: string): Promise<void> {
     const db = await baseOuverte()
     if (db) await db.setSetting('lastZoneKey', zoneKey)
+  }
+
+  /**
+   * Enregistre un réglage, et le montre — dans cet ordre, sans attente
+   * entre les deux (issue #203).
+   *
+   * Les sept setters faisaient :
+   *
+   *     set({ completionPct: seuil })          // l'écran change tout de suite
+   *     const db = await baseOuverte()
+   *     if (db) await db.setSetting(…, seuil)  // la base apprend après
+   *
+   * Entre les deux, l'interface affirmait quelque chose que la base ne savait
+   * pas encore. Un rechargement dans cette fenêtre annulait la transaction, et
+   * le réglage revenait à sa valeur précédente **alors que la personne l'avait
+   * vu changer**.
+   *
+   * `ecrireReglage` écrit dans `localStorage`, dont le contrat est synchrone :
+   * quand il rend la main, c'est écrit. Il n'y a plus de fenêtre à fermer — il
+   * n'y a plus de fenêtre, et l'écran répond toujours dans le même geste.
+   *
+   * **Montrer après avoir écrit** a été essayé et abandonné : une case cochée
+   * contrôlée par React revient visiblement à son ancien état le temps de
+   * l'écriture. Vingt-trois tests de bout en bout l'ont dit d'une seule voix.
+   * Échanger une perte rare contre un sursaut à chaque clic n'est pas un
+   * progrès. Le détail est dans `db/reglages.ts`.
+   *
+   * Le repli sur IndexedDB n'est pas décoratif : certains navigateurs
+   * verrouillent `localStorage` et pas l'autre. La fenêtre de #203 revient
+   * alors, et c'est dit plutôt que masqué.
+   *
+   * Une fonction nommée plutôt que sept séquences recopiées (§4) — c'est
+   * l'ancienne forme qui le montre le mieux : sept copies du même défaut.
+   */
+  async function enregistrerReglage(
+    clef: SettingKey,
+    valeur: string | number,
+    appliquer: () => void,
+  ): Promise<void> {
+    marquerTouche(clef)
+    const ecrit = ecrireReglage(clef, valeur)
+    appliquer()
+    if (ecrit) return
+    const db = await baseOuverte()
+    if (db) await db.setSetting(clef, valeur)
   }
 
   /**
@@ -1305,9 +1340,9 @@ export const useAppStore = create<AppState>()((set, get) => {
         } catch (error) {
           errors.push(
             error instanceof GpxError ||
-            error instanceof FitError ||
-            error instanceof TcxError ||
-            error instanceof GeoJsonError
+              error instanceof FitError ||
+              error instanceof TcxError ||
+              error instanceof GeoJsonError
               ? `${file.name} : ${error.message}`
               : `${file.name} : lecture impossible.`,
           )
@@ -1351,7 +1386,9 @@ export const useAppStore = create<AppState>()((set, get) => {
           })
           await pause()
           const lecture = await lireItineraires(file)
-          const horsLimites = messagePointsHorsLimites(lecture.pointsHorsLimites)
+          const horsLimites = messagePointsHorsLimites(
+            lecture.pointsHorsLimites,
+          )
           if (horsLimites) errors.push(`${file.name} : ${horsLimites}`)
           const exploitables = lecture.trails.filter((trail) =>
             trail.lines.some((ligne) => ligne.length >= 2),
@@ -1362,7 +1399,10 @@ export const useAppStore = create<AppState>()((set, get) => {
             )
             continue
           }
-          const nomDeBase = file.name.replace(/\.(gpx|fit|tcx|geojson|json)$/i, '')
+          const nomDeBase = file.name.replace(
+            /\.(gpx|fit|tcx|geojson|json)$/i,
+            '',
+          )
           const db = await baseOuverte()
           for (const [rang, trail] of exploitables.entries()) {
             nextId -= 1
@@ -1409,9 +1449,9 @@ export const useAppStore = create<AppState>()((set, get) => {
         } catch (error) {
           errors.push(
             error instanceof GpxError ||
-            error instanceof FitError ||
-            error instanceof TcxError ||
-            error instanceof GeoJsonError
+              error instanceof FitError ||
+              error instanceof TcxError ||
+              error instanceof GeoJsonError
               ? `${file.name} : ${error.message}`
               : `${file.name} : lecture impossible.`,
           )
@@ -1643,10 +1683,9 @@ export const useAppStore = create<AppState>()((set, get) => {
       const objectifs = actuels.includes(id)
         ? actuels.filter((autre) => autre !== id)
         : [...actuels, id]
-      marquerTouche('objectifs')
-      set({ objectifs })
-      const db = await baseOuverte()
-      if (db) await db.setSetting('objectifs', JSON.stringify(objectifs))
+      await enregistrerReglage('objectifs', JSON.stringify(objectifs), () => {
+        set({ objectifs })
+      })
     },
 
     resumeDeLObjectif(id) {
@@ -1660,7 +1699,12 @@ export const useAppStore = create<AppState>()((set, get) => {
 
     effacerLieux() {
       lieuSequence += 1
-      set({ lieux: [], lieuError: null, lieuxVides: false, lieuxLoading: false })
+      set({
+        lieux: [],
+        lieuError: null,
+        lieuxVides: false,
+        lieuxLoading: false,
+      })
     },
 
     /*
@@ -1700,10 +1744,9 @@ export const useAppStore = create<AppState>()((set, get) => {
 
     async setTolerance(value) {
       const clamped = Math.min(MAX_TOLERANCE, Math.max(MIN_TOLERANCE, value))
-      marquerTouche('toleranceMeters')
-      set({ toleranceMeters: clamped })
-      const { db } = get()
-      if (db) await db.setSetting('toleranceMeters', clamped)
+      await enregistrerReglage('toleranceMeters', clamped, () => {
+        set({ toleranceMeters: clamped })
+      })
       await recompute()
     },
 
@@ -1711,10 +1754,9 @@ export const useAppStore = create<AppState>()((set, get) => {
       // Aucun recalcul : le seuil ne change pas les pourcentages, seulement
       // le mot qu'on met dessus. Les composants le relisent au rendu.
       const seuil = normalizeCompletionPct(value)
-      marquerTouche('completionPct')
-      set({ completionPct: seuil })
-      const db = await baseOuverte()
-      if (db) await db.setSetting('completionPct', seuil)
+      await enregistrerReglage('completionPct', seuil, () => {
+        set({ completionPct: seuil })
+      })
     },
 
     selectItinerary(id) {
@@ -1839,33 +1881,29 @@ export const useAppStore = create<AppState>()((set, get) => {
     },
 
     async setModeAffichage(mode) {
-      marquerTouche('modeAffichage')
-      set({ modeAffichage: mode })
-      const db = await baseOuverte()
-      if (db) await db.setSetting('modeAffichage', mode)
+      await enregistrerReglage('modeAffichage', mode, () => {
+        set({ modeAffichage: mode })
+      })
     },
 
     async setGrosTexte(actif) {
-      marquerTouche('grosTexte')
-      set({ grosTexte: actif })
-      const db = await baseOuverte()
       // Pas de booléen dans le magasin des réglages : 0/1, relu par
       // lireDrapeau qui n'accepte que 1.
-      if (db) await db.setSetting('grosTexte', actif ? 1 : 0)
+      await enregistrerReglage('grosTexte', actif ? 1 : 0, () => {
+        set({ grosTexte: actif })
+      })
     },
 
     async setGuideFerme(ferme) {
-      marquerTouche('guideFerme')
-      set({ guideFerme: ferme })
-      const db = await baseOuverte()
-      if (db) await db.setSetting('guideFerme', ferme ? 1 : 0)
+      await enregistrerReglage('guideFerme', ferme ? 1 : 0, () => {
+        set({ guideFerme: ferme })
+      })
     },
 
     async setPanneauReplie(replie) {
-      marquerTouche('panneauReplie')
-      set({ panneauReplie: replie })
-      const db = await baseOuverte()
-      if (db) await db.setSetting('panneauReplie', replie ? 1 : 0)
+      await enregistrerReglage('panneauReplie', replie ? 1 : 0, () => {
+        set({ panneauReplie: replie })
+      })
     },
 
     async rafraichirStockage() {
@@ -1879,7 +1917,8 @@ export const useAppStore = create<AppState>()((set, get) => {
         // Les sorties fictives partent ; les boucles restent, elles sont
         // réelles. La zone est renommée pour ce qu'elle est vraiment.
         tracks: etat.tracks.filter((t) => !t.id.startsWith('demo-')),
-        zoneKey: etat.zoneKey === 'demonstration' ? 'boucles-lyon' : etat.zoneKey,
+        zoneKey:
+          etat.zoneKey === 'demonstration' ? 'boucles-lyon' : etat.zoneKey,
         zoneLabel:
           etat.zoneKey === 'demonstration'
             ? 'Boucles communales — Métropole de Lyon'
@@ -1967,7 +2006,8 @@ export const useAppStore = create<AppState>()((set, get) => {
 
       void fetchElevationProfile(coords)
         .then((profile) => {
-          if (applies()) set({ elevationProfile: profile, elevationLoading: false })
+          if (applies())
+            set({ elevationProfile: profile, elevationLoading: false })
         })
         .catch((error: unknown) => {
           if (!applies()) return
