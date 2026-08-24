@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import {
+  activerLeGrosTexte,
   fermerLeGuide,
   mockElevation,
   mockExternalNetwork,
@@ -461,48 +462,6 @@ const AVEC_GROS_TEXTE = [
   { nom: 'téléphone', width: 390, height: 844, tactile: true },
   { nom: 'PC', width: 1280, height: 800, tactile: false },
 ] as const
-
-/** Bascule le gros texte comme une personne le fait : par le réglage. */
-async function activerLeGrosTexte(page: Page, compact: boolean): Promise<void> {
-  const bascule = page.getByTestId('gros-texte')
-  const section = page.getByTestId('mode-affichage')
-  await expect
-    .poll(
-      async () => {
-        if (await bascule.isVisible().catch(() => false)) return true
-        // Le réglage vit dans un accordéon replié : atteindre la section ne
-        // suffit pas, il faut l'ouvrir. C'est aussi ce que fait une personne,
-        // et le test l'avait oublié.
-        if (await section.isVisible().catch(() => false)) {
-          await section
-            .locator('summary')
-            .click()
-            .catch(() => undefined)
-        }
-        if (compact) {
-          const onglet = page.getByTestId('onglet-reglages')
-          if (await onglet.isVisible().catch(() => false)) {
-            await onglet.click().catch(() => undefined)
-          }
-          const poignee = page.getByTestId('sheet-handle')
-          if (await poignee.isVisible().catch(() => false)) {
-            await poignee.click().catch(() => undefined)
-          }
-        }
-        return false
-      },
-      { timeout: 25_000 },
-    )
-    .toBe(true)
-  await bascule.check()
-  // L'attribut est posé sur la racine : l'attendre, plutôt que de supposer
-  // que le clic a déjà repeint.
-  await expect
-    .poll(() =>
-      page.evaluate(() => document.documentElement.dataset['grosTexte']),
-    )
-    .toBe('oui')
-}
 
 for (const vue of AVEC_GROS_TEXTE) {
   test.describe(`gros texte — ${vue.nom}`, () => {
