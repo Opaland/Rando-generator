@@ -338,6 +338,79 @@ describe('fetchOverpass', () => {
     expect(fetchFn).toHaveBeenCalledTimes(2)
   })
 
+  /**
+   * Overpass ne signale pas ses échecs par un code HTTP : quand une requête
+   * dépasse son délai ou sa mémoire, il répond **200** avec un corps JSON
+   * parfaitement formé — `elements: []` — et le motif dans `remark`.
+   *
+   * Le code ne lisait pas `remark`. Une réponse d'échec passait donc pour un
+   * succès vide, et l'application affirmait « Aucun itinéraire balisé trouvé
+   * dans cette zone sur OpenStreetMap » — c'est-à-dire le contraire de la
+   * vérité, sur des départements qui en comptent des milliers.
+   */
+  const remarkResponse = (remark: string, elements: unknown[] = []) =>
+    new Response(JSON.stringify({ version: 0.6, elements, remark }), {
+      status: 200,
+    })
+
+  it('ne prend pas un échec Overpass en 200 pour une zone vide', async () => {
+    const fetchFn = vi
+      .fn()
+      .mockResolvedValueOnce(
+        remarkResponse(
+          'runtime error: Query timed out in "query" at line 3 after 180 seconds.',
+        ),
+      )
+      .mockResolvedValueOnce(okResponse())
+    const data = await fetchOverpass('QUERY', { fetchFn })
+    expect(
+      fetchFn,
+      'un miroir qui a échoué en 200 doit laisser la place au suivant',
+    ).toHaveBeenCalledTimes(2)
+    expect((data as { elements: unknown[] }).elements).toHaveLength(
+      pilatFixture.elements.length,
+    )
+  })
+
+  it('rapporte le motif d’Overpass quand tous les miroirs échouent ainsi', async () => {
+    const fetchFn = vi
+      .fn()
+      .mockResolvedValue(
+        remarkResponse(
+          'runtime error: Query run out of memory in "query" at line 3 using about 2048 MB of RAM.',
+        ),
+      )
+    const erreur: unknown = await fetchOverpass('QUERY', { fetchFn }).catch(
+      (e: unknown) => e,
+    )
+    expect(erreur).toBeInstanceOf(OverpassError)
+    // Le motif brut est en anglais et parle de RAM : il n'a pas sa place à
+    // l'écran tel quel. Ce que la personne doit lire, c'est que la zone est
+    // trop vaste — et quoi faire à la place.
+    expect((erreur as Error).message).toMatch(/trop (vaste|grande)/i)
+    expect((erreur as Error).message).not.toMatch(/runtime error/)
+  })
+
+  /**
+   * Un `remark` accompagné de données est un résultat **partiel**, pas un
+   * échec : Overpass a rendu ce qu'il a pu. On garde les données — mieux vaut
+   * une zone incomplète que pas de zone — mais on ne fait pas semblant
+   * qu'elle est complète.
+   */
+  it('garde un résultat partiel, et le signale', async () => {
+    const fetchFn = vi
+      .fn()
+      .mockResolvedValue(
+        remarkResponse('Please note: ...', pilatFixture.elements),
+      )
+    const data = await fetchOverpass('QUERY', { fetchFn })
+    expect(fetchFn).toHaveBeenCalledTimes(1)
+    expect((data as { elements: unknown[] }).elements).toHaveLength(
+      pilatFixture.elements.length,
+    )
+    expect((data as { remark?: string }).remark).toBeTruthy()
+  })
+
   it('lève une OverpassError en français si tous les miroirs échouent', async () => {
     const fetchFn = vi.fn().mockRejectedValue(new TypeError('failed to fetch'))
     await expect(fetchOverpass('QUERY', { fetchFn })).rejects.toThrow(
