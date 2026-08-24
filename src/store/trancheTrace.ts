@@ -172,7 +172,21 @@ export function trancheTrace(deps: DependancesTrace): ActionsTrace {
     quoi: 'aller-retour' | 'boucle',
   ): void {
     const actuelles = deps.etatTrace().drawWaypointKeys
-    if (keys === actuelles || keys.length === actuelles.length) return
+    /*
+      La garde tenait deux moitiés ; la seconde était inatteignable.
+
+      `keys.length === actuelles.length` ne peut être vrai que si les deux
+      tableaux sont le même : `clefsAllerRetour` rend soit `keys` lui-même —
+      moins de deux étapes —, soit 2n−1 clés ; `clefsBouclees` rend soit
+      `keys` lui-même, soit n+1. Aucune des deux ne peut fabriquer un tableau
+      **différent** et de même longueur.
+
+      La vague de mutation du 24/08 l'a montrée sans que j'aie à le prouver :
+      remplacer le `ou` par un `et` survit, et supprimer la garde entière
+      aussi. Une condition qui a l'air de garder quelque chose et ne garde
+      rien finit par être lue comme une protection qui existe.
+    */
+    if (keys === actuelles) return
     const graph = graphe()
     const path = routeThrough(graph, keys)
     if (!path) {

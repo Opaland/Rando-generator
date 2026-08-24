@@ -139,6 +139,42 @@ describe('deux fiches ouvertes coup sur coup', () => {
     expect(b.etat().elevationLoading).toBe(false)
   })
 
+  /**
+   * Le cas que la vague de mutation a démasqué.
+   *
+   * `encoreLa()` tient deux conditions : le numéro d'ordre **et**
+   * l'identifiant encore ouvert. Remplacer le `&&` par un `||` survivait à
+   * tous les tests — parce qu'aucun ne rouvrait **la même** fiche.
+   *
+   * Or c'est le geste le plus banal du monde : on ouvre un itinéraire, on
+   * referme d'un doigt maladroit, on rouvre le même. La première requête
+   * revient alors sur une fiche dont l'identifiant correspond, et seul le
+   * numéro d'ordre la distingue. Avec un `ou`, elle écrase ce qui est en
+   * train de se charger.
+   */
+  it('rouvrir le même itinéraire n’accepte pas la réponse du premier tour', async () => {
+    const b = banc([itineraire(1, 3)])
+    b.actions.openItineraryDetail(1)
+    b.actions.closeItineraryDetail()
+    b.actions.openItineraryDetail(1)
+    expect(profilsEnAttente).toHaveLength(2)
+
+    // La réponse du **premier** tour revient, sur une fiche qui porte le même
+    // identifiant. Seul le numéro d'ordre peut la refuser.
+    profilsEnAttente[0]?.resoudre(profil(9))
+    await laisserPasser()
+    expect(
+      b.etat().elevationProfile,
+      'la réponse d’un tour abandonné s’est posée sur la fiche rouverte',
+    ).toBeNull()
+    expect(b.etat().elevationLoading).toBe(true)
+
+    // Et celle du second tour, elle, est bien acceptée.
+    profilsEnAttente[1]?.resoudre(profil(3))
+    await laisserPasser()
+    expect(b.etat().elevationProfile?.elevations).toHaveLength(3)
+  })
+
   it('une erreur de la fiche abandonnée ne s’affiche pas sur la suivante', async () => {
     const b = banc([itineraire(1, 3), itineraire(2, 5)])
     b.actions.openItineraryDetail(1)
@@ -146,6 +182,64 @@ describe('deux fiches ouvertes coup sur coup', () => {
     profilsEnAttente[0]?.rejeter(new Error('réseau'))
     await laisserPasser()
     expect(b.etat().elevationError).toBeNull()
+    expect(b.etat().elevationLoading).toBe(true)
+  })
+})
+
+/**
+ * Les points d'intérêt, et ce que la vague de mutation a montré non couvert.
+ *
+ * `choisirPois` tranche entre le réseau et la réserve, et la fiche doit dire
+ * **d'où** viennent les points : un point d'eau emporté il y a trois mois peut
+ * avoir été supprimé ou tari. Aucun test n'assertait la source — quinze
+ * mutants survivaient dans cette branche.
+ */
+describe('d’où viennent les points d’intérêt', () => {
+  beforeEach(() => {
+    profilsEnAttente.length = 0
+    poisDuReseau = []
+  })
+
+  it('dit « réseau » quand Overpass répond', async () => {
+    poisDuReseau = [
+      {
+        id: 1,
+        kind: 'water',
+        name: 'Fontaine',
+        lon: 4.5,
+        lat: 45.4,
+      } as unknown as PointOfInterest,
+    ]
+    const b = banc([itineraire(1, 3)])
+    b.actions.openItineraryDetail(1)
+    await laisserPasser()
+    expect(b.etat().pois).toHaveLength(1)
+    expect(b.etat().poisSource).toBe('reseau')
+    expect(b.etat().poisRecuperesLe).toBeNull()
+    expect(b.etat().poisLoading).toBe(false)
+  })
+
+  /**
+   * Overpass muet **et** rien en réserve : la fiche l'avoue plutôt que de
+   * montrer une liste vide qui se lirait « il n'y a pas d'eau ici ».
+   */
+  it('dit « aucune » quand ni le réseau ni la réserve ne répondent', async () => {
+    poisDuReseau = null
+    const b = banc([itineraire(1, 3)])
+    b.actions.openItineraryDetail(1)
+    await laisserPasser()
+    expect(b.etat().poisSource).toBe('aucune')
+    expect(b.etat().poisLoading).toBe(false)
+  })
+
+  /**
+   * Deux points, c'est déjà un itinéraire : le mutant qui passait `< 2` à
+   * `<= 2` refusait d'en demander le profil, et personne ne s'en apercevait.
+   */
+  it('un itinéraire de deux points a droit à son profil', () => {
+    const b = banc([itineraire(1, 2)])
+    b.actions.openItineraryDetail(1)
+    expect(profilsEnAttente).toHaveLength(1)
     expect(b.etat().elevationLoading).toBe(true)
   })
 })
@@ -172,7 +266,24 @@ describe('la fiche ne garde rien de la précédente', () => {
 
     b.actions.closeItineraryDetail()
     const { focusTarget, focusBounds, selectedItineraryId, ...fiche } = b.etat()
-    expect(fiche).toEqual(FICHE_FERMEE)
+    /*
+      En toutes lettres, et non `toEqual(FICHE_FERMEE)` : comparer l'état à la
+      table qu'on prétend vérifier laisse passer toute erreur dans la table.
+      La vague de mutation l'a montré — `pois: []`, `poisLoading: false` et
+      `poisSource: 'aucune'` faussés ont tous les trois survécu (§1).
+    */
+    expect(fiche).toEqual({
+      detailItineraryId: null,
+      elevationProfile: null,
+      elevationError: null,
+      elevationLoading: false,
+      elevationHover: null,
+      pois: [],
+      poisLoading: false,
+      poisSource: 'aucune',
+      poisRecuperesLe: null,
+      view3D: false,
+    })
     // La sélection survit : fermer la fiche ne désélectionne pas la ligne.
     expect(selectedItineraryId).toBe(1)
     expect(focusTarget).toBeNull()

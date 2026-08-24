@@ -14,6 +14,8 @@
   "timeoutMS": 20000,
   "mutate": [
     "src/core/**/*.ts",
-    "!src/core/types.ts"
+    "!src/core/types.ts",
+    "src/store/tranche*.ts",
+    "src/db/reglages.ts"
   ]
 }
