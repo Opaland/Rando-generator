@@ -255,7 +255,8 @@ interface ContinuityOptions {
 function applyContinuity(
   samples: Sample[],
   options: ContinuityOptions,
-): void {
+): Passage[] {
+  const passages: Passage[] = []
   const byWay = new Map<number, Sample[]>()
   for (const sample of samples) {
     const bucket = byWay.get(sample.wayId)
@@ -285,10 +286,166 @@ function applyContinuity(
       const neverClose = confirmed / run.length < options.confirmRatio
       if (tooShort || neverClose) {
         for (const sample of run) sample.done = false
+      } else {
+        // Les passages retenus sont rendus : c'est entre eux que se joue le
+        // départage de #151, et les reconstituer ailleurs reviendrait à
+        // recopier cette boucle.
+        passages.push({ wayId: (run[0] as Sample).wayId, echantillons: run })
       }
       start = end + 1
     }
   }
+  return passages
+}
+
+/**
+ * Un passage confirmé : les échantillons consécutifs d'un même chemin que la
+ * continuité a laissés crédités.
+ */
+interface Passage {
+  wayId: number
+  echantillons: Sample[]
+}
+
+/**
+ * Départage deux chemins qui se disputent le même passage (issue #151).
+ *
+ * ## Le défaut
+ *
+ * Mesuré à l'audit du 20/08 : deux sentiers parallèles distants de 15 m,
+ * marcher sur l'un créditait l'autre à plus de 95 %. La confirmation de
+ * proximité tranche à `confirmMeters` — 20 m au réglage par défaut — et deux
+ * chemins plus proches que ce seuil lui sont indiscernables.
+ *
+ * Baisser le seuil était l'autre voie, et elle est écartée : elle casserait
+ * les traces à GPS ordinaire, qui sont la majorité.
+ *
+ * ## La règle, et pourquoi elle n'invente aucun nombre
+ *
+ * Un passage n'est retiré que si un chemin rival est **strictement plus
+ * proche de la trace à chacun de ses échantillons**. Pas « en moyenne », pas
+ * « la plupart du temps » : partout.
+ *
+ * Ce choix n'est pas de la prudence décorative, il évite d'avoir à inventer
+ * une marge — ce que le §2 interdit pour un seuil qui change *ce qui est
+ * calculé*. Deux géométries dupliquées dans OSM, distantes de quelques
+ * décimètres, voient le plus proche alterner d'un échantillon à l'autre : le
+ * rival ne gagne pas partout, et les deux restent crédités. Deux sentiers
+ * réellement distincts, eux, perdent ou gagnent de bout en bout.
+ *
+ * Le sens de l'erreur résiduelle est le bon : en cas de doute on crédite les
+ * deux, ce que l'issue juge « sans être juste, pas absurde », plutôt que de
+ * retirer à tort un sentier réellement parcouru.
+ *
+ * ## Ce qui n'est pas concerné
+ *
+ * Un chemin partagé par plusieurs itinéraires n'a **qu'un** jeu
+ * d'échantillons (`buildSamples` regroupe par `osmWayId`) : il ne se dispute
+ * rien avec lui-même, et les deux itinéraires continuent d'être crédités.
+ */
+function departagerLesPassages(
+  passages: Passage[],
+  confirmMeters: number,
+): void {
+  if (passages.length < 2) return
+
+  /*
+    Les échantillons crédités, rangés par cellule : chercher un rival dans un
+    rayon de `confirmMeters` sans index reviendrait à comparer chaque
+    échantillon à tous les autres — quadratique sur une zone entière.
+  */
+  const parCellule = new Map<string, Sample[]>()
+  for (const passage of passages) {
+    for (const echantillon of passage.echantillons) {
+      const [cx, cy] = cellIndices(echantillon.lon, echantillon.lat)
+      const clef = cellKeyFromIndices(cx, cy)
+      const seau = parCellule.get(clef)
+      if (seau) seau.push(echantillon)
+      else parCellule.set(clef, [echantillon])
+    }
+  }
+
+  /*
+    Les décisions sont prises sur l'état d'avant, puis appliquées : sans cela,
+    retirer un passage changerait le verdict du suivant, et le résultat
+    dépendrait de l'ordre de parcours.
+  */
+  const aRetirer: Passage[] = []
+  for (const passage of passages) {
+    if (leRivalGagnePartout(passage, parCellule, confirmMeters)) {
+      aRetirer.push(passage)
+    }
+  }
+  for (const passage of aRetirer) {
+    for (const echantillon of passage.echantillons) echantillon.done = false
+  }
+}
+
+/**
+ * Vrai si un même chemin rival est plus proche de la trace à **chacun** des
+ * échantillons du passage.
+ *
+ * « Un même » compte : deux rivaux différents qui gagneraient chacun sur une
+ * moitié ne prouvent rien — c'est la signature d'un carrefour, pas celle d'un
+ * sentier qu'on n'a pas pris.
+ */
+function leRivalGagnePartout(
+  passage: Passage,
+  parCellule: Map<string, Sample[]>,
+  confirmMeters: number,
+): boolean {
+  let candidats: Set<number> | null = null
+  for (const echantillon of passage.echantillons) {
+    const gagnants = cheminsPlusProches(
+      echantillon,
+      parCellule,
+      confirmMeters,
+      passage.wayId,
+    )
+    if (gagnants.size === 0) return false
+    if (candidats === null) candidats = gagnants
+    else {
+      for (const wayId of [...candidats]) {
+        if (!gagnants.has(wayId)) candidats.delete(wayId)
+      }
+      if (candidats.size === 0) return false
+    }
+  }
+  return candidats !== null && candidats.size > 0
+}
+
+/** Les chemins voisins strictement plus proches de la trace que celui-ci. */
+function cheminsPlusProches(
+  echantillon: Sample,
+  parCellule: Map<string, Sample[]>,
+  confirmMeters: number,
+  wayId: number,
+): Set<number> {
+  const sienne = echantillon.distanceMeters ?? Infinity
+  const gagnants = new Set<number>()
+  const [cx, cy] = cellIndices(echantillon.lon, echantillon.lat)
+  const rayonX = rayonCellules(echantillon.lat, confirmMeters)
+  const rayonY = rayonCellules(0, confirmMeters)
+  for (let dx = -rayonX; dx <= rayonX; dx++) {
+    for (let dy = -rayonY; dy <= rayonY; dy++) {
+      const seau = parCellule.get(cellKeyFromIndices(cx + dx, cy + dy))
+      if (!seau) continue
+      for (const voisin of seau) {
+        if (voisin.wayId === wayId) continue
+        const ecart = distanceMeters(
+          [echantillon.lon, echantillon.lat],
+          [voisin.lon, voisin.lat],
+        )
+        // Au-delà de la confirmation, les deux chemins sont distinguables :
+        // ce n'est plus une dispute, c'est un voisinage.
+        if (ecart > confirmMeters) continue
+        if ((voisin.distanceMeters ?? Infinity) < sienne) {
+          gagnants.add(voisin.wayId)
+        }
+      }
+    }
+  }
+  return gagnants
 }
 
 function emptyStats(): AggregateStats {
@@ -432,11 +589,13 @@ export function runMatching(
   const samples = buildSamples(itineraries, stepMeters)
   const index = buildTrackIndex(trackPoints)
   matchSamples(samples, index, options.toleranceMeters)
-  applyContinuity(samples, {
+  const confirmMeters = options.toleranceMeters * CONFIRM_FACTOR
+  const passages = applyContinuity(samples, {
     minRunSamples: options.minRunSamples ?? MIN_RUN_SAMPLES,
-    confirmMeters: options.toleranceMeters * CONFIRM_FACTOR,
+    confirmMeters,
     confirmRatio: options.confirmRatio ?? CONFIRM_RATIO,
   })
+  departagerLesPassages(passages, confirmMeters)
   return {
     samples,
     ...computeCompletion(samples, itineraries, stepMeters, options.computedAt),
