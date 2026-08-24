@@ -245,6 +245,14 @@ function App() {
    * connaît pas `inert` comme propriété booléenne et le rendrait en chaîne,
    * où `inert="false"` vaut *inerte* — l'exact contraire de ce qu'on écrit.
    *
+   * Sur un navigateur qui ignore `inert` — antérieur à Chrome 102, Safari
+   * 15.5 ou Firefox 112 —, l'affectation ne fait rien et la tabulation
+   * redescend dans la feuille repliée. C'est une dégradation, pas une panne,
+   * et elle vaut d'être dite : l'application demande déjà WebGL 2 pour sa
+   * carte, si bien qu'aucun navigateur capable de l'afficher n'est dans ce
+   * cas. Si cela cessait d'être vrai, la parade serait `visibility: hidden`
+   * sur le contenu replié, qui retire aussi du parcours.
+   *
    * La règle qui décide vient du cœur, où elle s'éprouve, et sert aussi à
    * dire ce qui est peint : c'est la même condition, elle n'est pas recopiée.
    */
