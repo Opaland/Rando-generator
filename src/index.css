@@ -576,10 +576,14 @@ details[open] > .acc-summary::after {
   }
 
   /* L'attribution de MapLibre descend à 11 px dans sa feuille de style.
-     Sélecteur allongé : elle est chargée après la nôtre. On la remonte à
-     12 px sans aller jusqu'à 14 : dépliée, elle occupe déjà le quart d'une
-     carte de téléphone, et c'est une phrase dense qu'on consulte une fois,
-     pas une information qu'on relit en marchant. */
+     Sélecteur allongé : elle est chargée après la nôtre. On la remonte au
+     palier des badges — 13 px — sans aller jusqu'à 14 : dépliée, elle occupe
+     déjà le quart d'une carte de téléphone, et c'est une phrase dense qu'on
+     consulte une fois, pas une information qu'on relit en marchant.
+
+     Le commentaire disait « 12 px » : le palier a bougé d'un cran depuis, la
+     phrase non (§4bis). Mesuré à 13 px, et gardé par
+     `tests/e2e/regles-typographiques.spec.ts`. */
   .maplibregl-map .maplibregl-ctrl-attrib,
   .maplibregl-map .maplibregl-ctrl-attrib-inner {
     font-size: var(--texte-etiquette);
