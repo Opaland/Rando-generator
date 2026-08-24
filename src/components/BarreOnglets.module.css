@@ -57,7 +57,7 @@
 }
 
 .onglet:focus-visible {
-  outline: var(--anneau-focus);
+  outline: var(--contour-focus);
   outline-offset: -2px;
 }
 

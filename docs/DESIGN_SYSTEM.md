@@ -95,7 +95,24 @@ leur taille :
 | `--ombre-flottante` | Ce qui flotte au-dessus de la carte |
 | `--ombre-panneau` | Dialogues, carte d'accueil |
 | `--ombre-feuille` | La feuille mobile — elle monte, son ombre va vers le haut |
-| `--anneau-focus` | Anneau de focus (ce n'est pas une ombre, c'est un état) |
+| `--anneau-selection` | La ligne **choisie** dans une liste (forme d'ombre) |
+
+Le liseré de focus, lui, n'est pas une ombre : c'est un `outline`, et il a
+son propre jeton.
+
+| Token | Propriété | Emploi |
+|---|---|---|
+| `--contour-focus` | `outline` | le liseré de focus, partout où il est resserré |
+| `--anneau-selection` | `box-shadow` | la ligne choisie dans une liste |
+
+**Les deux ne s'échangent pas**, et ce n'est pas une question de goût. Un
+jeton de forme `box-shadow` posé en `outline` rend la déclaration invalide au
+moment du calcul : la propriété retombe à sa valeur initiale — `outline-style:
+none` — au lieu de laisser gagner la règle générale du dessous. Le liseré
+disparaît alors **complètement**, y compris celui qu'une règle antérieure
+posait. Un jeton nommé « focus » a ainsi supprimé le focus de trois éléments
+pendant tout un cycle. `tests/unit/jetonsDeFocus.test.ts` refuse maintenant
+l'échange.
 
 Une pilule (`border-radius: 22px` sur un bouton de 44 px) n'appartient pas à
 l'échelle : c'est la moitié d'une hauteur, et la tokeniser la casserait au

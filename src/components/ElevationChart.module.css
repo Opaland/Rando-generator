@@ -176,7 +176,7 @@
 }
 
 .zoom button:focus-visible {
-  outline: var(--anneau-focus);
+  outline: var(--contour-focus);
 }
 
 .etendue {
