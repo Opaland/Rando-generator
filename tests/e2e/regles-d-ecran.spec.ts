@@ -1,7 +1,9 @@
 import { test, expect, type Page } from '@playwright/test'
 import {
   activerLeGrosTexte,
+  activerLeModeSimple,
   fermerLeGuide,
+  ouvrirOnglet,
   mockElevation,
   mockExternalNetwork,
   mockTilesOk,
@@ -73,10 +75,29 @@ const LARGEURS = [
  * qu'il n'est pas encore dans le document à ce moment-là. Une règle qui ne
  * regarde qu'un écran ne garde qu'un écran.
  *
- * Trois états, choisis parce qu'ils sont les trois moments où l'on se sert
- * de l'application : on arrive, on charge une zone, on ouvre une fiche.
+ * Cinq états. Les trois premiers sont les moments où l'on se sert de
+ * l'application : on arrive, on charge une zone, on ouvre une fiche.
+ *
+ * Les deux derniers sont ceux qu'on oublie d'ausculter, et ce sont ceux où
+ * l'on se sent le plus perdu :
+ *
+ * - le **mode simple** (issue #173) ne retire rien, il *cache*. Il change donc
+ *   la mise en page de fond en comble — sections absentes, panneau plus
+ *   court, feuille qui ne se remplit plus pareil — et aucune règle n'y
+ *   tournait. Il existe pour Théo et Jeanine, c'est-à-dire pour les deux
+ *   personas qui échouaient en autonomie : la seule mise en page qu'on ne
+ *   mesurait pas était celle des gens qui en ont le plus besoin.
+ * - une **zone sans itinéraire** met à l'écran un message d'erreur qui
+ *   n'apparaît nulle part ailleurs. Un texte qui ne se voit qu'en cas
+ *   d'échec est exactement celui qu'on n'a jamais regardé de près.
  */
-const ETATS = ['accueil', 'zone chargée', 'fiche ouverte'] as const
+const ETATS = [
+  'accueil',
+  'zone chargée',
+  'fiche ouverte',
+  'mode simple',
+  'zone sans itinéraire',
+] as const
 type Etat = (typeof ETATS)[number]
 
 async function atteindre(
@@ -84,18 +105,52 @@ async function atteindre(
   etat: Etat,
   compact: boolean,
 ): Promise<void> {
-  await mockExternalNetwork(page)
+  const overpass = await mockExternalNetwork(page)
   await mockTilesOk(page)
   await mockElevation(page)
   await page.goto('/')
   await fermerLeGuide(page)
   if (etat === 'accueil') return
 
+  /*
+    Le réglage se pose **avant** de charger quoi que ce soit. L'ordre n'est
+    pas une préférence : sur téléphone, le panneau des réglages vit sous un
+    autre onglet, et la fiche ouverte le recouvre. C'est aussi l'ordre d'une
+    personne qui règle son affichage puis s'en sert.
+  */
+  if (etat === 'mode simple') {
+    await activerLeModeSimple(page, compact)
+    /*
+      On **prouve** que le mode a pris, au lieu de le supposer.
+
+      Sans cela, un réglage qui n'aurait pas été coché laisserait la sonde
+      remesurer l'état « zone chargée » sous un autre nom : trois tests verts
+      de plus, et pas une mesure de plus. C'est le mode d'échec le plus
+      coûteux de tous, parce qu'il ressemble à de la couverture.
+
+      « Objectifs » est la section témoin : le mode simple la cache, et c'est
+      la seule chose qu'on lui demande de vérifier ici.
+    */
+    await expect(page.getByTestId('objectifs')).toHaveCount(0)
+    if (compact) await ouvrirOnglet(page, 'carte')
+  }
+
+  if (etat === 'zone sans itinéraire') {
+    // Overpass répond, mais ne trouve rien : c'est le cas qui met le message
+    // d'erreur à l'écran sans que rien ne soit tombé en panne.
+    overpass.setFixture({ version: 0.6, elements: [] })
+    await page.getByTestId('zone-loire').click()
+    await expect(page.getByTestId('zone-error')).toBeVisible({
+      timeout: 15_000,
+    })
+    return
+  }
+
   await page.getByTestId('zone-pilat').click()
   await expect(page.getByTestId('zone-meta')).toContainText('itinéraire', {
     timeout: 15_000,
   })
-  if (etat === 'zone chargée') return
+  if (etat === 'zone chargée' || etat === 'mode simple') return
   await ouvrirLaFiche(page, compact)
 }
 

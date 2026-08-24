@@ -137,21 +137,21 @@ C'est le seul endroit où la promesse du produit est *montrée*. Il est dans
 
 ---
 
-## 6. Ce qui n'a pas encore été ausculté
+## 6. Ce qui reste
 
-Dit ici pour ne pas laisser croire l'audit complet :
+Les cinq surfaces listées le 24/08 ont maintenant leur sonde. Ce qui reste
+n'est pas une surface oubliée mais une chose qu'aucune mesure ne tranche, et
+elle est écrite plus bas.
 
-- **le mode simple** (issue #173), qui cache des sections : les règles
-  d'écran n'y tournent pas ;
-- **les états d'erreur et les états vides**, qui sont ceux où l'on se sent
-  le plus perdu et que la sonde ne traverse jamais.
+Une seule limite connue subsiste, et elle est de nature différente : le
+contenu d'une **section repliée** n'est mesuré que si un autre état
+l'ouvre — ni les règles d'écran ni le contraste ne le voient, parce que le
+navigateur ne le rend pas du tout.
 
-Chacun est une sonde à écrire, pas un paragraphe à ajouter ici.
+### Ce que les sondes ont trouvé
 
-### Ce qui a été ausculté depuis
-
-Deux des cinq surfaces ont leur sonde, `tests/e2e/regles-de-clavier.spec.ts`,
-et toutes deux ont trouvé du réel :
+Deux surfaces relèvent de `tests/e2e/regles-de-clavier.spec.ts`, et toutes
+deux ont trouvé du réel :
 
 - **la visibilité du focus.** `--anneau-focus` existait, le gros texte
   l'épaississait, et il ne posait rien : la valeur était de forme
@@ -182,6 +182,30 @@ Et une troisième, `tests/e2e/contraste-rendu.spec.ts` :
   exigeait que chaque texte soit dans le cadre et peint, et ne mesurait plus
   que trente-huit textes sur deux cent cinquante — verte, en ne regardant
   presque rien. Le contraste ne dépend pas du défilement.
+
+Et deux états de plus dans les règles d'écran, qui sont les deux derniers de
+la liste :
+
+- **le mode simple** (issue #173) ne retire rien, il *cache* : la mise en page
+  y change de fond en comble. Il existe pour Théo et Jeanine, c'est-à-dire
+  pour les deux personas sur quatorze qui échouaient en autonomie. **La seule
+  mise en page qu'on ne mesurait pas était celle des gens qui en ont le plus
+  besoin.**
+- **une zone sans itinéraire** met à l'écran un message qui n'apparaît nulle
+  part ailleurs. Un texte qui ne se voit qu'en cas d'échec est exactement
+  celui qu'on n'a jamais regardé de près.
+
+Aucun des deux n'a trouvé de défaut, et c'est un résultat à dire plutôt qu'à
+taire. Ce qu'ils ont prouvé, en revanche, c'est qu'ils **peuvent** en trouver :
+un débordement injecté dans le message d'erreur rougit les trois tests de
+l'état « zone sans itinéraire » et eux seuls ; un en-tête d'accordéon ramené à
+18 px sous `data-mode='simple'` rougit les trois tests du mode simple et eux
+seuls.
+
+L'état atteint est asserté, et non supposé : sans cela, un réglage qui
+n'aurait pas pris ferait remesurer « zone chargée » sous un autre nom — trois
+tests verts de plus, et pas une mesure de plus. C'est le mode d'échec le plus
+coûteux, parce qu'il ressemble à de la couverture.
 
 ### La question qui reste, et pourquoi elle n'est pas tranchée
 

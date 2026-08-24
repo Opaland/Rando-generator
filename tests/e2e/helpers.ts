@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test'
+import { expect, type Locator, type Page } from '@playwright/test'
 import pilatFixture from '../fixtures/overpass/pilat.json' with { type: 'json' }
 import poiFixture from '../fixtures/overpass/poi.json' with { type: 'json' }
 
@@ -585,11 +585,56 @@ export async function activerLeGrosTexte(
   compact: boolean,
 ): Promise<void> {
   const bascule = page.getByTestId('gros-texte')
+  await atteindreLeReglageDAffichage(page, compact, bascule)
+  await bascule.check()
+  // L'attribut est posé sur la racine : l'attendre, plutôt que de supposer
+  // que le clic a déjà repeint.
+  await expect
+    .poll(() =>
+      page.evaluate(() => document.documentElement.dataset['grosTexte']),
+    )
+    .toBe('oui')
+}
+
+/**
+ * Passe en mode simple, par le réglage (issue #173).
+ *
+ * Le mode ne retire rien, il **cache** : la carte, les traces et le tableau
+ * de bord restent, tout le reste se replie. C'est donc un état à part entière
+ * de la mise en page, et un état qu'aucune sonde n'auscultait.
+ */
+export async function activerLeModeSimple(
+  page: Page,
+  compact: boolean,
+): Promise<void> {
+  const choix = page.getByTestId('mode-simple')
+  await atteindreLeReglageDAffichage(page, compact, choix)
+  await choix.check()
+  await expect.poll(() => choix.isChecked()).toBe(true)
+}
+
+/**
+ * Amène à l'écran une commande du panneau « Affichage ».
+ *
+ * Trois obstacles, et aucun ordre sûr entre eux : le réglage vit dans un
+ * accordéon replié, il est sous l'onglet « Réglages » que le téléphone
+ * filtre, et la feuille peut être fermée. On boucle donc sur l'état final
+ * voulu — la commande est visible — en retentant chaque geste à chaque tour
+ * (CLAUDE.md §6ter).
+ *
+ * Nommé plutôt que recopié : deux réglages passent par ici, et le second
+ * aurait été la copie de trop (§4).
+ */
+async function atteindreLeReglageDAffichage(
+  page: Page,
+  compact: boolean,
+  commande: Locator,
+): Promise<void> {
   const section = page.getByTestId('mode-affichage')
   await expect
     .poll(
       async () => {
-        if (await bascule.isVisible().catch(() => false)) return true
+        if (await commande.isVisible().catch(() => false)) return true
         // Le réglage vit dans un accordéon replié : atteindre la section ne
         // suffit pas, il faut l'ouvrir. C'est aussi ce que fait une personne,
         // et le test l'avait oublié.
@@ -614,12 +659,4 @@ export async function activerLeGrosTexte(
       { timeout: 25_000 },
     )
     .toBe(true)
-  await bascule.check()
-  // L'attribut est posé sur la racine : l'attendre, plutôt que de supposer
-  // que le clic a déjà repeint.
-  await expect
-    .poll(() =>
-      page.evaluate(() => document.documentElement.dataset['grosTexte']),
-    )
-    .toBe('oui')
 }
