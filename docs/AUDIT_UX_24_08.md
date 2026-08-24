@@ -207,6 +207,48 @@ n'aurait pas pris ferait remesurer « zone chargée » sous un autre nom — tro
 tests verts de plus, et pas une mesure de plus. C'est le mode d'échec le plus
 coûteux, parce qu'il ressemble à de la couverture.
 
+### Le plancher typographique : la règle tenait, la garde manquait
+
+Mesuré au doigt (`hasTouch`), zone chargée, quatre onglets :
+
+| | sous 14 px | attribution |
+|---|---|---|
+| téléphone tactile | **4**, tous à 13 px | 13 px |
+| téléphone tactile, gros texte | **0** | 17 px |
+| PC souris | 34 | 11 px |
+| PC souris, gros texte | 2 | 13,75 px |
+
+Les quatre textes sous le plancher au doigt sont les badges de réseau et
+l'attribution de carte — **les deux exclusions que `index.css` nomme et
+motive** sous `@media (pointer: coarse)`. La phrase de `core/affichage.ts`,
+« le plancher typographique tient à 14 px en extérieur », est donc vraie.
+
+Sur PC, les 34 sont les paliers de bureau, délibérés : le plancher ne
+s'applique qu'aux pointeurs grossiers, parce qu'à la souris élargir n'apporte
+rien.
+
+**Ce qui manquait n'était pas la règle mais la garde.** Supprimer le bloc
+`@media (pointer: coarse)` ne faisait rougir aucun test. C'est maintenant
+`tests/e2e/regles-typographiques.spec.ts`, et l'injection le vérifie.
+
+### L'angle mort au-dessus de la carte
+
+La sonde de contraste excluait **tout** ce qui est dans `.maplibregl-map`.
+Trois exclusions se superposaient donc exactement sur l'attribution : le
+contraste ne la mesurait pas, la règle des cibles listait ses liens sans
+bloquer, et `attribution.spec.ts` accepte qu'une feuille ouverte la recouvre.
+C'est le seul texte de l'application dont la visibilité est une **obligation
+de licence** — ODbL et Licence Ouverte.
+
+Ce qui flotte au-dessus de la carte avec son propre fond est désormais mesuré
+**contre les deux extrêmes de ce qu'une tuile peut être**, noir et blanc. Ce
+n'est pas une approximation : si le couple tient sur les deux, il tient sur
+toutes celles qui sont entre. Seul le texte peint *directement* sur le canevas
+reste hors mesure, et pour la raison d'origine — sa couleur de fond change au
+déplacement.
+
+Résultat : l'attribution passe, au pire cas 12,9:1.
+
 ### La question qui reste, et pourquoi elle n'est pas tranchée
 
 **Un élément recouvert par un panneau ouvert doit-il rester atteignable au

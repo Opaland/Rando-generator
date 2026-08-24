@@ -60,9 +60,11 @@ interface Manquant {
  * à « la mesure serait-elle fausse ? », jamais à « le résultat me gêne ».
  */
 const RAISONS_DE_NE_PAS_MESURER = `
-- un texte posé sur la carte : le fond est un canevas, sa couleur change au
-  déplacement, et un ratio calculé sur le blanc du conteneur serait un
-  chiffre faux plutôt qu'une mesure ;
+- un texte posé **directement** sur le canevas de la carte : sa couleur de
+  fond change au déplacement, et un ratio calculé sur le blanc du conteneur
+  serait un chiffre faux plutôt qu'une mesure. Ce qui flotte **au-dessus** de
+  la carte avec son propre fond — l'attribution, la légende — est mesuré,
+  voir plus bas ;
 - un contrôle désactivé : WCAG 1.4.3 les exempte explicitement, et leur
   opacité de 0,4 est ce qui *dit* qu'ils sont désactivés ;
 - un fond dégradé ou en image : il n'y a pas une couleur de fond mais des
@@ -136,7 +138,10 @@ async function mesurerLesContrastes(page: Page): Promise<Releve> {
      * composant les fonds translucides rencontrés en chemin. Rend `null` dès
      * qu'un dégradé, une image ou un canevas rend la question sans réponse.
      */
-    function fondEffectif(element: Element): [number, number, number] | null {
+    function fondEffectif(
+      element: Element,
+      socle: [number, number, number] | null = null,
+    ): [number, number, number] | null {
       const empiles: [number, number, number, number][] = []
       let courant: Element | null = element
       while (courant) {
@@ -152,6 +157,22 @@ async function mesurerLesContrastes(page: Page): Promise<Releve> {
             }
             return resultat
           }
+        }
+        /*
+          Arrivé à la carte sans avoir trouvé d'opaque : le reste du fond est
+          une tuile, pas une couleur. Continuer de remonter jusqu'au papier du
+          `body` rendrait un chiffre plausible et faux.
+
+          Un socle peut être imposé par l'appelant — c'est ainsi qu'on mesure
+          l'attribution contre les deux extrêmes de ce qu'une tuile peut être.
+        */
+        if (courant.classList.contains('maplibregl-map')) {
+          if (!socle) return null
+          let resultat = socle
+          for (let i = empiles.length - 1; i >= 0; i--) {
+            resultat = poser(empiles[i], resultat)
+          }
+          return resultat
         }
         courant = courant.parentElement
       }
@@ -177,7 +198,6 @@ async function mesurerLesContrastes(page: Page): Promise<Releve> {
         .join('')
         .trim()
       if (texte.length === 0) continue
-      if (element.closest('.maplibregl-map') !== null) continue
       if (element.closest('[disabled]') !== null) continue
       if (element.matches(':disabled')) continue
 
@@ -205,15 +225,43 @@ async function mesurerLesContrastes(page: Page): Promise<Releve> {
       const cs = getComputedStyle(element)
       if (cs.visibility === 'hidden' || cs.opacity === '0') continue
       const avant = lire(cs.color)
-      const fond = fondEffectif(element)
-      if (!avant || !fond) continue
-      const texteCouleur = poser(avant, fond)
+      if (!avant) continue
+
+      /*
+        Un texte qui flotte au-dessus de la carte est mesuré contre **les deux
+        extrêmes** de ce qu'une tuile peut être : noir et blanc.
+
+        Ce n'est pas une approximation, c'est plus fort qu'une mesure sur une
+        tuile donnée — si le couple tient sur les deux, il tient sur toutes
+        celles qui sont entre. Et cela n'invente rien : la seule chose posée
+        est que la tuile est une couleur, ce qui est vrai par construction.
+
+        L'attribution est précisément ce texte-là, et c'est le seul de
+        l'application dont la visibilité est une obligation de licence — ODbL
+        et Licence Ouverte. Il était le seul que la sonde ne regardait pas.
+      */
+      const surLaCarte = element.closest('.maplibregl-map') !== null
+      const socles: ([number, number, number] | null)[] = surLaCarte
+        ? [
+            [0, 0, 0],
+            [255, 255, 255],
+          ]
+        : [null]
 
       const taille = Number.parseFloat(cs.fontSize)
       const gras = Number(cs.fontWeight) >= 700
       // WCAG 1.4.3 : « grand texte » = 24 px, ou 18,66 px en gras.
       const exige = taille >= 24 || (gras && taille >= 18.66) ? 3 : 4.5
-      const mesure = ratio(texteCouleur, fond)
+
+      let pire: { mesure: number; fond: [number, number, number] } | null = null
+      for (const socle of socles) {
+        const fond = fondEffectif(element, socle)
+        if (!fond) continue
+        const m = ratio(poser(avant, fond), fond)
+        if (!pire || m < pire.mesure) pire = { mesure: m, fond }
+      }
+      if (!pire) continue
+      const { mesure, fond } = pire
       mesures++
       if (mesure + 0.005 < exige) {
         manquants.push({

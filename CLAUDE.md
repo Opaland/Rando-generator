@@ -57,6 +57,19 @@ Ce qu'il faut demander à la place :
 La règle générale, dont ceci n'est qu'un cas : **une assertion qui pourrait
 passer pour une raison qu'on n'a pas voulue n'est pas une assertion.**
 
+**Et le piège se referme aussi sur les mesures jetables.** Le 24/08, j'ai
+compté « soixante-dix textes sous 14 px » sur une fenêtre de 390 px pilotée à
+la souris, et j'allais rapporter à Cédric un défaut inexistant plus une phrase
+prétendue fausse dans `core/affichage.ts`. Le plancher vit sous
+`@media (pointer: coarse)` : au doigt il en restait **quatre**, tous nommés
+comme exclusions dans le CSS. J'avais cité ce paragraphe une heure plus tôt.
+
+Une sonde jetable ne passe par aucune revue, aucune porte, aucune
+réinjection — c'est donc celle qui a le plus besoin d'être configurée comme
+la vraie. `hasTouch`, la largeur, l'état, la taille de texte : les quatre se
+posent avant de lire le premier chiffre, pas après l'avoir trouvé
+surprenant.
+
 ## 2. Ne pas inventer un seuil, et le dire quand on tranche quand même
 
 Un nombre caché derrière un mot rassurant est plus difficile à remettre en

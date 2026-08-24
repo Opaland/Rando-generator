@@ -357,7 +357,18 @@ export async function estAlEcran(page: Page, testId: string): Promise<boolean> {
 export async function fermerLeGuide(page: Page): Promise<void> {
   const guide = page.getByTestId('onboarding')
   const fermer = page.getByTestId('onboarding-fermer')
-  if ((await guide.count()) === 0) return
+
+  /*
+    Il n'y a **plus** de sortie anticipée sur « le guide n'est pas là ».
+
+    Elle en était une, et c'était la supposition d'ordre que le reste de cette
+    fonction existe pour refuser : le guide est rendu avant qu'IndexedDB ait
+    répondu, donc « absent au moment de l'appel » ne veut pas dire « absent ».
+    Il pouvait apparaître juste après le retour, et bloquer tout ce qui suit.
+
+    Sans elle, le cas « pas de guide » ne coûte rien : la boucle rend 0 au
+    premier tour et l'assertion passe aussitôt.
+  */
 
   /*
     Le guide peut s'en aller tout seul : au rechargement d'une page où il
@@ -376,16 +387,85 @@ export async function fermerLeGuide(page: Page): Promise<void> {
     une assertion : il avale une tentative, dans une boucle dont la
     convergence est, elle, assertée.
   */
-  await expect
-    .poll(
-      async () => {
-        if ((await guide.count()) === 0) return 0
-        await fermer.click({ timeout: 1_000 }).catch(() => undefined)
-        return guide.count()
-      },
-      { message: 'le guide ne se décide ni à s’afficher ni à partir' },
+  /*
+    Le budget est explicite, et il ne vient pas de nulle part.
+
+    Il valait le défaut implicite de Playwright — cinq secondes — quand tout
+    le reste de cette suite s'accorde quinze ou vingt-cinq. Mesuré au repos,
+    le guide part en **609 ms** : cinq secondes en sont huit fois plus. Et
+    elles n'ont pas suffi le 24/08, sur trois tests de `mobile.spec.ts`, dans
+    une exécution complète 53 % plus lente que d'habitude — jamais isolément,
+    jamais sous une charge processeur reproduite exprès.
+
+    « Une porte qui rougit sur la lenteur d'une machine ne mesure plus le
+    code » : c'est déjà écrit dans `playwright.config.ts`, pour le même motif.
+
+    **La cause de ces trois échecs n'est pas établie**, et l'élargir ne
+    l'établit pas. C'est pourquoi le message dit maintenant ce qui recouvre le
+    bouton : la prochaine fois, l'échec nommera son coupable au lieu de
+    rendre un délai dépassé.
+  */
+  let obstacle = 'rien de relevé'
+  try {
+    await expect
+      .poll(
+        async () => {
+          if ((await guide.count()) === 0) return 0
+          obstacle = await quiRecouvre(page, 'onboarding-fermer')
+          await fermer.click({ timeout: 1_000 }).catch(() => undefined)
+          return guide.count()
+        },
+        { timeout: 15_000 },
+      )
+      .toBe(0)
+  } catch (erreur) {
+    /*
+      Le message est construit **ici**, et pas dans l'option `message` du
+      `poll` : celle-ci est une chaîne évaluée une fois, à la construction,
+      donc avant le premier tour. Elle rendait invariablement la valeur
+      initiale — « rien » — c'est-à-dire un message qui ne nommait jamais
+      personne. Vérifié en injectant un calque : il disait « rien » alors que
+      le calque était là.
+
+      Un diagnostic qui se trompe est pire qu'un délai dépassé : il envoie
+      chercher ailleurs.
+    */
+    throw new Error(
+      `le guide ne part pas. Au centre de son bouton de fermeture, c'est ${obstacle} qui est peint.`,
+      { cause: erreur },
     )
-    .toBe(0)
+  }
+}
+
+/**
+ * Ce que le navigateur peint au centre d'un élément — le coupable, quand un
+ * clic n'atteint pas sa cible.
+ *
+ * `elementFromPoint` est la seule question dont la réponse ne se laisse pas
+ * arranger (CLAUDE.md §1bis). Rendue sous forme lisible pour un message
+ * d'échec : un délai dépassé ne dit rien, « la feuille est par-dessus » dit
+ * tout.
+ */
+async function quiRecouvre(page: Page, testId: string): Promise<string> {
+  return page
+    .evaluate((id: string) => {
+      const cible = document.querySelector(`[data-testid="${id}"]`)
+      if (!cible) return 'aucun élément à ce testid'
+      const r = cible.getBoundingClientRect()
+      if (r.width === 0 || r.height === 0) return 'un rectangle vide'
+      const dessus = document.elementFromPoint(
+        r.x + r.width / 2,
+        r.y + r.height / 2,
+      )
+      if (!dessus) return 'rien (hors du cadre)'
+      if (dessus === cible || cible.contains(dessus))
+        return 'le bouton lui-même'
+      const nom =
+        dessus.getAttribute('data-testid') ??
+        `${dessus.tagName.toLowerCase()}.${dessus.className.split(' ')[0]}`
+      return nom
+    }, testId)
+    .catch(() => 'indéterminé')
 }
 
 /**
