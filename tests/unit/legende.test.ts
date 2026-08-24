@@ -15,15 +15,15 @@ import type { Itinerary, Network } from '../../src/core/types.ts'
  */
 
 let compteur = 0
-/** Le minimum d'un itinéraire : seul son réseau compte ici. */
-function itineraire(network: Network): Itinerary {
+/** Le minimum d'un itinéraire : son réseau, et ses tronçons quand on les veut. */
+function itineraire(network: Network, ways?: Itinerary['ways']): Itinerary {
   compteur += 1
   return {
     osmRelationId: compteur,
     name: `Test ${network}`,
     ref: null,
     network,
-    ways: [{ osmWayId: compteur, coords: [[4.5, 45.4], [4.51, 45.4]] }],
+    ways: ways ?? [{ osmWayId: compteur, coords: [[4.5, 45.4], [4.51, 45.4]] }],
     totalMeters: 780,
     fetchedAt: '2026-01-01T00:00:00Z',
   }
@@ -109,5 +109,69 @@ describe('contenuLegende', () => {
         aDesTraces: true,
       }).vide,
     ).toBe(false)
+  })
+})
+
+/**
+ * Le terrain dans la légende (24/08).
+ *
+ * La bande de revêtement est un code de plus sur la carte, et la règle de ce
+ * module ne bouge pas : **la légende ne nomme que ce qui est dessiné**. La
+ * bande n'existe que pour l'itinéraire dont la fiche est ouverte ; les
+ * familles nommées sont donc celles de cet itinéraire-là, et rien d'autre.
+ *
+ * Nommer les cinq familles en permanence aurait refait le constat U6 —
+ * six entrées dont la moitié ne concernait pas la zone affichée, occupant
+ * 28 % de la carte visible d'un téléphone.
+ */
+describe('les familles de terrain', () => {
+  const gr = itineraire('GR', [
+    { osmWayId: 1, coords: [[4.5, 45.4], [4.51, 45.4]], tags: { surface: 'asphalt' } },
+    { osmWayId: 2, coords: [[4.51, 45.4], [4.52, 45.4]], tags: { highway: 'path' } },
+  ])
+
+  it('ne sont pas nommées tant qu’aucune fiche n’est ouverte', () => {
+    const contenu = contenuLegende({
+      itineraires: [gr],
+      itinerairesPerso: [],
+      aDesTraces: false,
+    })
+    expect(contenu.terrains).toEqual([])
+  })
+
+  it('nomment ce que la bande peint, et dans l’ordre de la charte', () => {
+    const contenu = contenuLegende({
+      itineraires: [gr],
+      itinerairesPerso: [],
+      aDesTraces: false,
+      itineraireRegarde: gr.osmRelationId,
+    })
+    expect(contenu.terrains).toEqual(['dur', 'naturel'])
+  })
+
+  /**
+   * L'inconnu ne se peint pas : le nommer promettrait une couleur que la
+   * carte ne montre nulle part.
+   */
+  it('taisent ce que la carte ne peint pas', () => {
+    const muet = itineraire('GR', [
+      { osmWayId: 3, coords: [[4.5, 45.4], [4.51, 45.4]] },
+    ])
+    const contenu = contenuLegende({
+      itineraires: [muet],
+      itinerairesPerso: [],
+      aDesTraces: false,
+      itineraireRegarde: muet.osmRelationId,
+    })
+    expect(contenu.terrains).toEqual([])
+  })
+
+  it('n’empêchent pas la légende d’être vide quand il n’y a rien', () => {
+    const contenu = contenuLegende({
+      itineraires: [],
+      itinerairesPerso: [],
+      aDesTraces: false,
+    })
+    expect(contenu.vide).toBe(true)
   })
 })

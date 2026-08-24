@@ -10,6 +10,7 @@ import {
   GRIS_VERT,
   PAPIER,
 } from '../../src/lib/couleursPartagees.ts'
+import { TERRAIN_COLORS } from '../../src/lib/revetementDisplay.ts'
 import type { Network } from '../../src/core/types.ts'
 
 /**
@@ -73,6 +74,31 @@ const BASES: Record<string, string> = {
 
 describe('couleurs de base', () => {
   it.each(Object.entries(BASES))(
+    'la variable CSS %s vaut la constante partagée',
+    (variable, attendu) => {
+      const trouve = new RegExp(`${variable}:\\s*([^;]+);`).exec(indexCss)
+      expect(trouve?.[1]?.trim().toLowerCase()).toBe(attendu.toLowerCase())
+    },
+  )
+})
+
+/**
+ * Le terrain, peint des deux côtés (24/08).
+ *
+ * La carte le dessine par MapLibre, depuis la constante JavaScript ; le
+ * profil altimétrique le dessine en CSS, depuis les jetons. Deux surfaces
+ * qui parlent du même sol ne peuvent pas en parler de deux façons — et rien
+ * ne le remarquerait, puisqu'on ne les regarde jamais côte à côte.
+ */
+const TERRAIN: Record<string, string> = {
+  '--terrain-dur': TERRAIN_COLORS.dur as string,
+  '--terrain-stabilise': TERRAIN_COLORS.stabilise as string,
+  '--terrain-naturel': TERRAIN_COLORS.naturel as string,
+  '--terrain-autre': TERRAIN_COLORS.autre as string,
+}
+
+describe('couleurs du terrain', () => {
+  it.each(Object.entries(TERRAIN))(
     'la variable CSS %s vaut la constante partagée',
     (variable, attendu) => {
       const trouve = new RegExp(`${variable}:\\s*([^;]+);`).exec(indexCss)

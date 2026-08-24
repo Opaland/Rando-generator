@@ -7,7 +7,7 @@ import {
 } from '../../core/mapdata.ts'
 import { traceProvisoire } from '../../core/sortieEnCours.ts'
 import { useAppStore } from '../../store/appStore.ts'
-import { poisToGeoJSON } from './style.ts'
+import { poisToGeoJSON, revetementToGeoJSON } from './style.ts'
 
 /**
  * Pousse les données de l'application dans les sources GeoJSON de la carte.
@@ -77,6 +77,7 @@ const SOURCES_DONNEES = [
   'trails',
   'trails-done',
   'trails-declares',
+  'trails-revetement',
   'tracks',
   'pois',
 ] as const
@@ -101,6 +102,7 @@ export function useMapSources(
   const drawPath = useAppStore((s) => s.drawPath)
   const parcoursDeclares = useAppStore((s) => s.parcoursDeclares)
   const drawWaypoints = useAppStore((s) => s.drawWaypoints)
+  const detailItineraryId = useAppStore((s) => s.detailItineraryId)
 
   // Mise à jour des couches quand les données changent.
   useEffect(() => {
@@ -128,6 +130,25 @@ export function useMapSources(
         parcoursDeclares,
       )
       void map.getSource<GeoJSONSource>('trails-declares')?.setData(declares)
+
+      /*
+        Le terrain, seulement pour l'itinéraire qu'on regarde.
+
+        Peindre le revêtement de tous les itinéraires de la zone couvrirait
+        la carte de bandes parallèles et rendrait le balisage illisible — on
+        aurait échangé une information contre du bruit. La bande accompagne
+        donc la fiche ouverte, comme le profil altimétrique qu'elle prolonge.
+
+        Sans fiche ouverte, la source est vidée plutôt que laissée en place :
+        une couche qui garde ses données après la fermeture peint le terrain
+        d'un itinéraire qu'on ne regarde plus.
+      */
+      const regarde = [...itineraries, ...customItineraries].filter(
+        (i) => i.osmRelationId === detailItineraryId,
+      )
+      void map
+        .getSource<GeoJSONSource>('trails-revetement')
+        ?.setData(revetementToGeoJSON(regarde))
       // La sortie en cours passe par la même source que les traces
       // importées : une seule couche, un seul style. Sans elle, on marche
       // deux heures en regardant une carte vide.
@@ -170,6 +191,7 @@ export function useMapSources(
     itineraries,
     customItineraries,
     parcoursDeclares,
+    detailItineraryId,
     matching,
     customMatching,
     tracks,
