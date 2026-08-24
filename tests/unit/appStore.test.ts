@@ -1,7 +1,15 @@
 // @vitest-environment jsdom
 import 'fake-indexeddb/auto'
 import { IDBFactory } from 'fake-indexeddb'
-import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest'
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  vi,
+  type Mock,
+} from 'vitest'
 import {
   useAppStore,
   MIN_TOLERANCE,
@@ -26,9 +34,15 @@ import { buildBackup, serialiserBackup } from '../../src/core/backup.ts'
 /** État initial capturé à l'import : les actions, elles, ne changent pas. */
 const etatInitial = { ...useAppStore.getState() }
 
-function fichierGpx(nom: string, points: [number, number][], date?: string): File {
+function fichierGpx(
+  nom: string,
+  points: [number, number][],
+  date?: string,
+): File {
   const trkpts = points
-    .map(([lon, lat]) => `<trkpt lat="${lat}" lon="${lon}"><ele>800</ele></trkpt>`)
+    .map(
+      ([lon, lat]) => `<trkpt lat="${lat}" lon="${lon}"><ele>800</ele></trkpt>`,
+    )
     .join('')
   const metadata = date ? `<metadata><time>${date}</time></metadata>` : ''
   const xml = `<?xml version="1.0"?><gpx version="1.1" xmlns="http://www.topografix.com/GPX/1/1">${metadata}<trk><trkseg>${trkpts}</trkseg></trk></gpx>`
@@ -57,6 +71,15 @@ beforeEach(() => {
   // supprimer la base ne suffit pas — une connexion laissée ouverte par un
   // init() précédent bloque la suppression indéfiniment.
   vi.stubGlobal('indexedDB', new IDBFactory())
+  /*
+    Et `localStorage` vidé, depuis que les réglages y vivent (#203).
+
+    Il ne se remplace pas comme IndexedDB : c'est le même objet pour toute la
+    session jsdom, et un réglage écrit par un test se retrouvait dans le
+    suivant. Trouvé en le vivant — « démarre à 95 % » lisait le 90 % laissé par
+    un voisin, et l'aurait lu aussi le jour où le défaut aurait été réel.
+  */
+  localStorage.clear()
   useAppStore.setState(etatInitial, true)
   // `reglagesTouches` vit à la portée du module, comme la page qui l'héberge :
   // il survit à `setState`, et donc d'un test au suivant. Le premier test qui
@@ -194,9 +217,7 @@ describe('init', () => {
     // doit encore être là.
     const db = useAppStore.getState().db
     const enBase = await db?.listTracks()
-    expect(enBase?.map((t) => t.filename)).toContain(
-      'pendant-le-demarrage.gpx',
-    )
+    expect(enBase?.map((t) => t.filename)).toContain('pendant-le-demarrage.gpx')
   })
 
   it('repère encore le doublon d’une trace déposée au démarrage', async () => {
@@ -228,7 +249,9 @@ describe('init', () => {
 
   it('restaure les traces et la tolérance enregistrées', async () => {
     await useAppStore.getState().init()
-    await useAppStore.getState().importGpxFiles([fichierGpx('a.gpx', ligne(20))])
+    await useAppStore
+      .getState()
+      .importGpxFiles([fichierGpx('a.gpx', ligne(20))])
     await useAppStore.getState().setTolerance(80)
 
     // Une nouvelle session, c'est un rechargement de page : l'état repart à
@@ -279,7 +302,8 @@ describe('loadZone', () => {
     )
 
     const desabonner = useAppStore.subscribe((etat) => {
-      if (etat.zoneLoading && etat.zoneLoadBytes > 0) vus.push(etat.zoneLoadBytes)
+      if (etat.zoneLoading && etat.zoneLoadBytes > 0)
+        vus.push(etat.zoneLoadBytes)
     })
     await useAppStore.getState().loadZone('pilat')
     desabonner()
@@ -330,7 +354,9 @@ describe('loadZone', () => {
       await db?.saveZone({ ...cache, fetchedAt: '2020-01-01T00:00:00Z' })
     }
 
-    fetchMock.mockImplementation(() => Promise.reject(new Error('réseau coupé')))
+    fetchMock.mockImplementation(() =>
+      Promise.reject(new Error('réseau coupé')),
+    )
     await useAppStore.getState().loadZone('pilat')
 
     const etat = useAppStore.getState()
@@ -342,7 +368,9 @@ describe('loadZone', () => {
 
   it('explique l’échec quand il n’y a rien en cache', async () => {
     await useAppStore.getState().init()
-    fetchMock.mockImplementation(() => Promise.reject(new Error('réseau coupé')))
+    fetchMock.mockImplementation(() =>
+      Promise.reject(new Error('réseau coupé')),
+    )
     await useAppStore.getState().loadZone('pilat')
 
     const etat = useAppStore.getState()
@@ -396,7 +424,9 @@ describe('importGpxFiles', () => {
     await useAppStore.getState().init()
     await useAppStore
       .getState()
-      .importGpxFiles([fichierGpx('sortie.gpx', ligne(20), '2026-05-01T08:00:00Z')])
+      .importGpxFiles([
+        fichierGpx('sortie.gpx', ligne(20), '2026-05-01T08:00:00Z'),
+      ])
     const [trace] = useAppStore.getState().tracks
     expect(trace?.filename).toBe('sortie.gpx')
     expect(trace?.date).toBe('2026-05-01T08:00:00Z')
@@ -406,8 +436,12 @@ describe('importGpxFiles', () => {
 
   it('met de côté une trace identique à une trace déjà importée', async () => {
     await useAppStore.getState().init()
-    await useAppStore.getState().importGpxFiles([fichierGpx('a.gpx', ligne(20))])
-    await useAppStore.getState().importGpxFiles([fichierGpx('copie.gpx', ligne(20))])
+    await useAppStore
+      .getState()
+      .importGpxFiles([fichierGpx('a.gpx', ligne(20))])
+    await useAppStore
+      .getState()
+      .importGpxFiles([fichierGpx('copie.gpx', ligne(20))])
     expect(useAppStore.getState().tracks).toHaveLength(1)
     const [doublon] = useAppStore.getState().importDoublons
     expect(doublon?.filename).toBe('copie.gpx')
@@ -420,7 +454,9 @@ describe('importGpxFiles', () => {
   describe('doublons mis de côté (issue #165)', () => {
     async function deuxFois() {
       await useAppStore.getState().init()
-      await useAppStore.getState().importGpxFiles([fichierGpx('a.gpx', ligne(20))])
+      await useAppStore
+        .getState()
+        .importGpxFiles([fichierGpx('a.gpx', ligne(20))])
       await useAppStore
         .getState()
         .importGpxFiles([fichierGpx('copie.gpx', ligne(20))])
@@ -512,7 +548,10 @@ describe('importGpxFiles', () => {
       ]
       await useAppStore
         .getState()
-        .importGpxFiles([fichierGpx('nord.gpx', nord), fichierGpx('sud.gpx', sud)])
+        .importGpxFiles([
+          fichierGpx('nord.gpx', nord),
+          fichierGpx('sud.gpx', sud),
+        ])
       expect(useAppStore.getState().tracks).toHaveLength(2)
       expect(useAppStore.getState().importDoublons).toEqual([])
     })
@@ -522,7 +561,10 @@ describe('importGpxFiles', () => {
     await useAppStore.getState().init()
     await useAppStore
       .getState()
-      .importGpxFiles([fichierGpx('vide.gpx', []), fichierGpx('bonne.gpx', ligne(20))])
+      .importGpxFiles([
+        fichierGpx('vide.gpx', []),
+        fichierGpx('bonne.gpx', ligne(20)),
+      ])
     expect(useAppStore.getState().tracks).toHaveLength(1)
     expect(useAppStore.getState().importErrors.join()).toMatch(/vide\.gpx/)
   })
@@ -540,7 +582,9 @@ describe('importGpxFiles', () => {
     // Une trace correcte à laquelle un outil buggé a ajouté deux points
     // impossibles : la trace reste importable, et l'utilisateur l'apprend.
     const points: [number, number][] = [...ligne(20), [200, 95], [201, 96]]
-    await useAppStore.getState().importGpxFiles([fichierGpx('sortie.gpx', points)])
+    await useAppStore
+      .getState()
+      .importGpxFiles([fichierGpx('sortie.gpx', points)])
     expect(useAppStore.getState().tracks).toHaveLength(1)
     expect(useAppStore.getState().tracks[0]?.points).toHaveLength(20)
     expect(useAppStore.getState().importErrors).toContain(
@@ -550,7 +594,9 @@ describe('importGpxFiles', () => {
 
   it('ne dit rien sur un fichier dont tous les points tombent sur Terre', async () => {
     await useAppStore.getState().init()
-    await useAppStore.getState().importGpxFiles([fichierGpx('propre.gpx', ligne(20))])
+    await useAppStore
+      .getState()
+      .importGpxFiles([fichierGpx('propre.gpx', ligne(20))])
     expect(useAppStore.getState().importErrors).toEqual([])
   })
 
@@ -560,10 +606,10 @@ describe('importGpxFiles', () => {
     // est réelle et complète ; sans message, l'utilisateur lit un chiffre
     // très bas — 0 % si toute la trace est ainsi — et conclut que
     // l'application est cassée.
-    const econome: [number, number][] = Array.from(
-      { length: 12 },
-      (_, i) => [4.5 + i * 0.022, 45.4],
-    )
+    const econome: [number, number][] = Array.from({ length: 12 }, (_, i) => [
+      4.5 + i * 0.022,
+      45.4,
+    ])
     await useAppStore
       .getState()
       .importGpxFiles([fichierGpx('montre-economie.gpx', econome)])
@@ -578,7 +624,9 @@ describe('importGpxFiles', () => {
 
   it('ne dit rien d’une trace ordinaire', async () => {
     await useAppStore.getState().init()
-    await useAppStore.getState().importGpxFiles([fichierGpx('normale.gpx', ligne(30))])
+    await useAppStore
+      .getState()
+      .importGpxFiles([fichierGpx('normale.gpx', ligne(30))])
     expect(useAppStore.getState().importErrors).toEqual([])
   })
 
@@ -586,7 +634,10 @@ describe('importGpxFiles', () => {
     await useAppStore.getState().init()
     await useAppStore
       .getState()
-      .importGpxFiles([fichierGpx('a.gpx', ligne(20)), fichierGpx('b.gpx', ligne(20, 45.5))])
+      .importGpxFiles([
+        fichierGpx('a.gpx', ligne(20)),
+        fichierGpx('b.gpx', ligne(20, 45.5)),
+      ])
     expect(useAppStore.getState().importProgress).toBeNull()
     expect(useAppStore.getState().tracks).toHaveLength(2)
   })
@@ -678,7 +729,9 @@ describe('démonstration (issue #172)', () => {
 
   it('quitter rend l’application à ce qui existait vraiment', async () => {
     await useAppStore.getState().init()
-    await useAppStore.getState().importGpxFiles([fichierGpx('a.gpx', ligne(20))])
+    await useAppStore
+      .getState()
+      .importGpxFiles([fichierGpx('a.gpx', ligne(20))])
     await useAppStore.getState().demarrerDemonstration()
     expect(useAppStore.getState().tracks[0]?.filename).toMatch(/démonstration/i)
 
@@ -834,11 +887,15 @@ describe('setTolerance', () => {
     await useAppStore.getState().init()
     await useAppStore.getState().loadZone('pilat')
     // Une trace qui longe le GR 7 à 15 m au nord (fixture : lat 45.4).
-    await useAppStore
-      .getState()
-      .importGpxFiles([
-        fichierGpx('gr7.gpx', ligne(40, 45.4 + 15 / 111_195).map(([lon]) => [lon, 45.4 + 15 / 111_195])),
-      ])
+    await useAppStore.getState().importGpxFiles([
+      fichierGpx(
+        'gr7.gpx',
+        ligne(40, 45.4 + 15 / 111_195).map(([lon]) => [
+          lon,
+          45.4 + 15 / 111_195,
+        ]),
+      ),
+    ])
     await useAppStore.getState().setTolerance(MAX_TOLERANCE)
     const large = useAppStore.getState().matching?.global.pct ?? 0
     await useAppStore.getState().setTolerance(MIN_TOLERANCE)
@@ -870,12 +927,16 @@ describe('selectItinerary', () => {
     await useAppStore.getState().loadZone('pilat')
     const [premier, second] = useAppStore.getState().itineraries
     useAppStore.getState().openItineraryDetail(premier?.osmRelationId ?? 0)
-    expect(useAppStore.getState().detailItineraryId).toBe(premier?.osmRelationId)
+    expect(useAppStore.getState().detailItineraryId).toBe(
+      premier?.osmRelationId,
+    )
 
     useAppStore.getState().selectItinerary(second?.osmRelationId ?? 0)
     // La fiche n'a plus de sujet cohérent : elle se ferme.
     expect(useAppStore.getState().detailItineraryId).toBeNull()
-    expect(useAppStore.getState().selectedItineraryId).toBe(second?.osmRelationId)
+    expect(useAppStore.getState().selectedItineraryId).toBe(
+      second?.osmRelationId,
+    )
   })
 
   it('garde la fiche ouverte quand on resélectionne le même itinéraire', async () => {
@@ -897,9 +958,7 @@ describe('annonces et bilans, cycle de vie', () => {
     await useAppStore.getState().setTolerance(MIN_TOLERANCE)
     await useAppStore
       .getState()
-      .importGpxFiles([
-        fichierGpx('gr7.gpx', ligne(40, 45.4 + 15 / 111_195)),
-      ])
+      .importGpxFiles([fichierGpx('gr7.gpx', ligne(40, 45.4 + 15 / 111_195))])
     expect(useAppStore.getState().celebration).toBeNull()
 
     // On desserre : le GR 7 franchit ses jalons d'un coup.
@@ -968,7 +1027,10 @@ describe('seuil de complétion', () => {
 describe('archives d’export', () => {
   const gpx = (points: [number, number][]): string => {
     const trkpts = points
-      .map(([lon, lat]) => `<trkpt lat="${lat}" lon="${lon}"><ele>800</ele></trkpt>`)
+      .map(
+        ([lon, lat]) =>
+          `<trkpt lat="${lat}" lon="${lon}"><ele>800</ele></trkpt>`,
+      )
       .join('')
     return `<?xml version="1.0"?><gpx version="1.1" xmlns="http://www.topografix.com/GPX/1/1"><trk><trkseg>${trkpts}</trkseg></trk></gpx>`
   }
@@ -978,7 +1040,11 @@ describe('archives d’export', () => {
     // données chez eux et dépose l'archive ici, sans rien envoyer nulle part.
     const archive = await buildZip([
       { nom: 'activities/1.gpx', contenu: gpx(ligne(10)) },
-      { nom: 'activities/2.gpx.gz', contenu: await gzip(gpx(ligne(12, 45.41))), methode: 0 },
+      {
+        nom: 'activities/2.gpx.gz',
+        contenu: await gzip(gpx(ligne(12, 45.41))),
+        methode: 0,
+      },
       { nom: 'profile.csv', contenu: 'nom,prenom' },
       { nom: '__MACOSX/._1.gpx', contenu: 'x', methode: 0 },
     ])
@@ -1169,9 +1235,10 @@ describe('recherche de lieu', () => {
     expect(useAppStore.getState().zoneLabel).toBe('Autour de Saint-Étienne')
     expect(useAppStore.getState().itineraries.length).toBeGreaterThan(0)
     const requetes = fetchMock.mock.calls
-      .map(([, init]) =>
-        // Le corps est un formulaire encodé : décodé, il redevient du QL.
-        new URLSearchParams(init?.body ?? '').get('data') ?? '',
+      .map(
+        ([, init]) =>
+          // Le corps est un formulaire encodé : décodé, il redevient du QL.
+          new URLSearchParams(init?.body ?? '').get('data') ?? '',
       )
       .join(' ')
     expect(requetes).toContain('around:12000,45.430000,4.380000')
@@ -1293,5 +1360,131 @@ describe('quand la base refuse d’écrire', () => {
     // Ni « lecture impossible », ni un silence.
     expect(message).not.toMatch(/lecture impossible/)
     expect(message).toMatch(/enregistrée|place|stockage/i)
+  })
+})
+
+/**
+ * Issue #203 — un réglage modifié puis suivi d'un rechargement immédiat était
+ * perdu sans un mot.
+ *
+ * Les sept setters écrivaient dans IndexedDB, dont aucune écriture n'est
+ * synchrone. Entre le clic et la fin de la transaction, l'interface affirmait
+ * quelque chose que la base ne savait pas encore : un rechargement dans cette
+ * fenêtre annulait la transaction, et le réglage revenait à sa valeur
+ * précédente alors que la personne l'avait vu changer.
+ *
+ * ## Ce que ces tests mesurent, et ce qu'ils ne mesurent pas
+ *
+ * Le symptôme d'origine est une course : `seuil.spec.ts` échouait une fois sur
+ * deux en suite complète, jamais seul. Un test qui reproduirait cette course
+ * serait rouge une fois sur deux **avec ou sans** le correctif — donc
+ * incapable de dire lequel des deux il mesure (§1).
+ *
+ * On mesure donc l'invariant, qui est déterministe : **quand le setter rend la
+ * main, la valeur est déjà écrite dans un magasin qui survit au
+ * rechargement.** Pas de fenêtre à attraper, une durabilité à constater.
+ */
+describe('un réglage est durable dès que la main est rendue (#203)', () => {
+  /** La clef telle que `db/reglages.ts` la nomme. */
+  const clef = (nom: string): string => `sentiers.reglage.${nom}`
+
+  beforeEach(() => {
+    vi.stubGlobal('indexedDB', new IDBFactory())
+    useAppStore.setState({ ...etatInitial }, true)
+    oublierReglagesTouches()
+  })
+
+  it('écrit le gros texte avant de rendre la main', async () => {
+    await useAppStore.getState().init()
+    await useAppStore.getState().setGrosTexte(true)
+    // Lecture synchrone, sans attendre quoi que ce soit : c'est le point.
+    expect(localStorage.getItem(clef('grosTexte'))).toBe('1')
+    expect(useAppStore.getState().grosTexte).toBe(true)
+  })
+
+  /**
+   * Le type compte autant que la valeur. `completionPct` vaut 95 et non
+   * « 95 » : `normalizeCompletionPct` rend sa valeur par défaut sur autre
+   * chose qu'un nombre, si bien qu'une chaîne aurait silencieusement remis le
+   * seuil à zéro au premier rechargement — un correctif qui casse ce qu'il
+   * protège.
+   */
+  it('garde le type du seuil, et pas seulement ses chiffres', async () => {
+    await useAppStore.getState().init()
+    await useAppStore.getState().setCompletionPct(100)
+    expect(
+      JSON.parse(localStorage.getItem(clef('completionPct')) ?? 'null'),
+    ).toBe(100)
+  })
+
+  it('relit ce qui a été écrit, sur une session neuve', async () => {
+    await useAppStore.getState().init()
+    await useAppStore.getState().setModeAffichage('simple')
+    await useAppStore.getState().setCompletionPct(90)
+
+    // Une session repart de zéro : nouvel état, réglages oubliés.
+    useAppStore.setState({ ...etatInitial }, true)
+    oublierReglagesTouches()
+    await useAppStore.getState().init()
+
+    expect(useAppStore.getState().modeAffichage).toBe('simple')
+    expect(useAppStore.getState().completionPct).toBe(90)
+  })
+
+  /**
+   * Le point qui décide si le correctif est livrable : **une mise à jour ne
+   * doit rien effacer**. Les réglages déjà enregistrés vivent dans IndexedDB ;
+   * sans reprise, la personne retrouverait des valeurs par défaut — seuil,
+   * tolérance, mode d'affichage, objectifs épinglés.
+   */
+  it('reprend les réglages qu’une version antérieure a laissés en base', async () => {
+    await useAppStore.getState().init()
+    const db = useAppStore.getState().db
+    expect(db).not.toBeNull()
+    // On écrit comme l'ancienne version le faisait, directement dans le
+    // magasin IndexedDB, et on efface la trace synchrone.
+    await db!.raw.put('settings', 'simple', 'modeAffichage')
+    await db!.raw.put('settings', 90, 'completionPct')
+    localStorage.clear()
+
+    useAppStore.setState({ ...etatInitial }, true)
+    oublierReglagesTouches()
+    await useAppStore.getState().init()
+
+    expect(useAppStore.getState().modeAffichage).toBe('simple')
+    expect(useAppStore.getState().completionPct).toBe(90)
+    // Et repris pour de bon : la session suivante n'a plus besoin de la base.
+    expect(localStorage.getItem(clef('modeAffichage'))).toBe('"simple"')
+  })
+
+  /**
+   * L'autre moitié : un navigateur qui refuse `localStorage` — Safari en
+   * navigation privée, une configuration verrouillée — doit continuer de
+   * fonctionner. La fenêtre de #203 y revient, et c'est dit dans le code
+   * plutôt que masqué ; ce qui ne doit pas revenir, c'est un réglage sans
+   * aucun effet.
+   */
+  it('continue d’enregistrer quand le stockage synchrone refuse', async () => {
+    const vrai = Object.getOwnPropertyDescriptor(globalThis, 'localStorage')
+    vi.stubGlobal('localStorage', {
+      getItem: () => null,
+      setItem: () => {
+        throw new DOMException('refusé', 'SecurityError')
+      },
+      removeItem: () => undefined,
+      clear: () => undefined,
+      key: () => null,
+      length: 0,
+    })
+    try {
+      await useAppStore.getState().init()
+      await useAppStore.getState().setCompletionPct(90)
+      expect(useAppStore.getState().completionPct).toBe(90)
+      const db = useAppStore.getState().db
+      expect(await db!.getSetting('completionPct')).toBe(90)
+    } finally {
+      vi.unstubAllGlobals()
+      if (vrai) Object.defineProperty(globalThis, 'localStorage', vrai)
+    }
   })
 })

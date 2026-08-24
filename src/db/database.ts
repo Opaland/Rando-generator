@@ -4,6 +4,11 @@ import type { PointBrut } from '../core/recorder.ts'
 import type { EnteteEnregistrement } from '../core/reprise.ts'
 import type { PoisEmportes } from '../core/poisEmportes.ts'
 import type { ParcoursDeclare } from '../core/declaratif.ts'
+import {
+  ecrireReglage,
+  lireReglage,
+  reglagesSynchronesDisponibles,
+} from './reglages.ts'
 
 /** Erreur de persistance, message affichable tel quel à l'utilisateur. */
 export class DbError extends Error {
@@ -287,6 +292,8 @@ export async function openSentiersDb(
     )
   }
 
+  await migrerLesReglages(raw)
+
   return {
     raw,
     async saveZone(zone) {
@@ -316,10 +323,26 @@ export async function openSentiersDb(
     async deleteCustomItinerary(id) {
       await raw.delete('customItineraries', id)
     },
-    getSetting(key) {
+    /*
+      Les réglages vivent dans `localStorage` depuis #203 : c'est le seul
+      magasin dont l'écriture soit **synchrone par contrat**, et c'est ce qui
+      supprime la fenêtre pendant laquelle l'écran affirmait un réglage que la
+      base ne connaissait pas encore.
+
+      IndexedDB reste le repli quand `localStorage` refuse — certains
+      navigateurs verrouillent l'un et pas l'autre — et reste la source de la
+      **reprise** : `migrerLesReglages` recopie une fois ce qu'une version
+      antérieure y avait laissé. Le magasin `settings` n'est donc jamais
+      supprimé, seulement cessé d'être écrit, ce qui laisse un retour en
+      arrière possible sans rien avoir perdu.
+    */
+    async getSetting(key) {
+      const synchrone = lireReglage(key)
+      if (synchrone !== undefined) return synchrone
       return raw.get('settings', key)
     },
     async setSetting(key, value) {
+      if (ecrireReglage(key, value)) return
       await raw.put('settings', value, key)
     },
     async ecrireEntete(tete) {
@@ -380,5 +403,42 @@ export async function openSentiersDb(
         tx.done,
       ])
     },
+  }
+}
+
+/**
+ * Recopie une fois les réglages laissés dans IndexedDB par une version
+ * antérieure (#203).
+ *
+ * Sans elle, la mise à jour remettrait chaque personne à des réglages par
+ * défaut : seuil, tolérance, mode d'affichage, gros texte, objectifs
+ * épinglés. Un correctif qui efface ce qu'il vient protéger ne corrige rien.
+ *
+ * `localStorage` gagne quand les deux ont la clef : c'est lui qui reçoit les
+ * écritures depuis la migration, donc lui qui est à jour. La copie ne se fait
+ * que dans un sens, et le magasin `settings` reste tel quel.
+ *
+ * Sans `localStorage`, il n'y a rien à migrer : IndexedDB reste la source, et
+ * la fenêtre de #203 avec elle. C'est le prix d'un navigateur qui refuse le
+ * stockage synchrone, et il est dit plutôt que masqué.
+ */
+async function migrerLesReglages(
+  raw: IDBPDatabase<SentiersSchema>,
+): Promise<void> {
+  if (!reglagesSynchronesDisponibles()) return
+  const clefs: SettingKey[] = [
+    'toleranceMeters',
+    'completionPct',
+    'lastZoneKey',
+    'objectifs',
+    'modeAffichage',
+    'grosTexte',
+    'guideFerme',
+    'panneauReplie',
+  ]
+  for (const clef of clefs) {
+    if (lireReglage(clef) !== undefined) continue
+    const ancienne = await raw.get('settings', clef)
+    if (ancienne !== undefined) ecrireReglage(clef, ancienne)
   }
 }

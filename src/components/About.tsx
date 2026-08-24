@@ -46,7 +46,8 @@ export function About({ open, onClose }: { open: boolean; onClose: () => void })
           <h3>Vos traces restent chez vous</h3>
           <p>
             Vos traces GPX sont lues et analysées <strong>uniquement dans
-            votre navigateur</strong>, et stockées localement (IndexedDB). Le
+            votre navigateur</strong>, et stockées localement — les traces et
+            les cartes dans IndexedDB, vos réglages dans le stockage local. Le
             calcul de complétion se fait chez vous, de bout en bout. Aucune
             trace, aucun identifiant, aucune mesure d’audience ne quitte votre
             appareil. Il n’y a ni compte, ni serveur applicatif.

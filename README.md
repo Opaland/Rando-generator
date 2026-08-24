@@ -10,7 +10,8 @@ parcouru 34 % du GR 7, 61 % des sentiers du Pilat ».
 - **Vos traces restent chez vous** : vos GPX ne quittent jamais votre
   navigateur, et le calcul de complétion s'y fait de bout en bout. Aucun
   compte, aucun backend, aucune télémétrie. La persistance se fait en
-  IndexedDB.
+  IndexedDB pour les traces et les zones, en `localStorage` pour les sept
+  réglages — dont l'écriture, elle, est synchrone (issue #203).
 - **Ce qui sort quand même** : afficher une carte, c'est demander des images à
   quelqu'un. Overpass reçoit la zone ou la référence cherchée, la
   Géoplateforme IGN les tuiles regardées et jusqu'à cent points de
@@ -337,6 +338,7 @@ src/
 │  └─ mapdata.ts   # GeoJSON des couches carte (base / parcouru / traces)
 ├─ store/       # Zustand + client du worker de matching
 ├─ db/          # IndexedDB (idb), versionnée, TTL 30 jours
+│               # + reglages.ts : les sept réglages, en écriture synchrone
 ├─ workers/     # matching.worker.ts (repli synchrone si Worker indisponible)
 └─ components/  # MapView (MapLibre) + map/ (style, sources, caméra),
                 # ZonePicker, TrackManager, Dashboard, NextOuting, History,
