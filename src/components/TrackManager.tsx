@@ -176,7 +176,11 @@ export function TrackManager() {
       </div>
 
       {importing && (
-        <p className={styles.importing} role="status" data-testid="gpx-importing">
+        <p
+          className={styles.importing}
+          role="status"
+          data-testid="gpx-importing"
+        >
           {importProgress
             ? importProgressLabel(importProgress)
             : 'Import en cours…'}
@@ -241,10 +245,7 @@ export function TrackManager() {
           </ul>
           {importDoublons.length > 1 && (
             <span className={styles.doublonActions}>
-              <button
-                type="button"
-                onClick={ignorerTousDoublons}
-              >
+              <button type="button" onClick={ignorerTousDoublons}>
                 Tout ignorer
               </button>
             </span>
@@ -266,7 +267,7 @@ export function TrackManager() {
                   type="search"
                   value={recherche}
                   data-testid="tracks-recherche"
-                  placeholder="Nom de fichier ou date…"
+                  placeholder="Nom de fichier, date ou zone…"
                   onChange={(e) => {
                     setRecherche(e.target.value)
                   }}
@@ -286,7 +287,11 @@ export function TrackManager() {
                   <option value="denivele">Le plus de dénivelé</option>
                 </select>
               </label>
-              <p className={styles.compte} role="status" data-testid="tracks-compte">
+              <p
+                className={styles.compte}
+                role="status"
+                data-testid="tracks-compte"
+              >
                 {nbTrouvees === tracks.length
                   ? `${tracks.length} sorties`
                   : `${nbTrouvees} sur ${tracks.length}`}
@@ -301,13 +306,14 @@ export function TrackManager() {
           ) : (
             groupes.map((groupe) => {
               const cle = String(groupe.annee ?? 'sans-date')
-              const groupe_est_seul = groupes.length === 1 && groupe.annee === null
+              const groupe_est_seul =
+                groupes.length === 1 && groupe.annee === null
               const ouvert = depliees[cle] ?? groupe.ouvertParDefaut
               // Chercher traverse les plis : sans cela, la sortie trouvée
               // dans une année repliée resterait invisible.
               const visible = ouvert || recherche.trim() !== ''
               const bornees =
-                toutAfficher[cle] ?? false
+                (toutAfficher[cle] ?? false)
                   ? groupe.entrees
                   : groupe.entrees.slice(0, MAX_PAR_ANNEE)
               return (
@@ -341,18 +347,22 @@ export function TrackManager() {
                           />
                         ))}
                       </ul>
-                      {groupe.restantes > 0 && !(toutAfficher[cle] ?? false) && (
-                        <button
-                          type="button"
-                          className={styles.plus}
-                          data-testid={`tracks-plus-${cle}`}
-                          onClick={() => {
-                            setToutAfficher((etat) => ({ ...etat, [cle]: true }))
-                          }}
-                        >
-                          Afficher les {groupe.restantes} sorties suivantes
-                        </button>
-                      )}
+                      {groupe.restantes > 0 &&
+                        !(toutAfficher[cle] ?? false) && (
+                          <button
+                            type="button"
+                            className={styles.plus}
+                            data-testid={`tracks-plus-${cle}`}
+                            onClick={() => {
+                              setToutAfficher((etat) => ({
+                                ...etat,
+                                [cle]: true,
+                              }))
+                            }}
+                          >
+                            Afficher les {groupe.restantes} sorties suivantes
+                          </button>
+                        )}
                     </>
                   )}
                 </section>
@@ -442,6 +452,23 @@ function ItemTrace({
           {typeof track.elevationGain === 'number' &&
             ` · D+ ${Math.round(track.elevationGain)} m`}
         </span>
+        {/*
+          La zone chargée au moment de l'import (issue #206).
+
+          « Importée depuis » et non « lieu » : c'est la zone qui était à
+          l'écran, pas l'endroit d'où l'on est parti. Une sortie du Pilat
+          porte « PNR du Pilat », ce qui aide à retrouver sans prétendre
+          situer. Absente sur les traces déjà en base, et la ligne
+          disparaît alors plutôt que d'annoncer « zone inconnue ».
+        */}
+        {track.zoneALImport && (
+          <span
+            className={styles.itemMeta}
+            data-testid={`track-zone-${track.filename}`}
+          >
+            Importée depuis&nbsp;: {track.zoneALImport}
+          </span>
+        )}
       </button>
       <ConfirmDeleteButton
         label={`Supprimer la trace ${track.filename}`}

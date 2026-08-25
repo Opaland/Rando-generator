@@ -29,10 +29,10 @@ function trace(
     id: filename,
     filename,
     // Une ligne est-ouest : la longueur croît avec le nombre de points.
-    points: Array.from(
-      { length: points },
-      (_, i): [number, number] => [4.5 + i * 0.01, 45.4],
-    ),
+    points: Array.from({ length: points }, (_, i): [number, number] => [
+      4.5 + i * 0.01,
+      45.4,
+    ]),
     date,
     importedAt: '2026-08-21T00:00:00Z',
     elevationGain,
@@ -68,9 +68,9 @@ describe('trierHistorique', () => {
   ])
 
   it('met la plus récente en tête', () => {
-    expect(trierHistorique(entrees, 'date').map((e) => e.track.filename)).toEqual(
-      ['juin.gpx', 'mars.gpx', 'janvier.gpx'],
-    )
+    expect(
+      trierHistorique(entrees, 'date').map((e) => e.track.filename),
+    ).toEqual(['juin.gpx', 'mars.gpx', 'janvier.gpx'])
   })
 
   it('met la plus longue en tête', () => {
@@ -106,6 +106,56 @@ describe('trierHistorique', () => {
   })
 })
 
+describe('chercherHistorique — la zone au moment de l’import (#206)', () => {
+  /*
+    #206 demandait « chercher par lieu » et s'arrêtait sur une question de
+    produit : retrouver un lieu après coup, c'est du géocodage inverse —
+    huit cents positions de départ envoyées à un tiers pour l'archive de
+    Karim, soit exactement ce que Sentiers refuse.
+
+    La piste praticable était déjà écrite dans l'issue : retenir, **au
+    moment de l'import**, la zone chargée. C'est local, sans réseau, et
+    l'application la connaît déjà.
+
+    Ce qui n'est **pas** tranché ici, et l'issue le dit : est-ce que « la
+    zone au moment de l'import » mérite d'être appelée un lieu ? Le champ
+    s'appelle donc `zoneALImport`, et l'interface dit « importée depuis ».
+    Une sortie du Pilat porte « PNR du Pilat », ce qui est utile et
+    grossier — le nommer autrement le ferait passer pour un lieu de départ.
+  */
+  const entrees = preparerHistorique([
+    {
+      ...trace('sortie-1.gpx', '2026-06-15T08:00:00Z'),
+      zoneALImport: 'PNR du Pilat',
+    },
+    {
+      ...trace('sortie-2.gpx', '2026-06-16T08:00:00Z'),
+      zoneALImport: 'Boucles communales — Métropole de Lyon',
+    },
+    trace('sans-zone.gpx', '2026-06-17T08:00:00Z'),
+  ])
+
+  it('trouve par la zone', () => {
+    expect(
+      chercherHistorique(entrees, 'pilat').map((e) => e.track.filename),
+    ).toEqual(['sortie-1.gpx'])
+  })
+
+  it('cherche la zone sans accent, comme le reste', () => {
+    expect(
+      chercherHistorique(entrees, 'metropole').map((e) => e.track.filename),
+    ).toEqual(['sortie-2.gpx'])
+  })
+
+  it('n’écarte pas une trace sans zone quand on cherche autre chose', () => {
+    // Les traces déjà en base n'ont pas ce champ, et doivent rester
+    // cherchables par tout le reste. Un champ neuf ne rend personne muet.
+    expect(
+      chercherHistorique(entrees, 'sans-zone').map((e) => e.track.filename),
+    ).toEqual(['sans-zone.gpx'])
+  })
+})
+
 describe('chercherHistorique', () => {
   const entrees = preparerHistorique([
     trace('Pilat-crêtes.gpx', '2026-06-15T08:00:00Z'),
@@ -118,9 +168,9 @@ describe('chercherHistorique', () => {
   })
 
   it('trouve par un morceau du nom de fichier', () => {
-    expect(chercherHistorique(entrees, 'crêtes').map((e) => e.track.filename)).toEqual(
-      ['Pilat-crêtes.gpx'],
-    )
+    expect(
+      chercherHistorique(entrees, 'crêtes').map((e) => e.track.filename),
+    ).toEqual(['Pilat-crêtes.gpx'])
   })
 
   it('ignore la casse et les accents', () => {
@@ -130,9 +180,9 @@ describe('chercherHistorique', () => {
   })
 
   it('trouve par l’année', () => {
-    expect(chercherHistorique(entrees, '2025').map((e) => e.track.filename)).toEqual(
-      ['sortie-hiver.gpx'],
-    )
+    expect(
+      chercherHistorique(entrees, '2025').map((e) => e.track.filename),
+    ).toEqual(['sortie-hiver.gpx'])
   })
 
   it('trouve par la date écrite comme elle est affichée', () => {
@@ -148,7 +198,10 @@ describe('chercherHistorique', () => {
 describe('grouperParAnnee', () => {
   const beaucoup = (n: number, annee: number) =>
     Array.from({ length: n }, (_, i) =>
-      trace(`${annee}-${i}.gpx`, `${annee}-06-${String((i % 28) + 1).padStart(2, '0')}T08:00:00Z`),
+      trace(
+        `${annee}-${i}.gpx`,
+        `${annee}-06-${String((i % 28) + 1).padStart(2, '0')}T08:00:00Z`,
+      ),
     )
 
   it('ne groupe pas une petite liste', () => {

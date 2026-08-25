@@ -126,6 +126,26 @@ export interface Track {
   /** Dénivelé positif cumulé en mètres (null si le GPX n'a pas d'altitudes). */
   elevationGain?: number | null
   /**
+   * La zone chargée au moment de l'import (issue #206).
+   *
+   * **Ce n'est pas un lieu de départ, et il ne faut pas l'appeler ainsi.**
+   * Retrouver un lieu après coup demanderait du géocodage inverse, donc
+   * d'envoyer les coordonnées de chaque sortie à un tiers — huit cents
+   * positions pour l'archive de Karim, soit exactement ce que le produit
+   * refuse. Cette zone-ci ne coûte rien : l'application la connaît déjà
+   * quand l'import se produit.
+   *
+   * Ce qu'elle vaut : « PNR du Pilat » devient cherchable au même titre que
+   * le nom de fichier. Ce qu'elle ne vaut pas : elle est grossière, elle est
+   * vide pour les traces déjà importées, et vide pour une trace importée
+   * hors zone chargée. L'interface dit donc « importée depuis », jamais
+   * « lieu ».
+   *
+   * Optionnel, et il doit le rester : les traces en base n'en ont pas, et
+   * elles doivent continuer à compter sans qu'on demande de tout réimporter.
+   */
+  zoneALImport?: string | null
+  /**
    * Horodatage de chaque point, en millisecondes depuis l'époque Unix,
    * aligné sur `points` (issue #149).
    *
