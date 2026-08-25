@@ -1,11 +1,11 @@
 import { formatKm } from '../lib/format.ts'
 import { distanceMeters } from './geo.ts'
 import { chainWays } from './chainage.ts'
+import { estUnCouchage } from './couchage.ts'
 import type { GpxWaypoint } from './gpxExport.ts'
 import type {
   Itinerary,
   LonLat,
-  PoiKind,
   PointOfInterest,
   Sample,
 } from './types.ts'
@@ -253,22 +253,6 @@ export function calerSurCouchages(
 }
 
 /**
- * Les catégories où l'on passe la nuit.
- *
- * Nommée plutôt que recopiée : la question « peut-on y dormir » se pose
- * déjà à deux endroits — ici, pour caler une coupure, et dans
- * `POI_OVERNIGHT` qui pose la question voisine mais différente (« sans
- * réservation »). Trois gardes écrites à la main et une quatrième oubliée,
- * c'est le mode d'échec de CLAUDE.md §4 ; il n'y aura pas de quatrième
- * lecture de cette liste-ci.
- */
-const EST_UN_COUCHAGE: ReadonlySet<PoiKind> = new Set<PoiKind>([
-  'hut',
-  'bivouac',
-  'gite',
-])
-
-/**
  * Les endroits où l'on dort le long d'un tracé, dans l'ordre du parcours.
  *
  * Trois catégories, et la liste se lit comme une question : **peut-on y
@@ -292,7 +276,7 @@ export function couchagesLeLongDuTrace(
   const cumul = distancesCumuleesDuTrace(trace)
   const couchages: CouchageSitue[] = []
   for (const poi of pois) {
-    if (!EST_UN_COUCHAGE.has(poi.kind)) continue
+    if (!estUnCouchage(poi.kind)) continue
     let meilleurIndex = 0
     let meilleureDistance = Infinity
     for (const [index, point] of trace.entries()) {
