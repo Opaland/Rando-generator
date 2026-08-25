@@ -120,6 +120,62 @@ describe('lireIntention — la forme et le sol', () => {
   })
 })
 
+describe('lireIntention — les singuliers, que la vague de mutation a démasqués', () => {
+  /*
+    La vague du 25/08 a laissé survivre six mutants qui retiraient le `?` d'un
+    pluriel : « moyens? », « circulaires? », « linéaires? », « roulants? ».
+    Chaque `?` retiré casse le **singulier**, et aucun test ne l'employait —
+    ils étaient tous écrits au pluriel ou avec une autre forme.
+
+    C'est le mode d'échec que le §6bis décrit : un test qui vise une ligne
+    sans l'atteindre est vert pour rien. Ici, six lignes visées, six non
+    atteintes.
+  */
+  it('lit « moyen » comme « moyenne »', () => {
+    expect(lireIntention('un niveau moyen').filtres.maxMinutes).toBe(
+      SEUIL_MOYEN_MINUTES,
+    )
+  })
+
+  it('lit « circulaire » comme « boucle »', () => {
+    expect(lireIntention('un parcours circulaire').filtres.shape).toBe('loop')
+  })
+
+  it('lit « linéaire » au singulier, accent compris', () => {
+    expect(lireIntention('un tracé linéaire').filtres.shape).toBe('linear')
+  })
+
+  it('lit « roulant » au singulier', () => {
+    expect(lireIntention('un chemin roulant').filtres.sol).toBe('roulant')
+  })
+
+  it('lit « poussette » au singulier, sans alternative de secours', () => {
+    /*
+      Le motif portait `|\bpoussette\b` **en plus** de `\bpoussettes?\b` :
+      une alternative en double, qui rendait le motif increvable et donc
+      non testable. Un mutant qui retirait le `?` survivait, protégé par la
+      redondance. Retirée le 25/08 — c'est le §4 en miniature.
+    */
+    expect(lireIntention('avec une poussette').filtres.sol).toBe('roulant')
+    expect(lireIntention('avec des poussettes').filtres.sol).toBe('roulant')
+  })
+})
+
+describe('lireIntention — ce qui a été compris se relit', () => {
+  it('rend le texte reconnu, tel qu’il a été lu', () => {
+    /*
+      Un mutant retirait le `.trim()` du fragment sans qu'aucun test s'en
+      aperçoive : `compris[].texte` n'était jamais lu. Or c'est ce que
+      l'interface affichera pour dire « voilà ce que j'ai compris ».
+    */
+    const i = lireIntention('une boucle de moins de 12 km')
+    const distance = i.compris.find((f) => f.champ === 'maxKm')
+    expect(distance).toBeDefined()
+    expect(distance!.texte).toBe('moins de 12 km')
+    expect(distance!.texte).not.toMatch(/^\s|\s$/)
+  })
+})
+
 describe('lireIntention — la proximité', () => {
   it('distingue « à 20 km de chez moi » de « une rando de 20 km »', () => {
     const proche = lireIntention('à moins de 20 km de chez moi')
