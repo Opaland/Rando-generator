@@ -5,6 +5,7 @@ import {
   bandesDeRevetement,
   couvertureRevetement,
   revetementDuChemin,
+  partsDeRevetement,
   type Bande,
 } from '../../src/core/revetement.ts'
 import type { Itinerary, TrailWay } from '../../src/core/types.ts'
@@ -319,5 +320,79 @@ describe('couvertureRevetement avec déduction', () => {
     expect(c.deduitMetres).toBe(500)
     expect(c.inconnuMetres).toBe(200)
     expect(c.fraction).toBeCloseTo(0.3, 3)
+  })
+})
+
+/**
+ * La part roulante d'un itinéraire (issue #179).
+ *
+ * Nadia sort avec sa fille en fauteuil tout-terrain. Elle ne cherche pas
+ * « un parcours accessible » — l'étiquette ne veut rien dire et elle a appris
+ * à s'en méfier. Elle cherche ce qu'il y a sous les roues, et elle sait lire
+ * une donnée absente ; ce qu'elle ne pardonne pas, c'est une promesse fausse.
+ *
+ * D'où deux règles, et la seconde est la vraie :
+ *
+ * 1. la part se calcule **en longueur**, pas en nombre de tronçons — un
+ *    kilomètre de sentier et dix mètres de bitume ne se comptent pas pareil ;
+ * 2. **l'inconnu est une part comme les autres, et il est rendu.** Le noyer
+ *    dans « naturel » ou le retirer du dénominateur ferait passer un
+ *    itinéraire dont on ne sait rien pour un itinéraire dont on sait qu'il
+ *    est roulant.
+ */
+describe('partsDeRevetement (#179)', () => {
+  function itinAvecSurfaces(
+    surfaces: (string | undefined)[],
+  ): Parameters<typeof partsDeRevetement>[0] {
+    return {
+      osmRelationId: 1,
+      ref: null,
+      name: null,
+      network: 'PR',
+      totalMeters: 0,
+      fetchedAt: '2026-08-25T00:00:00Z',
+      ways: surfaces.map((surface, i) => ({
+        osmWayId: 100 + i,
+        // 1e-4 ° de longitude ≈ 7,8 m à 45,4° — la longueur exacte importe
+        // peu, seule leur égalité compte pour lire les parts.
+        coords: [
+          [4.5 + i * 0.001, 45.4],
+          [4.5 + i * 0.001 + 0.0001, 45.4],
+        ] as [number, number][],
+        ...(surface === undefined ? {} : { tags: { surface } }),
+      })),
+    }
+  }
+
+  it('rend la part de chaque famille, en longueur', () => {
+    const parts = partsDeRevetement(
+      itinAvecSurfaces(['asphalt', 'asphalt', 'compacted', 'ground']),
+    )
+    expect(parts.dur).toBeCloseTo(0.5, 2)
+    expect(parts.stabilise).toBeCloseTo(0.25, 2)
+    expect(parts.naturel).toBeCloseTo(0.25, 2)
+    expect(parts.inconnu).toBeCloseTo(0, 2)
+  })
+
+  it('rend l’inconnu plutôt que de le répartir ailleurs', () => {
+    const parts = partsDeRevetement(itinAvecSurfaces(['asphalt', undefined]))
+    expect(parts.dur).toBeCloseTo(0.5, 2)
+    expect(
+      parts.inconnu,
+      'un itinéraire dont on ne sait rien passerait pour roulant',
+    ).toBeCloseTo(0.5, 2)
+  })
+
+  it('les parts somment à 1', () => {
+    const parts = partsDeRevetement(
+      itinAvecSurfaces(['asphalt', 'gravel', 'ground', undefined, 'sand']),
+    )
+    const somme = Object.values(parts).reduce((a, b) => a + b, 0)
+    expect(somme).toBeCloseTo(1, 6)
+  })
+
+  it('un itinéraire sans longueur ne rend pas NaN', () => {
+    const parts = partsDeRevetement(itinAvecSurfaces([]))
+    expect(Object.values(parts).every((p) => p === 0)).toBe(true)
   })
 })

@@ -254,3 +254,116 @@ de ceux qui précèdent auraient pu être faux sans qu'on le sache.
 C'est le seul sprint de la liste dont la valeur se mesure en **erreurs qui
 n'arriveront pas**, ce qui est aussi la raison pour laquelle ce genre de
 travail se remet toujours à plus tard.
+
+
+---
+
+## Sprint 4 — Le terrain décide qui peut y aller
+
+**Ferme #179.** Trois choses :
+
+- `partsDeRevetement` rend la part de chaque famille **en longueur**, et
+  `inconnu` est une part comme les autres. La noyer dans « naturel » ou la
+  retirer du dénominateur ferait passer un itinéraire dont on ne sait rien
+  pour un itinéraire dont on sait qu'il est roulant ;
+- un filtre « Sol : entièrement dur ou stabilisé » dans la liste ;
+- les parts réelles dans la fiche, sous « Sous les pieds », avec la phrase
+  qui compte : « Non renseigné » ne veut pas dire « facile ».
+
+### La règle enfreinte, et pourquoi
+
+`core/discovery.ts` porte en en-tête : *un filtre ne s'applique jamais à une
+donnée absente*. Ne pas connaître le dénivelé d'un itinéraire ne doit pas le
+faire disparaître d'une recherche.
+
+**Ce filtre-ci fait l'inverse, et c'est délibéré.** Pour tous les autres,
+laisser passer l'inconnu coûte au plus une déception : on découvre une
+sortie un peu plus longue que prévu. Ici, ça coûte à Nadia une journée, et
+sa fille assise devant un sentier qu'elles ne feront pas.
+
+L'asymétrie décide : elle sait lire une donnée absente, elle ne pardonne pas
+une promesse fausse.
+
+### Le seuil que je n'ai pas inventé
+
+« Entièrement » plutôt qu'un pourcentage. Un seuil du genre « 80 % roulant »
+changerait *ce qui est calculé*, et aucune donnée ne permet de le fixer
+(§2). Les deux extrêmes, eux, ne s'inventent pas. Le cas limite se juge sur
+les parts affichées dans la fiche, à l'œil, plutôt que par un nombre choisi
+au hasard.
+
+### Un test qui mesurait autre chose que son nom
+
+Le premier e2e s'appelait « écarte ce dont on ne sait rien » et passait. Le
+fixture ne contenait **aucun** tronçon réellement inconnu : celui que je
+croyais tel était un `highway=track`, dont on *déduit* « naturel ». Le test
+mesurait donc « écarte ce qu'on sait naturel », et une injection comptant
+l'inconnu comme roulant restait verte.
+
+Le chemin 401 du Tour du Pilat, sans le moindre tag, existe pour ça. Le
+fixture porte maintenant les trois cas séparément :
+
+| | dur | stabilisé | naturel | inconnu | filtre |
+|---|---|---|---|---|---|
+| GR 7 | 67 % | 33 % | — | — | gardé |
+| Sentier des Crêtes | — | 41 % | 59 % | — | écarté (on sait) |
+| Tour du Pilat | — | 50 % | — | 50 % | écarté (on ignore) |
+
+**Troisième fois cette nuit** qu'une assertion est verte pour une raison que
+je n'avais pas voulue — après les garde-fous de #151 et la ligne jamais
+atteinte du lecteur `osmc:symbol`.
+
+### Et une leçon sur les fixtures partagés
+
+Ma première correction ajoutait au Tour du Pilat un tronçon sans tag. Elle
+marchait — et elle a mis **dix-neuf tests sans aucun rapport** au rouge :
+le tronçon rallongeait l'itinéraire, donc la longueur totale de la zone,
+donc le pourcentage global, que ces tests affirment à « 54,5 % ». Il était
+devenu 46,2 %.
+
+Un fixture partagé est un **oracle partagé**. On y change ce qui se *lit* —
+un tag, un nom, une propriété — jamais ce qui se *mesure*. La bonne version
+retire `surface` du chemin 400 et met `highway=footway` : ni carrossable ni
+naturel, donc rien ne s'en déduit, et la géométrie ne bouge pas d'un mètre.
+
+C'est aussi ce qui rend ce genre de correction dangereuse : dix-neuf tests
+rouges se voient tout de suite, mais **un** test qui aurait été rendu vert
+par le même déplacement ne se serait vu nulle part.
+
+### Revue — Nadia, 44 ans, Villeurbanne
+
+Elle règle « Sol : entièrement dur ou stabilisé ». Sur le Pilat, il reste un
+itinéraire sur trois. C'est peu, et c'est vrai.
+
+Elle ouvre la fiche : « Revêtement dur : 67 %, Stabilisé : 33 % ». Elle sait
+quoi en faire. Sur un autre, elle lit « Non renseigné : 50 % » et comprend
+tout de suite que l'application ne sait pas — ce qui est exactement le
+service qu'elle demande.
+
+**Ce qu'elle ne peut toujours pas faire, et c'est le manque principal : la
+pente.** Elle cherche trois nombres, l'application lui en donne un.
+`penteMaximale` existe déjà (issue #152) mais se calcule sur le profil
+altimétrique, qui n'est récupéré qu'à l'ouverture d'une fiche, auprès du
+service IGN. Filtrer une liste dessus supposerait d'aller chercher le profil
+de chaque itinéraire de la zone — des centaines de requêtes pour un filtre.
+
+Le dire est plus honnête que de bricoler : **la pente est absente du filtre,
+et ce n'est pas un oubli.** Elle est dans la fiche, une fois le profil
+chargé. La largeur (`width`) n'est ni lue ni affichée, et c'est un vrai
+oubli, celui-là.
+
+**Ce qui la ferait fermer l'application :** rien de ce qui a été livré. Le
+mot « accessible » n'apparaît nulle part, et c'était la condition.
+
+### Revue — Bernard, 62 ans
+
+Bernard ne se sert pas du filtre, mais il lit la fiche. « Sous les pieds »
+lui dit ce qu'il demandait depuis le début sans savoir le nommer : est-ce
+que ça monte dans la caillasse, ou est-ce que c'est une piste.
+
+Une réserve de sa part : **cinq lignes de plus dans une fiche déjà longue**,
+sur un téléphone. Le constat U6 de l'audit disait qu'une légende ne doit
+nommer que ce qui est dessiné ; la même règle vaut ici, et elle est
+appliquée — les familles à 0 % ne sont pas affichées. Reste que la fiche
+grandit à chaque sprint, et que personne ne mesure sa longueur totale. À
+regarder à la revue globale.

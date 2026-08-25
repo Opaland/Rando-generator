@@ -101,6 +101,7 @@ export function ItineraryList() {
   const [deniveleIndex, setDeniveleIndex] = useState(0)
   const [proximiteIndex, setProximiteIndex] = useState(0)
   const [shape, setShape] = useState<DiscoveryFilters['shape']>('all')
+  const [sol, setSol] = useState<DiscoveryFilters['sol']>('all')
 
   const resultById = useMemo(
     () => new Map((matching?.results ?? []).map((r) => [r.itineraryId, r])),
@@ -117,8 +118,9 @@ export function ItineraryList() {
       maxGain: DENIVELES[deniveleIndex]?.gain ?? null,
       maxAwayKm: PROXIMITES[proximiteIndex]?.km ?? null,
       shape,
+      sol,
     }
-  }, [longueurIndex, dureeIndex, deniveleIndex, proximiteIndex, shape])
+  }, [longueurIndex, dureeIndex, deniveleIndex, proximiteIndex, shape, sol])
 
   const filtresActifs =
     filters.minKm !== null ||
@@ -126,7 +128,8 @@ export function ItineraryList() {
     filters.maxMinutes !== null ||
     filters.maxGain !== null ||
     filters.maxAwayKm !== null ||
-    filters.shape !== 'all'
+    filters.shape !== 'all' ||
+    filters.sol !== 'all'
 
   // Le GPS bouge en permanence — un relevé par seconde en marchant. Arrondir
   // la position ne suffisait pas : le tableau était recréé à chaque relevé,
@@ -341,6 +344,25 @@ export function ItineraryList() {
               <option value="all">peu importe</option>
               <option value="loop">boucles</option>
               <option value="linear">allers simples</option>
+            </select>
+          </label>
+          {/*
+            Le sol (issue #179). Le libellé dit ce que le filtre fait
+            vraiment : « entièrement dur ou stabilisé », et non « accessible »
+            — un mot qui promettrait un jugement qu'on n'est pas en mesure de
+            porter, et dont Nadia s'est déjà méfiée à raison.
+          */}
+          <label className={styles.sort}>
+            Sol{' '}
+            <select
+              value={sol}
+              data-testid="list-sol"
+              onChange={(e) => {
+                setSol(e.target.value as DiscoveryFilters['sol'])
+              }}
+            >
+              <option value="all">peu importe</option>
+              <option value="roulant">entièrement dur ou stabilisé</option>
             </select>
           </label>
           <label className={styles.sort}>
