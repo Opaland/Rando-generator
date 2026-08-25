@@ -367,3 +367,76 @@ nommer que ce qui est dessiné ; la même règle vaut ici, et elle est
 appliquée — les familles à 0 % ne sont pas affichées. Reste que la fiche
 grandit à chaque sprint, et que personne ne mesure sa longueur totale. À
 regarder à la revue globale.
+
+
+---
+
+## Sprint 5 — Filtrer par ce qu'il y a sur le chemin
+
+**Ferme #156.** Les points d'intérêt étaient téléchargés, classés et
+affichés dans la fiche depuis des semaines — mais seulement une fois
+l'itinéraire choisi. Ils ne servaient jamais à le **choisir**.
+
+### Une distance, jamais un booléen
+
+L'issue demande un filtre « avec de l'eau sur le parcours », et interdit dans
+la même page d'en faire une garantie. Les deux sont incompatibles : un
+booléen *est* une garantie.
+
+La liste affiche donc **« eau à 110 m »** quand elle en a trouvé, et **rien
+du tout** sinon. Écrire « pas d'eau » affirmerait le terrain à partir d'une
+absence dans OpenStreetMap — c'est la même faute que le « ouvert » corrigé
+plus tôt cette nuit, sur un autre sujet.
+
+Le palier — 250 m, 500 m, 1 km, 2 km — est choisi par la personne, comme la
+longueur ou la durée. Aucun seuil n'est décidé à sa place (§2).
+
+### Le seuil que j'avais caché sans le voir
+
+La première version rangeait les POI dans un index de cellules, avec ce
+commentaire :
+
+> le résultat est le même quelle que soit sa valeur, seule la vitesse change
+
+**C'était faux.** La taille des cellules décidait jusqu'où l'on cherche,
+donc quand on rend `null`, donc quand la liste n'affiche pas d'eau. Un seuil
+qui change ce qui est calculé, caché dans un réglage de performance, avec un
+commentaire qui affirmait le contraire — le §2 et le §4bis d'un seul coup,
+et dans du code que je venais d'écrire.
+
+Le rayon est maintenant nommé, égal à la moitié du plus grand palier
+proposé, et un test tient la règle : *un palier proposé ne doit jamais aller
+plus loin que ce que la recherche examine, sinon il mentirait en silence.*
+
+### Une requête, à la demande
+
+Une interrogation d'Overpass pour toute la zone, déclenchée par un bouton
+explicite — jamais automatiquement. #283 a montré ce que coûte une requête
+que personne n'a demandée : quand elle échoue, c'est l'application qui
+paraît fautive.
+
+Et quand Overpass rend exactement son plafond de 400 POI, la liste le dit :
+« Cette zone contient plus de points d'intérêt qu'une seule requête n'en
+rapporte : la recherche est incomplète. » Une troncature silencieuse
+annoncerait « pas d'eau » pour des itinéraires que la requête n'a pas eu la
+place de couvrir.
+
+### Revue — Sylvie, 29 ans, débute, téléphone uniquement
+
+C'est le premier sprint qui lui parle directement. « Eau à 110 m » est une
+information qu'elle comprend sans avoir à apprendre à lire un dénivelé.
+
+**Ce qui la gêne encore :** le bouton. Il faut savoir qu'il existe, et
+comprendre que « une requête » n'est pas une menace. Elle l'a lu deux fois.
+Le charger automatiquement serait pire — mais la formulation n'est pas
+encore la bonne, et je n'ai pas de meilleure idée ce soir.
+
+**Ce qu'elle ne peut toujours pas faire :** savoir si l'eau est potable
+depuis la liste. La fiche le dit (« potabilité non renseignée »), la liste
+non — et une source non potable à 100 m ne vaut pas une fontaine à 100 m.
+C'est une ligne de plus par itinéraire, sur un écran de téléphone : à peser,
+pas à ajouter par réflexe.
+
+**Ce qui compte le plus, et qui est tenu :** l'application ne lui dira jamais
+qu'il n'y a pas d'eau. Trois formulations sont interdites par le test, et
+l'avertissement est écrit sous la liste plutôt que laissé à deviner.

@@ -18,10 +18,21 @@ import {
   formatPct,
 } from '../lib/format.ts'
 import { NETWORK_BADGES } from '../lib/networkDisplay.ts'
+import {
+  DETOURS_PROPOSES,
+  detoursParItineraire,
+  type DetoursPoi,
+} from '../core/poisDeZone.ts'
 import { ProgressBalise } from './ProgressBalise.tsx'
 import styles from './ItineraryList.module.css'
 
 type SortKey = 'pct' | 'name' | 'length' | 'duration'
+
+/** « 320 m » ou « 1,2 km » — la précision au mètre n'aide personne ici. */
+function formatDetourCourt(metres: number): string {
+  if (metres < 1_000) return `${String(Math.round(metres / 10) * 10)} m`
+  return `${(metres / 1_000).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} km`
+}
 
 /**
  * Les réseaux filtrables. Écrite à la main et non dérivée du type : `PERSO`
@@ -87,6 +98,10 @@ function toIndex(value: string, length: number): number {
 
 export function ItineraryList() {
   const itineraries = useAppStore((s) => s.itineraries)
+  const poisZone = useAppStore((s) => s.poisZone)
+  const poisZoneLoading = useAppStore((s) => s.poisZoneLoading)
+  const poisZoneTronque = useAppStore((s) => s.poisZoneTronque)
+  const chargerPoisDeLaZone = useAppStore((s) => s.chargerPoisDeLaZone)
   const matching = useAppStore((s) => s.matching)
   const selectedItineraryId = useAppStore((s) => s.selectedItineraryId)
   const selectItinerary = useAppStore((s) => s.selectItinerary)
@@ -102,11 +117,37 @@ export function ItineraryList() {
   const [proximiteIndex, setProximiteIndex] = useState(0)
   const [shape, setShape] = useState<DiscoveryFilters['shape']>('all')
   const [sol, setSol] = useState<DiscoveryFilters['sol']>('all')
+  /**
+   * Le palier de détour choisi, ou `null` pour « peu importe » (issue #156).
+   *
+   * C'est bien la personne qui le choisit, comme pour la longueur ou la
+   * durée. Un booléen « avec de l'eau » serait une promesse, et l'issue
+   * l'interdit : un POI absent d'OpenStreetMap ne veut pas dire qu'il n'y a
+   * pas d'eau, il veut dire que personne ne l'a saisi.
+   */
+  const [detourEau, setDetourEau] = useState<number | null>(null)
 
   const resultById = useMemo(
     () => new Map((matching?.results ?? []).map((r) => [r.itineraryId, r])),
     [matching],
   )
+
+  /**
+   * Le détour du POI le plus proche, par itinéraire.
+   *
+   * Vide tant que personne n'a demandé les POI de la zone : la recherche
+   * coûte une requête Overpass, et rien ne la déclenche tout seul.
+   */
+  const detoursById = useMemo(() => {
+    if (poisZone.length === 0) return new Map<number, DetoursPoi>()
+    const detours = detoursParItineraire(itineraries, poisZone)
+    return new Map(
+      itineraries.map((itin, i) => [
+        itin.osmRelationId,
+        detours[i] ?? { water: null, shelter: null, viewpoint: null },
+      ]),
+    )
+  }, [itineraries, poisZone])
 
   const filters = useMemo<DiscoveryFilters>(() => {
     const plage = LONGUEURS[longueurIndex] ?? TOUTES_LONGUEURS
@@ -178,6 +219,16 @@ export function ItineraryList() {
   const rows = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
     const filtered = itineraries.filter((itin) => {
+      /*
+        Le palier d'eau (issue #156). Écarter un itinéraire sans détour connu
+        n'est pas dire qu'il n'a pas d'eau : c'est dire qu'on n'en a pas
+        trouvé dans le rayon examiné. La phrase sous la liste le rappelle,
+        parce que le filtre seul ne peut pas le dire.
+      */
+      if (detourEau !== null) {
+        const eau = detoursById.get(itin.osmRelationId)?.water
+        if (eau === null || eau === undefined || eau > detourEau) return false
+      }
       if (!networks.has(itin.network)) return false
       const facts = factsById.get(itin.osmRelationId)
       if (facts && !matchesFilters(facts, filters)) return false
@@ -203,7 +254,17 @@ export function ItineraryList() {
           return displayName(a).localeCompare(displayName(b), 'fr')
       }
     })
-  }, [itineraries, query, networks, sortKey, resultById, factsById, filters])
+  }, [
+    itineraries,
+    query,
+    networks,
+    sortKey,
+    resultById,
+    factsById,
+    filters,
+    detourEau,
+    detoursById,
+  ])
 
   if (itineraries.length === 0) return null
 
@@ -381,7 +442,71 @@ export function ItineraryList() {
               ))}
             </select>
           </label>
+          {/*
+            Ce qu'il y a sur le chemin (issue #156).
+
+            Le bouton est explicite parce que la recherche coûte une requête
+            Overpass de plus. Rien ne la déclenche tout seul : #283 a montré
+            ce que coûte une requête que personne n'a demandée — quand elle
+            échoue, c'est l'application qui paraît fautive.
+          */}
+          {poisZone.length === 0 ? (
+            <button
+              type="button"
+              className={styles.reset}
+              data-testid="list-charger-pois"
+              disabled={poisZoneLoading || itineraries.length === 0}
+              onClick={() => void chargerPoisDeLaZone()}
+            >
+              {poisZoneLoading
+                ? 'Recherche des points d’eau…'
+                : 'Chercher l’eau sur cette zone (une requête)'}
+            </button>
+          ) : (
+            <label className={styles.sort}>
+              Eau à moins de{' '}
+              <select
+                value={detourEau ?? ''}
+                data-testid="list-eau"
+                onChange={(e) => {
+                  setDetourEau(
+                    e.target.value === '' ? null : Number(e.target.value),
+                  )
+                }}
+              >
+                <option value="">peu importe</option>
+                {DETOURS_PROPOSES.map((metres) => (
+                  <option key={metres} value={metres}>
+                    {metres < 1_000
+                      ? `${String(metres)} m de détour`
+                      : `${String(metres / 1_000)} km de détour`}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
         </div>
+
+        {/*
+          Une troncature silencieuse serait pire qu'une absence : la liste
+          annoncerait « pas d'eau » pour des itinéraires que la requête n'a
+          pas eu la place de couvrir. On ne peut pas l'éviter — c'est le prix
+          d'une requête unique — mais on peut refuser de faire comme si de
+          rien n'était.
+        */}
+        {poisZoneTronque && (
+          <p className={styles.hint} data-testid="pois-tronques">
+            Cette zone contient plus de points d’intérêt qu’une seule requête
+            n’en rapporte : la recherche est incomplète. Un itinéraire sans eau
+            affichée peut en avoir.
+          </p>
+        )}
+        {poisZone.length > 0 && !poisZoneTronque && (
+          <p className={styles.hint} data-testid="pois-avertissement">
+            D’après OpenStreetMap. Un point d’eau absent de la carte n’est pas
+            un point d’eau absent du terrain — et l’inverse est vrai aussi.
+          </p>
+        )}
 
         {filters.maxAwayKm !== null && !userPosition && (
           <p className={styles.hint} data-testid="nearby-hint">
@@ -462,6 +587,26 @@ export function ItineraryList() {
                         <span> · {Math.round(facts.gainMeters)} m D+</span>
                       )}
                       {facts.shape === 'loop' && <span> · boucle</span>}
+                      {/*
+                        Le détour du point d'eau le plus proche (issue #156),
+                        et non un booléen « avec de l'eau ». Un booléen serait
+                        une promesse ; une distance dit ce qu'on a trouvé et
+                        où, et laisse la personne décider.
+
+                        Rien n'est affiché quand rien n'a été trouvé : écrire
+                        « pas d'eau » affirmerait le terrain à partir d'une
+                        absence dans OpenStreetMap. C'est la même règle que le
+                        « non renseigné » des sources dans la fiche.
+                      */}
+                      {(() => {
+                        const eau = detoursById.get(itin.osmRelationId)?.water
+                        if (eau === null || eau === undefined) return null
+                        return (
+                          <span title="Détour aller-retour depuis le tracé, à vol d’oiseau">
+                            {' · '}eau à {formatDetourCourt(eau)}
+                          </span>
+                        )
+                      })()}
                       {/*
                         L'effort qualifié (issue #156) : « 420 m D+ » ne dit
                         pas « facile » à qui débute. Le mot est posé à côté

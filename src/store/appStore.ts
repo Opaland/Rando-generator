@@ -55,6 +55,10 @@ import {
   normalizeCompletionPct,
 } from '../core/milestones.ts'
 import { espacementTropGrand } from '../core/matching.ts'
+import { fetchPois } from '../core/poi.ts'
+import { reponseTronquee } from '../core/poisDeZone.ts'
+import { itineraryCoords } from '../core/mapdata.ts'
+import type { PointOfInterest } from '../core/types.ts'
 import { noterSortie, type EntreeJournal } from '../core/journalSortant.ts'
 import type { MatchResult } from '../core/matching.ts'
 import {
@@ -194,6 +198,22 @@ export interface AppState
   itineraries: Itinerary[]
   zoneFetchedAt: string | null
   zoneLoading: boolean
+  /**
+   * Les POI de la zone entière (issue #156), et ce qu'on en sait.
+   *
+   * Chargés **à la demande**, en une requête, jamais au chargement de la
+   * zone : c'est une interrogation d'Overpass de plus, et #283 a montré ce
+   * que coûte une requête lancée sans que personne l'ait demandée.
+   */
+  poisZone: PointOfInterest[]
+  poisZoneLoading: boolean
+  /**
+   * `true` quand Overpass a rendu exactement son plafond de POI — donc
+   * probablement pas tout. La liste doit le dire : sans ça, elle annoncerait
+   * « pas d'eau » pour des itinéraires que la requête n'a pas eu la place de
+   * couvrir.
+   */
+  poisZoneTronque: boolean
   /** Étape en cours pendant zoneLoading, pour un retour visuel non figé. */
   zoneLoadStage: ZoneLoadStage
   /** Octets reçus du serveur Overpass pendant l'étape de téléchargement. */
@@ -320,6 +340,8 @@ export interface AppState
 
   init: () => Promise<void>
   loadZone: (zoneId: string, options?: { force?: boolean }) => Promise<void>
+  /** Charge en une requête les POI de toute la zone (issue #156). */
+  chargerPoisDeLaZone: () => Promise<void>
   loadRef: (ref: string, options?: { force?: boolean }) => Promise<void>
   /**
    * Recharge la zone affichée depuis le réseau, quelle que soit sa nature.
@@ -874,6 +896,9 @@ export const useAppStore = create<AppState>()((set, get) => {
     itineraries: [],
     zoneFetchedAt: null,
     zoneLoading: false,
+    poisZone: [],
+    poisZoneLoading: false,
+    poisZoneTronque: false,
     zoneLoadStage: null,
     zoneLoadBytes: 0,
     zoneError: null,
@@ -1101,6 +1126,40 @@ export const useAppStore = create<AppState>()((set, get) => {
       }
       await loadFromOverpass(zoneId, zone.label, buildZoneQuery(zoneId), force)
       await mergeLocalBoucles(zoneId)
+    },
+
+    /**
+     * Charge en **une** requête les points d'intérêt de la zone entière
+     * (issue #156), pour que la liste puisse dire où se trouve l'eau.
+     *
+     * À la demande, jamais automatiquement. C'est une interrogation
+     * d'Overpass de plus, et #283 a montré ce que coûte une requête que
+     * personne n'a demandée : quand elle échoue, c'est l'application qui
+     * paraît fautive.
+     *
+     * Une requête pour toute la zone plutôt qu'une par itinéraire : la
+     * seconde forme ferait des centaines d'appels, et se ferait couper par
+     * le serveur bien avant la fin.
+     */
+    async chargerPoisDeLaZone() {
+      const { itineraries, poisZoneLoading } = get()
+      if (poisZoneLoading || itineraries.length === 0) return
+      set({ poisZoneLoading: true })
+      try {
+        const coords = itineraries.flatMap((itin) => itineraryCoords(itin))
+        const pois = await fetchPois(coords)
+        set({
+          poisZone: pois,
+          poisZoneTronque: reponseTronquee(pois),
+          poisZoneLoading: false,
+        })
+      } catch {
+        // Un POI est un bonus, jamais bloquant : en cas d'échec on rend la
+        // main sans rien afficher de plus. `fetchPois` ne lève déjà pas,
+        // mais le `catch` garde le drapeau de chargement d'être laissé à
+        // `true` si un jour elle changeait d'avis.
+        set({ poisZoneLoading: false })
+      }
     },
 
     async loadRef(ref, options = {}) {
