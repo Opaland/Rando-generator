@@ -8,8 +8,8 @@ import './index.css'
 // Posé avant le premier rendu : une requête partie pendant le démarrage
 // compte autant que les autres, et un compteur qui commencerait après coup
 // afficherait un chiffre plus flatteur que la réalité (issue #178).
-observerReseau((url) => {
-  useAppStore.getState().noterSortieReseau(url)
+observerReseau((url, corps) => {
+  useAppStore.getState().noterSortieReseau(url, corps)
 })
 
 const rootElement = document.getElementById('root')
