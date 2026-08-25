@@ -499,3 +499,70 @@ C'est une vraie lacune, et elle demande de savoir *où* est passée une trace
 — donc de la rapprocher d'une commune, ce que l'application ne fait nulle
 part aujourd'hui. À ouvrir séparément plutôt qu'à bâcler : #175 est fermée
 sur ce qu'elle a livré, la recherche par lieu ne l'est pas.
+
+
+---
+
+## Sprint 7 — Prévenir quand on quitte le parcours suivi
+
+**Ferme #154.** La fiche dit en permanence où l'on est par rapport au tracé
+qu'elle décrit, dès que la position est connue : « Vous êtes à 550 m du
+GR 7. »
+
+### L'hystérésis que l'issue demande, et que je n'ai pas faite
+
+L'issue veut « une hystérésis pour éviter le clignotement à la limite du
+corridor ». Il n'y en a pas, et c'est délibéré : **il n'y a pas de
+corridor.**
+
+Le clignotement est un symptôme du booléen — dedans / dehors — pas de la
+mesure. Un booléen aurait demandé un seuil d'entrée et un seuil de sortie,
+deux nombres que rien ne permet de fixer : ni le GPS d'un téléphone, ni la
+largeur d'un sentier, ni la précision d'un tracé OSM ne donnent la distance
+à partir de laquelle « on a quitté le parcours ». Les inventer aurait fait
+affirmer à l'application quelque chose de faux la moitié du temps (§2).
+
+La distance, elle, est toujours vraie. On l'affiche telle quelle. Il n'y a
+plus rien à faire clignoter.
+
+**C'est un écart à l'issue, et il est signalé comme tel** — pas une
+interprétation libre. Si Cédric veut le corridor, il faudra ses deux
+nombres ; je ne les inventerai pas.
+
+### Le seul nombre tranché, et il est de présentation
+
+En deçà de 15 m, la phrase dit « sur le GR 7 » plutôt qu'une distance.
+« À 4 m » suggérerait un écart là où il n'y a que l'imprécision d'un GPS de
+téléphone, qui vaut couramment davantage. Seuil de présentation, donc
+tranché au jugement, avec la piste écartée écrite dans le code : afficher
+toujours le nombre, y compris « 0 m » — plus pur, et moins juste.
+
+### Ce que l'issue interdit, gardé par un test plutôt que par ma relecture
+
+> Jamais présenté comme un dispositif de sécurité. Sentiers est un carnet,
+> pas un GPS de secours (…) une alerte mal formulée le contredirait — avec
+> des conséquences réelles si quelqu'un s'y fiait en montagne.
+
+Le test unitaire cherche six formules interdites — « attention », « alerte »,
+« danger », « hors itinéraire », « perdu », et le point d'exclamation — à six
+distances, de 0 à 20 km. L'e2e refait la même vérification à l'écran. Les
+deux vus rouges en réinjectant « Attention ! Hors itinéraire ! ».
+
+### Revue — Camille, 34 ans, prépare la Grande Traversée des Alpes
+
+Elle suit une étape, ouvre la fiche, et lit sa distance au tracé. C'est ce
+qu'elle voulait, et le ton lui convient : elle n'a pas besoin qu'on lui
+crie dessus, elle a besoin d'un nombre.
+
+**Ce qu'elle ne peut toujours pas faire :** voir cette distance **sans
+ouvrir la fiche**. En marchant, la fiche est fermée et la carte occupe
+l'écran. L'information est au bon endroit pour préparer, au mauvais pour
+marcher.
+
+La mettre sur la carte demande de décider quel itinéraire est « suivi » —
+l'objectif épinglé ? le dernier consulté ? celui dont on est le plus
+proche ? — et c'est une vraie question de produit, pas un détail
+d'affichage. À ouvrir séparément.
+
+**Ce qui compte, et qui est tenu :** rien dans la phrase ne laisse croire à
+un dispositif de sécurité. Elle sait que Sentiers ne la ramènera pas.
