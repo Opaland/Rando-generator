@@ -7,7 +7,12 @@ import {
   formatKm,
   formatPct,
 } from '../lib/format.ts'
-import { POI_COLORS, POI_LABELS, POI_OVERNIGHT, mentionEau } from '../lib/poiDisplay.ts'
+import {
+  POI_COLORS,
+  POI_LABELS,
+  POI_OVERNIGHT,
+  mentionEau,
+} from '../lib/poiDisplay.ts'
 import { NETWORK_BADGES } from '../lib/networkDisplay.ts'
 import { decrireBalisage } from '../core/balisage.ts'
 import { partsDeRevetement } from '../core/revetement.ts'
@@ -122,14 +127,27 @@ export function ItineraryDetail() {
     new Date(),
   )
 
-  const stats = elevationProfile ? elevationStats(elevationProfile.elevations) : null
+  const stats = elevationProfile
+    ? elevationStats(elevationProfile.elevations)
+    : null
   // Pente maximale (issue #179) : Farid, en fauteuil, et Nadia et Yann avec
   // une poussette en ont besoin pour décider de s'engager. Le chiffre n'est
   // jamais rendu seul — `libellePente` porte la résolution avec lui.
   const pente = elevationProfile ? penteMaximale(elevationProfile) : null
-  // Les bandes viennent de la géométrie complète des ways, pas du profil
-  // sous-échantillonné : leur axe est la même distance cumulée, elles se
-  // superposent donc sans réattribution point par point (issue #179).
+  /*
+    Les bandes viennent de la géométrie complète des ways, pas du profil
+    sous-échantillonné : leur axe est la même distance cumulée, elles se
+    superposent donc sans réattribution point par point (issue #179).
+
+    Cette phrase a été fausse du 24 au 25/08 : les bandes additionnaient les
+    longueurs des ways **sans les sauts** entre deux tronçons disjoints, là
+    où le profil mesure la polyligne concaténée. Sur un itinéraire contigu
+    les deux totaux coïncident, et c'est pourquoi elle a paru vraie ; sur la
+    Via Lugdunum les bandes s'arrêtaient à mi-largeur. `bandesDeRevetement`
+    suit désormais le même axe, et `tests/unit/revetement.test.ts` l'asserte
+    contre `polylineLengthMeters(itineraryCoords(...))` plutôt que contre un
+    nombre recopié — une justification se vérifie (CLAUDE.md §4bis).
+  */
   const bandes = bandesDeRevetement(itin)
   const hasSleepingSpot = pois.some((poi) => POI_OVERNIGHT.includes(poi.kind))
   // Un long GR ne se lit pas en un seul pourcentage : on le découpe en
@@ -162,7 +180,6 @@ export function ItineraryDetail() {
   // grande interruption quand on sait la situer — Marc arrive à l'endroit
   // qui manque, pas au début d'un GR de 400 km.
   const lienOsm = lienOpenStreetMap(itin, qualite.gaps)
-
 
   return (
     <aside
@@ -294,7 +311,10 @@ export function ItineraryDetail() {
           itineraryId={detailItineraryId}
         />
         {/* Issue #158 : sans trace GPX, « je l'ai fait » n'existait pas. */}
-        <DeclarerParcouru key={`declare-${String(detailItineraryId)}`} itineraryId={detailItineraryId} />
+        <DeclarerParcouru
+          key={`declare-${String(detailItineraryId)}`}
+          itineraryId={detailItineraryId}
+        />
       </div>
 
       {itin.details && (
@@ -309,7 +329,8 @@ export function ItineraryDetail() {
           <p className={styles.localMeta}>
             {[
               itin.details.commune && `Départ : ${itin.details.commune}`,
-              itin.details.difficulte && `Difficulté : ${itin.details.difficulte}`,
+              itin.details.difficulte &&
+                `Difficulté : ${itin.details.difficulte}`,
               itin.details.temps && `Durée : ${itin.details.temps}`,
               itin.details.denivele && `D+ annoncé : ${itin.details.denivele}`,
             ]
@@ -421,8 +442,8 @@ export function ItineraryDetail() {
               >
                 Ouvrir cette relation dans OpenStreetMap
               </a>{' '}
-              — vous connaissez peut-être ce terrain mieux que la carte. Ce
-              que vous y corrigez profite à tout le monde, ici comme là-bas.
+              — vous connaissez peut-être ce terrain mieux que la carte. Ce que
+              vous y corrigez profite à tout le monde, ici comme là-bas.
             </p>
           )}
         </section>
@@ -490,7 +511,8 @@ export function ItineraryDetail() {
                     Étape {etape.index}
                     <span className={styles.stageRange}>
                       {' '}
-                      {formatKm(etape.startMeters)} → {formatKm(etape.endMeters)}
+                      {formatKm(etape.startMeters)} →{' '}
+                      {formatKm(etape.endMeters)}
                       {etape.couchage && ` · ${etape.couchage.nom}`}
                     </span>
                   </span>
@@ -499,7 +521,9 @@ export function ItineraryDetail() {
                     network={itin.network}
                     label={`Progression étape ${etape.index}`}
                   />
-                  <span className={styles.stagePct}>{formatPct(etape.pct)}</span>
+                  <span className={styles.stagePct}>
+                    {formatPct(etape.pct)}
+                  </span>
                 </button>
               </li>
             ))}
@@ -574,8 +598,14 @@ export function ItineraryDetail() {
         {pois.length > 0 && (
           <ul className={styles.poiList} data-testid="detail-poi-list">
             {pois.map((poi) => {
-              const { phone, website, capacity, openingHours, operator, elevation } =
-                poi.details
+              const {
+                phone,
+                website,
+                capacity,
+                openingHours,
+                operator,
+                elevation,
+              } = poi.details
               const facts = [
                 `${formatDetour(poi.detourMeters)} de détour`,
                 mentionEau(poi.details),
@@ -624,7 +654,9 @@ export function ItineraryDetail() {
                       aria-hidden="true"
                       data-testid={`poi-pastille-${poi.kind}`}
                     />
-                    <span className={styles.poiKind}>{POI_LABELS[poi.kind]}</span>
+                    <span className={styles.poiKind}>
+                      {POI_LABELS[poi.kind]}
+                    </span>
                     <span className={styles.poiName}>
                       {poi.name ?? POI_LABELS[poi.kind]}
                     </span>
@@ -654,11 +686,11 @@ export function ItineraryDetail() {
 
         {hasSleepingSpot && (
           <p className={styles.poiCaveat} data-testid="detail-poi-caveat">
-            « Couchage libre » regroupe refuges non gardés, cabanes et
-            appentis : gratuits et sans réservation, mais ni garantis ouverts
-            ni entretenus. Ces informations viennent d’OpenStreetMap et
-            peuvent être incomplètes ou périmées — vérifiez auprès du
-            gestionnaire avant de compter dessus pour une nuit.
+            « Couchage libre » regroupe refuges non gardés, cabanes et appentis
+            : gratuits et sans réservation, mais ni garantis ouverts ni
+            entretenus. Ces informations viennent d’OpenStreetMap et peuvent
+            être incomplètes ou périmées — vérifiez auprès du gestionnaire avant
+            de compter dessus pour une nuit.
           </p>
         )}
       </section>

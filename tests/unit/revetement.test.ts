@@ -9,6 +9,8 @@ import {
   type Bande,
 } from '../../src/core/revetement.ts'
 import type { Itinerary, TrailWay } from '../../src/core/types.ts'
+import { itineraryCoords } from '../../src/core/mapdata.ts'
+import { polylineLengthMeters } from '../../src/core/sampling.ts'
 
 /**
  * Issue #179, second volet — le revêtement porté par le profil altimétrique.
@@ -22,7 +24,11 @@ import type { Itinerary, TrailWay } from '../../src/core/types.ts'
  * l'information en laissant croire qu'il tranche sur tout. D'où le choix de
  * montrer **où** c'est connu le long du parcours, plutôt que de conclure.
  */
-function way(id: number, coords: [number, number][], tags?: TrailWay['tags']): TrailWay {
+function way(
+  id: number,
+  coords: [number, number][],
+  tags?: TrailWay['tags'],
+): TrailWay {
   return tags ? { osmWayId: id, coords, tags } : { osmWayId: id, coords }
 }
 
@@ -114,6 +120,53 @@ describe('bandesDeRevetement', () => {
     expect(bandes[1]!.debut).toBeCloseTo(bandes[0]!.fin, 6)
   })
 
+  /*
+    Le 25/08, Cédric : « les terrains sont coupés — Via Lugdunum, Lyon au
+    Puy-en-Velay ». Les bandes s'arrêtaient à mi-largeur du profil.
+
+    Les deux axes ne sont pas le même. Le profil mesure la **polyligne
+    concaténée** (`itineraryCoords`, puis `distancesCumulees`) : les sauts
+    entre deux ways disjoints y comptent, puisqu'on les parcourt en ligne
+    droite sur le graphique. Les bandes, elles, additionnaient les longueurs
+    de chaque way **sans les sauts**. Sur un itinéraire contigu les deux
+    totaux coïncident — c'est le cas de toutes les boucles du Pilat, et
+    c'est pourquoi rien ne se voyait. Sur un long itinéraire troué, les
+    bandes finissent d'autant plus tôt qu'il y a de trous.
+
+    Un commentaire d'`ItineraryDetail.tsx` affirmait « leur axe est la même
+    distance cumulée ». Il était vrai là où il a été écrit, faux partout
+    ailleurs (CLAUDE.md §4bis). L'invariant est donc asserté contre la
+    source de vérité du graphique, et non contre un nombre recopié.
+  */
+  it('tient l’axe du profil, sauts entre ways compris', () => {
+    const itin = itineraire([
+      way(1, ligne(4.5, 3), { surface: 'asphalt' }),
+      // Un trou de 0,08° — six kilomètres de rien entre deux tronçons.
+      way(2, ligne(4.6, 3), { surface: 'gravel' }),
+    ])
+    const bandes = bandesDeRevetement(itin)
+    const axeDuProfil = polylineLengthMeters(itineraryCoords(itin))
+
+    expect(bandes.at(-1)!.fin).toBeCloseTo(axeDuProfil, 0)
+    // Et le trou n'est pas peint : rien n'a été relevé là.
+    expect(bandes[1]!.debut).toBeGreaterThan(bandes[0]!.fin)
+  })
+
+  it('ne fusionne pas deux tronçons de même sol séparés par un trou', () => {
+    /*
+      Fusionner par-dessus un saut peindrait le revêtement du premier
+      tronçon sur six kilomètres que personne n'a relevés — une affirmation
+      inventée, exactement ce que le reste du module refuse de faire.
+    */
+    const bandes = bandesDeRevetement(
+      itineraire([
+        way(1, ligne(4.5, 3), { surface: 'asphalt' }),
+        way(2, ligne(4.6, 3), { surface: 'asphalt' }),
+      ]),
+    )
+    expect(bandes).toHaveLength(2)
+  })
+
   it('fusionne en gardant la fin du second, pas une soustraction', () => {
     // Trouvé par mutation : `derniere.fin = curseur + longueur` remplacé
     // par `curseur - longueur` survivait. Les tests comptaient les bandes
@@ -168,7 +221,10 @@ describe('bandesDeRevetement', () => {
 
   it('ignore un way trop court pour avoir une longueur', () => {
     const bandes = bandesDeRevetement(
-      itineraire([way(1, [[4.5, 45.4]], { surface: 'asphalt' }), way(2, ligne(4.5, 3))]),
+      itineraire([
+        way(1, [[4.5, 45.4]], { surface: 'asphalt' }),
+        way(2, ligne(4.5, 3)),
+      ]),
     )
     expect(bandes).toHaveLength(1)
     expect(bandes[0]!.surface).toBeNull()
@@ -192,7 +248,12 @@ describe('couvertureRevetement', () => {
   it('dit quelle fraction de la longueur est renseignée', () => {
     // C'est le chiffre qui doit être affiché, et non un verdict : mesuré
     // sur la donnée réelle, il vaut 33 % en moyenne et descend à 1 %.
-    const c = couvertureRevetement(bandes([[0, 200, 'asphalt'], [200, 1000, null]]))
+    const c = couvertureRevetement(
+      bandes([
+        [0, 200, 'asphalt'],
+        [200, 1000, null],
+      ]),
+    )
     expect(c.connuMetres).toBe(200)
     expect(c.totalMetres).toBe(1000)
     expect(c.fraction).toBeCloseTo(0.2, 3)
@@ -312,9 +373,27 @@ describe('couvertureRevetement avec déduction', () => {
     // Les deux chiffres doivent être montrés séparément : les confondre
     // ferait passer une déduction pour un relevé.
     const c = couvertureRevetement([
-      { debut: 0, fin: 300, surface: 'asphalt', famille: 'dur', origine: 'renseigne' },
-      { debut: 300, fin: 800, surface: null, famille: 'naturel', origine: 'deduit' },
-      { debut: 800, fin: 1000, surface: null, famille: 'inconnu', origine: 'inconnu' },
+      {
+        debut: 0,
+        fin: 300,
+        surface: 'asphalt',
+        famille: 'dur',
+        origine: 'renseigne',
+      },
+      {
+        debut: 300,
+        fin: 800,
+        surface: null,
+        famille: 'naturel',
+        origine: 'deduit',
+      },
+      {
+        debut: 800,
+        fin: 1000,
+        surface: null,
+        famille: 'inconnu',
+        origine: 'inconnu',
+      },
     ])
     expect(c.connuMetres).toBe(300)
     expect(c.deduitMetres).toBe(500)
