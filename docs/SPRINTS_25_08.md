@@ -566,3 +566,66 @@ d'affichage. À ouvrir séparément.
 
 **Ce qui compte, et qui est tenu :** rien dans la phrase ne laisse croire à
 un dispositif de sécurité. Elle sait que Sentiers ne la ramènera pas.
+
+
+---
+
+# Où la nuit s'est arrêtée
+
+Sept sprints sur vingt, tous mergés sur `main` avec leur porte complète
+verte et leur revue de persona écrite. Plus quatre lots livrés avant que le
+plan des vingt ne soit posé.
+
+| # | Sprint | Issue | État |
+|---|---|---|---|
+| — | Départage de deux sentiers voisins | #151 | mergé |
+| — | Le KO Haute-Savoie | #283 | mergé |
+| — | « annoncé ouvert » | prépare #285 | mergé |
+| 1 | « PR » n'est plus une corbeille | #284 | mergé |
+| 2 | Le balisage peint sur l'arbre | #286 | mergé |
+| 3 | Le contrôle du `dist/` périmé | — | mergé |
+| 4 | Le sol sous les roues | #179 | mergé |
+| 5 | Où est l'eau | #156 | mergé |
+| 6 | Huit cents sorties | #175 | mergé |
+| 7 | La distance au parcours | #154 | en revue |
+| 8 à 20 | | | **non faits** |
+
+**Je n'ai rétréci aucun sprint pour en cocher plus.** C'était la seule
+promesse du plan, et elle est tenue : chacun des sept porte sa porte
+complète — `lint`, `tsc -b`, `coverage`, `build`, 333 e2e, monkey — avant
+son commit, et sa vérification du §1.
+
+Ce que ça coûte, mesuré plutôt qu'estimé : **une porte complète prend
+dix-sept minutes**, et il en faut une par sprint, parfois deux quand un
+résultat est jeté. Sept sprints ont donc consommé un peu plus de deux heures
+de mesure seule.
+
+## Ce que treize sprints non faits représentent
+
+Ils sont écrits, ordonnés, et leurs issues sont ouvertes. Trois d'entre eux
+— 11, 12 et 13 — dépendent d'une mesure que cet environnement ne peut pas
+prendre : le proxy sortant refuse `overpass-api.de` et les API Geotrek.
+
+## Ce que la nuit a appris, et qui vaut plus que les sept sprints
+
+**Cinq fois**, une assertion est passée pour une raison que je n'avais pas
+voulue :
+
+1. deux des trois garde-fous de #151 — l'un mesurait une égalité parfaite,
+   l'autre n'atteignait jamais le code qu'il prétendait garder ;
+2. une ligne du lecteur `osmc:symbol` que ses trois tests ne touchaient pas ;
+3. le filtre du sol, qui mesurait « naturel » en croyant mesurer
+   « inconnu » ;
+4. le rayon de recherche des POI — un seuil caché derrière un réglage de
+   performance, avec un commentaire affirmant le contraire ;
+5. `historique.spec.ts`, qui **cite** « parmi huit cents » et en mesure
+   quarante — et dont la première correction ne discriminait toujours pas.
+
+**Aucun n'était visible en relisant.** Tous ont demandé de remettre le
+défaut et de regarder.
+
+Et deux fois, le piège s'est refermé sur les garde-fous eux-mêmes : un hook
+qui juge avant l'action ne garde que ce que l'action n'a pas encore changé ;
+et reconstruire pendant qu'une porte tourne change l'application sous les
+tests en cours. Les deux sont désormais dans CLAUDE.md §6quater, le premier
+corrigé dans `globalSetup`.
