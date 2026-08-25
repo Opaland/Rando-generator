@@ -682,3 +682,59 @@ seul.**
 C'est CLAUDE.md §4ter, la skill `regle-jumelle`, l'agent `chasseur-de-jumeaux`,
 et surtout `scripts/listes-jumelles.mjs` — parce qu'une règle qu'il faut penser
 à relire ne garde rien (§6quater).
+
+---
+
+## Reprise du 25/08, après-midi
+
+| # | sprint | issue | état |
+|---|---|---|---|
+| 8 | Troisième tranche du store | #155 | mergé (#299) |
+| — | **Un itinéraire, un axe** | **#303** | **mergé (#310)** |
+| 19 | Vague de mutation | #306 | mergé (#311) |
+| 10 | La confidentialité se voit | #178 | mergé (#312) |
+| 15 | Chercher par lieu | #206 | PR #313 |
+
+### Ce que ces quatre sprints ont eu en commun
+
+**Trois d'entre eux ont trouvé le même défaut sous des formes différentes :
+un chiffre affiché comme une mesure alors qu'il ne pouvait pas changer.**
+
+- #303 : le profil mesurait la polyligne **dans l'ordre des membres OSM**,
+  sous un commentaire qui appelait ça « une approximation raisonnable ».
+  Jamais mesurée : **10 931 m contre 4 685** sur trois tronçons contigus
+  donnés dans le désordre ;
+- #178 : `<strong data-testid="sorties-traces">0</strong>`, **écrit en dur**
+  dans le JSX, sous une note affirmant « un test le vérifie à chaque
+  livraison » — ce test n'existait pas ;
+- #206 : rien de faux affiché, mais la même tentation. La zone au moment de
+  l'import **n'est pas un lieu**, et elle est nommée pour ce qu'elle est.
+
+C'est le §1 sorti des tests et entré dans le produit : **un indicateur qui
+ne peut pas échouer n'est pas un indicateur**, et il est plus difficile à
+remettre en cause qu'une phrase, parce qu'il a l'air d'être compté.
+
+### Ce que la vague de mutation a dit de la nuit
+
+59,68 %, 273 survivants — dont **cent** sont des mutations de la table des
+mots de liaison d'`intention.ts`, sans intérêt. Dix comptaient : six `?` de
+pluriel jamais atteints, une alternative de regex **en double qui rendait
+mon propre motif intestable**, un `.trim()` mort, et un `break` qui pouvait
+jeter un tronçon entier.
+
+Et le test que j'ai écrit pour ce dernier **est resté vert sous son mutant**
+à la première tentative : il n'atteignait pas la branche. Il a fallu une
+boucle fermée — un way sans extrémité libre — pour que `findIndex` rende
+zéro.
+
+### Ce qui reste, et pourquoi
+
+- **9 (#93, tuiles vectorielles)** — un chantier, pas un sprint ;
+- **11, 12, 13 (#87, #88, #20)** — le proxy refuse les API PDIPR et Geotrek.
+  Inchangé ;
+- **14 (#171)** — les onglets existent ; reste à vérifier ce qui manque ;
+- **17 (#157)** — un index dont la plupart des enfants sont clos : à
+  réconcilier plutôt qu'à faire ;
+- **18 (#162)** — renommer le dépôt demande la main de Cédric ;
+- **20 (#2)** — la balise blanc/rouge est une question juridique, pas
+  technique.
