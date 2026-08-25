@@ -16,6 +16,7 @@ précédente, autant échouer tôt.
 ```bash
 npm run lint
 npm run listes             # le CSS et la sonde d'écran, même règle (§4ter)
+npm run textes             # le README annonce tous les filtres (§3)
 npx tsc -b --noEmit        # PAS `tsc --noEmit` : voir plus bas
 npm run coverage           # seuil 90 % de branches sur src/core
 npm run build              # SANS masquer la sortie

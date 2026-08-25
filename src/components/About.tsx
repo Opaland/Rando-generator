@@ -3,7 +3,13 @@ import styles from './About.module.css'
 import { SortiesReseau } from './SortiesReseau.tsx'
 
 /** Page À propos : licences, marques, engagement privacy. */
-export function About({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function About({
+  open,
+  onClose,
+}: {
+  open: boolean
+  onClose: () => void
+}) {
   const dialogRef = useRef<HTMLDialogElement | null>(null)
 
   useEffect(() => {
@@ -45,19 +51,20 @@ export function About({ open, onClose }: { open: boolean; onClose: () => void })
         <section data-testid="about-local">
           <h3>Vos traces restent chez vous</h3>
           <p>
-            Vos traces GPX sont lues et analysées <strong>uniquement dans
-            votre navigateur</strong>, et stockées localement — les traces et
-            les cartes dans IndexedDB, vos réglages dans le stockage local. Le
-            calcul de complétion se fait chez vous, de bout en bout. Aucune
-            trace, aucun identifiant, aucune mesure d’audience ne quitte votre
-            appareil. Il n’y a ni compte, ni serveur applicatif.
+            Vos traces GPX sont lues et analysées{' '}
+            <strong>uniquement dans votre navigateur</strong>, et stockées
+            localement — les traces et les cartes dans IndexedDB, vos réglages
+            dans le stockage local. Le calcul de complétion se fait chez vous,
+            de bout en bout. Aucune trace, aucun identifiant, aucune mesure
+            d’audience ne quitte votre appareil. Il n’y a ni compte, ni serveur
+            applicatif.
           </p>
           <p>
             C’est vrai aussi — et surtout — d’une{' '}
             <strong>sortie que vous enregistrez</strong>. Pendant
             l’enregistrement, votre position est relevée toutes les quelques
-            secondes et écrite dans le stockage de votre navigateur, pour
-            qu’une sortie survive à un écran verrouillé ou à un onglet fermé.
+            secondes et écrite dans le stockage de votre navigateur, pour qu’une
+            sortie survive à un écran verrouillé ou à un onglet fermé.
             <strong> Elle n’est envoyée à personne</strong>, ni pendant, ni
             après. Aucun serveur n’est contacté pour enregistrer, et il n’y a
             rien à désactiver pour que ce soit vrai&nbsp;: il n’existe pas de
@@ -66,8 +73,8 @@ export function About({ open, onClose }: { open: boolean; onClose: () => void })
           <p>
             C’est vrai de vos traces, de vos réglages, de vos objectifs et de
             votre historique. Ce n’est pas vrai de tout&nbsp;: afficher une
-            carte, c’est demander des images à quelqu’un. Le détail est
-            juste en&nbsp;dessous, et il vaut mieux le lire que le deviner.
+            carte, c’est demander des images à quelqu’un. Le détail est juste
+            en&nbsp;dessous, et il vaut mieux le lire que le deviner.
           </p>
           <p>
             Ce choix a un prix, et il est juste de l’annoncer :{' '}
@@ -83,11 +90,11 @@ export function About({ open, onClose }: { open: boolean; onClose: () => void })
         <section data-testid="about-sortant">
           <h3>Ce qui sort de votre appareil, et pour qui</h3>
           <p>
-            Sentiers n’a pas de serveur, mais il interroge des services
-            publics tiers pour faire son travail. Ces services voient donc
-            passer quelque chose. Ce n’est pas un aveu&nbsp;: c’est le
-            fonctionnement normal d’une application cartographique sans
-            serveur, et il vaut mieux le nommer que le laisser supposer.
+            Sentiers n’a pas de serveur, mais il interroge des services publics
+            tiers pour faire son travail. Ces services voient donc passer
+            quelque chose. Ce n’est pas un aveu&nbsp;: c’est le fonctionnement
+            normal d’une application cartographique sans serveur, et il vaut
+            mieux le nommer que le laisser supposer.
           </p>
           <ul>
             <li>
@@ -95,8 +102,7 @@ export function About({ open, onClose }: { open: boolean; onClose: () => void })
               kumi.systems) reçoit la <strong>zone demandée</strong>, la{' '}
               <strong>référence tapée</strong> («&nbsp;GR&nbsp;7&nbsp;») ou un{' '}
               <strong>rayon autour d’un point</strong>, quand vous chargez une
-              zone ou lancez une recherche. C’est de là que viennent les
-              tracés.
+              zone ou lancez une recherche. C’est de là que viennent les tracés.
             </li>
             <li>
               La <strong>Géoplateforme IGN</strong> reçoit les{' '}
@@ -106,17 +112,18 @@ export function About({ open, onClose }: { open: boolean; onClose: () => void })
             </li>
             <li>
               <strong>OpenStreetMap</strong> reçoit la même chose, mais
-              seulement en <strong>repli</strong>, si le fond IGN ne répond
-              pas.
+              seulement en <strong>repli</strong>, si le fond IGN ne répond pas.
             </li>
             <li>
               Le service d’<strong>altimétrie</strong> de la Géoplateforme IGN
-              reçoit <strong>jusqu’à cent points de l’itinéraire dont vous
-              ouvrez le profil</strong> — assez pour savoir précisément lequel
-              c’est. Cela vaut aussi pour un itinéraire que vous avez{' '}
-              <strong>importé</strong> dans «&nbsp;Mes itinéraires&nbsp;», et
-              pour un parcours que vous tracez à la main. Vos{' '}
-              <strong>sorties</strong>, elles, ne partent jamais.
+              reçoit{' '}
+              <strong>
+                jusqu’à cent points de l’itinéraire dont vous ouvrez le profil
+              </strong>{' '}
+              — assez pour savoir précisément lequel c’est. Cela vaut aussi pour
+              un itinéraire que vous avez <strong>importé</strong> dans
+              «&nbsp;Mes itinéraires&nbsp;», et pour un parcours que vous tracez
+              à la main. Vos <strong>sorties</strong>, elles, ne partent jamais.
             </li>
             <li>
               L’<strong>API Adresse</strong> (Base Adresse Nationale) reçoit le{' '}
@@ -204,26 +211,26 @@ export function About({ open, onClose }: { open: boolean; onClose: () => void })
         <section>
           <h3>GR, GR de Pays, PR : qu’est-ce que c’est&nbsp;?</h3>
           <p>
-            Ce sont les trois familles d’itinéraires balisés par la
-            FFRandonnée et ses comités, reconnaissables à leurs marques
-            peintes sur les arbres, les rochers et les poteaux&nbsp;:
+            Ce sont les trois familles d’itinéraires balisés par la FFRandonnée
+            et ses comités, reconnaissables à leurs marques peintes sur les
+            arbres, les rochers et les poteaux&nbsp;:
           </p>
           <ul>
             <li>
               <strong>GR — Grande Randonnée</strong> (balisage blanc et
-              rouge)&nbsp;: les grands itinéraires, souvent sur plusieurs
-              jours, parfois plusieurs semaines. Le GR 7 traverse la France des
-              Vosges aux Pyrénées.
+              rouge)&nbsp;: les grands itinéraires, souvent sur plusieurs jours,
+              parfois plusieurs semaines. Le GR 7 traverse la France des Vosges
+              aux Pyrénées.
             </li>
             <li>
               <strong>GR de Pays</strong> (jaune et rouge)&nbsp;: une boucle
-              régionale de quelques jours, qui fait le tour d’un massif ou
-              d’un pays.
+              régionale de quelques jours, qui fait le tour d’un massif ou d’un
+              pays.
             </li>
             <li>
               <strong>PR — Promenade et Randonnée</strong> (jaune)&nbsp;: un
-              circuit local, en général de deux à six heures. C’est la balade
-              du dimanche.
+              circuit local, en général de deux à six heures. C’est la balade du
+              dimanche.
             </li>
           </ul>
           <p>
@@ -232,14 +239,34 @@ export function About({ open, onClose }: { open: boolean; onClose: () => void })
             <strong>itinéraires personnels</strong> — importés ou tracés ici.
           </p>
           <p>
+            Le{' '}
+            <strong>
+              balisage affiché vient du tag <code>osmc:symbol</code>
+            </strong>
+            , qui décrit la marque réellement peinte sur l’arbre — et non d’une
+            référence commençant par «&nbsp;GR&nbsp;». Ce tag est{' '}
+            <strong>rare</strong>&nbsp;: quand il manque, la ligne
+            «&nbsp;Balisé&nbsp;» n’apparaît pas, plutôt que d’annoncer une
+            marque approximative à quelqu’un qui la cherchera sur un poteau.
+          </p>
+          <p>
+            De même, le <strong>sol</strong> et l’<strong>eau</strong> se
+            filtrent par ce qu’OpenStreetMap dit, jamais par un jugement&nbsp;:
+            «&nbsp;entièrement dur ou stabilisé&nbsp;» et non
+            «&nbsp;accessible&nbsp;», un <strong>détour en mètres</strong> et
+            non «&nbsp;avec de l’eau&nbsp;». Un point d’eau absent de la carte
+            ne veut pas dire qu’il n’y en a pas&nbsp;: il veut dire que personne
+            ne l’a saisi.
+          </p>
+          <p>
             Enfin, une partie des itinéraires d’OpenStreetMap{' '}
             <strong>ne déclare aucun réseau</strong>. Sentiers les affiche à
             part, sous le nom «&nbsp;réseau non déclaré&nbsp;», plutôt que de
             les ranger d’office parmi les PR&nbsp;: ce peut être un circuit
             balisé que personne n’a qualifié, comme un tracé qui n’a jamais
-            porté la moindre marque sur un arbre. La différence se voit sur
-            le terrain, et l’application n’est pas en mesure de la trancher à
-            votre place.
+            porté la moindre marque sur un arbre. La différence se voit sur le
+            terrain, et l’application n’est pas en mesure de la trancher à votre
+            place.
           </p>
         </section>
 
@@ -255,11 +282,10 @@ export function About({ open, onClose }: { open: boolean; onClose: () => void })
         <section>
           <h3>Prudence sur les sentiers</h3>
           <p>
-            Les tracés affichés sont issus de contributions bénévoles et
-            peuvent être incomplets ou datés. Sentiers est un outil de suivi,
-            pas un outil de navigation : sur le terrain, emportez une carte à
-            jour ou un topoguide, et adaptez vos sorties à la météo et à votre
-            niveau.
+            Les tracés affichés sont issus de contributions bénévoles et peuvent
+            être incomplets ou datés. Sentiers est un outil de suivi, pas un
+            outil de navigation : sur le terrain, emportez une carte à jour ou
+            un topoguide, et adaptez vos sorties à la météo et à votre niveau.
           </p>
         </section>
 

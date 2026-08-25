@@ -85,7 +85,7 @@ existant via `PW_CHROMIUM_PATH=/chemin/vers/chrome npm run e2e`.
    annonce celui qu'il est en train de lire. **Déplier une trace** montre ce
    que cette sortie-là a fait avancer : quels itinéraires balisés, et de
    combien (un simple croisement de sentier, sous 300 m, n'est pas compté).
-4. **Créer « Mes itinéraires »** : importez le GPX d'un parcours *à faire*
+4. **Créer « Mes itinéraires »** : importez le GPX d'un parcours _à faire_
    (cartoguide, Visorando, tracé maison…) — il devient un itinéraire local
    avec sa propre progression, hors statistiques des réseaux OSM. Ou
    **tracez-le à la souris** (« Tracer sur la carte ») : chaque clic pose une
@@ -100,18 +100,47 @@ existant via `PW_CHROMIUM_PATH=/chemin/vers/chrome npm run e2e`.
 6. **Lire sa progression** : carte colorée (gris = non parcouru, couleur du
    balisage = parcouru — une légende compacte rappelle le code couleur par
    réseau), tableau de bord (% global, km faits/restants, répartition
-   GR/GRP/PR, top 5), liste triable/filtrable. Sélectionner un itinéraire
-   dans la liste **zoome dessus** sur la carte. Un itinéraire parcouru à
+   GR/GRP/PR, top 5), liste triable/filtrable.
+
+   **Le balisage vient de ce qui est peint sur l'arbre**, quand
+   OpenStreetMap le porte : Sentiers lit le tag `osmc:symbol`, qui décrit la
+   marque réelle, plutôt que de la déduire d'une ref commençant par « GR ».
+   Mais **ce tag est rare** — sur le seul jeu de données réel mesuré dans ce
+   dépôt, une relation sur quatre le porte, et sa dernière modification OSM
+   date de 2019. Faute de symbole lisible, la fiche **n'affiche pas de
+   ligne « Balisé »** plutôt que d'annoncer une marque approximative, et la
+   carte retombe sur la couleur du réseau.
+
+   Sélectionner un itinéraire dans la liste **zoome dessus** sur la carte. Un itinéraire parcouru à
    **95 % ou plus est « bouclé »** — exiger 100 % punirait le randonneur pour
    des tronçons impraticables ou une géométrie OSM imparfaite ; le seuil est
    toujours annoncé, jamais présenté comme du 100 %. Les autres affichent ce
    qu'il reste avant le prochain jalon (25, 50, 75, 90, 100 %).
+
 7. **Trouver une sortie** : le panneau « Trouver une sortie » filtre par
    longueur, durée, dénivelé, forme (boucle ou aller simple, déduite de la
-   géométrie du tracé) et proximité de votre position. Aucun filtre ne
-   s'applique à une donnée absente : un dénivelé inconnu n'est pas un
-   dénivelé nul, et l'écarter ferait disparaître en silence la plupart des
-   tracés OSM.
+   géométrie du tracé), **sol**, **eau sur le chemin** et proximité de votre
+   position. Aucun filtre ne s'applique à une donnée absente : un dénivelé
+   inconnu n'est pas un dénivelé nul, et l'écarter ferait disparaître en
+   silence la plupart des tracés OSM.
+
+   **Deux d'entre eux méritent leur libellé exact.** Le filtre de sol dit
+   « entièrement dur ou stabilisé » et non « accessible » : le second
+   promettrait un jugement qu'on n'est pas en mesure de porter. Et il est le
+   seul à **écarter ce qu'on ignore** plutôt que de le laisser passer —
+   partir en fauteuil tout-terrain sur un sentier dont personne n'a renseigné
+   le sol coûte une journée, là où les autres filtres ne coûtent qu'une
+   surprise. L'eau, elle, se choisit en **détour** (250 m, 500 m, 1 km, 2 km)
+   et jamais en « avec / sans » : un point absent d'OpenStreetMap ne veut pas
+   dire qu'il n'y a pas d'eau, il veut dire que personne ne l'a saisi.
+
+   **Ou dites-le en une phrase.** « Une boucle facile de moins de 12 km, pas
+   plus de 400 m de dénivelé, à 30 km de chez moi » remplit les listes
+   ci-dessus. Aucun modèle, aucun téléchargement, aucun appel réseau — des
+   règles de lecture, dans `src/core/intention.ts`. Et **ce qui n'a pas été
+   compris est écrit à l'écran** plutôt qu'avalé : « je n'ai pas su quoi
+   faire de : chèvres ».
+
 8. **Prochaine sortie** : l'application propose le plus long tronçon non
    parcouru d'un seul tenant, pondéré par la distance pour s'y rendre — un
    tronçon de 12 km à 200 km de chez soi n'est pas une proposition.
@@ -121,14 +150,14 @@ existant via `PW_CHROMIUM_PATH=/chemin/vers/chrome npm run e2e`.
    comme au clavier —, les **étapes** pour les itinéraires de plus de 30 km
    (découpage régulier calculé par l'application, ce ne sont pas les étapes
    d'un topo-guide), les **points d'intérêt** à proximité (via Overpass), et
-   et **« Incliner la carte »** — une caméra inclinée sur le tracé, pas un
+   **« Incliner la carte »** — une caméra inclinée sur le tracé, pas un
    relief calculé depuis un modèle numérique de terrain. L'altimétrie et les
    POI sont des bonus : indisponibles, la fiche reste utilisable.
 10. **Se localiser** : le bouton « Ma position » affiche l'appareil sur la
-   carte et recentre dessus au premier relevé. La position est lue par le
-   navigateur et **reste dans l'onglet** — ni enregistrée, ni transmise. La
-   précision annoncée est affichée, et signalée quand elle est trop mauvaise
-   pour situer quelqu'un sur un sentier.
+    carte et recentre dessus au premier relevé. La position est lue par le
+    navigateur et **reste dans l'onglet** — ni enregistrée, ni transmise. La
+    précision annoncée est affichée, et signalée quand elle est trop mauvaise
+    pour situer quelqu'un sur un sentier.
 11. **Régler la précision de suivi GPS** (tolérance de matching, 25–100 m)
     selon la précision de votre appareil ; tout est recalculé.
 12. **Emporter ou montrer** : chaque itinéraire s'exporte en **GPX** (avec son
@@ -416,6 +445,7 @@ faire.
   dit que ce n'en était pas. Le compromis ne tenait pas : c'est l'usage qui
   tranche ce qu'un mot promet, pas la note qui l'accompagne. Le vrai relief
   est instruit à part.
+
 - **Altimétrie et POI en meilleur effort** : ces deux appels réseau (service
   IGN, Overpass) ne bloquent jamais l'affichage de la fiche détail ; en cas
   d'échec, message clair et le reste (progression, carte) reste utilisable.
@@ -424,7 +454,7 @@ faire.
   (`tourism=hostel`, dortoirs et chambres partagées, sur réservation), le
   couchage autonome (`wilderness_hut`,
   `shelter_type=basic_hut|lean_to|rock_shelter`, gratuit et sans gardien) et
-  l'abri météo (`weather_shelter`, explicitement *pas* prévu pour la nuit).
+  l'abri météo (`weather_shelter`, explicitement _pas_ prévu pour la nuit).
   Les mélanger enverrait quelqu'un dormir dans un abri de crête ; ils sont
   donc séparés, et un avertissement rappelle que la donnée OSM peut être
   périmée. Les abris sans `shelter_type` exploitable (abribus…) sont écartés
@@ -437,6 +467,7 @@ faire.
   `guest_house` et `chalet`, qui hébergent aussi des pèlerins mais
   noieraient tout tracé passant par un bourg. Ce partage n'est pas mesuré —
   il faudrait compter ce que chaque tag rapporte le long du GR 65.
+
 - **POI : `nwr` et boîtes découpées** — en montagne un refuge est souvent
   cartographié comme le polygone du bâtiment : n'interroger que les nœuds les
   rendait invisibles. On interroge donc nœuds, ways et relations avec
@@ -484,19 +515,19 @@ faire.
 Ils se lisent dans cet ordre — chacun répond à une question différente, et
 aucun ne recopie les autres.
 
-| Document | La question à laquelle il répond |
-|---|---|
-| [`public/pourquoi.html`](./public/pourquoi.html) | La version publique du brief — ce que le produit fait de différent, et ce qu'il coûte ([en ligne](https://opaland.github.io/Rando-generator/pourquoi.html)) |
-| [`docs/BRIEF.md`](./docs/BRIEF.md) | Quel problème, pour qui, contre qui — et **ce qu'on ne fera pas** |
-| [`docs/PRD.md`](./docs/PRD.md) | Dans quel ordre, et à quoi voit-on qu'un sujet est fini |
-| [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) | Quelles décisions structurent le code, et **pourquoi** |
-| [`docs/PERSONAS.md`](./docs/PERSONAS.md) | Six personnes suivies pas à pas, et l'endroit exact où elles s'arrêtent |
-| [`docs/PRODUCT_AUDIT.md`](./docs/PRODUCT_AUDIT.md) | Le constat critique daté du 19/08, avec l'état de chaque point |
-| [`docs/AUDIT_MOBILE.md`](./docs/AUDIT_MOBILE.md) | L'audit téléphone M0–M8, mesures avant/après |
-| [`docs/RELEASE.md`](./docs/RELEASE.md) | Ce qu'on vérifie à la main avant de publier |
-| [`docs/PROTOCOLE_TEST.md`](./docs/PROTOCOLE_TEST.md) | Comment on décide sans mesurer en douce — et pourquoi l'A/B classique est écarté |
-| [`docs/DESIGN_SYSTEM.md`](./docs/DESIGN_SYSTEM.md) | Couleurs, espacement, boutons — et **pourquoi la duplication JS/CSS ne doit pas être « corrigée »** |
-| [`CLAUDE.md`](./CLAUDE.md) | Les règles de travail qu'aucune machine ne vérifie — chacune vient d'un raté daté |
+| Document                                             | La question à laquelle il répond                                                                                                                            |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`public/pourquoi.html`](./public/pourquoi.html)     | La version publique du brief — ce que le produit fait de différent, et ce qu'il coûte ([en ligne](https://opaland.github.io/Rando-generator/pourquoi.html)) |
+| [`docs/BRIEF.md`](./docs/BRIEF.md)                   | Quel problème, pour qui, contre qui — et **ce qu'on ne fera pas**                                                                                           |
+| [`docs/PRD.md`](./docs/PRD.md)                       | Dans quel ordre, et à quoi voit-on qu'un sujet est fini                                                                                                     |
+| [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md)     | Quelles décisions structurent le code, et **pourquoi**                                                                                                      |
+| [`docs/PERSONAS.md`](./docs/PERSONAS.md)             | Six personnes suivies pas à pas, et l'endroit exact où elles s'arrêtent                                                                                     |
+| [`docs/PRODUCT_AUDIT.md`](./docs/PRODUCT_AUDIT.md)   | Le constat critique daté du 19/08, avec l'état de chaque point                                                                                              |
+| [`docs/AUDIT_MOBILE.md`](./docs/AUDIT_MOBILE.md)     | L'audit téléphone M0–M8, mesures avant/après                                                                                                                |
+| [`docs/RELEASE.md`](./docs/RELEASE.md)               | Ce qu'on vérifie à la main avant de publier                                                                                                                 |
+| [`docs/PROTOCOLE_TEST.md`](./docs/PROTOCOLE_TEST.md) | Comment on décide sans mesurer en douce — et pourquoi l'A/B classique est écarté                                                                            |
+| [`docs/DESIGN_SYSTEM.md`](./docs/DESIGN_SYSTEM.md)   | Couleurs, espacement, boutons — et **pourquoi la duplication JS/CSS ne doit pas être « corrigée »**                                                         |
+| [`CLAUDE.md`](./CLAUDE.md)                           | Les règles de travail qu'aucune machine ne vérifie — chacune vient d'un raté daté                                                                           |
 
 ## Déploiement (GitHub Pages)
 

@@ -98,6 +98,27 @@ l'attraper : le README n'était dans aucun diff.
 
 **`grep` sur la formule, pas sur le fichier.**
 
+**Et le 25/08, ça a recommencé** — même fichier, même mécanisme. Le panneau
+« Trouver une sortie » comptait sept filtres, le README en énumérait cinq :
+le **sol** et l'**eau**, livrés deux jours plus tôt, n'y étaient pas.
+
+Trois sprints après la leçon, la leçon n'avait rien empêché. Un `grep`
+mémorisé n'est pas un garde-fou — c'est une bonne intention. Il y a
+maintenant `scripts/filtres-annonces.mjs` (`npm run textes`, dans le hook et
+dans la CI) : chaque commande du panneau a un mot qui la désigne dans le
+README, et un `data-testid` inconnu **fait échouer le script** plutôt que
+d'être ignoré. Un filtre neuf ne peut donc plus passer sans que quelqu'un
+décide du mot qui l'annonce.
+
+Il garde l'**existence**, jamais la justesse de la phrase : celle-là se
+relit, et le §2 interdit de prétendre mesurer ce qui se décide.
+
+**Sa première écriture était creuse**, et de la façon la plus banale :
+`readme.includes('eau')` est vrai dans « réseau », `includes('sol')` dans
+« console ». Le script rendait « toutes nommées » sur un README dont j'avais
+retiré le sol exprès. Un mot se cherche **entier** — et avec `\p{L}`, parce
+que « durée », « dénivelé » et « proximité » ont des accents.
+
 ## 4. Une garde transverse se nomme, elle ne se recopie pas
 
 Trois gardes de démonstration écrites à la main, une quatrième oubliée

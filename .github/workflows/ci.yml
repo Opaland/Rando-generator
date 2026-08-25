@@ -30,6 +30,8 @@ jobs:
         run: npm run lint
       - name: Listes jumelles (le CSS et la sonde disent la même règle)
         run: npm run listes
+      - name: Textes (le README annonce tous les filtres qui existent)
+        run: npm run textes
       - name: Typecheck
         run: npm run typecheck
       - name: Tests unitaires (couverture ≥ 90 % sur src/core)
