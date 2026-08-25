@@ -461,6 +461,45 @@ async function lireCorps(
 }
 
 /**
+ * Le délai, en secondes, qu'un miroir annonce avant d'accepter à nouveau.
+ *
+ * `Retry-After` est facultatif, et la RFC 9110 lui donne deux formes : un
+ * nombre de secondes, ou une date HTTP. Seule la première est lue ici. La
+ * seconde se compare à l'horloge du navigateur — une horloge en avance
+ * rendrait un délai négatif, une horloge en retard un délai qui promet plus
+ * qu'il ne tient. Rendre `null` fait dire à l'interface qu'elle ne sait pas,
+ * ce qui est vrai, plutôt qu'un nombre dont on ne répond pas (CLAUDE.md §2).
+ *
+ * **Le cas ordinaire est `null`, et pas pour la raison qu'on croit.** Mesuré
+ * le 25/08 en écrivant le test e2e : `Retry-After` n'est pas dans la liste
+ * sûre du CORS, donc un navigateur le **cache** sur une réponse venue d'un
+ * autre domaine, à moins que le serveur ne l'annonce dans
+ * `Access-Control-Expose-Headers`. Le délai ne s'affichera donc que si
+ * Overpass l'expose — ce que nous ne décidons pas. Le message sans délai
+ * n'est pas le repli exceptionnel, c'est celui qu'on verra le plus souvent.
+ */
+export function delaiDeReessai(entete: string | null): number | null {
+  if (entete === null) return null
+  if (!/^\s*\d+\s*$/.test(entete)) return null
+  const secondes = Number(entete.trim())
+  return secondes > 0 ? secondes : null
+}
+
+/**
+ * Ce délai, écrit pour être lu.
+ *
+ * Le passage aux minutes au-delà de soixante secondes ne change rien à ce qui
+ * est calculé : c'est de la présentation, et le §2 l'autorise à condition de
+ * l'écrire. `Math.ceil` plutôt qu'un arrondi, parce qu'annoncer moins que le
+ * délai réel fait retaper sur un serveur qui vient de dire non.
+ */
+function delaiEnFrancais(secondes: number): string {
+  if (secondes < 60) return `${secondes} secondes`
+  const minutes = Math.ceil(secondes / 60)
+  return minutes === 1 ? '1 minute' : `${minutes} minutes`
+}
+
+/**
  * Interroge Overpass en POST, en essayant chaque miroir dans l'ordre.
  * Résout avec le JSON brut (à passer à parseOverpassResponse), rejette avec
  * une OverpassError en français si tous les miroirs échouent.
@@ -475,6 +514,14 @@ export async function fetchOverpass(
   const timeoutMs = options.timeoutMs ?? OVERPASS_TIMEOUT_MS
   /** Le motif du dernier miroir ayant répondu qu'il n'y arrivait pas. */
   let dernierMotif: string | undefined
+  /** Vrai dès qu'un miroir a répondu 429 : il a répondu, et il a dit non. */
+  let unMiroirLimite = false
+  /*
+    Le plus court des délais annoncés, et non le dernier : il suffit d'un
+    miroir qui accepte pour que la requête passe, donc le premier à rouvrir
+    est le moment qu'on peut annoncer sans mentir.
+  */
+  let delaiLePlusCourt: number | null = null
 
   for (const [mirrorIndex, mirror] of mirrors.entries()) {
     options.onAttempt?.(mirrorIndex, mirrors.length)
@@ -493,7 +540,25 @@ export async function fetchOverpass(
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         ...(signal ? { signal } : {}),
       })
-      if (!response.ok) continue
+      if (!response.ok) {
+        /*
+          Un 429 n'est pas un serveur injoignable : c'est un serveur qui a
+          répondu, et précisément. Les confondre — ce que faisait ce `continue`
+          jusqu'au 25/08 — fait afficher « impossible de joindre », et envoie
+          chercher son réseau quelqu'un dont le réseau va très bien (#319).
+        */
+        if (response.status === 429) {
+          unMiroirLimite = true
+          const delai = delaiDeReessai(response.headers.get('Retry-After'))
+          if (
+            delai !== null &&
+            (delaiLePlusCourt === null || delai < delaiLePlusCourt)
+          ) {
+            delaiLePlusCourt = delai
+          }
+        }
+        continue
+      }
       const data: unknown = await lireCorps(response, options.onProgress)
       if (!isOverpassResponse(data)) continue
       if (estUnEchecDeserveur(data)) {
@@ -514,6 +579,17 @@ export async function fetchOverpass(
       'Cette zone est trop vaste pour les serveurs OpenStreetMap : la requête ' +
         'a été interrompue avant d’aboutir. Essayez un secteur plus petit — ' +
         'une recherche autour d’une ville, ou un itinéraire par son nom.',
+    )
+  }
+
+  if (unMiroirLimite) {
+    throw new OverpassError(
+      'Les serveurs OpenStreetMap limitent le nombre de requêtes, et viennent ' +
+        'de refuser la nôtre. Votre connexion n’est pas en cause. ' +
+        (delaiLePlusCourt === null
+          ? 'Ils ne disent pas combien de temps attendre : réessayez un peu ' +
+            'plus tard, ou ouvrez une zone déjà enregistrée.'
+          : `Réessayez dans ${delaiEnFrancais(delaiLePlusCourt)}.`),
     )
   }
 
