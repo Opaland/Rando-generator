@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   dispositionDemandee,
+  MAX_SECTIONS_PAR_ONGLET,
   ONGLETS,
   positionInitiale,
   positionPourOnglet,
@@ -28,7 +29,9 @@ describe('dispositionDemandee', () => {
     // La porte de sortie n'est pas une politesse : c'est elle qui permet de
     // conduire la session E2 en donnant deux URL différentes à deux groupes.
     expect(dispositionDemandee('?maquette=accordeons')).toBe('accordeons')
-    expect(dispositionDemandee('?zone=pilat&maquette=accordeons')).toBe('accordeons')
+    expect(dispositionDemandee('?zone=pilat&maquette=accordeons')).toBe(
+      'accordeons',
+    )
   })
 
   it('ne devine pas une valeur voisine', () => {
@@ -102,13 +105,33 @@ describe('sectionsDeLOnglet', () => {
   })
 
   it('tient chaque onglet sous le seuil du mur déplacé', () => {
-    // Le risque écrit noir sur blanc dans l'issue : « ne pas recréer dix
-    // accordéons *dans* chaque onglet ». Quatre sections par onglet est le
-    // maximum qu'on s'autorise ; au-delà, le mur a seulement changé de
-    // place. C'est un seuil de présentation, tranché ici et écrit.
+    /*
+      Le risque écrit noir sur blanc dans l'issue #171 : « ne pas recréer
+      dix accordéons *dans* chaque onglet ». Au-delà de quatre sections, le
+      mur a seulement changé de place.
+
+      Le seuil est **importé**, pas recopié. Il l'était : le module
+      exportait `MAX_SECTIONS_PAR_ONGLET` en écrivant que le nombre est
+      « vérifié par un test plutôt que laissé à la vigilance », et le test
+      écrivait `4` en dur. Deux endroits pour un même nombre, qui pouvaient
+      diverger sans que rien ne le dise — le §4ter — et un export dont
+      aucun test ne se servait, qui est mot pour mot la cicatrice du §4bis.
+    */
     for (const onglet of ONGLETS) {
-      expect(sectionsDeLOnglet(onglet.cle).length).toBeLessThanOrEqual(4)
+      expect(sectionsDeLOnglet(onglet.cle).length).toBeLessThanOrEqual(
+        MAX_SECTIONS_PAR_ONGLET,
+      )
     }
+  })
+
+  it('ne laisse pas le seuil devenir permissif sans qu’on le voie', () => {
+    /*
+      Importer la constante rend le test d'accord avec le module — mais un
+      test qui n'asserte que « ≤ la constante » passerait au vert si
+      quelqu'un portait la constante à dix. Le nombre est un choix de
+      conception qui vient de l'issue : il se relit, donc il s'asserte.
+    */
+    expect(MAX_SECTIONS_PAR_ONGLET).toBe(4)
   })
 })
 
@@ -182,9 +205,9 @@ describe('positionPourOnglet', () => {
  */
 describe('positionInitiale', () => {
   it('laisse la place au guide de premier lancement', () => {
-    expect(
-      positionInitiale({ guideAffiche: true, zoneRestauree: false }),
-    ).toBe('repliee')
+    expect(positionInitiale({ guideAffiche: true, zoneRestauree: false })).toBe(
+      'repliee',
+    )
   })
 
   it('rouvre à mi-hauteur dès que le guide est fermé', () => {
@@ -199,14 +222,14 @@ describe('positionInitiale', () => {
    * carte, la feuille reste basse.
    */
   it('reste basse au retour, quand une zone est déjà là', () => {
-    expect(
-      positionInitiale({ guideAffiche: false, zoneRestauree: true }),
-    ).toBe('repliee')
+    expect(positionInitiale({ guideAffiche: false, zoneRestauree: true })).toBe(
+      'repliee',
+    )
   })
 
   it('reste basse au retour même si le guide s’affiche', () => {
-    expect(
-      positionInitiale({ guideAffiche: true, zoneRestauree: true }),
-    ).toBe('repliee')
+    expect(positionInitiale({ guideAffiche: true, zoneRestauree: true })).toBe(
+      'repliee',
+    )
   })
 })
