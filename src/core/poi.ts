@@ -111,7 +111,8 @@ export function bboxChunks(
   }
   if (current.length > 0) chunks.push(current)
 
-  const bounded = chunks.length > maxChunks ? evenSlices(coords, maxChunks) : chunks
+  const bounded =
+    chunks.length > maxChunks ? evenSlices(coords, maxChunks) : chunks
   return bounded.map(bboxOf)
 }
 
@@ -141,7 +142,7 @@ export function buildPoiQuery(coords: LonLat[]): string {
 (
 ${clauses}
 );
-out center ${MAX_POIS};`
+out meta center ${MAX_POIS};`
 }
 
 interface OverpassPoiElement {
@@ -151,6 +152,15 @@ interface OverpassPoiElement {
   lon?: number
   center?: { lat?: number; lon?: number }
   tags?: Record<string, string>
+  /**
+   * Dernière modification, rendue par `out meta` (issue #285).
+   *
+   * Le `meta` coûte des octets sur chaque point — une soixantaine, contre
+   * les quelques centaines que pèse déjà un POI avec ses tags. C'est le prix
+   * de la seule chose qui permette de juger un horaire déclaré, et
+   * `MAX_POIS` borne déjà le nombre de points.
+   */
+  timestamp?: string
 }
 
 /**
@@ -257,7 +267,10 @@ function potabilite(tags: Record<string, string>): PoiDetails['drinkingWater'] {
   }
 }
 
-function detailsOf(tags: Record<string, string>): PoiDetails {
+function detailsOf(
+  tags: Record<string, string>,
+  horodatage: string | undefined,
+): PoiDetails {
   return {
     phone: trimmed(tags.phone ?? tags['contact:phone']),
     website: httpUrl(tags.website ?? tags['contact:website']),
@@ -268,6 +281,12 @@ function detailsOf(tags: Record<string, string>): PoiDetails {
     drinkingWater: potabilite(tags),
     seasonal: tags.seasonal === 'yes' || tags.intermittent === 'yes',
     spring: tags.natural === 'spring',
+    /*
+      La date de relevé (issue #285). `null` quand elle manque — une réponse
+      en cache d'avant ce changement n'en a pas — et jamais celle du jour,
+      qui ferait passer un vieux relevé pour frais.
+    */
+    osmUpdatedAt: trimmed(horodatage),
   }
 }
 
@@ -313,7 +332,7 @@ export function parsePoiResponse(data: unknown): PointOfInterest[] {
       lon,
       kind,
       name: trimmed(tags.name),
-      details: detailsOf(tags),
+      details: detailsOf(tags, element.timestamp),
     })
   }
 

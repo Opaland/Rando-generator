@@ -1,15 +1,5 @@
 import { create } from 'zustand'
-import {
-  buildRefQuery,
-  buildAroundQuery,
-  RAYON_AUTOUR_METERS,
-  buildZoneQuery,
-  fetchOverpass,
-  parseOverpassResponse,
-  OverpassError,
-  ZONES,
-  libelleDeZone,
-} from '../core/overpass.ts'
+import { libelleDeZone } from '../core/overpass.ts'
 import {
   backupFilename,
   buildBackup,
@@ -22,10 +12,9 @@ import {
   BackupError,
 } from '../core/backup.ts'
 import { downloadBlob } from '../lib/download.ts'
-import { GeocodeError, chercherLieux, type Lieu } from '../core/geocode.ts'
+import type { Lieu } from '../core/geocode.ts'
 import { resumeObjectif, type ResumeObjectif } from '../core/objectifs.ts'
 import type { ParcoursDeclare } from '../core/declaratif.ts'
-import { parseBouclesGeoJSON } from '../core/boucles.ts'
 import { outingHighlights, type OutingHighlight } from '../core/outing.ts'
 import { construireDemonstration } from '../core/demonstration.ts'
 import {
@@ -45,9 +34,6 @@ import {
   franchissementTientEncore,
   normalizeCompletionPct,
 } from '../core/milestones.ts'
-import { fetchPois } from '../core/poi.ts'
-import { reponseTronquee } from '../core/poisDeZone.ts'
-import { itineraryCoords } from '../core/mapdata.ts'
 import type { PointOfInterest } from '../core/types.ts'
 import { noterSortie, type EntreeJournal } from '../core/journalSortant.ts'
 import {
@@ -81,8 +67,6 @@ import type { Itinerary, LonLat, Track, UserPosition } from '../core/types.ts'
 import { DEFAULT_TOLERANCE_METERS, STEP_METERS } from '../core/types.ts'
 import {
   openSentiersDb,
-  zoneUtilisable,
-  SCHEMA_ZONE,
   DbError,
   type SentiersDb,
   type SettingKey,
@@ -100,6 +84,7 @@ import {
   type ActionsFiche,
   type EtatFiche,
 } from './trancheFiche.ts'
+import { fetchLocalBoucles, trancheZone } from './trancheZone.ts'
 export type { DoublonEnAttente } from './trancheImport.ts'
 import {
   trancheImport,
@@ -370,6 +355,13 @@ export interface AppState
   loadAutour: (lieu: Lieu, options?: { force?: boolean }) => Promise<void>
   /** Referme la liste des propositions. */
   effacerLieux: () => void
+  /**
+   * Ajoute les boucles locales open data à la zone affichée.
+   *
+   * Dans le type parce que le démarrage la rappelle sur la dernière zone
+   * restaurée — pas parce qu'un test s'en sert (§4bis).
+   */
+  mergeLocalBoucles: (zoneKey: string) => Promise<void>
   /** Épingle (ou dépingle) un itinéraire comme objectif. */
   basculerObjectif: (id: number) => Promise<void>
   /** Ce qu'il reste sur un objectif : mètres, pourcentage, tronçons. */
@@ -428,9 +420,7 @@ function lireObjectifs(brut: number | string | undefined): number[] {
   }
 }
 
-let zoneLoadSequence = 0
 /** Même garde pour la recherche de lieu : une frappe abandonnée ne gagne pas. */
-let lieuSequence = 0
 /**
  * Ouverture d'IndexedDB en cours, s'il y en a une. Sert à faire patienter les
  * écritures lancées pendant le démarrage plutôt qu'à les perdre (baseOuverte).
@@ -463,32 +453,6 @@ async function sortirDeLaDemonstration(
   get: () => Pick<AppState, 'demonstration' | 'arreterDemonstration'>,
 ): Promise<void> {
   if (get().demonstration) await get().arreterDemonstration()
-}
-
-/** Zones dont le périmètre couvre la Métropole de Lyon (boucles locales). */
-const ZONES_WITH_LOCAL_BOUCLES = new Set(['rhone', 'trois'])
-
-// Boucles locales open data, embarquées avec le site (© Métropole de Lyon,
-// Licence Ouverte 2.0). Chargées paresseusement et une seule fois ; en cas
-// d'échec, l'app fonctionne exactement comme avant — c'est un bonus.
-let bouclesPromise: Promise<Itinerary[]> | null = null
-function fetchLocalBoucles(): Promise<Itinerary[]> {
-  bouclesPromise ??= fetch(
-    `${import.meta.env.BASE_URL}data/boucles-metropole-lyon.json`,
-  )
-    .then((response) => (response.ok ? response.json() : null))
-    .then((data: unknown) =>
-      parseBouclesGeoJSON(data, new Date().toISOString()),
-    )
-    .catch(() => [])
-    .then((boucles) => {
-      // Un échec ne se mémorise pas. Hors ligne au premier chargement, les
-      // boucles seraient sinon absentes pour toute la session, alors qu'un
-      // simple changement de zone suffirait à les retrouver.
-      if (boucles.length === 0) bouclesPromise = null
-      return boucles
-    })
-  return bouclesPromise
 }
 
 export const useAppStore = create<AppState>()((set, get) => {
@@ -634,157 +598,6 @@ export const useAppStore = create<AppState>()((set, get) => {
     })
   }
 
-  async function loadFromOverpass(
-    zoneKey: string,
-    zoneLabel: string,
-    query: string,
-    force: boolean,
-  ): Promise<void> {
-    // Le numéro de séquence se prend AVANT tout `await`, sans exception.
-    //
-    // Ma première version sortait de la démonstration d'abord : un `await`
-    // s'intercalait donc entre le clic et la prise du numéro, et deux
-    // chargements lancés coup sur coup pouvaient franchir cette frontière
-    // avant qu'aucun n'ait réservé le sien. Un test de recherche de ville a
-    // échoué une fois sur la suite complète, et c'était la vraie cause —
-    // pas une instabilité.
-    const sequence = ++zoneLoadSequence
-    // Entonnoir unique des trois chemins de zone (loadZone, loadRef,
-    // loadAutour) : la garde vit ici plutôt qu'en trois exemplaires.
-    //
-    // Sans elle, charger une vraie zone pendant une démonstration laissait
-    // les trois sorties fictives dans la liste, sur des itinéraires réels,
-    // sous un bandeau annonçant toujours une démonstration. C'était le
-    // cinquième chemin de contamination — après ceux que la revue du sprint
-    // 2 avait fermés, et que sa PR déclarait exhaustifs.
-    await sortirDeLaDemonstration(get)
-    // Si l'utilisateur a annulé (ou relancé un autre chargement) entre-temps,
-    // ce chargement ne doit plus toucher l'UI — mais on le laisse quand même
-    // se terminer normalement : parsing et cache restent utiles en arrière-plan.
-    const isCurrent = () => sequence === zoneLoadSequence
-    set({
-      zoneLoading: true,
-      zoneError: null,
-      zoneLoadStage: 'requesting',
-      zoneLoadBytes: 0,
-    })
-    try {
-      // Relu à chaque usage, jamais figé : au démarrage, la base s'ouvre
-      // pendant que l'utilisateur clique une zone. Un `db` capturé à l'entrée
-      // valait encore null au retour d'Overpass, deux minutes plus tard — la
-      // zone n'était donc jamais mise en cache, et la visite suivante
-      // repartait pour une interrogation complète.
-      let cached
-      try {
-        const db = get().db
-        cached = db ? await db.getZone(zoneKey) : undefined
-      } catch {
-        cached = undefined
-      }
-      if (!isCurrent()) return
-      const now = new Date().toISOString()
-      if (cached && !force && zoneUtilisable(cached, now)) {
-        setItineraries(
-          zoneKey,
-          libelleDeZone(zoneKey, cached.label),
-          cached.itineraries,
-          cached.fetchedAt,
-        )
-        await persistLastZone(zoneKey)
-        await recompute()
-        return
-      }
-
-      try {
-        const data = await fetchOverpass(query, {
-          onAttempt: (mirrorIndex) => {
-            if (isCurrent()) {
-              set({
-                zoneLoadStage: mirrorIndex === 0 ? 'requesting' : 'retrying',
-                // Un second miroir repart de zéro : garder le compteur du
-                // premier laisserait croire à une progression qui n'existe plus.
-                zoneLoadBytes: 0,
-              })
-            }
-          },
-          onProgress: (octets) => {
-            if (isCurrent()) set({ zoneLoadBytes: octets })
-          },
-        })
-        if (!isCurrent()) return
-        set({ zoneLoadStage: 'processing' })
-        const itineraries = parseOverpassResponse(data, now)
-        const db = await baseOuverte()
-        if (db) {
-          try {
-            await db.saveZone({
-              zoneKey,
-              label: zoneLabel,
-              itineraries,
-              fetchedAt: now,
-              schema: SCHEMA_ZONE,
-            })
-          } catch {
-            // Quota de stockage dépassé (grosses zones) : on continue en
-            // mémoire, le cache sera simplement absent au prochain démarrage.
-          }
-        }
-        if (!isCurrent()) return
-        // Enregistrée avant d'être affichée : si la zone est à l'écran, elle
-        // sera restaurée au prochain démarrage. Dans l'autre ordre, recharger
-        // la page dans la seconde qui suit interrompait l'écriture, et la
-        // zone repartait pour une interrogation complète.
-        await persistLastZone(zoneKey)
-        setItineraries(zoneKey, zoneLabel, itineraries, now)
-        if (itineraries.length === 0) {
-          set({
-            zoneError:
-              'Aucun itinéraire balisé trouvé dans cette zone sur OpenStreetMap. Réessayez avec « Actualiser les tracés », ou choisissez une autre zone.',
-          })
-        } else if (data.remark !== undefined) {
-          // Overpass a rendu des données **et** un motif : il a interrompu la
-          // requête en cours de route. Ce qui est à l'écran est un morceau de
-          // la zone, et rien ne le distingue d'une zone complète — sauf de le
-          // dire. Une complétion calculée là-dessus serait fausse par excès.
-          set({
-            zoneError:
-              'Les serveurs OpenStreetMap ont interrompu la requête : cette zone n’est affichée qu’en partie. Vos pourcentages sont donc surestimés. Essayez un secteur plus petit pour l’avoir en entier.',
-          })
-        }
-        await recompute()
-      } catch (error) {
-        if (!isCurrent()) return
-        // Miroirs injoignables : on retombe sur le cache même périmé.
-        if (cached) {
-          setItineraries(
-            zoneKey,
-            libelleDeZone(zoneKey, cached.label),
-            cached.itineraries,
-            cached.fetchedAt,
-          )
-          set({
-            zoneError:
-              'Les serveurs OpenStreetMap sont injoignables : affichage des tracés en cache (ils datent peut-être un peu).',
-          })
-          await persistLastZone(zoneKey)
-          await recompute()
-          return
-        }
-        const message =
-          error instanceof OverpassError || error instanceof DbError
-            ? error.message
-            : 'Le chargement des tracés a échoué. Vérifiez votre connexion puis réessayez.'
-        set({ zoneError: message })
-      }
-    } finally {
-      // Quoi qu'il arrive, l'interface ne reste jamais bloquée en chargement —
-      // sauf si un chargement plus récent (ou une annulation) a pris le relais.
-      if (isCurrent() && get().zoneLoading) {
-        set({ zoneLoading: false, zoneLoadStage: null, zoneLoadBytes: 0 })
-      }
-    }
-  }
-
   /**
    * La base, une fois ouverte — en patientant si son ouverture est en cours.
    *
@@ -858,23 +671,6 @@ export const useAppStore = create<AppState>()((set, get) => {
     if (ecrit) return
     const db = await baseOuverte()
     if (db) await db.setSetting(clef, valeur)
-  }
-
-  /**
-   * Ajoute les boucles locales open data aux itinéraires de la zone affichée
-   * (fusion en mémoire uniquement — jamais écrites dans le cache Overpass,
-   * qui reste une copie pure d'OSM). Sans effet si la zone a changé entre
-   * temps ou si l'asset est indisponible.
-   */
-  async function mergeLocalBoucles(zoneKey: string): Promise<void> {
-    if (!ZONES_WITH_LOCAL_BOUCLES.has(zoneKey)) return
-    const boucles = await fetchLocalBoucles()
-    if (boucles.length === 0 || get().zoneKey !== zoneKey) return
-    const known = new Set(get().itineraries.map((i) => i.osmRelationId))
-    const fresh = boucles.filter((b) => !known.has(b.osmRelationId))
-    if (fresh.length === 0) return
-    set((state) => ({ itineraries: [...state.itineraries, ...fresh] }))
-    await recompute()
   }
 
   return {
@@ -1116,73 +912,8 @@ export const useAppStore = create<AppState>()((set, get) => {
       }
       await recompute()
       if (typeof lastZoneKey === 'string' && !get().demonstration) {
-        await mergeLocalBoucles(lastZoneKey)
+        await get().mergeLocalBoucles(lastZoneKey)
       }
-    },
-
-    async loadZone(zoneId, options = {}) {
-      const zone = ZONES.find((z) => z.id === zoneId)
-      if (!zone) return
-      const force = options.force ?? false
-      if (force) {
-        const { db } = get()
-        if (db) await db.deleteZone(zoneId)
-      }
-      await loadFromOverpass(zoneId, zone.label, buildZoneQuery(zoneId), force)
-      await mergeLocalBoucles(zoneId)
-    },
-
-    /**
-     * Charge en **une** requête les points d'intérêt de la zone entière
-     * (issue #156), pour que la liste puisse dire où se trouve l'eau.
-     *
-     * À la demande, jamais automatiquement. C'est une interrogation
-     * d'Overpass de plus, et #283 a montré ce que coûte une requête que
-     * personne n'a demandée : quand elle échoue, c'est l'application qui
-     * paraît fautive.
-     *
-     * Une requête pour toute la zone plutôt qu'une par itinéraire : la
-     * seconde forme ferait des centaines d'appels, et se ferait couper par
-     * le serveur bien avant la fin.
-     */
-    async chargerPoisDeLaZone() {
-      const { itineraries, poisZoneLoading } = get()
-      if (poisZoneLoading || itineraries.length === 0) return
-      set({ poisZoneLoading: true })
-      try {
-        const coords = itineraries.flatMap((itin) => itineraryCoords(itin))
-        const pois = await fetchPois(coords)
-        set({
-          poisZone: pois,
-          poisZoneTronque: reponseTronquee(pois),
-          poisZoneLoading: false,
-        })
-      } catch {
-        // Un POI est un bonus, jamais bloquant : en cas d'échec on rend la
-        // main sans rien afficher de plus. `fetchPois` ne lève déjà pas,
-        // mais le `catch` garde le drapeau de chargement d'être laissé à
-        // `true` si un jour elle changeait d'avis.
-        set({ poisZoneLoading: false })
-      }
-    },
-
-    async loadRef(ref, options = {}) {
-      const trimmed = ref.trim()
-      if (!trimmed) return
-      const force = options.force ?? false
-      const zoneKey = `ref:${trimmed.toUpperCase()}`
-      if (force) {
-        const { db } = get()
-        if (db) await db.deleteZone(zoneKey)
-      }
-      await loadFromOverpass(zoneKey, trimmed, buildRefQuery(trimmed), force)
-    },
-
-    cancelZoneLoad() {
-      // Invalide le chargement en cours : sa promesse continue en arrière-plan
-      // (le cache en profitera si elle aboutit) mais ne touchera plus l'UI.
-      zoneLoadSequence += 1
-      set({ zoneLoading: false, zoneLoadStage: null, zoneLoadBytes: 0 })
     },
 
     async exporterSauvegarde() {
@@ -1296,83 +1027,6 @@ export const useAppStore = create<AppState>()((set, get) => {
       set({ backupMessage: null })
     },
 
-    async chercherLieu(query) {
-      const terme = query.trim()
-      if (terme === '') {
-        set({ lieux: [], lieuError: null, lieuxVides: false })
-        return
-      }
-      const sequence = ++lieuSequence
-      set({ lieuxLoading: true, lieuError: null, lieuxVides: false })
-      try {
-        const lieux = await chercherLieux(terme)
-        // Une recherche plus récente a pris le relais : ses résultats sont
-        // ceux que l'utilisateur attend, pas ceux d'une frappe abandonnée.
-        if (sequence !== lieuSequence) return
-        set({ lieux, lieuxVides: lieux.length === 0 })
-      } catch (error) {
-        if (sequence !== lieuSequence) return
-        set({
-          lieux: [],
-          lieuError:
-            error instanceof GeocodeError
-              ? error.message
-              : 'La recherche de lieu n’a pas abouti. Choisissez une zone dans la liste.',
-        })
-      } finally {
-        if (sequence === lieuSequence) set({ lieuxLoading: false })
-      }
-    },
-
-    async loadAutour(lieu, options = {}) {
-      const [lon, lat] = lieu.center
-      const zoneKey = `autour:${lon.toFixed(4)},${lat.toFixed(4)}`
-      const force = options.force ?? false
-      if (force) {
-        const db = await baseOuverte()
-        if (db) await db.deleteZone(zoneKey)
-      }
-      set({ lieux: [], lieuError: null, lieuxVides: false })
-      await loadFromOverpass(
-        zoneKey,
-        `Autour de ${lieu.label}`,
-        buildAroundQuery(lieu.center, RAYON_AUTOUR_METERS),
-        force,
-      )
-    },
-
-    async rafraichirZone() {
-      const { zoneKey, zoneLabel } = get()
-      if (!zoneKey) return
-      // Une démonstration n'a pas de source à rafraîchir : elle se rejoue
-      // ou se quitte, elle ne se recharge pas.
-      if (get().demonstration) return
-      if (zoneKey.startsWith('ref:')) {
-        if (zoneLabel) await get().loadRef(zoneLabel, { force: true })
-        return
-      }
-      if (zoneKey.startsWith('autour:')) {
-        // La clé porte le centre de la recherche, précisément pour qu'on
-        // puisse la rejouer sans avoir gardé le lieu d'origine.
-        const [lon, lat] = zoneKey
-          .slice('autour:'.length)
-          .split(',')
-          .map(Number)
-        if (lon === undefined || lat === undefined) return
-        if (!Number.isFinite(lon) || !Number.isFinite(lat)) return
-        await get().loadAutour(
-          {
-            label: (zoneLabel ?? '').replace(/^Autour de /, ''),
-            contexte: null,
-            center: [lon, lat],
-          },
-          { force: true },
-        )
-        return
-      }
-      await get().loadZone(zoneKey, { force: true })
-    },
-
     async basculerObjectif(id) {
       const actuels = get().objectifs
       const objectifs = actuels.includes(id)
@@ -1390,16 +1044,6 @@ export const useAppStore = create<AppState>()((set, get) => {
       )
       if (!itineraire || !matching) return null
       return resumeObjectif(itineraire, matching.samples, STEP_METERS)
-    },
-
-    effacerLieux() {
-      lieuSequence += 1
-      set({
-        lieux: [],
-        lieuError: null,
-        lieuxVides: false,
-        lieuxLoading: false,
-      })
     },
 
     /*
@@ -1626,6 +1270,22 @@ export const useAppStore = create<AppState>()((set, get) => {
       }
       await recompute()
     },
+
+    /*
+      La zone (issue #155, quatrième tranche).
+
+      Elle vient en premier parce que le démarrage l'appelle : `init`
+      redonne la dernière zone, et `mergeLocalBoucles` en fait partie.
+    */
+    ...trancheZone({
+      set,
+      etat: () => get(),
+      baseOuverte,
+      persistLastZone,
+      recompute,
+      setItineraries,
+      sortirDeLaDemonstration: () => sortirDeLaDemonstration(get),
+    }),
 
     ...trancheImport({
       set,

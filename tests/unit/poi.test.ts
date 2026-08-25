@@ -60,7 +60,9 @@ describe('buildPoiQuery', () => {
     expect(q).toContain('[out:json]')
     // « nwr » : sans ça, les refuges cartographiés en polygone sont invisibles.
     expect(q).toContain('nwr[')
-    expect(q).toContain('out center')
+    // `meta` depuis #285 : sans lui, aucune date de relevé ne revient, et
+    // « annoncé ouvert Mo-Sa 08:00-19:00 » reste impossible à peser.
+    expect(q).toContain('out meta center')
     expect(q).toMatch(/\(45\.38\d+,4\.48\d+,45\.44\d+,4\.54\d+\)/)
   })
 
@@ -126,6 +128,9 @@ describe('parsePoiResponse', () => {
       drinkingWater: null,
       seasonal: false,
       spring: false,
+      // Ce fixture n'a pas d'horodatage : `null`, jamais la date du jour
+      // (issue #285).
+      osmUpdatedAt: null,
     })
   })
 

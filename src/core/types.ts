@@ -242,6 +242,18 @@ export interface PoiDetails {
   seasonal: boolean
   /** Source naturelle, par opposition à une fontaine aménagée. */
   spring: boolean
+  /**
+   * Dernière modification du point dans OpenStreetMap (issue #285).
+   *
+   * C'est ce qui rend une déclaration pesable : « annoncé ouvert Mo-Sa
+   * 08:00-19:00 » ne veut pas la même chose selon qu'il a été relevé le mois
+   * dernier ou en 2019.
+   *
+   * Optionnel et `null`-able : les réponses déjà en cache n'en ont pas, et
+   * elles doivent continuer à s'afficher — sans date plutôt qu'avec celle du
+   * jour, qui ferait passer un vieux relevé pour frais.
+   */
+  osmUpdatedAt?: string | null
 }
 
 export interface PointOfInterest {

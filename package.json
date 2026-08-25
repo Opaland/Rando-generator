@@ -10,6 +10,7 @@
     "lint": "eslint .",
     "listes": "node scripts/listes-jumelles.mjs",
     "textes": "node scripts/filtres-annonces.mjs",
+    "couverture-village": "node scripts/couverture-village.mjs",
     "typecheck": "tsc -b",
     "test": "vitest run",
     "test:watch": "vitest",
