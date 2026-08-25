@@ -1,5 +1,6 @@
+import { vientDOpenStreetMap } from './provenance.ts'
 import type { GeometryGap } from './dataQuality.ts'
-import type { Itinerary, Network } from './types.ts'
+import type { Itinerary } from './types.ts'
 
 /**
  * Rendre à OpenStreetMap ce qu'on lui doit (issue #160).
@@ -20,15 +21,21 @@ import type { Itinerary, Network } from './types.ts'
  * geste reste à celui qui le fait.
  */
 
-/**
- * Les réseaux dont l'identifiant est une relation OpenStreetMap.
- *
- * `LOCAL` vient des Boucles de la Métropole de Lyon, `PERSO` du dessin de
- * l'utilisateur : leurs identifiants ne désignent rien sur osm.org, et un
- * lien vers `relation/-3` mènerait à une erreur en laissant croire que la
- * donnée vient de là.
- */
-const RESEAUX_OSM: Network[] = ['GR', 'GRP', 'PR']
+/*
+  La liste des réseaux OSM vivait ici, en dur : `['GR', 'GRP', 'PR']`.
+
+  Elle répondait à la même question que la section « Sous les pieds » de la
+  fiche — « cet itinéraire vient-il d'OpenStreetMap ? » — et les deux ne
+  s'accordaient pas. Celle-ci oubliait `INCONNU`, qui est pourtant une
+  relation OSM parfaitement réelle : seulement une dont le tag `network` ne
+  nous a rien dit. Marc, baliseur, ne pouvait donc pas aller corriger le trou
+  d'une relation mal étiquetée — c'est-à-dire exactement celles qui en ont le
+  plus besoin.
+
+  Trouvé en écrivant #317, sans le chercher : deux listes qui disent la même
+  règle ont le même trou (§4ter), et le remède est une fonction nommée appelée
+  des deux côtés — `vientDOpenStreetMap`.
+*/
 
 /**
  * Zoom du cadrage sur l'interruption.
@@ -64,7 +71,7 @@ export function lienOpenStreetMap(
   itinerary: Itinerary,
   gaps: GeometryGap[],
 ): string | null {
-  if (!RESEAUX_OSM.includes(itinerary.network)) return null
+  if (!vientDOpenStreetMap(itinerary)) return null
   const base = `https://www.openstreetmap.org/relation/${String(
     itinerary.osmRelationId,
   )}`
