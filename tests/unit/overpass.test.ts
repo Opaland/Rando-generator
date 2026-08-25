@@ -11,6 +11,8 @@ import {
   fetchOverpass,
   OverpassError,
   OVERPASS_MIRRORS,
+  delaiDeReessai,
+  type FetchLike,
 } from '../../src/core/overpass.ts'
 import pilatFixture from '../fixtures/overpass/pilat.json'
 
@@ -331,6 +333,110 @@ describe('fetchOverpass', () => {
     expect(fetchFn).toHaveBeenCalledTimes(2)
     expect(fetchFn.mock.calls[1]![0]).toBe(OVERPASS_MIRRORS[1])
     expect(data).toBeTruthy()
+  })
+
+  describe('quand tous les miroirs limitent (issue #319)', () => {
+    /*
+      Constat de Cédric le 25/08, en cliquant sur la Moselle :
+
+          POST https://overpass-api.de/api/interpreter 429 (Too Many Requests)
+
+      et à l'écran : « Impossible de joindre les serveurs… ils sont
+      **peut-être** surchargés ».
+
+      Le serveur a répondu, et précisément. Dire « impossible de joindre »
+      envoie quelqu'un chercher son réseau alors que le problème est chez
+      nous ; dire « peut-être » d'une chose qu'on nous a écrite en toutes
+      lettres, c'est deviner à côté d'une information exacte.
+
+      C'est la famille de #283 dans l'autre sens : là, un échec passait pour
+      une zone vide ; ici, une réponse précise passe pour une absence de
+      réponse.
+    */
+    const limite = (entetes?: Record<string, string>) =>
+      new Response('rate limited', {
+        status: 429,
+        ...(entetes ? { headers: entetes } : {}),
+      })
+
+    /*
+      `catch` rendrait une union `OverpassResponse | Error` : le type dirait
+      « peut-être une réponse » là où le test affirme un rejet. Ce `throw`
+      final est ce qui fait la différence — un test qui lit un message
+      d'erreur sans avoir prouvé qu'il y a eu erreur ne prouve rien (§1bis).
+    */
+    const erreurDe = async (fetchFn: FetchLike): Promise<Error> => {
+      try {
+        await fetchOverpass('QUERY', { fetchFn })
+      } catch (e) {
+        return e as Error
+      }
+      throw new Error('attendu : un rejet, obtenu une réponse')
+    }
+
+    it('dit que c’est une limite de requêtes, pas un serveur injoignable', async () => {
+      const fetchFn = vi.fn().mockResolvedValue(limite())
+      await expect(fetchOverpass('QUERY', { fetchFn })).rejects.toThrow(
+        /limit\w* le nombre de requêtes|trop de requêtes/i,
+      )
+      const erreur = await erreurDe(fetchFn)
+      expect(erreur.message).not.toMatch(/impossible de joindre/i)
+      expect(erreur.message).not.toMatch(/peut-être/i)
+    })
+
+    it('rend le délai que le serveur donne, plutôt qu’une estimation', async () => {
+      const fetchFn = vi.fn().mockResolvedValue(limite({ 'Retry-After': '42' }))
+      const erreur = await erreurDe(fetchFn)
+      expect(erreur.message).toContain('42')
+      expect(erreur.message).not.toMatch(/quelques minutes/i)
+    })
+
+    it('ne promet aucun délai quand le serveur n’en donne pas', async () => {
+      // `Retry-After` est facultatif. Inventer « 30 secondes » serait poser
+      // un nombre que personne n'a mesuré (CLAUDE.md §2) — et se tromper
+      // dans le sens qui retape sur un serveur qui vient de dire non.
+      const fetchFn = vi.fn().mockResolvedValue(limite())
+      const erreur = await erreurDe(fetchFn)
+      expect(erreur.message).not.toMatch(/\d+\s*(secondes?|minutes?)/i)
+    })
+
+    it('écrit le délai en minutes quand il dépasse une minute', async () => {
+      // Présentation, pas calcul (§2) : « 120 secondes » se lit mal, et
+      // `Math.ceil` fait annoncer un peu plus plutôt qu'un peu moins.
+      const enMinutes = async (entete: string) =>
+        (
+          await erreurDe(
+            vi.fn().mockResolvedValue(limite({ 'Retry-After': entete })),
+          )
+        ).message
+      expect(await enMinutes('60')).toContain('1 minute')
+      expect(await enMinutes('120')).toContain('2 minutes')
+      expect(await enMinutes('61')).toContain('2 minutes')
+    })
+
+    it('ignore un Retry-After qui n’est pas un nombre de secondes', () => {
+      /*
+        La RFC 9110 autorise aussi une date HTTP. La comparer à l'horloge du
+        navigateur rendrait un délai faux dès que celle-ci dérive — et une
+        horloge en avance rendrait un délai négatif. Ne rien dire est exact.
+      */
+      expect(delaiDeReessai('Wed, 21 Oct 2026 07:28:00 GMT')).toBeNull()
+      expect(delaiDeReessai(null)).toBeNull()
+      expect(delaiDeReessai('0')).toBeNull()
+      expect(delaiDeReessai(' 42 ')).toBe(42)
+    })
+
+    it('laisse la main à un miroir qui répond, comme avant', async () => {
+      // La limite d'un miroir n'est pas celle de l'autre : le repli reste la
+      // première réponse, et l'erreur la dernière.
+      const fetchFn = vi
+        .fn()
+        .mockResolvedValueOnce(limite())
+        .mockResolvedValueOnce(okResponse())
+      const data = await fetchOverpass('QUERY', { fetchFn })
+      expect(data).toBeTruthy()
+      expect(fetchFn).toHaveBeenCalledTimes(2)
+    })
   })
 
   it('bascule aussi sur réponse HTTP non-200', async () => {

@@ -85,3 +85,58 @@ test('une zone qu’Overpass n’arrive pas à rendre le dit, au lieu de se dire
   // arrive pas » n'est pas un miroir qui a réussi.
   expect(appels).toBe(2)
 })
+
+/**
+ * Un miroir qui limite a répondu, et précisément (issue #319).
+ *
+ * Le 25/08, un clic sur la Moselle rendait « Impossible de joindre les
+ * serveurs… ils sont **peut-être** surchargés », avec dans la console :
+ *
+ *     POST https://overpass-api.de/api/interpreter 429 (Too Many Requests)
+ *
+ * C'est #283 dans l'autre sens : là un échec passait pour une zone vide, ici
+ * une réponse exacte passe pour une absence de réponse. Le coût est le même —
+ * on envoie chercher son réseau quelqu'un dont le réseau va très bien.
+ *
+ * Ce test regarde l'écran, pas la fonction : le message peut être juste dans
+ * `overpass.ts` et n'arriver nulle part.
+ */
+test('une limite de requêtes se dit comme telle, avec le délai du serveur', async ({
+  page,
+}) => {
+  await mockExternalNetwork(page)
+  await page.route('**/api/interpreter', (route) =>
+    route.fulfill({
+      status: 429,
+      headers: {
+        'Retry-After': '42',
+        /*
+          Sans cet en-tête, le navigateur **cache** `Retry-After` : il n'est
+          pas dans la liste sûre du CORS, et une réponse d'un autre domaine
+          n'expose que celle-là. Mesuré ici le 25/08 — le test rendait le
+          message sans délai alors que le serveur en donnait un.
+
+          C'est donc une condition du serveur, pas du code : Overpass doit
+          l'exposer pour que le délai s'affiche. Quand il ne le fait pas, le
+          message dit qu'il ne sait pas — et c'est le chemin ordinaire.
+        */
+        'Access-Control-Expose-Headers': 'Retry-After',
+      },
+      body: 'rate limited',
+    }),
+  )
+  await page.goto('/')
+
+  await page.getByTestId('zone-moselle').click()
+
+  const erreur = page.getByTestId('zone-error')
+  await expect(erreur).toBeVisible({ timeout: 20_000 })
+  await expect(
+    erreur,
+    'un serveur qui répond « trop de requêtes » est présenté comme injoignable',
+  ).not.toContainText(/impossible de joindre/i)
+  await expect(erreur).toContainText(/limitent le nombre de requêtes/i)
+  // Le délai vient du serveur : il est affiché, plutôt que remplacé par un
+  // « quelques minutes » qui ne mesure rien.
+  await expect(erreur).toContainText('42')
+})
