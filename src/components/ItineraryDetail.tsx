@@ -16,6 +16,7 @@ import {
 import { NETWORK_BADGES } from '../lib/networkDisplay.ts'
 import { decrireBalisage } from '../core/balisage.ts'
 import { partsDeRevetement } from '../core/revetement.ts'
+import { dateDeReleve, declareQuelqueChose } from '../core/releveOsm.ts'
 import { lienSortant } from '../core/lienSortant.ts'
 import { ecartAuParcours, phraseDEcart } from '../core/ecartAuParcours.ts'
 import { ORDRE_TERRAIN } from '../core/legende.ts'
@@ -605,6 +606,7 @@ export function ItineraryDetail() {
                 openingHours,
                 operator,
                 elevation,
+                osmUpdatedAt,
               } = poi.details
               const facts = [
                 `${formatDetour(poi.detourMeters)} de détour`,
@@ -624,6 +626,23 @@ export function ItineraryDetail() {
                 elevation && `${elevation} m`,
                 operator,
                 phone,
+                /*
+                  La date de relevé (issue #285), et seulement quand le point
+                  déclare quelque chose à juger.
+
+                  « annoncé ouvert Mo-Sa 08:00-19:00 » ne veut pas la même
+                  chose selon qu'il a été relevé le mois dernier ou en 2019 :
+                  c'est elle qui rend le doute proportionné, et qui décide
+                  qu'on téléphone avant de descendre au village.
+
+                  Pas sur un point qui n'annonce rien : « 250 m de détour —
+                  relevé le 12/03/2019 » n'apprend rien à personne, et la
+                  date deviendrait le bruit qui empêche de la voir là où
+                  elle sert.
+                */
+                declareQuelqueChose(poi.details)
+                  ? dateDeReleve(osmUpdatedAt)
+                  : null,
               ].filter(Boolean)
               return (
                 <li key={poi.id} className={styles.poiEntry}>
