@@ -440,3 +440,62 @@ pas à ajouter par réflexe.
 **Ce qui compte le plus, et qui est tenu :** l'application ne lui dira jamais
 qu'il n'y a pas d'eau. Trois formulations sont interdites par le test, et
 l'avertissement est écrit sous la liste plutôt que laissé à deviner.
+
+
+---
+
+## Sprint 6 — Cent sorties restent lisibles
+
+**#175 était déjà implémentée** — recherche, tri, groupement par année,
+plafond par année avec un bouton pour le lever. Ce qui manquait, c'est la
+**vérification que l'issue nomme** : « retrouver une sortie précise parmi
+huit cents, en moins de trente secondes, sans faire défiler la liste
+entière ».
+
+`historique.spec.ts` **citait cette phrase dans son en-tête** et mesurait
+quarante sorties. Quarante tiennent dans une liste qu'on déroule ; huit
+cents sont le cas que Karim a apporté avec son archive Garmin, et celui pour
+lequel l'issue existe. Un test qui cite un nombre et en éprouve un autre
+affirme plus qu'il ne mesure.
+
+### Deux tentatives pour obtenir une sonde qui discrimine
+
+**La première** étalait cent sorties sur huit ans. Elle passait — et elle
+passait toujours en retirant complètement le rendu par fenêtre. L'année
+ouverte n'en portait que cent, sous le plafond de deux cents : l'assertion
+mesurait le **repli des années**, pas la fenêtre.
+
+**La seconde** charge l'année ouverte à quatre cents, ce qui est aussi le
+cas réel — quelqu'un qui enregistre tout ne répartit pas ses sorties
+également sur huit ans. Vérifiée rouge en élargissant la fenêtre :
+
+```
+Error: 400 lignes dans le DOM pour une année de quatre cents sorties :
+la fenêtre ne tient pas
+```
+
+Elle garde en plus que le plafond est **annoncé** : sans le bouton de reste,
+deux cents sorties disparaîtraient sans que rien ne le dise.
+
+### Ce que la mesure a trouvé
+
+**Rien.** L'implémentation tient à huit cents : import en quelques secondes,
+recherche instantanée, DOM borné, plafond annoncé. C'est un résultat, pas un
+non-événement — l'issue demandait une vérification, elle l'a.
+
+### Revue — Karim, 41 ans, 800 activités Garmin
+
+Il dépose son archive. Le compte monte à 801, l'année en cours s'ouvre, les
+autres sont repliées avec leur nombre. Il tape « perdrix », la sortie de
+2022 apparaît sans qu'il ait rien déplié.
+
+**Ce qu'il ne peut toujours pas faire :** chercher par lieu. L'issue le
+demande — « rechercher par nom de fichier **et par lieu** » — et seule la
+première moitié existe. Ses fichiers Garmin s'appellent
+`activity_18274639.gpx` : le nom ne lui dit rien, et c'est précisément le
+cas d'usage qui a motivé l'issue.
+
+C'est une vraie lacune, et elle demande de savoir *où* est passée une trace
+— donc de la rapprocher d'une commune, ce que l'application ne fait nulle
+part aujourd'hui. À ouvrir séparément plutôt qu'à bâcler : #175 est fermée
+sur ce qu'elle a livré, la recherche par lieu ne l'est pas.
