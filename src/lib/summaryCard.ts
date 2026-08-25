@@ -4,8 +4,8 @@ import { ENCRE, GRIS_VERT, PAPIER } from './couleursPartagees.ts'
 import type { Summary } from '../core/summary.ts'
 
 /** Format des cartes d'aperçu des réseaux sociaux (1,91:1). */
-export const CARD_WIDTH = 1_200
-export const CARD_HEIGHT = 630
+const CARD_WIDTH = 1_200
+const CARD_HEIGHT = 630
 
 const FOND = PAPIER
 const GRIS = GRIS_VERT
@@ -31,7 +31,7 @@ function anneesTexte(period: { from: string; to: string }): string {
  * quelqu'un — une image faite pour être partagée ne doit pas trahir ce que
  * l'application promet de garder.
  */
-export function drawSummaryCard(
+function drawSummaryCard(
   ctx: CanvasRenderingContext2D,
   summary: Summary,
 ): void {

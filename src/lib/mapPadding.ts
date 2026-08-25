@@ -20,7 +20,7 @@ export interface Rect {
  * Le seuil est délibérément haut : entre les deux dispositions il n'y a pas
  * de cas intermédiaire, et mieux vaut ne rien réserver que réserver à tort.
  */
-export const PART_LARGEUR_GENANTE = 0.8
+const PART_LARGEUR_GENANTE = 0.8
 
 /*
   Une piste essayée le 24/08, et écartée — parce qu'aucun test ne pouvait la

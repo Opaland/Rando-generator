@@ -14,9 +14,9 @@ export class ElevationError extends Error {
  * fond de carte Plan IGN v2) : calcul altimétrique le long d'une polyligne.
  * https://geoservices.ign.fr/documentation/services/api-et-services-ogc/calcul-altimetrique-rest
  */
-export const ELEVATION_ENDPOINT =
+const ELEVATION_ENDPOINT =
   'https://data.geopf.fr/altimetrie/1.0/calcul/alti/rest/elevationLine.json'
-export const ELEVATION_RESOURCE = 'ign_rge_alti_wld'
+const ELEVATION_RESOURCE = 'ign_rge_alti_wld'
 
 /** Nombre max de points envoyés au service (au-delà, sous-échantillonnage). */
 export const MAX_ELEVATION_POINTS = 100
@@ -30,7 +30,7 @@ export const MAX_ELEVATION_POINTS = 100
  * écrite une fois et refaite ailleurs ; c'est ainsi que l'axe des distances a
  * fini par mesurer autre chose que le tracé (CLAUDE.md §4).
  */
-export function indicesEchantillons(
+function indicesEchantillons(
   nbPoints: number,
   maxPoints: number,
 ): number[] {
@@ -67,7 +67,7 @@ export function downsample(coords: LonLat[], maxPoints: number): LonLat[] {
  * le matching mesure en parcourant la géométrie complète. Deux nombres pour
  * la même chose.
  */
-export function distancesCumulees(coords: LonLat[]): number[] {
+function distancesCumulees(coords: LonLat[]): number[] {
   const cumul: number[] = [0]
   for (let i = 1; i < coords.length; i++) {
     cumul.push(
@@ -325,7 +325,7 @@ export function pointAtDistance(
  * 4 545 m sur 450 km. Ce nombre décide de ce qu'on peut affirmer d'une
  * altitude lue entre deux relevés.
  */
-export function resolutionProfil(profile: ElevationProfile): number | null {
+function resolutionProfil(profile: ElevationProfile): number | null {
   const n = profile.distances.length
   if (n < 2) return null
   const fin = profile.distances[n - 1] ?? 0
@@ -347,7 +347,7 @@ export function resolutionProfil(profile: ElevationProfile): number | null {
  * noyé. Écarté aussi : une fraction de la longueur, qui aurait dit la même
  * chose pour un sentier de 3 km et pour un GR de 400.
  */
-export const RESOLUTION_GROSSIERE_METRES = 500
+const RESOLUTION_GROSSIERE_METRES = 500
 
 /**
  * Ce qu'on écrit sous le profil quand ses relevés sont trop espacés pour

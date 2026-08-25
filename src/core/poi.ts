@@ -1,4 +1,5 @@
 import { fetchOverpass, type FetchOverpassOptions } from './overpass.ts'
+import { lienSortant } from './lienSortant.ts'
 import type { LonLat, PoiDetails, PoiKind, PointOfInterest } from './types.ts'
 
 /**
@@ -233,7 +234,9 @@ function trimmed(value: string | undefined): string | null {
 
 function httpUrl(value: string | undefined): string | null {
   const url = trimmed(value)
-  return url && /^https?:\/\//i.test(url) ? url : null
+  // Règle nommée dans `lienSortant.ts` : elle était recopiée ici et dans
+  // `boucles.ts`, et manquait à l'import de sauvegarde (revue du 25/08).
+  return lienSortant(url)
 }
 
 /**

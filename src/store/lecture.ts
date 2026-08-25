@@ -67,7 +67,7 @@ export async function parseTraceFile(file: File): Promise<ParsedGpx> {
  * Nom de fichier lisible pour une entrée d'archive : sans son dossier, et
  * sans le `.gz` d'un `.gpx.gz` puisque le contenu, lui, est décompressé.
  */
-export function nomDEntree(chemin: string): string {
+function nomDEntree(chemin: string): string {
   const feuille = chemin.slice(chemin.lastIndexOf('/') + 1)
   return feuille.toLowerCase().endsWith('.gz') ? feuille.slice(0, -3) : feuille
 }

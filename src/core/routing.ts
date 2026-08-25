@@ -19,10 +19,10 @@ import type { Itinerary, LonLat } from './types.ts'
  * même nœud sont identiques, mais un arrondi d'export suffirait sinon à
  * couper le réseau en deux et à rendre tout trajet impossible.
  */
-export const SNAP_PRECISION_DEG = 1e-5
+const SNAP_PRECISION_DEG = 1e-5
 
 /** Distance maximale par défaut entre un clic et le réseau, en mètres. */
-export const DEFAULT_SNAP_METERS = 150
+const DEFAULT_SNAP_METERS = 150
 
 export interface RoutingEdge {
   to: string

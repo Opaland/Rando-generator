@@ -23,7 +23,7 @@ export class GeocodeError extends Error {
   }
 }
 
-export const GEOCODE_URL = 'https://api-adresse.data.gouv.fr/search/'
+const GEOCODE_URL = 'https://api-adresse.data.gouv.fr/search/'
 
 /** Nombre de propositions : assez pour lever une ambiguïté, pas une liste. */
 const LIMITE = 5

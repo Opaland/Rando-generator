@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { animatedValue } from '../core/animation.ts'
 
 /** Même durée que la barre de progression (ProgressBalise.module.css). */
-export const COUNT_UP_MS = 300
+const COUNT_UP_MS = 300
 
 /**
  * Fait rattraper au chiffre le mouvement de la barre qui l'accompagne.

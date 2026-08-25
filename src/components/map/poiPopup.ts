@@ -26,5 +26,15 @@ export function poiPopupHtml(props: PoiPopupProps | undefined): string {
   if (props?.name) {
     return `${titre}<br><span>${escapeHtml(kindLabel)}${capacite}</span>`
   }
-  return capacite ? `${titre}<br><span>${kindLabel}${capacite}</span>` : titre
+  // `escapeHtml` des deux côtés, alors que `kindLabel` vient d'une table
+  // interne et ne peut rien contenir de dangereux aujourd'hui.
+  //
+  // C'est l'asymétrie qui était le défaut : la branche du dessus l'échappait,
+  // celle-ci non. Rien ne signalait laquelle avait raison, et la prochaine
+  // valeur ajoutée à la table aurait hérité de la mauvaise moitié. Une règle
+  // qui ne vaut que dans un cas sur deux n'est pas une règle (revue globale
+  // du 25/08).
+  return capacite
+    ? `${titre}<br><span>${escapeHtml(kindLabel)}${capacite}</span>`
+    : titre
 }

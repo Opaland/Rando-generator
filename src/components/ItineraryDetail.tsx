@@ -11,6 +11,7 @@ import { POI_COLORS, POI_LABELS, POI_OVERNIGHT, mentionEau } from '../lib/poiDis
 import { NETWORK_BADGES } from '../lib/networkDisplay.ts'
 import { decrireBalisage } from '../core/balisage.ts'
 import { partsDeRevetement } from '../core/revetement.ts'
+import { lienSortant } from '../core/lienSortant.ts'
 import { ecartAuParcours, phraseDEcart } from '../core/ecartAuParcours.ts'
 import { ORDRE_TERRAIN } from '../core/legende.ts'
 import { TERRAIN_LABELS } from '../lib/revetementDisplay.ts'
@@ -84,6 +85,7 @@ export function ItineraryDetail() {
   if (!itin) return null
 
   const balisage = decrireBalisage(itin.osmcSymbol ?? undefined)
+  const lienDuProducteur = lienSortant(itin.details?.lienWeb)
   const ecart =
     userPosition === null
       ? null
@@ -317,14 +319,25 @@ export function ItineraryDetail() {
           {itin.details.descriptif && (
             <p className={styles.localDescription}>{itin.details.descriptif}</p>
           )}
-          {itin.details.lienWeb && (
+          {/*
+            `lienSortant` **au moment de poser le href**, et pas seulement à
+            la lecture des données ouvertes (revue globale du 25/08).
+
+            La garde de `boucles.ts` ne protège que ce que `boucles.ts` a lu.
+            Une sauvegarde forgée écrit dans le même champ sans repasser par
+            là, et React 18 pose alors `javascript:` tel quel dans le DOM —
+            mesuré dans un navigateur, pas supposé. C'est le §6quater : un
+            contrôle placé avant l'action ne garde que ce que l'action n'a
+            pas encore changé.
+          */}
+          {lienDuProducteur && (
             <a
               className={styles.localLink}
-              href={itin.details.lienWeb}
+              href={lienDuProducteur}
               target="_blank"
               rel="noreferrer"
             >
-              {/^https?:\/\/[^?#]*\.pdf(\?|#|$)/i.test(itin.details.lienWeb)
+              {/^https?:\/\/[^?#]*\.pdf(\?|#|$)/i.test(lienDuProducteur)
                 ? 'Carte PDF du producteur'
                 : 'Fiche sur le site du producteur'}{' '}
               (lien fourni par la source, parfois obsolète) →
@@ -616,13 +629,17 @@ export function ItineraryDetail() {
                       {poi.name ?? POI_LABELS[poi.kind]}
                     </span>
                   </button>
-                  {(facts.length > 0 || website) && (
+                  {(facts.length > 0 || lienSortant(website)) && (
                     <p className={styles.poiFacts}>
                       {facts.join(' · ')}
-                      {website && (
+                      {lienSortant(website) && (
                         <>
                           {facts.length > 0 && ' · '}
-                          <a href={website} target="_blank" rel="noreferrer">
+                          <a
+                            href={lienSortant(website) ?? undefined}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
                             site
                           </a>
                         </>
