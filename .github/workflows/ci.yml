@@ -28,6 +28,8 @@ jobs:
         run: npm ci
       - name: Lint
         run: npm run lint
+      - name: Listes jumelles (le CSS et la sonde disent la même règle)
+        run: npm run listes
       - name: Typecheck
         run: npm run typecheck
       - name: Tests unitaires (couverture ≥ 90 % sur src/core)

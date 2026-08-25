@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Porte rapide avant tout commit (voir CLAUDE.md).
 #
-# Ne contient QUE ce qui tient en moins d'une minute : lint, typecheck,
+# Ne contient QUE ce qui tient en moins d'une minute : lint, listes
+# jumelles, typecheck,
 # tests unitaires. Le build, les e2e et le monkey restent dans /porte —
 # les mettre ici rendrait chaque commit insupportable, et un garde-fou
 # qu'on désactive ne garde rien.
@@ -41,6 +42,10 @@ $(printf '%s' "$log" | tail -25)"; }
 }
 
 lancer "lint"      npm run lint --silent
+# Les listes jumelles : le CSS et la sonde d'écran disent la même règle, et
+# elles avaient le même trou le 25/08 (CLAUDE.md §4ter). Le script tient en
+# une fraction de seconde, il a donc sa place ici plutôt que dans /porte.
+lancer "listes"    npm run listes --silent
 # `tsc -b` et non `tsc --noEmit` : ce dépôt utilise les références de
 # projet, et `tsc --noEmit` seul rend 0 sans rien vérifier. Mesuré : un
 # fichier délibérément cassé passait la première commande et échouait la
@@ -55,4 +60,4 @@ if [ -n "$echecs" ]; then
   exit 0
 fi
 
-jq -nc '{systemMessage:"Porte avant commit : lint, typecheck et tests unitaires au vert."}'
+jq -nc '{systemMessage:"Porte avant commit : lint, listes jumelles, typecheck et tests unitaires au vert."}'

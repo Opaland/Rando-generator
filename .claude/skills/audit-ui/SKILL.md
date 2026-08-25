@@ -1,6 +1,6 @@
 ---
 name: audit-ui
-description: Auditer l'interface de Sentiers en mesurant ce qui est peint — recouvrements, écrasements, débordements, cibles tactiles, cadrage — à trois largeurs, dans trois états et en gros texte. À lancer après un lot de mise en page, et quand quelqu'un dit « ça ne va pas » sans savoir pourquoi.
+description: Auditer l'interface de Sentiers en mesurant ce qui est peint — recouvrements, écrasements, débordements, cibles tactiles, cadrage — à trois largeurs, dans six états et en gros texte. À lancer après un lot de mise en page, et quand quelqu'un dit « ça ne va pas » sans savoir pourquoi.
 ---
 
 # Audit d'interface
@@ -45,9 +45,19 @@ npx playwright test tests/e2e/regles-d-ecran.spec.ts --workers=1
 4. **qu'est-ce qu'on ne peut pas toucher** — le plancher des cibles ;
 5. **qu'est-ce qui sort du cadre** — un débordement horizontal de page.
 
-À trois largeurs (390 tactile, 800 tactile, 1280 non), dans trois états
-(accueil, zone chargée, fiche ouverte), plus le mode gros texte aux deux
-largeurs extrêmes. Trente-six mesures.
+À trois largeurs (390 tactile, 800 tactile, 1280 non), dans **six** états
+— accueil, zone chargée, fiche ouverte, mode simple, zone sans itinéraire, et
+**filtres ouverts** — plus le mode gros texte aux deux largeurs extrêmes.
+
+Le sixième est arrivé le 25/08 par le même chemin que le quatrième : en
+cherchant ce que les autres ne montraient pas. Le panneau « Trouver une
+sortie » est un `<details>` **replié par défaut** — aucun état ne l'ouvrait,
+donc aucune de ses seize commandes n'était mesurée. **Ce qui est replié par
+défaut est ce qu'une sonde oublie par défaut.**
+
+Et la question 4 n'interrogeait ni `select`, ni `input` hors `range`, ni
+`textarea` — le même trou que la liste du CSS, qu'elle recopiait sans le
+savoir. C'est le §4ter, et `npm run listes` le garde désormais.
 
 Les messages d'échec portent les chiffres : les lire, ne pas les résumer.
 

@@ -54,7 +54,7 @@ passer pour une raison qu'on n'a pas voulue n'est pas une assertion.**
 
 La première version des règles d'écran n'auscultait que l'écran d'accueil.
 Une injection remettant le profil écrasé passait au vert — le profil n'existe
-pas encore à ce moment-là. Élargie à trois états, la même sonde a trouvé du
+pas encore à ce moment-là. Élargie aux états, la même sonde a trouvé du
 neuf le jour même.
 
 Avant de dire « couvert », demander : **dans quel état, à quelle largeur, avec
