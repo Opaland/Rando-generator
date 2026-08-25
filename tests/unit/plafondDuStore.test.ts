@@ -45,9 +45,15 @@ const fichiers: Record<string, string> = import.meta.glob<string>(
  *
  * `appStore.ts` reste le plus gros de loin : c'est ce qu'il reste à
  * découper, et le plafond dit à quelle vitesse on accepte que ça traîne.
+ *
+ * **Il a baissé le 25/08**, de 1 750 à 1 450, quand la zone est sortie en
+ * quatrième tranche : 1 736 lignes avant, 1 400 après. Un plafond qu'on ne
+ * redescend pas après un découpage ne garde plus rien — il autorise à
+ * reprendre exactement ce qu'on vient de rendre.
  */
 const PLAFONDS: Record<string, number> = {
-  'appStore.ts': 1_750,
+  'appStore.ts': 1_450,
+  'trancheZone.ts': 540,
   'trancheImport.ts': 480,
   'enregistrementSlice.ts': 370,
   'trancheTrace.ts': 360,
