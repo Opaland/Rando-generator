@@ -11,6 +11,8 @@ import { POI_COLORS, POI_LABELS, POI_OVERNIGHT, mentionEau } from '../lib/poiDis
 import { NETWORK_BADGES } from '../lib/networkDisplay.ts'
 import { decrireBalisage } from '../core/balisage.ts'
 import { partsDeRevetement } from '../core/revetement.ts'
+import { lienSortant } from '../core/lienSortant.ts'
+import { ecartAuParcours, phraseDEcart } from '../core/ecartAuParcours.ts'
 import { ORDRE_TERRAIN } from '../core/legende.ts'
 import { TERRAIN_LABELS } from '../lib/revetementDisplay.ts'
 import { elevationStats } from '../core/elevation.ts'
@@ -70,6 +72,7 @@ export function ItineraryDetail() {
   const poisSource = useAppStore((s) => s.poisSource)
   const poisRecuperesLe = useAppStore((s) => s.poisRecuperesLe)
   const view3D = useAppStore((s) => s.view3D)
+  const userPosition = useAppStore((s) => s.userPosition)
   const closeItineraryDetail = useAppStore((s) => s.closeItineraryDetail)
   const toggleView3D = useAppStore((s) => s.toggleView3D)
   const focusOn = useAppStore((s) => s.focusOn)
@@ -82,6 +85,11 @@ export function ItineraryDetail() {
   if (!itin) return null
 
   const balisage = decrireBalisage(itin.osmcSymbol ?? undefined)
+  const lienDuProducteur = lienSortant(itin.details?.lienWeb)
+  const ecart =
+    userPosition === null
+      ? null
+      : ecartAuParcours([userPosition.lon, userPosition.lat], itin)
   /*
     Les familles réellement présentes, dans l'ordre de la charte, et sans
     celles qui valent zéro : une ligne « Stabilisé : 0 % » occupe la fiche
@@ -311,14 +319,25 @@ export function ItineraryDetail() {
           {itin.details.descriptif && (
             <p className={styles.localDescription}>{itin.details.descriptif}</p>
           )}
-          {itin.details.lienWeb && (
+          {/*
+            `lienSortant` **au moment de poser le href**, et pas seulement à
+            la lecture des données ouvertes (revue globale du 25/08).
+
+            La garde de `boucles.ts` ne protège que ce que `boucles.ts` a lu.
+            Une sauvegarde forgée écrit dans le même champ sans repasser par
+            là, et React 18 pose alors `javascript:` tel quel dans le DOM —
+            mesuré dans un navigateur, pas supposé. C'est le §6quater : un
+            contrôle placé avant l'action ne garde que ce que l'action n'a
+            pas encore changé.
+          */}
+          {lienDuProducteur && (
             <a
               className={styles.localLink}
-              href={itin.details.lienWeb}
+              href={lienDuProducteur}
               target="_blank"
               rel="noreferrer"
             >
-              {/^https?:\/\/[^?#]*\.pdf(\?|#|$)/i.test(itin.details.lienWeb)
+              {/^https?:\/\/[^?#]*\.pdf(\?|#|$)/i.test(lienDuProducteur)
                 ? 'Carte PDF du producteur'
                 : 'Fiche sur le site du producteur'}{' '}
               (lien fourni par la source, parfois obsolète) →
@@ -341,6 +360,21 @@ export function ItineraryDetail() {
         cas limite se juge à l'œil, sur des nombres — plutôt que par un seuil
         qu'il aurait fallu inventer (§2).
       */}
+      {/*
+        Où l'on est par rapport à ce parcours (issue #154).
+
+        Affiché en permanence quand la position est connue, sans seuil ni
+        clignotement : c'est un constat, pas une alerte. L'issue interdit
+        nommément d'en faire un dispositif de sécurité — Sentiers est un
+        carnet, pas un GPS de secours, et quelqu'un qui s'y fierait en
+        montagne le paierait.
+      */}
+      {ecart !== null && (
+        <p className={styles.hint} data-testid="detail-ecart">
+          {phraseDEcart(ecart, itin)}
+        </p>
+      )}
+
       {partsTerrain.length > 0 && (
         <section className={styles.section} data-testid="detail-sol">
           <h4 className={styles.sectionTitle}>Sous les pieds</h4>
@@ -595,13 +629,17 @@ export function ItineraryDetail() {
                       {poi.name ?? POI_LABELS[poi.kind]}
                     </span>
                   </button>
-                  {(facts.length > 0 || website) && (
+                  {(facts.length > 0 || lienSortant(website)) && (
                     <p className={styles.poiFacts}>
                       {facts.join(' · ')}
-                      {website && (
+                      {lienSortant(website) && (
                         <>
                           {facts.length > 0 && ' · '}
-                          <a href={website} target="_blank" rel="noreferrer">
+                          <a
+                            href={lienSortant(website) ?? undefined}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
                             site
                           </a>
                         </>

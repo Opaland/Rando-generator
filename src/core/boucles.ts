@@ -1,5 +1,6 @@
 import { polylineLengthMeters } from './sampling.ts'
 import type { Itinerary, LonLat, TrailWay } from './types.ts'
+import { lienSortant } from './lienSortant.ts'
 
 /**
  * Boucles de randonnée locales issues de l'open data des collectivités —
@@ -9,7 +10,7 @@ import type { Itinerary, LonLat, TrailWay } from './types.ts'
  */
 
 /** Producteur de la donnée, pour l'attribution obligatoire (LO 2.0). */
-export const BOUCLES_SOURCE = 'Métropole de Lyon'
+const BOUCLES_SOURCE = 'Métropole de Lyon'
 
 /**
  * Ids hors de toute plage réelle : les relations OSM sont ~2×10⁷, les ways
@@ -30,10 +31,13 @@ function asStringOrNull(value: unknown): string | null {
   return typeof value === 'string' && value.trim() !== '' ? value.trim() : null
 }
 
+/**
+ * La règle vit dans `core/lienSortant.ts` depuis la revue globale du 25/08 :
+ * elle était recopiée ici et dans `poi.ts`, et **absente** de l'import de
+ * sauvegarde — un trou structurel, pas un oubli. Voir l'en-tête de ce module.
+ */
 function asHttpUrlOrNull(value: unknown): string | null {
-  const text = asStringOrNull(value)
-  if (!text) return null
-  return /^https?:\/\//i.test(text) ? text : null
+  return lienSortant(asStringOrNull(value))
 }
 
 function isLonLat(value: unknown): value is LonLat {

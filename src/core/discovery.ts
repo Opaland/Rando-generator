@@ -15,10 +15,10 @@ import type { Itinerary, LonLat, TrailWay } from './types.ts'
  */
 
 /** Vitesse de marche à plat retenue pour l'estimation (km/h). */
-export const FLAT_KMH = 4
+const FLAT_KMH = 4
 
 /** Montée avalée en une heure (m) — règle de terrain française usuelle. */
-export const ASCENT_METERS_PER_HOUR = 300
+const ASCENT_METERS_PER_HOUR = 300
 
 /** Au-delà, la durée publiée est une coquille de saisie, pas une donnée. */
 const MAX_PUBLISHED_MINUTES = 24 * 60
@@ -27,7 +27,7 @@ const MAX_PUBLISHED_MINUTES = 24 * 60
  * Deux extrémités distantes de moins de cela sont « le même endroit » : un
  * parking, une place de village. Un circuit qui y revient est une boucle.
  */
-export const LOOP_TOLERANCE_METERS = 150
+const LOOP_TOLERANCE_METERS = 150
 
 /** Précision de regroupement des extrémités de tronçons (~1 m). */
 const NODE_PRECISION_DEG = 1e-5

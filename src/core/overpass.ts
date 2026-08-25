@@ -15,7 +15,7 @@ export const OVERPASS_MIRRORS = [
   'https://overpass.kumi.systems/api/interpreter',
 ] as const
 
-export const OVERPASS_TIMEOUT_MS = 180_000
+const OVERPASS_TIMEOUT_MS = 180_000
 
 /** Regroupement des zones dans l'UI. */
 export type ZoneGroup = 'proche' | 'aura' | 'vosges'

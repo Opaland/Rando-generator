@@ -46,7 +46,7 @@ export function formatAccuracy(meters: number): string {
  * Au-delà de ce seuil, la position est trop imprécise pour situer quelqu'un
  * sur un sentier : on l'affiche quand même, mais en le signalant.
  */
-export const POOR_ACCURACY_METERS = 50
+const POOR_ACCURACY_METERS = 50
 
 export function isAccuracyPoor(meters: number): boolean {
   return !Number.isFinite(meters) || meters > POOR_ACCURACY_METERS
