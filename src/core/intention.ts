@@ -334,7 +334,7 @@ const REGLES: Regle[] = [
 
   // 8. Le sol, par ce qui roule dessus — jamais par « accessible ».
   {
-    motif: /\bpoussettes?\b|\bfauteuils?\b|\broulants?\b|\bpoussette\b/i,
+    motif: /\bpoussettes?\b|\bfauteuils?\b|\broulants?\b/i,
     pose: (_m, f) => {
       f.sol = 'roulant'
       return 'sol'
@@ -344,9 +344,15 @@ const REGLES: Regle[] = [
 
 /** Les mots qui restent, une fois retiré ce que les règles ont consommé. */
 function motsRestants(reste: string): string[] {
+  /*
+    Pas de `.trim()` : le découpage se fait sur tout ce qui n'est pas une
+    lettre, un chiffre ou un `+`, donc les blancs sont déjà des séparateurs.
+    La vague de mutation du 25/08 l'a montré — le retirer ne cassait aucun
+    test, et une ligne qui ne fait rien finit par faire croire qu'elle fait
+    quelque chose.
+  */
   return reste
     .split(/[^\p{L}\p{N}+]+/u)
-    .map((mot) => mot.trim())
     .filter((mot) => mot !== '' && !MOTS_DE_LIAISON.has(mot))
 }
 
