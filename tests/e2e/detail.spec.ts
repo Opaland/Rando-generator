@@ -8,6 +8,7 @@ import {
   waitForMapReady,
   type MapLike,
 } from './helpers.ts'
+import pilatFixture from '../fixtures/overpass/pilat.json' with { type: 'json' }
 
 test('cliquer un tracé sur la carte ouvre la fiche détail (altimétrie + POI)', async ({
   page,
@@ -339,6 +340,67 @@ test('la pente est donnée avec la longueur sur laquelle elle est moyennée', as
   await expect(pente).toContainText('%')
   await expect(pente).toContainText('en moyenne sur')
   await expect(pente).toContainText('ne se verrait pas')
+})
+
+/**
+ * Issue #316 — « Pente : jusqu'à 822 % en moyenne sur 0 m ».
+ *
+ * Relevé par Cédric le 25/08 sur deux fiches. Le test unitaire prouve que
+ * `penteMaximale` ne rend plus ce chiffre ; celui-ci prouve que la phrase de
+ * repli arrive **jusqu'à l'écran** — une fonction peut être juste et son
+ * résultat n'être branché nulle part.
+ *
+ * Le bouchon d'altimétrie rend `800 + i * 3` : trois mètres de dénivelée
+ * entre deux points consécutifs. Il suffit donc de rapprocher les nœuds pour
+ * reproduire exactement le défaut — 3 m sur 40 cm, soit 750 %.
+ */
+test('une pente sous le pas du modèle se dit, au lieu de s’afficher en centaines de %', async ({
+  page,
+}) => {
+  const overpass = await mockExternalNetwork(page)
+
+  // 40 cm en longitude à cette latitude. Cent nœuds : le profil couvre 40 m,
+  // et aucun de ses segments n'atteint le pas de 5 m du modèle.
+  const PAS_DEGRES = 0.4 / (111_320 * Math.cos((45.45 * Math.PI) / 180))
+  const geometry = Array.from({ length: 100 }, (_, i) => ({
+    lat: 45.45,
+    lon: 4.6 + i * PAS_DEGRES,
+  }))
+  const fixture = JSON.parse(
+    JSON.stringify(pilatFixture),
+  ) as {
+    elements: {
+      id: number
+      members?: { geometry?: { lat: number; lon: number }[] }[]
+    }[]
+  }
+  const tour = fixture.elements.find((e) => e.id === 1003)
+  if (!tour?.members?.[0]) throw new Error('fixture : relation 1003 attendue')
+  tour.members[0].geometry = geometry
+  overpass.setFixture(fixture)
+  await mockElevation(page)
+  await page.goto('/')
+
+  await page.getByTestId('zone-pilat').click()
+  await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
+    timeout: 15_000,
+  })
+  await page
+    .getByTestId('itinerary-list')
+    .getByRole('button', { name: /GRP Tour du Pilat/ })
+    .click()
+  await page.getByTestId('itinerary-card-detail-link').click()
+  await expect(page.getByTestId('itinerary-detail')).toContainText('D+', {
+    timeout: 10_000,
+  })
+
+  const pente = page.getByTestId('pente-max')
+  await expect(pente).toBeVisible()
+  await expect(pente).toContainText(/pas mesurable/i)
+  // Et surtout : plus aucun pourcentage, ni le « sur 0 m » qui se réfutait
+  // lui-même.
+  await expect(pente).not.toContainText('%')
+  await expect(pente).not.toContainText('sur 0 m')
 })
 
 test('le revêtement se lit sur le profil, et le profil se zoome', async ({

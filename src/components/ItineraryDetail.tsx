@@ -134,7 +134,9 @@ export function ItineraryDetail() {
   // Pente maximale (issue #179) : Farid, en fauteuil, et Nadia et Yann avec
   // une poussette en ont besoin pour décider de s'engager. Le chiffre n'est
   // jamais rendu seul — `libellePente` porte la résolution avec lui.
-  const pente = elevationProfile ? penteMaximale(elevationProfile) : null
+  const pente = elevationProfile
+    ? libellePente(penteMaximale(elevationProfile))
+    : null
   /*
     Les bandes viennent de la géométrie complète des ways, pas du profil
     sous-échantillonné : leur axe est la même distance cumulée, elles se
@@ -561,7 +563,7 @@ export function ItineraryDetail() {
             </p>
             {pente && (
               <p className={styles.pente} data-testid="pente-max">
-                <strong>Pente</strong> : {libellePente(pente)}
+                <strong>Pente</strong> : {pente}
               </p>
             )}
           </>
