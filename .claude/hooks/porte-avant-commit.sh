@@ -46,6 +46,10 @@ lancer "lint"      npm run lint --silent
 # elles avaient le même trou le 25/08 (CLAUDE.md §4ter). Le script tient en
 # une fraction de seconde, il a donc sa place ici plutôt que dans /porte.
 lancer "listes"    npm run listes --silent
+# Le README annonce-t-il tous les filtres du panneau ? Il en oubliait deux
+# le 25/08, et aucune revue de diff ne pouvait l'attraper : le README
+# n'était dans aucun diff (CLAUDE.md §3).
+lancer "textes"    npm run textes --silent
 # `tsc -b` et non `tsc --noEmit` : ce dépôt utilise les références de
 # projet, et `tsc --noEmit` seul rend 0 sans rien vérifier. Mesuré : un
 # fichier délibérément cassé passait la première commande et échouait la
@@ -60,4 +64,4 @@ if [ -n "$echecs" ]; then
   exit 0
 fi
 
-jq -nc '{systemMessage:"Porte avant commit : lint, listes jumelles, typecheck et tests unitaires au vert."}'
+jq -nc '{systemMessage:"Porte avant commit : lint, listes jumelles, textes, typecheck et tests unitaires au vert."}'

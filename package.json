@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "listes": "node scripts/listes-jumelles.mjs",
+    "textes": "node scripts/filtres-annonces.mjs",
     "typecheck": "tsc -b",
     "test": "vitest run",
     "test:watch": "vitest",
