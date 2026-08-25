@@ -2,11 +2,18 @@ import { test, expect } from '@playwright/test'
 import { mockExternalNetwork } from './helpers.ts'
 
 /**
- * Issue #175 — « Retrouver une sortie précise parmi huit cents, en moins de
- * trente secondes, sans faire défiler la liste entière. »
+ * Issue #175 — la mécanique de l'historique à petite échelle : chercher,
+ * trier, traverser les plis.
  *
- * C'est le critère de vérification écrit dans l'issue. Il est repris ici
- * tel quel : on cherche, on trouve, sans avoir déplié quoi que ce soit.
+ * **Ce fichier citait le critère de l'issue — « parmi huit cents » — et en
+ * mesurait quarante.** Quarante tiennent dans une liste qu'on déroule ; huit
+ * cents sont le cas que Karim a apporté avec son archive Garmin, et celui
+ * pour lequel l'issue a été ouverte. Un test qui cite un nombre et en
+ * éprouve un autre affirme plus qu'il ne mesure (CLAUDE.md §1bis).
+ *
+ * Le vrai critère est éprouvé dans `historique-800.spec.ts`, qui charge
+ * l'année ouverte au-delà du plafond. Celui-ci garde ce qu'il sait garder :
+ * la recherche, le tri, et le fait qu'on trouve dans une année repliée.
  */
 function gpx(
   nom: string,
