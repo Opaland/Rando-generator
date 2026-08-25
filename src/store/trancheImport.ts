@@ -152,6 +152,15 @@ export interface DependancesImport {
 /** Les champs du store que la tranche lit et écrit sans les posséder. */
 export interface EtatPartage {
   tracks: Track[]
+  /**
+   * La zone chargée, lue au moment de l'import (issue #206).
+   *
+   * En lecture seule pour cette tranche : elle appartient au chargement de
+   * zone, qui est ailleurs. La lister ici plutôt que de la passer en
+   * paramètre rend le couplage visible quand il grandit — c'est la règle du
+   * découpage depuis la première tranche.
+   */
+  zoneLabel: string | null
   customItineraries: Itinerary[]
   selectedItineraryId: number | null
 }
@@ -227,6 +236,12 @@ export function trancheImport(deps: DependancesImport): ActionsImport {
             times: parsed.times,
             hdops: parsed.hdops,
             precisionsMetres: parsed.precisionsMetres,
+            // La zone du moment, si une zone est chargée (#206). Rien
+            // d'inventé quand il n'y en a pas : le champ reste absent
+            // plutôt que de porter « inconnue », qui se chercherait.
+            ...(deps.etat().zoneLabel
+              ? { zoneALImport: deps.etat().zoneLabel }
+              : {}),
           }
           const fingerprint = trackFingerprint(parsed.points)
           const ressembleA = knownFingerprints.get(fingerprint)

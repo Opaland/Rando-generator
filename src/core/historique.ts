@@ -74,6 +74,11 @@ export function preparerHistorique(tracks: Track[]): EntreeHistorique[] {
       cherchable: normaliser(
         [
           track.filename,
+          // La zone au moment de l'import (#206) : « PNR du Pilat » se
+          // cherche comme le nom de fichier. Absente sur les traces déjà
+          // en base, et c'est sans conséquence — une chaîne vide ne
+          // retire rien de cherchable.
+          track.zoneALImport ?? '',
           date ? date.toLocaleDateString('fr-FR') : '',
           date ? String(date.getFullYear()) : '',
         ].join(' '),
