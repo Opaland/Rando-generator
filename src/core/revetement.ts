@@ -1,5 +1,6 @@
 import { polylineLengthMeters } from './sampling.ts'
 import { distanceMeters } from './geo.ts'
+import { chainWays } from './chainage.ts'
 import type { Itinerary, LonLat } from './types.ts'
 
 /**
@@ -226,7 +227,19 @@ export function bandesDeRevetement(itinerary: Itinerary): Bande[] {
   const bandes: Bande[] = []
   let curseur = 0
   let finPrecedente: LonLat | null = null
-  for (const way of itinerary.ways) {
+  /*
+    On parcourt les tronçons **dans l'ordre de la marche** (issue #303), le
+    même que celui d'`itineraryCoords` — sans quoi les bandes retomberaient
+    sur l'ordre des membres et l'axe se remettrait à diverger. C'est une
+    géométrie, un nom, et deux appelants (§4).
+  */
+  const parId = new Map(itinerary.ways.map((w) => [w.osmWayId, w]))
+  const ordonnes = chainWays(itinerary.ways).flatMap((maillon) => {
+    const w = parId.get(maillon.wayId)
+    if (!w) return []
+    return [maillon.reversed ? { ...w, coords: [...w.coords].reverse() } : w]
+  })
+  for (const way of ordonnes) {
     /*
       Le saut d'un way au suivant compte dans l'axe (constat du 25/08 sur la
       Via Lugdunum : « les terrains sont coupés »).

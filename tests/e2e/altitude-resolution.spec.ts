@@ -30,7 +30,11 @@ function itineraireLong(longueurKm: number, nbPoints: number): unknown {
       {
         type: 'relation',
         id: 900_001,
-        tags: { route: 'hiking', name: `Long de ${String(longueurKm)} km`, ref: 'GR 999' },
+        tags: {
+          route: 'hiking',
+          name: `Long de ${String(longueurKm)} km`,
+          ref: 'GR 999',
+        },
         members: [{ type: 'way', ref: 800_001, role: '', geometry }],
       },
     ],
@@ -84,13 +88,38 @@ test('un itinéraire de 200 km annonce l’espacement de ses relevés', async ({
   await expect(note).toContainText(/col/i)
 })
 
-test('un itinéraire de 2 km n’annonce rien : ses relevés sont serrés', async ({
+test('un itinéraire court annonce ses relevés en mètres, pas en kilomètres', async ({
   page,
 }) => {
+  /*
+    Ce test disait autre chose jusqu'au 25/08 : « un itinéraire de 2 km
+    n'annonce rien, ses relevés sont serrés ». Il était vert, et pour une
+    raison que personne n'avait voulue.
+
+    Les points de jonction entre deux tronçons étaient **comptés deux fois**
+    — la fin de l'un et le début du suivant sont le même point, et
+    `itineraryCoords` les concaténait tels quels. Sur le GR 7 du fixture,
+    sept points au lieu de cinq : l'espacement calculé tombait à 390 m,
+    sous le seuil de 500, et l'avertissement se taisait.
+
+    Le chaînage d'#303 a retiré ces doublons — ils faisaient une marche de
+    zéro mètre dans l'échantillonnage et deux relevés d'altitude au même
+    endroit. Les cinq relevés restants couvrent 2 342 m, soit **585 m entre
+    deux** : l'avertissement est juste, et son silence d'avant ne l'était
+    pas.
+
+    Le cas « relevés serrés, donc silence » n'a pas disparu : il vit dans
+    `tests/unit/elevation.test.ts`, à sa place, des deux côtés du seuil. Le
+    rôle de ce fichier-ci est que la phrase **arrive à l'écran** avec le bon
+    ordre de grandeur — ici en mètres, là en kilomètres pour 200 km.
+  */
   await mockExternalNetwork(page)
   await altimetrieMockee(page)
 
   test.skip(!(await ouvrirLeProfil(page)), 'WebGL indisponible')
 
-  await expect(page.getByTestId('profil-resolution')).toHaveCount(0)
+  const note = page.getByTestId('profil-resolution')
+  await expect(note).toBeVisible()
+  await expect(note).toContainText(/relevée tous les \d+ m\b/)
+  await expect(note).not.toContainText('km')
 })
