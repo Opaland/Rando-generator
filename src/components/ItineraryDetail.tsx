@@ -23,6 +23,7 @@ import { ORDRE_TERRAIN } from '../core/legende.ts'
 import { TERRAIN_LABELS } from '../lib/revetementDisplay.ts'
 import { elevationStats } from '../core/elevation.ts'
 import { itineraryCoords } from '../core/mapdata.ts'
+import { vientDOpenStreetMap } from '../core/provenance.ts'
 import {
   situerPois,
   poisDuChemin,
@@ -95,6 +96,13 @@ export function ItineraryDetail() {
   if (!itin) return null
 
   const balisage = decrireBalisage(itin.osmcSymbol ?? undefined)
+  /*
+    D'où vient ce tracé (issue #317). La question commande deux surfaces — la
+    section « Sous les pieds » et la légende de couverture sous le profil —
+    qui citaient toutes deux OpenStreetMap sur des boucles qu'il n'a jamais
+    vues. Posée une fois, ici, plutôt que deux fois plus bas.
+  */
+  const solDecritParLaSource = vientDOpenStreetMap(itin)
   const lienDuProducteur = lienSortant(itin.details?.lienWeb)
   const ecart =
     userPosition === null
@@ -414,17 +422,43 @@ export function ItineraryDetail() {
       {partsTerrain.length > 0 && (
         <section className={styles.section} data-testid="detail-sol">
           <h4 className={styles.sectionTitle}>Sous les pieds</h4>
-          <ul className={styles.quality}>
-            {partsTerrain.map(([famille, part]) => (
-              <li key={famille}>
-                {TERRAIN_LABELS[famille]}&nbsp;: {Math.round(part * 100)} %
-              </li>
-            ))}
-          </ul>
-          <p className={styles.hint}>
-            Calculé sur la longueur, d’après ce qu’OpenStreetMap renseigne
-            chemin par chemin. « Non renseigné » ne veut pas dire « facile ».
-          </p>
+          {solDecritParLaSource ? (
+            <>
+              <ul className={styles.quality}>
+                {partsTerrain.map(([famille, part]) => (
+                  <li key={famille}>
+                    {TERRAIN_LABELS[famille]}&nbsp;: {Math.round(part * 100)} %
+                  </li>
+                ))}
+              </ul>
+              <p className={styles.hint}>
+                Calculé sur la longueur, d’après ce qu’OpenStreetMap renseigne
+                chemin par chemin. « Non renseigné » ne veut pas dire
+                « facile ».
+              </p>
+            </>
+          ) : (
+            /*
+              Ni pourcentage, ni le nom d'OpenStreetMap (issue #317).
+
+              Pas de pourcentage, parce que « non renseigné : 100 % » se lit
+              comme la mesure d'un silence, alors qu'on n'a rien demandé.
+
+              Et pas le nom non plus, même pour le nier. La première version
+              de cette phrase disait « ce n'est pas un silence
+              d'OpenStreetMap » — vrai, et inutile : le lecteur n'a jamais vu
+              l'autre phrase, et lui présenter une source pour lui dire qu'elle
+              n'y est pour rien ne fait qu'ajouter un nom qui n'a rien à faire
+              ici. C'est la sonde e2e qui l'a fait remarquer, en tombant
+              dessus.
+            */
+            <p className={styles.hint} data-testid="sol-source-muette">
+              Le jeu de données d’origine donne le tracé, pas ce qu’il y a
+              dessous. Aucun relevé du sol n’existe pour cet itinéraire — ce
+              n’est pas la même chose qu’un chemin dont on saurait qu’il n’a
+              rien de particulier.
+            </p>
+          )}
         </section>
       )}
 
@@ -567,7 +601,14 @@ export function ItineraryDetail() {
             <ElevationChart
               key={detailItineraryId}
               profile={elevationProfile}
-              bandes={bandes}
+              /*
+                Pas de bandes de revêtement quand la source ne décrit pas le
+                sol (issue #317) : elles seraient toutes « inconnu », et leur
+                légende annoncerait « Relevé dans OpenStreetMap : 0 % » sur un
+                itinéraire dont OSM n'a jamais eu connaissance. La section
+                « Sous les pieds » le dit déjà, une fois, en toutes lettres.
+              */
+              bandes={solDecritParLaSource ? bandes : []}
             />
             <p className={styles.elevationStats}>
               D+ {Math.round(stats.gain)} m · D− {Math.round(stats.loss)} m ·{' '}

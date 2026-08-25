@@ -77,4 +77,37 @@ describe('lienOpenStreetMap', () => {
       )
     }
   })
+
+  it('mène aussi vers une relation dont le réseau n’a pas pu être classé', () => {
+    /*
+      Le trou trouvé en écrivant #317. La liste des réseaux OSM était écrite
+      en dur ici — `['GR', 'GRP', 'PR']` — et oubliait `INCONNU`, qui est
+      pourtant une relation OSM parfaitement réelle : seulement une dont le
+      tag `network` ne nous a rien dit.
+
+      Ce sont précisément celles qu'un baliseur aurait le plus de raisons
+      d'aller corriger, et c'étaient les seules qu'il ne pouvait pas ouvrir.
+    */
+    const lien = lienOpenStreetMap(
+      makeItinerary(987_654, [], { network: 'INCONNU' }),
+      [],
+    )
+    expect(lien).toBe('https://www.openstreetmap.org/relation/987654')
+  })
+
+  it('ne mène nulle part depuis une boucle locale ou un tracé dessiné', () => {
+    // Leurs identifiants ne désignent rien sur osm.org : un lien vers
+    // `relation/2000000012` mènerait à une erreur, en laissant croire que la
+    // donnée vient de là. C'est le défaut d'attribution de #317, dans
+    // l'autre sens.
+    expect(
+      lienOpenStreetMap(
+        makeItinerary(2_000_000_012, [], { network: 'LOCAL' }),
+        [],
+      ),
+    ).toBeNull()
+    expect(
+      lienOpenStreetMap(makeItinerary(-3, [], { network: 'PERSO' }), []),
+    ).toBeNull()
+  })
 })
