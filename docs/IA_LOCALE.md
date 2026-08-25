@@ -105,7 +105,47 @@ sortie » propose, et exactement ce que personne ne fait.
 
 ---
 
-## 4. L'architecture, en trois pierres
+## 4. L'architecture, en trois pierres — et une pierre 0
+
+### Pierre 0 — lire la question, sans rien télécharger *(livrée le 25/08)*
+
+Cette note s'arrêtait au seuil des trois pierres parce que trois chiffres
+manquaient. C'était juste, et ça le reste. Mais elle laissait dans l'ombre ce
+qui ne demande **ni modèle, ni mesure, ni octet téléchargé** : une bonne part
+des questions qu'on pose à une application de randonnée sont déjà exprimables
+avec les filtres qui existent.
+
+« Une boucle facile de moins de 12 km, pas plus de 400 m de dénivelé, à 30 km
+de chez moi » n'a besoin d'aucun plongement. Elle a besoin qu'on la lise.
+
+`src/core/intention.ts` la lit — des règles ordonnées, aucun modèle, aucun
+appel réseau, dix-neuf tests unitaires et quatre tests d'écran. La question
+remplit les listes de « Trouver une sortie », et **ce qu'elle n'a pas compris
+s'écrit à l'écran**.
+
+Trois choix méritent d'être écrits, parce qu'ils auraient pu se faire autrement :
+
+- **« accessible » n'est pas traduit en `sol: 'roulant'`.** Le mot ne désigne
+  pas un revêtement. Nadia s'est méfiée du pictogramme parce qu'il l'a déjà
+  envoyée sur un sentier qu'elle n'a pas pu faire ; le traduire serait la
+  promesse fausse que `discovery.ts` refuse déjà de faire. « Poussette » et
+  « fauteuil », eux, disent ce qui roule ;
+- **aucun nombre n'est inventé.** Ils viennent de la question, ou de
+  constantes déjà décidées : « facile » vaut `SEUIL_FACILE_MINUTES`, parce que
+  le mot doit vouloir dire dans la recherche ce qu'il veut déjà dire dans la
+  liste (§4ter) ;
+- **« moins de 12 km » n'est pas rangé dans le palier « 10 à 20 km ».** Ce
+  palier écarterait les randonnées de trois kilomètres que personne n'a
+  exclues. Le filtre accepte des nombres libres — c'est le `<select>` qui est
+  une commodité — et il gagne une option « d'après votre phrase » tant que la
+  question le pilote, pour que le panneau montre exactement ce qui s'applique.
+
+**Et c'est ce qui rendra la pierre 1 jugeable.** Le point 3 de la section 5
+réclame « vingt questions écrites d'avance, les réponses jugées à la main ».
+Elles existent désormais, exécutables, avec un résultat connu : une recherche
+sémantique se compare à une recherche littérale, jamais au vide. Le jour où le
+modèle arrivera, la question ne sera pas « est-ce que ça marche ? » mais
+« est-ce que ça fait mieux que les règles ? ».
 
 ### Pierre 1 — la recherche sémantique, sans génération
 

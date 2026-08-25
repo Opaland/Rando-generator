@@ -243,6 +243,22 @@ boucler sur l'état final voulu.** Un `catch` dans une telle boucle n'avale pas
 une assertion — il avale une tentative, dans une convergence qui, elle, est
 assertée.
 
+**Troisième cas, 25/08, et il n'a rien à voir avec un ordre d'exécution :** la
+règle « rien ne déborde en largeur » est tombée une fois, sur un seul des six
+états, et **uniquement en suite complète**. Relancée seule, puis sur son
+fichier entier, puis avec le champ rempli d'une longue phrase, elle n'a plus
+rien trouvé — page à 1 280 px, zéro panneau en débordement.
+
+Ce n'était donc pas un ordre mais un **instant** : une photo prise avant que
+la mise en page ne se soit posée, et la charge de la suite complète est ce qui
+ouvre la fenêtre. La famille est plus large que « un test suppose un ordre » —
+c'est **toute mesure unique d'un état qui met un temps non nul à s'établir**.
+
+Et la parade ne mollit rien : un débordement réel est permanent, il survit à
+toutes les tentatives et fait échouer la convergence, chiffres compris.
+Vérifié en injectant un `min-width: 3000px` — rouge sur les six états. Ce que
+la boucle retire, c'est le seul cas où la photo avait tort.
+
 ---
 
 ## 6quater. Un contrôle qu'il faut penser à lire ne garde rien

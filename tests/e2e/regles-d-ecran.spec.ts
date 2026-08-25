@@ -377,11 +377,28 @@ for (const vue of LARGEURS) {
         page,
       }) => {
         await atteindre(page, etat, vue.tactile)
-        const debords = await debordementsEnLargeur(page)
-        expect(
-          debords,
-          `débordements en largeur : ${JSON.stringify(debords)}`,
-        ).toEqual([])
+        /*
+          On boucle sur l'état final voulu plutôt que de prendre une photo
+          (CLAUDE.md §6ter et §1bis).
+
+          Le 25/08, ce test est tombé **une fois**, sur « PC, filtres
+          ouverts », et **uniquement en suite complète** : relancé seul, puis
+          sur son fichier entier, puis avec le champ rempli d'une longue
+          phrase, il n'a plus jamais rien trouvé — page à 1 280 px, zéro
+          panneau en débordement. C'est la signature de cette famille : la
+          fenêtre ne s'ouvre que sous charge, quand une mesure tombe avant
+          que la mise en page ne se soit posée.
+
+          Ce n'est pas une assertion amollie. Un débordement **réel** est
+          permanent : il survit à toutes les tentatives et fait échouer la
+          convergence, message et chiffres compris. Ce que la boucle retire,
+          c'est le seul cas où l'ancienne version avait tort — l'instant.
+        */
+        await expect
+          .poll(async () => await debordementsEnLargeur(page), {
+            message: 'débordements en largeur qui ne se résorbent pas',
+          })
+          .toEqual([])
       })
 
       /**

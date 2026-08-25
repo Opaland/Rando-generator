@@ -629,3 +629,56 @@ qui juge avant l'action ne garde que ce que l'action n'a pas encore changé ;
 et reconstruire pendant qu'une porte tourne change l'application sous les
 tests en cours. Les deux sont désormais dans CLAUDE.md §6quater, le premier
 corrigé dans `globalSetup`.
+
+---
+
+## Ce que la matinée du 25/08 a ajouté au plan
+
+Cédric a relu l'application pendant que les sprints tournaient. Trois constats
+et quatre questions, tous instruits ; **six issues ouvertes**, parce qu'un
+travail non fini qui ne devient pas une issue disparaît du décompte au lieu
+d'être compté comme non fait.
+
+| # | ce que c'est | état |
+|---|---|---|
+| #300 | « les terrains sont coupés » — les bandes suivaient un autre axe que le profil | **mergé** |
+| #301 | « Rando Saint-Joseph => 500 m » — trois mécanismes plausibles, aucun départageable d'ici | ouvert, **bloqué sur le lien OSM** |
+| #302 | le plancher des cibles ne mesurait aucune commande de formulaire | **mergé** |
+| #303 | **trois axes de distance** pour un même itinéraire : 4 685 m, 10 931 m, et un troisième | ouvert, gros |
+| #304 | pierre 0 de l'IA — lire une question en toutes lettres | livré |
+| #305 | cinq surfaces ignorent trois fonctionnalités livrées cette semaine | ouvert |
+| #306 | vague de mutation (sprint 19, qui n'avait pas d'issue) | ouvert |
+
+### Les quatre questions, et leurs réponses mesurées
+
+- **« est-ce que j'ai les parcours des cartoguides de la FFR ? »** — Non, et
+  c'est écrit dans le README : aucune donnée FFRandonnée, aucune couche IGN
+  « Sentiers de randonnée ». Ce qu'il y a, ce sont les relations OSM
+  `route=hiking|foot|walking|pilgrimage` — la géométrie des GR/GRP/PR **telle
+  que des contributeurs l'ont saisie**. Les sources officielles ouvertes sont
+  en backlog depuis longtemps : PDIPR départementaux (#87) et API Geotrek du
+  Parc du Pilat (#88), tous deux bloqués parce que le proxy de cet
+  environnement refuse ces API.
+- **« les balisages sont à jour ? »** — À jour au sens où l'on lit ce qu'OSM
+  dit aujourd'hui (`osmc:symbol` depuis #286, avec `osmUpdatedAt` stocké). Mais
+  sur le seul fixture réel du dépôt : **une relation sur quatre** porte le
+  tag, et sa dernière modification OSM date de **2019**. La couverture réelle
+  reste la mesure bloquée d'#286.
+- **« les docs sont-elles à jour ? »** — Non. #305 en donne le tableau exact.
+- **« il faudra relire ce document et créer les issues »** — fait, et c'est ce
+  tableau.
+
+### Ce que la matinée a appris
+
+**Deux défauts, une même forme, et elle a un nom depuis aujourd'hui.**
+
+La liste des commandes plancherisées par le CSS et celle mesurée par la sonde
+d'écran étaient la même liste écrite deux fois, avec le même trou. La distance
+le long d'un itinéraire se calcule trois fois, par trois chemins qui ne sont
+pas d'accord. Ni l'un ni l'autre n'était visible dans un diff : **les deux
+fichiers ne changent jamais ensemble, et chacun paraît complet quand on le lit
+seul.**
+
+C'est CLAUDE.md §4ter, la skill `regle-jumelle`, l'agent `chasseur-de-jumeaux`,
+et surtout `scripts/listes-jumelles.mjs` — parce qu'une règle qu'il faut penser
+à relire ne garde rien (§6quater).

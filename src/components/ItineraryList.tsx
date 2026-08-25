@@ -23,6 +23,7 @@ import {
   detoursParItineraire,
   type DetoursPoi,
 } from '../core/poisDeZone.ts'
+import { lireIntention } from '../core/intention.ts'
 import { ProgressBalise } from './ProgressBalise.tsx'
 import styles from './ItineraryList.module.css'
 
@@ -90,6 +91,62 @@ const PROXIMITES: { label: string; km: number | null }[] = [
   { label: 'à moins de 50 km', km: 50 },
 ]
 
+/**
+ * Le libellé de l'option « d'après votre question ».
+ *
+ * Elle dit le nombre lu, pas un palier approchant : c'est tout l'intérêt de
+ * ne pas ranger « moins de 12 km » dans « 10 à 20 km ».
+ */
+function libelleQuestion(
+  pose: Partial<DiscoveryFilters>,
+  champ: ChampPilote,
+): string | null {
+  if (champ === 'longueur') {
+    if (pose.minKm != null && pose.maxKm != null)
+      return `${String(pose.minKm)} à ${String(pose.maxKm)} km`
+    if (pose.maxKm != null) return `moins de ${String(pose.maxKm)} km`
+    if (pose.minKm != null) return `plus de ${String(pose.minKm)} km`
+    return null
+  }
+  if (champ === 'duree')
+    return pose.maxMinutes == null
+      ? null
+      : `moins de ${String(pose.maxMinutes)} min`
+  if (champ === 'denivele')
+    return pose.maxGain == null ? null : `moins de ${String(pose.maxGain)} m`
+  return pose.maxAwayKm == null
+    ? null
+    : `à moins de ${String(pose.maxAwayKm)} km`
+}
+
+/** Les quatre listes qu'une question peut piloter. */
+const CHAMPS_PILOTES = ['longueur', 'duree', 'denivele', 'proximite'] as const
+type ChampPilote = (typeof CHAMPS_PILOTES)[number]
+
+/**
+ * Les champs de `DiscoveryFilters` derrière chaque liste.
+ *
+ * Une table plutôt que quatre `if` recopiés : la longueur en tient deux, et
+ * une garde transverse se nomme (CLAUDE.md §4).
+ */
+const CHAMPS_LIBRES = [
+  'minKm',
+  'maxKm',
+  'maxMinutes',
+  'maxGain',
+  'maxAwayKm',
+] as const
+
+const CHAMPS_DU_PILOTE: Record<
+  ChampPilote,
+  readonly (typeof CHAMPS_LIBRES)[number][]
+> = {
+  longueur: ['minKm', 'maxKm'],
+  duree: ['maxMinutes'],
+  denivele: ['maxGain'],
+  proximite: ['maxAwayKm'],
+}
+
 /** Convertit la valeur d'un <select> d'index en index sûr. */
 function toIndex(value: string, length: number): number {
   const index = Number(value)
@@ -127,6 +184,82 @@ export function ItineraryList() {
    */
   const [detourEau, setDetourEau] = useState<number | null>(null)
 
+  /**
+   * Ce qu'une question en toutes lettres a posé (pierre 0 de
+   * `docs/IA_LOCALE.md`).
+   *
+   * **Pourquoi un état à part plutôt que des index de paliers.** Les
+   * paliers de longueur sont des tranches — « 5 à 10 km », « 10 à 20 km ».
+   * « Moins de 12 km » ne rentre dans aucune : la ranger dans « 10 à 20 km »
+   * écarterait les randos de trois kilomètres que personne n'a exclues, et
+   * la ranger dans « moins de 10 km » couperait à douze. Les deux mentent.
+   *
+   * Le filtre, lui, accepte des nombres libres : c'est le `<select>` qui est
+   * une commodité, pas la donnée. La question écrit donc les nombres, et
+   * chaque `<select>` concerné gagne une option « d'après votre question »
+   * tant qu'elle le pilote — pour que le panneau montre **exactement** ce
+   * qui s'applique. Choisir un palier à la main reprend la main.
+   */
+  const [depuisQuestion, setDepuisQuestion] =
+    useState<Partial<DiscoveryFilters> | null>(null)
+  const [question, setQuestion] = useState('')
+  const [incompris, setIncompris] = useState<string[]>([])
+
+  const lancerLaQuestion = (texte: string) => {
+    const lue = lireIntention(texte)
+    if (lue.compris.length === 0) {
+      setDepuisQuestion(null)
+      setIncompris(lue.incompris)
+      return
+    }
+    /*
+      `shape` et `sol` ont des options exactes dans leurs listes : la
+      question les y pose directement. Les cinq autres sont des nombres
+      libres, qu'aucun palier ne représente forcément.
+
+      Une boucle sur la table plutôt que cinq `else if` recopiés : ils
+      disaient la même chose cinq fois, et le cinquième était de toute façon
+      inatteignable pour le vérificateur de types. `lue.filtres` part de
+      `ALL_FILTERS`, tout à `null` — seul ce qu'une règle a posé en sort.
+    */
+    setShape(lue.filtres.shape)
+    setSol(lue.filtres.sol)
+    const pose: Partial<DiscoveryFilters> = {}
+    for (const clef of CHAMPS_LIBRES) {
+      const valeur = lue.filtres[clef]
+      if (valeur !== null) pose[clef] = valeur
+    }
+    setDepuisQuestion(Object.keys(pose).length > 0 ? pose : null)
+    setIncompris(lue.incompris)
+  }
+
+  /**
+   * Rendre la main sur un champ que la question tenait.
+   *
+   * Les deux bornes de longueur partent ensemble : une question qui a posé
+   * « entre 8 et 12 km » ne laisse pas un minimum orphelin quand on choisit
+   * un palier à la main.
+   *
+   * On reconstruit l'objet à partir des clés qu'on garde, plutôt que de
+   * poser `undefined` : `exactOptionalPropertyTypes` refuse la seconde
+   * façon, et il a raison — « absent » et « présent et indéfini » ne sont
+   * pas la même chose quand on étale l'objet sur les filtres.
+   */
+  const reprendreLaMain = (champ: ChampPilote) => {
+    setDepuisQuestion((avant) => {
+      if (!avant) return avant
+      const gardees = CHAMPS_PILOTES.filter((c) => c !== champ).flatMap(
+        (c) => CHAMPS_DU_PILOTE[c],
+      )
+      const apres: Partial<DiscoveryFilters> = {}
+      for (const clef of gardees) {
+        const valeur = avant[clef]
+        if (valeur !== undefined) apres[clef] = valeur
+      }
+      return Object.keys(apres).length > 0 ? apres : null
+    })
+  }
+
   const resultById = useMemo(
     () => new Map((matching?.results ?? []).map((r) => [r.itineraryId, r])),
     [matching],
@@ -160,8 +293,19 @@ export function ItineraryList() {
       maxAwayKm: PROXIMITES[proximiteIndex]?.km ?? null,
       shape,
       sol,
+      // Ce que la question a posé l'emporte sur le palier, et seulement sur
+      // les champs qu'elle a posés : elle n'efface rien d'autre.
+      ...depuisQuestion,
     }
-  }, [longueurIndex, dureeIndex, deniveleIndex, proximiteIndex, shape, sol])
+  }, [
+    longueurIndex,
+    dureeIndex,
+    deniveleIndex,
+    proximiteIndex,
+    shape,
+    sol,
+    depuisQuestion,
+  ])
 
   const filtresActifs =
     filters.minKm !== null ||
@@ -283,6 +427,9 @@ export function ItineraryList() {
     setDeniveleIndex(0)
     setProximiteIndex(0)
     setShape('all')
+    setDepuisQuestion(null)
+    setQuestion('')
+    setIncompris([])
   }
 
   return (
@@ -344,16 +491,76 @@ export function ItineraryList() {
         <summary className={styles.discoverySummary}>
           Trouver une sortie{filtresActifs ? ' — filtres actifs' : ''}
         </summary>
+        {/*
+          La question en toutes lettres (pierre 0 de `docs/IA_LOCALE.md`).
+
+          Elle ne remplace pas les paliers, elle les remplit : ce qui est
+          compris se voit dans les listes juste en dessous, et **ce qui ne
+          l'est pas est écrit**. Un lecteur de langage naturel qui tait ce
+          qu'il a ignoré ment par omission — et sur un sentier, on suit ce
+          que l'écran dit.
+
+          Aucun modèle, aucun téléchargement, aucun appel réseau : des règles
+          de lecture, dans `src/core/intention.ts`. La recherche sémantique
+          de la note d'architecture reste devant nous, et elle se jugera
+          contre celle-ci.
+        */}
+        <form
+          className={styles.question}
+          onSubmit={(e) => {
+            e.preventDefault()
+            lancerLaQuestion(question)
+          }}
+        >
+          <label className={styles.sort}>
+            Ou dites-le en une phrase{' '}
+            <input
+              type="search"
+              data-testid="list-question"
+              placeholder="une boucle facile de moins de 10 km…"
+              value={question}
+              onChange={(e) => {
+                setQuestion(e.target.value)
+              }}
+            />
+          </label>
+          <button type="submit" data-testid="list-question-ok">
+            Appliquer
+          </button>
+        </form>
+        {incompris.length > 0 && (
+          <p className={styles.hint} data-testid="question-incompris">
+            Je n’ai pas su quoi faire de : {incompris.join(', ')}. Le reste de
+            votre phrase est dans les listes ci-dessous.
+          </p>
+        )}
         <div className={styles.discoveryGrid}>
           <label className={styles.sort}>
             Longueur{' '}
             <select
-              value={longueurIndex}
+              value={
+                libelleQuestion(depuisQuestion ?? {}, 'longueur') !== null
+                  ? 'question'
+                  : longueurIndex
+              }
               data-testid="list-length"
               onChange={(e) => {
+                reprendreLaMain('longueur')
                 setLongueurIndex(toIndex(e.target.value, LONGUEURS.length))
               }}
             >
+              {/*
+                L'option n'existe que tant que la question tient ce champ.
+                La laisser en permanence donnerait un choix qui ne veut rien
+                dire, et la retirer sans reprendre la main afficherait un
+                palier qui n'est pas celui qui s'applique.
+              */}
+              {libelleQuestion(depuisQuestion ?? {}, 'longueur') !== null && (
+                <option value="question">
+                  d’après votre phrase :{' '}
+                  {libelleQuestion(depuisQuestion ?? {}, 'longueur')}
+                </option>
+              )}
               {LONGUEURS.map((plage, index) => (
                 <option key={plage.label} value={index}>
                   {plage.label}
@@ -364,12 +571,29 @@ export function ItineraryList() {
           <label className={styles.sort}>
             Durée{' '}
             <select
-              value={dureeIndex}
+              value={
+                libelleQuestion(depuisQuestion ?? {}, 'duree') !== null
+                  ? 'question'
+                  : dureeIndex
+              }
               data-testid="list-duration"
               onChange={(e) => {
+                reprendreLaMain('duree')
                 setDureeIndex(toIndex(e.target.value, DUREES.length))
               }}
             >
+              {/*
+                L'option n'existe que tant que la question tient ce champ.
+                La laisser en permanence donnerait un choix qui ne veut rien
+                dire, et la retirer sans reprendre la main afficherait un
+                palier qui n'est pas celui qui s'applique.
+              */}
+              {libelleQuestion(depuisQuestion ?? {}, 'duree') !== null && (
+                <option value="question">
+                  d’après votre phrase :{' '}
+                  {libelleQuestion(depuisQuestion ?? {}, 'duree')}
+                </option>
+              )}
               {DUREES.map((duree, index) => (
                 <option key={duree.label} value={index}>
                   {duree.label}
@@ -380,12 +604,29 @@ export function ItineraryList() {
           <label className={styles.sort}>
             Dénivelé{' '}
             <select
-              value={deniveleIndex}
+              value={
+                libelleQuestion(depuisQuestion ?? {}, 'denivele') !== null
+                  ? 'question'
+                  : deniveleIndex
+              }
               data-testid="list-gain"
               onChange={(e) => {
+                reprendreLaMain('denivele')
                 setDeniveleIndex(toIndex(e.target.value, DENIVELES.length))
               }}
             >
+              {/*
+                L'option n'existe que tant que la question tient ce champ.
+                La laisser en permanence donnerait un choix qui ne veut rien
+                dire, et la retirer sans reprendre la main afficherait un
+                palier qui n'est pas celui qui s'applique.
+              */}
+              {libelleQuestion(depuisQuestion ?? {}, 'denivele') !== null && (
+                <option value="question">
+                  d’après votre phrase :{' '}
+                  {libelleQuestion(depuisQuestion ?? {}, 'denivele')}
+                </option>
+              )}
               {DENIVELES.map((denivele, index) => (
                 <option key={denivele.label} value={index}>
                   {denivele.label}
@@ -429,12 +670,29 @@ export function ItineraryList() {
           <label className={styles.sort}>
             Proximité{' '}
             <select
-              value={proximiteIndex}
+              value={
+                libelleQuestion(depuisQuestion ?? {}, 'proximite') !== null
+                  ? 'question'
+                  : proximiteIndex
+              }
               data-testid="list-nearby"
               onChange={(e) => {
+                reprendreLaMain('proximite')
                 setProximiteIndex(toIndex(e.target.value, PROXIMITES.length))
               }}
             >
+              {/*
+                L'option n'existe que tant que la question tient ce champ.
+                La laisser en permanence donnerait un choix qui ne veut rien
+                dire, et la retirer sans reprendre la main afficherait un
+                palier qui n'est pas celui qui s'applique.
+              */}
+              {libelleQuestion(depuisQuestion ?? {}, 'proximite') !== null && (
+                <option value="question">
+                  d’après votre phrase :{' '}
+                  {libelleQuestion(depuisQuestion ?? {}, 'proximite')}
+                </option>
+              )}
               {PROXIMITES.map((proximite, index) => (
                 <option key={proximite.label} value={index}>
                   {proximite.label}

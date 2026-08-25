@@ -232,3 +232,22 @@
 .effort {
   color: var(--gris-vert);
 }
+
+/*
+  La question en toutes lettres, au-dessus des paliers.
+
+  Elle est dans le flux et non en surimpression : ce qu'elle pose doit se
+  lire dans les listes juste en dessous, au même moment. Une boîte flottante
+  aurait caché la réponse en posant la question.
+*/
+.question {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--espace-3);
+  margin-bottom: var(--espace-4);
+}
+
+.question label {
+  flex: 1 1 12rem;
+}
