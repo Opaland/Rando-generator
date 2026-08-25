@@ -85,7 +85,7 @@ existant via `PW_CHROMIUM_PATH=/chemin/vers/chrome npm run e2e`.
    annonce celui qu'il est en train de lire. **Déplier une trace** montre ce
    que cette sortie-là a fait avancer : quels itinéraires balisés, et de
    combien (un simple croisement de sentier, sous 300 m, n'est pas compté).
-4. **Créer « Mes itinéraires »** : importez le GPX d'un parcours _à faire_
+4. **Créer « Mes itinéraires »** : importez le GPX d'un parcours *à faire*
    (cartoguide, Visorando, tracé maison…) — il devient un itinéraire local
    avec sa propre progression, hors statistiques des réseaux OSM. Ou
    **tracez-le à la souris** (« Tracer sur la carte ») : chaque clic pose une
@@ -111,7 +111,8 @@ existant via `PW_CHROMIUM_PATH=/chemin/vers/chrome npm run e2e`.
    ligne « Balisé »** plutôt que d'annoncer une marque approximative, et la
    carte retombe sur la couleur du réseau.
 
-   Sélectionner un itinéraire dans la liste **zoome dessus** sur la carte. Un itinéraire parcouru à
+   Sélectionner un itinéraire dans la liste **zoome dessus** sur la carte.
+   Un itinéraire parcouru à
    **95 % ou plus est « bouclé »** — exiger 100 % punirait le randonneur pour
    des tronçons impraticables ou une géométrie OSM imparfaite ; le seuil est
    toujours annoncé, jamais présenté comme du 100 %. Les autres affichent ce
