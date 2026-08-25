@@ -339,3 +339,52 @@ export function couvertureRevetement(bandes: Bande[]): Couverture {
     fraction: total > 0 ? connu / total : 0,
   }
 }
+
+/**
+ * La part de chaque famille de revêtement dans la longueur d'un itinéraire
+ * (issue #179).
+ *
+ * Nadia sort avec sa fille en fauteuil tout-terrain. Elle ne cherche pas un
+ * pictogramme « accessible » — elle a appris à s'en méfier, parce qu'il l'a
+ * déjà envoyée sur un sentier qu'elle n'a pas pu faire. Elle cherche ce
+ * qu'il y a sous les roues, et elle sait parfaitement lire une donnée
+ * absente. Ce qu'une donnée absente lui coûte, c'est un doute ; ce qu'une
+ * promesse fausse lui coûte, c'est une journée et la déception de sa fille.
+ *
+ * Deux règles, et la seconde est la vraie :
+ *
+ * 1. la part se compte **en longueur**, pas en nombre de tronçons — un
+ *    kilomètre de sentier et dix mètres de bitume ne pèsent pas pareil ;
+ * 2. **`inconnu` est une part comme les autres, et elle est rendue.** La
+ *    noyer dans « naturel » ou la retirer du dénominateur ferait passer un
+ *    itinéraire dont on ne sait rien pour un itinéraire dont on sait qu'il
+ *    est roulant. C'est précisément l'erreur qu'elle redoute.
+ *
+ * Les parts somment donc toujours à 1 — sauf sur un itinéraire sans
+ * longueur, où elles valent toutes 0 plutôt que `NaN`.
+ */
+export type PartsRevetement = Record<FamilleRevetement, number>
+
+export function partsDeRevetement(itinerary: Itinerary): PartsRevetement {
+  const parts: PartsRevetement = {
+    dur: 0,
+    stabilise: 0,
+    naturel: 0,
+    autre: 0,
+    inconnu: 0,
+  }
+  let total = 0
+  for (const way of itinerary.ways) {
+    const longueur = polylineLengthMeters(way.coords)
+    if (longueur <= 0) continue
+    total += longueur
+    parts[revetementDuChemin(way.tags).famille] += longueur
+  }
+  // Un itinéraire sans longueur rendrait `0/0`. Zéro partout dit la même
+  // chose sans propager un NaN dans un pourcentage affiché.
+  if (total === 0) return parts
+  for (const famille of Object.keys(parts) as FamilleRevetement[]) {
+    parts[famille] /= total
+  }
+  return parts
+}

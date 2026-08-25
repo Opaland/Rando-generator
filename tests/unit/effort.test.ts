@@ -31,6 +31,7 @@ function faits(partiel: Partial<ItineraryFacts> = {}): ItineraryFacts {
     minutesSource: 'estimated',
     shape: 'loop',
     awayMeters: null,
+    entierementRoulant: false,
     ...partiel,
   }
 }

@@ -10,6 +10,9 @@ import {
 import { POI_COLORS, POI_LABELS, POI_OVERNIGHT, mentionEau } from '../lib/poiDisplay.ts'
 import { NETWORK_BADGES } from '../lib/networkDisplay.ts'
 import { decrireBalisage } from '../core/balisage.ts'
+import { partsDeRevetement } from '../core/revetement.ts'
+import { ORDRE_TERRAIN } from '../core/legende.ts'
+import { TERRAIN_LABELS } from '../lib/revetementDisplay.ts'
 import { elevationStats } from '../core/elevation.ts'
 import { itineraryCoords } from '../core/mapdata.ts'
 import { situerPois } from '../core/poiDistance.ts'
@@ -79,6 +82,17 @@ export function ItineraryDetail() {
   if (!itin) return null
 
   const balisage = decrireBalisage(itin.osmcSymbol ?? undefined)
+  /*
+    Les familles réellement présentes, dans l'ordre de la charte, et sans
+    celles qui valent zéro : une ligne « Stabilisé : 0 % » occupe la fiche
+    pour ne rien dire — c'est le constat U6 de l'audit, appliqué ici.
+  */
+  const partsTerrain = (() => {
+    const parts = partsDeRevetement(itin)
+    return ORDRE_TERRAIN.map((f) => [f, parts[f]] as const)
+      .concat([['inconnu', parts.inconnu] as const])
+      .filter(([, part]) => part > 0.005)
+  })()
   const relevantMatching = itin.network === 'PERSO' ? customMatching : matching
   const result = relevantMatching?.results.find(
     (r) => r.itineraryId === detailItineraryId,
@@ -312,6 +326,34 @@ export function ItineraryDetail() {
           )}
           <p className={styles.localSource}>
             Source : {itin.details.source} (Licence Ouverte 2.0)
+          </p>
+        </section>
+      )}
+
+      {/*
+        Ce qu'il y a sous les pieds — ou sous les roues (issue #179).
+
+        Les parts, en toutes lettres, et **l'inconnu avec les autres**. Nadia
+        marche avec sa fille en fauteuil tout-terrain : ce qu'elle redoute
+        n'est pas la donnée manquante, qu'elle sait lire, mais un
+        pictogramme « accessible » posé sur un sentier qu'elle n'a pas pu
+        faire. Le filtre de la liste ne garde que le tout-ou-rien ; ici, le
+        cas limite se juge à l'œil, sur des nombres — plutôt que par un seuil
+        qu'il aurait fallu inventer (§2).
+      */}
+      {partsTerrain.length > 0 && (
+        <section className={styles.section} data-testid="detail-sol">
+          <h4 className={styles.sectionTitle}>Sous les pieds</h4>
+          <ul className={styles.quality}>
+            {partsTerrain.map(([famille, part]) => (
+              <li key={famille}>
+                {TERRAIN_LABELS[famille]}&nbsp;: {Math.round(part * 100)} %
+              </li>
+            ))}
+          </ul>
+          <p className={styles.hint}>
+            Calculé sur la longueur, d’après ce qu’OpenStreetMap renseigne
+            chemin par chemin. « Non renseigné » ne veut pas dire « facile ».
           </p>
         </section>
       )}

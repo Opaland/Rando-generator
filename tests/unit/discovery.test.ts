@@ -232,6 +232,7 @@ describe('matchesFilters', () => {
     minutesSource: 'published' as const,
     shape: 'loop' as const,
     awayMeters: 5_000,
+    entierementRoulant: false,
   }
 
   it('laisse tout passer par défaut', () => {
@@ -293,5 +294,100 @@ describe('formatDuration', () => {
 
   it('ne descend pas sous zéro', () => {
     expect(formatDuration(-10)).toBe('0 min')
+  })
+})
+
+/**
+ * Le filtre du sol (issue #179), et l'exception qu'il assume.
+ *
+ * Tous les autres filtres laissent passer une donnée absente : ne pas
+ * connaître le dénivelé d'un itinéraire ne doit pas le faire disparaître
+ * d'une recherche. Celui-ci fait l'inverse, et c'est délibéré.
+ *
+ * Nadia sort avec sa fille en fauteuil tout-terrain. Laisser passer
+ * l'inconnu lui promettrait un chemin roulant qu'on n'a jamais vérifié — et
+ * ce qu'elle redoute n'est pas la donnée manquante, qu'elle sait lire, mais
+ * exactement cette promesse-là.
+ */
+describe('filtre du sol — l’inconnu est écarté (#179)', () => {
+  const facts = {
+    meters: 10_000,
+    gainMeters: 300,
+    minutes: 180,
+    minutesSource: 'published' as const,
+    shape: 'loop' as const,
+    awayMeters: 5_000,
+    entierementRoulant: false,
+  }
+
+  it('garde un itinéraire entièrement dur ou stabilisé', () => {
+    const roulant = { ...facts, entierementRoulant: true }
+    expect(matchesFilters(roulant, { ...ALL_FILTERS, sol: 'roulant' })).toBe(
+      true,
+    )
+  })
+
+  it('écarte un itinéraire dont une part est inconnue', () => {
+    expect(
+      matchesFilters(facts, { ...ALL_FILTERS, sol: 'roulant' }),
+      'un itinéraire dont on ignore le sol a été présenté comme roulant',
+    ).toBe(false)
+  })
+
+  it('sans filtre, l’inconnu passe comme tout le reste', () => {
+    expect(matchesFilters(facts, ALL_FILTERS)).toBe(true)
+  })
+})
+
+describe('itineraryFacts — entierementRoulant', () => {
+  function itin(surfaces: (string | undefined)[]): Itinerary {
+    return {
+      osmRelationId: 7,
+      ref: null,
+      name: null,
+      network: 'PR',
+      totalMeters: 1_000,
+      fetchedAt: '2026-08-25T00:00:00Z',
+      ways: surfaces.map((surface, i) => ({
+        osmWayId: 500 + i,
+        coords: [
+          [4.5 + i * 0.001, 45.4],
+          [4.5 + i * 0.001 + 0.0001, 45.4],
+        ] as LonLat[],
+        ...(surface === undefined ? {} : { tags: { surface } }),
+      })),
+    }
+  }
+
+  it('vrai quand tout est dur ou stabilisé', () => {
+    expect(itineraryFacts(itin(['asphalt', 'compacted'])).entierementRoulant).toBe(
+      true,
+    )
+  })
+
+  it('faux dès qu’un seul tronçon est inconnu', () => {
+    expect(
+      itineraryFacts(itin(['asphalt', 'asphalt', undefined]))
+        .entierementRoulant,
+      'un tronçon non renseigné suffit à ne plus rien pouvoir promettre',
+    ).toBe(false)
+  })
+
+  it('faux dès qu’un seul tronçon est naturel', () => {
+    expect(
+      itineraryFacts(itin(['asphalt', 'ground'])).entierementRoulant,
+    ).toBe(false)
+  })
+
+  /**
+   * Les parts sont des divisions en virgule flottante : sur vingt tronçons,
+   * leur somme peut retomber sur 0,9999999999999998. Sans la marge de
+   * `TOUT`, un itinéraire entièrement bitumé serait écarté pour une erreur
+   * d'arrondi — et le défaut serait invisible, puisqu'il ne toucherait que
+   * certains itinéraires.
+   */
+  it('vingt tronçons bitumés restent roulants malgré l’arrondi', () => {
+    const vingt = Array.from({ length: 20 }, () => 'asphalt')
+    expect(itineraryFacts(itin(vingt)).entierementRoulant).toBe(true)
   })
 })

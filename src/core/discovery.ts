@@ -1,5 +1,6 @@
 import { formatDuration } from '../lib/format.ts'
 import { distanceMeters, distanceToSegmentMeters } from './geo.ts'
+import { partsDeRevetement } from './revetement.ts'
 import type { Itinerary, LonLat, TrailWay } from './types.ts'
 
 /**
@@ -46,6 +47,13 @@ export interface ItineraryFacts {
   shape: Shape
   /** Distance jusqu'au point le plus proche du tracé, si la position est connue. */
   awayMeters: number | null
+  /**
+   * Vrai si **toute** la longueur est d'un revêtement dur ou stabilisé.
+   *
+   * Faux dès qu'un mètre est naturel, « autre », ou simplement inconnu — un
+   * itinéraire dont on ne sait rien n'est pas un itinéraire roulant (#179).
+   */
+  entierementRoulant: boolean
 }
 
 export interface DiscoveryFilters {
@@ -55,6 +63,30 @@ export interface DiscoveryFilters {
   maxMinutes: number | null
   maxAwayKm: number | null
   shape: 'all' | 'loop' | 'linear'
+  /**
+   * Ce qu'il y a sous les pieds — ou sous les roues (issue #179).
+   *
+   * `roulant` ne garde que les itinéraires dont **toute** la longueur est
+   * d'un revêtement dur ou stabilisé, et dont **rien** n'est inconnu.
+   *
+   * Ce filtre enfreint volontairement la règle de l'en-tête — « un filtre ne
+   * s'applique jamais à une donnée absente ». Pour tous les autres, laisser
+   * passer l'inconnu coûte au plus une déception : on découvre un itinéraire
+   * un peu plus long que prévu. Ici, ça coûte à Nadia une journée et la
+   * déception de sa fille, parce qu'elle sera partie avec un fauteuil
+   * tout-terrain sur un sentier dont personne n'avait renseigné le sol.
+   *
+   * Elle sait lire une donnée absente. Ce qu'elle ne pardonne pas, c'est une
+   * promesse fausse. **Le filtre doit donc exclure ce qu'on ignore, et pas
+   * seulement ce qu'on sait mauvais.**
+   *
+   * « Toute la longueur » plutôt qu'un pourcentage : un seuil du genre
+   * « 80 % roulant » changerait *ce qui est calculé*, et aucune donnée ne
+   * permet de le fixer aujourd'hui (§2). Les deux extrêmes, eux, ne
+   * s'inventent pas. La fiche affiche les parts réelles, pour que le cas
+   * limite se juge à l'œil plutôt que par un nombre choisi au hasard.
+   */
+  sol: 'all' | 'roulant'
 }
 
 /** Aucun filtre actif : tout passe. */
@@ -65,6 +97,7 @@ export const ALL_FILTERS: DiscoveryFilters = {
   maxMinutes: null,
   maxAwayKm: null,
   shape: 'all',
+  sol: 'all',
 }
 
 /**
@@ -194,6 +227,20 @@ export function distanceFromMeters(
 }
 
 /** Ce qu'on sait d'un itinéraire pour aider à le choisir. */
+/**
+ * `1 - 1e-9` et non `1` : les parts sont des divisions en virgule flottante,
+ * et une somme de vingt tronçons peut retomber sur 0,9999999999999998. Sans
+ * cette marge, un itinéraire entièrement bitumé serait écarté du filtre pour
+ * une erreur d'arrondi — et le défaut serait invisible, puisqu'il ne
+ * concernerait que certains itinéraires.
+ */
+const TOUT = 1 - 1e-9
+
+function estEntierementRoulant(itinerary: Itinerary): boolean {
+  const parts = partsDeRevetement(itinerary)
+  return parts.dur + parts.stabilise >= TOUT
+}
+
 export function itineraryFacts(
   itinerary: Itinerary,
   from: LonLat | null = null,
@@ -208,6 +255,7 @@ export function itineraryFacts(
     minutesSource: minutesPubliees === null ? 'estimated' : 'published',
     shape: itineraryShape(itinerary.ways),
     awayMeters: from ? distanceFromMeters(itinerary, from) : null,
+    entierementRoulant: estEntierementRoulant(itinerary),
   }
 }
 
@@ -237,6 +285,9 @@ export function matchesFilters(
     return false
   }
   if (filters.shape !== 'all' && facts.shape !== filters.shape) return false
+  // La seule exception à la règle de l'en-tête, et elle est argumentée sur
+  // le champ `sol` de `DiscoveryFilters` : ici, l'inconnu est écarté.
+  if (filters.sol === 'roulant' && !facts.entierementRoulant) return false
   return true
 }
 

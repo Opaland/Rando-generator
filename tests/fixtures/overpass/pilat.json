@@ -215,8 +215,7 @@
       "type": "way",
       "id": 400,
       "tags": {
-        "surface": "compacted",
-        "highway": "track"
+        "highway": "footway"
       }
     },
     {
