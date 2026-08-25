@@ -1,9 +1,6 @@
 import { useMemo } from 'react'
 import { useAppStore } from '../store/appStore.ts'
-import {
-  resumerJournal,
-  libelleDestination,
-} from '../core/journalSortant.ts'
+import { resumerJournal, libelleDestination } from '../core/journalSortant.ts'
 import styles from './SortiesReseau.module.css'
 
 /**
@@ -23,6 +20,7 @@ import styles from './SortiesReseau.module.css'
 export function SortiesReseau() {
   const sorties = useAppStore((s) => s.sortiesReseau)
   const tracks = useAppStore((s) => s.tracks)
+  const avecTrace = useAppStore((s) => s.requetesAvecTrace)
   const resume = useMemo(() => resumerJournal(sorties), [sorties])
 
   return (
@@ -35,7 +33,8 @@ export function SortiesReseau() {
         {tracks.length > 0 && (
           <>
             {' · '}
-            <strong data-testid="sorties-traces">0</strong> contenait{' '}
+            <strong data-testid="sorties-traces">{avecTrace}</strong>{' '}
+            {avecTrace === 1 ? 'contenait' : 'contenaient'}{' '}
             {tracks.length === 1 ? 'votre trace' : 'vos traces'}
           </>
         )}
@@ -75,10 +74,22 @@ export function SortiesReseau() {
         </p>
       )}
 
+      {avecTrace > 0 && (
+        <p className={styles.inconnue} role="alert" data-testid="fuite-trace">
+          {avecTrace === 1
+            ? 'Une requête emportait un point de vos traces'
+            : `${String(avecTrace)} requêtes emportaient un point de vos traces`}
+          . C’est un défaut grave, et il mérite d’être signalé.
+        </p>
+      )}
+
       <p className={styles.note}>
-        Ce compteur porte sur les requêtes émises par l’application. Vos
-        traces ne figurent dans aucune d’elles&nbsp;: aucun chemin du code ne
-        les envoie, et un test le vérifie à chaque livraison.
+        Ce compteur porte sur les requêtes émises par l’application. Le second
+        chiffre est <strong>mesuré</strong>&nbsp;: le contenu de chaque requête
+        est comparé à des points prélevés dans vos traces, du départ à
+        l’arrivée. Ce qu’il ne voit pas est écrit dans{' '}
+        <code>src/core/fuiteDeTrace.ts</code>&nbsp;: un envoi binaire, ou une
+        trace transformée avant de partir.
       </p>
     </section>
   )

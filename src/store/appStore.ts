@@ -50,6 +50,24 @@ import { reponseTronquee } from '../core/poisDeZone.ts'
 import { itineraryCoords } from '../core/mapdata.ts'
 import type { PointOfInterest } from '../core/types.ts'
 import { noterSortie, type EntreeJournal } from '../core/journalSortant.ts'
+import {
+  corpsContientUnPoint,
+  echantillonDeTrace,
+} from '../core/fuiteDeTrace.ts'
+
+/**
+ * Points surveillés par trace (issue #178).
+ *
+ * Douze : assez pour couvrir un départ, une arrivée et dix points entre les
+ * deux, ce qui suffit à reconnaître une trace partie en entier ou par
+ * morceaux. Pas cent, parce que la recherche tourne à chaque requête, sur
+ * le fil principal.
+ *
+ * C'est un seuil de **détection** : il ne change rien à ce qui est envoyé,
+ * seulement ce qu'on est capable de voir partir. Il est donc tranché au
+ * jugement, et écrit ici (§2).
+ */
+const POINTS_SURVEILLES_PAR_TRACE = 12
 import type { MatchResult } from '../core/matching.ts'
 import {
   creerTrancheSortie,
@@ -177,7 +195,16 @@ export interface AppState
    * serait une ironie coûteuse.
    */
   sortiesReseau: EntreeJournal[]
-  noterSortieReseau: (url: string) => void
+  /**
+   * Requêtes dont le corps portait un point de vos traces (issue #178).
+   *
+   * Il vaut zéro, et c'est le seul chiffre de l'application qu'on espère
+   * voir rester à zéro. Il est **compté** et non écrit : jusqu'au 25/08,
+   * l'interface affichait un `0` en dur, c'est-à-dire une promesse déguisée
+   * en mesure.
+   */
+  requetesAvecTrace: number
+  noterSortieReseau: (url: string, corps?: string | null) => void
 
   // Zone chargée
   zoneKey: string | null
@@ -866,12 +893,29 @@ export const useAppStore = create<AppState>()((set, get) => {
     zoneError: null,
     tracks: [],
     sortiesReseau: [],
+    requetesAvecTrace: 0,
 
     // Enregistré sans passer par `set` immédiat sur chaque tuile : la
     // fusion par service borne le journal, et le rendu ne se déclenche que
     // lorsqu'un compteur change vraiment.
-    noterSortieReseau(url) {
-      set((etat) => ({ sortiesReseau: noterSortie(etat.sortiesReseau, url) }))
+    noterSortieReseau(url, corps) {
+      set((etat) => {
+        /*
+          L'échantillon se refait à chaque requête plutôt que d'être gardé
+          en mémoire. C'est un choix mesurable : douze points par trace,
+          quatre écritures chacun, contre un champ de plus à tenir d'accord
+          avec `tracks` à chaque import, suppression et restauration — le
+          §4 en germe. Si le coût se voyait un jour, il se mémoïserait.
+        */
+        const echantillon = etat.tracks.flatMap((trace) =>
+          echantillonDeTrace(trace.points, POINTS_SURVEILLES_PAR_TRACE),
+        )
+        const emporte = corpsContientUnPoint(corps, echantillon)
+        return {
+          sortiesReseau: noterSortie(etat.sortiesReseau, url),
+          requetesAvecTrace: etat.requetesAvecTrace + (emporte ? 1 : 0),
+        }
+      })
     },
     ...IMPORT_AU_REPOS,
     demonstration: false,
