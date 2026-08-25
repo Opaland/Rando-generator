@@ -38,25 +38,38 @@ test('cliquer un tracé sur la carte ouvre la fiche détail (altimétrie + POI)'
   const poiList = page.getByTestId('detail-poi-list')
   await expect(poiList).toBeVisible({ timeout: 10_000 })
   await expect(poiList).toContainText('Point de vue sur la vallée')
-  await expect(poiList).toContainText('Crêt de la Perdrix')
+
+  /*
+    Le « Crêt de la Perdrix » est à 2,2 km de détour : au-delà du kilomètre
+    que Cédric a posé le 25/08 (issue #318). Il n'est plus dans la liste — et
+    la ligne juste dessous dit qu'il existe, plutôt que de le faire
+    disparaître en silence.
+  */
+  await expect(poiList).not.toContainText('Crêt de la Perdrix')
+  const ecartes = page.getByTestId('poi-ecartes')
+  await expect(ecartes).toBeVisible()
+  await expect(ecartes).toContainText('1 km de détour')
+  await expect(ecartes).toContainText(/[1-9]\d* autres? points?/)
 
   // Le refuge est une surface OSM (polygone) : il doit quand même apparaître,
-  // avec ses informations pratiques.
+  // avec ses informations pratiques — et il est à 4,4 km, ce qui est
+  // précisément l'exception que le rayon laisse à l'hébergement.
   await expect(poiList).toContainText('Refuge du Pilat')
   await expect(poiList).toContainText('32 places')
+  await expect(poiList).toContainText('4,4 km de détour')
 
   // Les couchages libres passent en tête et l'avertissement s'affiche.
   await expect(poiList).toContainText('Cabane des Chèvres')
   // Chaque point dit ce qu'il coûte : sans distance, « à proximité » était
   // une promesse que la requête n'avait jamais vérifiée (issue #122).
   await expect(poiList).toContainText(/\d+ m de détour|\d+,\d+ km de détour/)
-  // Et l'ordre suit la distance : le point de vue est sur le tracé, le
-  // sommet à plus d'un kilomètre.
+  // Et l'ordre suit la distance : le point de vue est sur le tracé, le refuge
+  // à plusieurs kilomètres.
   const positions = await poiList.evaluate((liste) =>
     [...liste.querySelectorAll('li')].map((li) => li.textContent),
   )
   const rang = (nom: string) => positions.findIndex((t) => t.includes(nom))
-  expect(rang('Point de vue')).toBeLessThan(rang('Crêt de la Perdrix'))
+  expect(rang('Point de vue')).toBeLessThan(rang('Refuge du Pilat'))
 
   // Une source n'est pas une fontaine : le silence d'OpenStreetMap sur la
   // potabilité est dit, plutôt que laissé à l'interprétation (issue #123).

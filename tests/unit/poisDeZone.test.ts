@@ -6,6 +6,7 @@ import {
   detoursParItineraire,
   type DetoursPoi,
 } from '../../src/core/poisDeZone.ts'
+import { DETOUR_MAX_METRES } from '../../src/core/poiDistance.ts'
 import type { Itinerary, LonLat, PointOfInterest } from '../../src/core/types.ts'
 
 /**
@@ -131,14 +132,23 @@ describe('detoursParItineraire (#156)', () => {
   })
 
   it('rend null au-delà du rayon, et une distance en deçà', () => {
-    // 0,01 ° de latitude ≈ 1,11 km — donc 2,2 km de détour, au plafond.
+    /*
+      Les écarts sont **dérivés du rayon**, pas écrits en dur. La version
+      d'avant plaçait le point proche à 0,008 ° — 890 m — sous un commentaire
+      qui parlait déjà d'un autre chiffre que celui du code. Quand #318 a fait
+      descendre le rayon de 1 000 m à 500, ce test est tombé : c'est la bonne
+      façon de tomber, mais il n'aurait pas dû falloir le réécrire.
+    */
+    const DEG_PAR_METRE_LAT = 1 / 111_195
+    const ecart = (facteur: number) =>
+      LAT + RAYON_DE_RECHERCHE_METERS * facteur * DEG_PAR_METRE_LAT
     const [proche] = detoursParItineraire(
       [itin(1, 4.5, 4.51)],
-      [poi('node/1', 'water', 4.505, LAT + 0.008)],
+      [poi('node/1', 'water', 4.505, ecart(0.8))],
     )
     const [loin] = detoursParItineraire(
       [itin(1, 4.5, 4.51)],
-      [poi('node/1', 'water', 4.505, LAT + 0.02)],
+      [poi('node/1', 'water', 4.505, ecart(1.5))],
     )
     expect(proche?.water).not.toBeNull()
     expect(loin?.water).toBeNull()
@@ -173,5 +183,38 @@ describe('performance — une zone entière, pas une fiche', () => {
     const duree = performance.now() - debut
     expect(resultats).toHaveLength(200)
     expect(duree, `attribution en ${duree.toFixed(0)} ms`).toBeLessThan(1_000)
+  })
+})
+
+
+/**
+ * Le palier le plus lointain que la liste propose ne doit pas dépasser ce que
+ * la fiche accepte d'afficher (issues #156 et #318).
+ *
+ * Sans ce lien, quelqu'un filtrait « eau à moins de 2 km de détour », ouvrait
+ * un itinéraire retenu par ce filtre, et n'y trouvait pas le point d'eau : le
+ * rayon de la fiche l'écartait. Deux listes disant la même règle, et la disant
+ * différemment — CLAUDE.md §4ter dans sa forme exacte.
+ *
+ * Le test est ici parce que la dérivation seule ne suffirait pas : elle
+ * pourrait être défaite en une ligne, et personne ne le verrait avant qu'un
+ * utilisateur ne cherche l'eau qu'on lui a promise.
+ */
+describe('les paliers de la liste et le rayon de la fiche (§4ter)', () => {
+  it('ne propose aucun palier que la fiche n’afficherait pas', () => {
+    for (const palier of DETOURS_PROPOSES) {
+      expect(palier, `palier de ${String(palier)} m`).toBeLessThanOrEqual(
+        DETOUR_MAX_METRES,
+      )
+    }
+  })
+
+  it('en propose quand même au moins un', () => {
+    // La dérivation est un filtre : baisser `DETOUR_MAX_METRES` sous 250 le
+    // viderait, et `Math.max()` d'un tableau vide rend -Infinity — un rayon
+    // de recherche négatif, donc aucun POI, donc « aucun itinéraire n'a
+    // d'eau ». L'échec doit se voir ici, pas sur le terrain.
+    expect(DETOURS_PROPOSES.length).toBeGreaterThan(0)
+    expect(RAYON_DE_RECHERCHE_METERS).toBeGreaterThan(0)
   })
 })

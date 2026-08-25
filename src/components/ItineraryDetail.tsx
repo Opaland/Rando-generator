@@ -23,7 +23,11 @@ import { ORDRE_TERRAIN } from '../core/legende.ts'
 import { TERRAIN_LABELS } from '../lib/revetementDisplay.ts'
 import { elevationStats } from '../core/elevation.ts'
 import { itineraryCoords } from '../core/mapdata.ts'
-import { situerPois } from '../core/poiDistance.ts'
+import {
+  situerPois,
+  poisDuChemin,
+  DETOUR_MAX_METRES,
+} from '../core/poiDistance.ts'
 import { itineraryFacts, libelleEffort } from '../core/discovery.ts'
 import { mentionPoisEmportes } from '../core/poisEmportes.ts'
 import {
@@ -119,7 +123,15 @@ export function ItineraryDetail() {
   // vérifiée (issue #122). On les situe, du plus proche au plus lointain, et
   // on affiche ce qu'ils coûtent — un aller-retour, pas une distance à vol
   // d'oiseau.
-  const pois = situerPois(poisBruts, itineraryCoords(itin))
+  /*
+    Le rayon de détour (issue #318). Quarante-quatre points sur une boucle de
+    8,6 km, dont un à 4,2 km : la liste devenait illisible, et une liste
+    illisible ne laisse personne décider de rien. Ce qui est mis de côté n'est
+    pas jeté — la ligne juste sous la liste dit combien, et à partir d'où.
+  */
+  const { retenus: pois, ecartes: poisEcartes } = poisDuChemin(
+    situerPois(poisBruts, itineraryCoords(itin)),
+  )
   // Un point d'eau emporté il y a trois mois peut avoir été supprimé ou
   // tari : le servir sans le dire serait la promesse que le service worker
   // refuse de faire depuis toujours (issue #153).
@@ -596,6 +608,23 @@ export function ItineraryDetail() {
             Du plus proche au plus lointain. Le détour indiqué est un
             aller-retour depuis le tracé, à vol d’oiseau : le chemin réel sera
             plus long.
+          </p>
+        )}
+        {poisEcartes.length > 0 && (
+          /*
+            Une liste tronquée en silence est un mensonge par omission. Le
+            rayon règle la lisibilité ; il ne doit pas coûter la franchise —
+            d'où cette ligne, qui dit le nombre et le seuil.
+          */
+          <p className={styles.hint} data-testid="poi-ecartes">
+            {poisEcartes.length === 1
+              ? '1 autre point'
+              : `${String(poisEcartes.length)} autres points`}{' '}
+            {poisEcartes.length === 1 ? 'est' : 'sont'} répertorié
+            {poisEcartes.length === 1 ? '' : 's'} au-delà de{' '}
+            {DETOUR_MAX_METRES / 1_000} km de détour, et ne{' '}
+            {poisEcartes.length === 1 ? 'figure' : 'figurent'} pas ici. Les
+            hébergements, eux, sont listés quelle que soit leur distance.
           </p>
         )}
         {pois.length > 0 && (

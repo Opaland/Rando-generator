@@ -1,4 +1,5 @@
 import { distanceMeters, distanceToSegmentMeters } from './geo.ts'
+import { DETOUR_MAX_METRES } from './poiDistance.ts'
 import { itineraryCoords } from './mapdata.ts'
 import { MAX_POIS } from './poi.ts'
 import type { Itinerary, LonLat, PoiKind, PointOfInterest } from './types.ts'
@@ -59,10 +60,30 @@ export type DetoursPoi = Record<CategorieRecherchee, number | null>
  * palier ; chercher plus loin coûterait sans que personne puisse le
  * demander. C'est `DETOURS_PROPOSES` qui commande, et le test le tient.
  */
-export const DETOURS_PROPOSES = [250, 500, 1_000, 2_000] as const
+/**
+ * Les paliers qu'on envisagerait de proposer, avant confrontation avec ce que
+ * la fiche accepte d'afficher.
+ *
+ * Le palier de 2 km est celui qui a rendu le lien nécessaire : depuis #318, la
+ * fiche n'affiche plus un point d'eau au-delà d'un kilomètre de détour. Le
+ * proposer ici aurait promis dans la liste ce que la fiche aurait refusé deux
+ * clics plus loin — deux listes qui disent la même règle, et qui ne la disent
+ * pas pareil (§4ter).
+ */
+const PALIERS_ENVISAGES = [250, 500, 1_000, 2_000] as const
 
-export const RAYON_DE_RECHERCHE_METERS =
-  Math.max(...DETOURS_PROPOSES) / 2
+/**
+ * Ce que la liste propose réellement : les paliers que la fiche tiendra.
+ *
+ * Filtré et non recopié, pour que remonter `DETOUR_MAX_METRES` remette le
+ * palier de 2 km en circulation tout seul. Un commentaire disant « penser à
+ * mettre à jour l'autre » n'aurait rien gardé (§6quater).
+ */
+export const DETOURS_PROPOSES = PALIERS_ENVISAGES.filter(
+  (metres) => metres <= DETOUR_MAX_METRES,
+)
+
+export const RAYON_DE_RECHERCHE_METERS = Math.max(...DETOURS_PROPOSES) / 2
 
 /**
  * Le côté d'une cellule d'index, en degrés.
