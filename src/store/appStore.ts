@@ -10,7 +10,6 @@ import {
   ZONES,
   libelleDeZone,
 } from '../core/overpass.ts'
-import { GpxError, elevationGainMeters, trackFingerprint } from '../core/gpx.ts'
 import {
   backupFilename,
   buildBackup,
@@ -26,14 +25,8 @@ import { downloadBlob } from '../lib/download.ts'
 import { GeocodeError, chercherLieux, type Lieu } from '../core/geocode.ts'
 import { resumeObjectif, type ResumeObjectif } from '../core/objectifs.ts'
 import type { ParcoursDeclare } from '../core/declaratif.ts'
-import { polylineLengthMeters } from '../core/sampling.ts'
 import { parseBouclesGeoJSON } from '../core/boucles.ts'
 import { outingHighlights, type OutingHighlight } from '../core/outing.ts'
-import { FitError } from '../core/fit.ts'
-import {
-  messagePointsHorsLimites,
-  messageTropEspacee,
-} from '../core/coordonnees.ts'
 import { construireDemonstration } from '../core/demonstration.ts'
 import {
   estModeAffichage,
@@ -46,15 +39,12 @@ import {
   etatDuStockage,
   type EtatDuStockage,
 } from '../core/stockage.ts'
-import { TcxError } from '../core/tcx.ts'
-import { GeoJsonError } from '../core/geojson.ts'
 import {
   crossedMilestones,
   DEFAULT_COMPLETION_PCT,
   franchissementTientEncore,
   normalizeCompletionPct,
 } from '../core/milestones.ts'
-import { espacementTropGrand } from '../core/matching.ts'
 import { fetchPois } from '../core/poi.ts'
 import { reponseTronquee } from '../core/poisDeZone.ts'
 import { itineraryCoords } from '../core/mapdata.ts'
@@ -68,11 +58,6 @@ import {
   type EtatSortie,
 } from './enregistrementSlice.ts'
 import { creerVeilleGeo } from './veilleGeo.ts'
-import {
-  developperArchives,
-  lireItineraires,
-  parseTraceFile,
-} from './lecture.ts'
 import { GEO_OPTIONS, geolocationErrorMessage } from '../core/geolocation.ts'
 import type { Itinerary, LonLat, Track, UserPosition } from '../core/types.ts'
 import { DEFAULT_TOLERANCE_METERS, STEP_METERS } from '../core/types.ts'
@@ -97,6 +82,13 @@ import {
   type ActionsFiche,
   type EtatFiche,
 } from './trancheFiche.ts'
+export type { DoublonEnAttente } from './trancheImport.ts'
+import {
+  trancheImport,
+  IMPORT_AU_REPOS,
+  type ActionsImport,
+  type EtatImport,
+} from './trancheImport.ts'
 import { computeMatching } from './matchingClient.ts'
 
 /**
@@ -164,13 +156,6 @@ export type ZoneLoadStage = 'requesting' | 'retrying' | 'processing' | null
  * même » n'a alors plus rien à relire, ni à risquer d'échouer une seconde
  * fois.
  */
-export interface DoublonEnAttente {
-  id: string
-  filename: string
-  /** Nom du fichier dont l'empreinte coïncide. */
-  ressembleA: string
-  track: Track
-}
 
 export interface AppState
   extends
@@ -179,7 +164,9 @@ export interface AppState
     EtatTrace,
     ActionsTrace,
     EtatFiche,
-    ActionsFiche {
+    ActionsFiche,
+    EtatImport,
+    ActionsImport {
   // Persistance
   db: SentiersDb | null
   dbWarning: string | null
@@ -249,13 +236,6 @@ export interface AppState
 
   // Traces GPX
   tracks: Track[]
-  importErrors: string[]
-  /**
-   * Traces écartées comme doublons, gardées le temps que la personne
-   * tranche. L'empreinte est une heuristique : elle n'a pas le droit de
-   * refuser sans recours (issue #165).
-   */
-  importDoublons: DoublonEnAttente[]
   /**
    * Une démonstration est en cours (issue #172).
    *
@@ -310,7 +290,6 @@ export interface AppState
   // UI
   selectedItineraryId: number | null
   /** Avancement d'un import multi-fichiers, pour que l'attente ait un sujet. */
-  importProgress: { done: number; total: number; filename: string } | null
   /**
    * Vrai quand la zone affichée vient du cache au démarrage, et non d'un clic
    * de l'utilisateur pendant cette session. C'est ce qui distingue « je
@@ -352,10 +331,6 @@ export interface AppState
   /** Interrompt le chargement de zone en cours (l'appel réseau peut continuer
    *  en arrière-plan, mais son résultat n'est plus appliqué à l'UI). */
   cancelZoneLoad: () => void
-  importGpxFiles: (files: Iterable<File>) => Promise<void>
-  importCustomGpx: (files: Iterable<File>) => Promise<void>
-  removeTrack: (id: string) => Promise<void>
-  removeCustomItinerary: (id: number) => Promise<void>
   /** Écrit une sauvegarde complète (traces, itinéraires perso, réglages). */
   exporterSauvegarde: () => Promise<void>
   /** Relit une sauvegarde et la fusionne avec ce qui est déjà là. */
@@ -377,13 +352,9 @@ export interface AppState
   selectItinerary: (id: number | null) => void
   toggleOutingDetail: (trackId: string) => Promise<void>
   dismissCelebration: () => void
-  clearImportErrors: () => void
   /** Passe outre le dédoublonnage et ajoute la trace pour de bon. */
-  importerDoublon: (id: string) => Promise<void>
   /** Retire la proposition sans rien importer. */
-  ignorerDoublon: (id: string) => void
   /** Retire toutes les propositions d'un coup (réimport d'une archive entière). */
-  ignorerTousDoublons: () => void
   /** Montre un tableau de bord rempli, sans rien demander à l'utilisateur. */
   demarrerDemonstration: () => Promise<void>
   /** Efface la démonstration et rend l'application à son état réel. */
@@ -438,15 +409,6 @@ let lieuSequence = 0
  * écritures lancées pendant le démarrage plutôt qu'à les perdre (baseOuverte).
  */
 let ouvertureBase: Promise<SentiersDb> | null = null
-/**
- * Rend la main au navigateur le temps d'un rendu. Sans cela, l'avancement
- * d'un import est bien mis à jour dans l'état… et jamais peint, le fil
- * principal enchaînant directement sur le parsing suivant.
- */
-function pause(): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, 0))
-}
-
 /**
  * La persistance n'est demandée qu'une fois par session, et seulement
  * lorsqu'il y a quelque chose à protéger (issue #169).
@@ -911,8 +873,7 @@ export const useAppStore = create<AppState>()((set, get) => {
     noterSortieReseau(url) {
       set((etat) => ({ sortiesReseau: noterSortie(etat.sortiesReseau, url) }))
     },
-    importErrors: [],
-    importDoublons: [],
+    ...IMPORT_AU_REPOS,
     demonstration: false,
     stockage: null,
     modeAffichage: 'complet',
@@ -933,7 +894,6 @@ export const useAppStore = create<AppState>()((set, get) => {
     customMatching: null,
     matchingBusy: false,
     selectedItineraryId: null,
-    importProgress: null,
     zoneRestoredAtStartup: false,
     celebration: null,
     outingDetail: null,
@@ -1179,255 +1139,6 @@ export const useAppStore = create<AppState>()((set, get) => {
       // (le cache en profitera si elle aboutit) mais ne touchera plus l'UI.
       zoneLoadSequence += 1
       set({ zoneLoading: false, zoneLoadStage: null, zoneLoadBytes: 0 })
-    },
-
-    async importGpxFiles(files) {
-      // « Maintenant, importez les vôtres » : la démonstration s'efface au
-      // premier vrai fichier.
-      await sortirDeLaDemonstration(get)
-      const errors: string[] = []
-      const imported: Track[] = []
-      const developpement = await developperArchives(
-        [...files],
-        (filename, done, total) => {
-          set({ importProgress: { done, total, filename } })
-        },
-      )
-      errors.push(...developpement.erreurs)
-      const liste = developpement.fichiers
-      const knownFingerprints = new Map(
-        get().tracks.map((t) => [trackFingerprint(t.points), t.filename]),
-      )
-      const doublons: DoublonEnAttente[] = []
-      for (const [index, file] of liste.entries()) {
-        try {
-          set({
-            importProgress: {
-              done: index,
-              total: liste.length,
-              filename: file.name,
-            },
-          })
-          // Laisse le navigateur peindre l'avancement avant le parsing, qui
-          // bloque le fil principal (mesuré : ~320 ms pour un GPX de 9 Mo).
-          await pause()
-          const parsed = await parseTraceFile(file)
-          // Signalé avant tout le reste : même une trace importée avec succès
-          // doit dire ce qu'elle a perdu en chemin (issue #167).
-          const horsLimites = messagePointsHorsLimites(parsed.pointsHorsLimites)
-          if (horsLimites) errors.push(`${file.name} : ${horsLimites}`)
-          // Une trace trop espacée ne peut pas être située : le dire à
-          // l'import vaut mieux qu'un chiffre muet que l'utilisateur ne peut
-          // pas comprendre (issue #148).
-          const espacement = espacementTropGrand(parsed.points)
-          if (espacement !== null) {
-            errors.push(`${file.name} : ${messageTropEspacee(espacement)}`)
-          }
-          if (parsed.points.length === 0) {
-            errors.push(
-              `${file.name} : aucun point de trace exploitable dans ce fichier.`,
-            )
-            continue
-          }
-          const track: Track = {
-            id: crypto.randomUUID(),
-            filename: file.name,
-            points: parsed.points,
-            date: parsed.date,
-            importedAt: new Date().toISOString(),
-            elevationGain: elevationGainMeters(parsed.elevations),
-            times: parsed.times,
-            hdops: parsed.hdops,
-            precisionsMetres: parsed.precisionsMetres,
-          }
-          const fingerprint = trackFingerprint(parsed.points)
-          const ressembleA = knownFingerprints.get(fingerprint)
-          if (ressembleA) {
-            // L'empreinte ne lit pas tous les points : elle ne peut pas
-            // affirmer l'identité, seulement la ressemblance. La trace est
-            // mise de côté, prête à être ajoutée si la personne le dit
-            // (issue #165) — pas jetée.
-            doublons.push({
-              id: track.id,
-              filename: file.name,
-              ressembleA,
-              track,
-            })
-            continue
-          }
-          knownFingerprints.set(fingerprint, file.name)
-          // La base est attendue si elle s'ouvre encore : pendant le
-          // démarrage, un `db` figé à null aurait laissé la trace en mémoire
-          // seulement.
-          const db = await baseOuverte()
-          if (db) {
-            try {
-              await db.saveTrack(track)
-            } catch {
-              // Quota de stockage dépassé. La lecture, elle, a parfaitement
-              // réussi : la trace compte pour cette session, et seul le
-              // rechargement suivant la perdra. Avant la revue du sprint 4,
-              // cette erreur remontait dans le `catch` du fichier et
-              // ressortait en « lecture impossible » — un reproche fait au
-              // fichier pour une place qui manque. La trace était perdue
-              // pour la session entière, sans que rien ne l'explique.
-              errors.push(
-                `${file.name} : plus de place pour enregistrer cette trace. Elle est comptée maintenant, mais elle aura disparu au prochain démarrage — exportez une sauvegarde ou supprimez des sorties.`,
-              )
-            }
-          }
-          imported.push(track)
-        } catch (error) {
-          errors.push(
-            error instanceof GpxError ||
-              error instanceof FitError ||
-              error instanceof TcxError ||
-              error instanceof GeoJsonError
-              ? `${file.name} : ${error.message}`
-              : `${file.name} : lecture impossible.`,
-          )
-        }
-      }
-      set({ importProgress: null })
-      if (imported.length > 0) {
-        set((state) => ({ tracks: [...state.tracks, ...imported] }))
-        await recompute()
-      }
-      if (errors.length > 0) {
-        set((state) => ({ importErrors: [...state.importErrors, ...errors] }))
-      }
-      if (doublons.length > 0) {
-        set((state) => ({
-          importDoublons: [...state.importDoublons, ...doublons],
-        }))
-      }
-      if (imported.length > 0) await protegerLeStockage()
-    },
-
-    async importCustomGpx(files) {
-      // « Maintenant, importez les vôtres » : la démonstration s'efface au
-      // premier vrai fichier.
-      await sortirDeLaDemonstration(get)
-      const errors: string[] = []
-      const imported: Itinerary[] = []
-      let nextId = Math.min(
-        0,
-        ...get().customItineraries.map((i) => i.osmRelationId),
-      )
-      const liste = [...files]
-      for (const [index, file] of liste.entries()) {
-        try {
-          set({
-            importProgress: {
-              done: index,
-              total: liste.length,
-              filename: file.name,
-            },
-          })
-          await pause()
-          const lecture = await lireItineraires(file)
-          const horsLimites = messagePointsHorsLimites(
-            lecture.pointsHorsLimites,
-          )
-          if (horsLimites) errors.push(`${file.name} : ${horsLimites}`)
-          const exploitables = lecture.trails.filter((trail) =>
-            trail.lines.some((ligne) => ligne.length >= 2),
-          )
-          if (exploitables.length === 0) {
-            errors.push(
-              `${file.name} : pas assez de points pour en faire un itinéraire.`,
-            )
-            continue
-          }
-          const nomDeBase = file.name.replace(
-            /\.(gpx|fit|tcx|geojson|json)$/i,
-            '',
-          )
-          const db = await baseOuverte()
-          for (const [rang, trail] of exploitables.entries()) {
-            nextId -= 1
-            const ways = trail.lines
-              .filter((ligne) => ligne.length >= 2)
-              .map((ligne, index) => ({
-                osmWayId: nextId * 1_000 - index,
-                coords: ligne,
-              }))
-            const itinerary: Itinerary = {
-              osmRelationId: nextId,
-              ref: null,
-              // Un GeoJSON peut décrire cent sentiers : chacun garde son nom,
-              // et à défaut le fichier suivi de son rang — sans quoi la liste
-              // afficherait cent fois la même ligne.
-              name:
-                trail.name ??
-                (exploitables.length > 1
-                  ? `${nomDeBase} (${rang + 1})`
-                  : nomDeBase),
-              network: 'PERSO',
-              ways,
-              totalMeters: ways.reduce(
-                (somme, way) => somme + polylineLengthMeters(way.coords),
-                0,
-              ),
-              fetchedAt: new Date().toISOString(),
-              /*
-                La provenance suit l'itinéraire (issue #87). Sans elle, le
-                PDIPR que Léa importe s'exportait en GPX sans attribution —
-                ce que la Licence Ouverte interdit.
-
-                `importe` distingue un fichier déposé d'un tracé dessiné dans
-                l'application : les deux sont `PERSO`, et rien ne permettait
-                de dire « celui-ci vient de quelque part, et sa source
-                manque ».
-              */
-              attribution: lecture.source,
-              importe: true,
-            }
-            if (db) await db.saveCustomItinerary(itinerary)
-            imported.push(itinerary)
-          }
-        } catch (error) {
-          errors.push(
-            error instanceof GpxError ||
-              error instanceof FitError ||
-              error instanceof TcxError ||
-              error instanceof GeoJsonError
-              ? `${file.name} : ${error.message}`
-              : `${file.name} : lecture impossible.`,
-          )
-        }
-      }
-      set({ importProgress: null })
-      if (imported.length > 0) {
-        set((state) => ({
-          customItineraries: [...state.customItineraries, ...imported],
-        }))
-        await recompute()
-      }
-      if (errors.length > 0) {
-        set((state) => ({ importErrors: [...state.importErrors, ...errors] }))
-      }
-    },
-
-    async removeTrack(id) {
-      const { db } = get()
-      if (db) await db.deleteTrack(id)
-      set((state) => ({ tracks: state.tracks.filter((t) => t.id !== id) }))
-      await recompute()
-    },
-
-    async removeCustomItinerary(id) {
-      const { db } = get()
-      if (db) await db.deleteCustomItinerary(id)
-      if (get().detailItineraryId === id) get().closeItineraryDetail()
-      set((state) => ({
-        customItineraries: state.customItineraries.filter(
-          (i) => i.osmRelationId !== id,
-        ),
-        selectedItineraryId:
-          state.selectedItineraryId === id ? null : state.selectedItineraryId,
-      }))
-      await recompute()
     },
 
     async exporterSauvegarde() {
@@ -1750,28 +1461,6 @@ export const useAppStore = create<AppState>()((set, get) => {
       set({ celebration: null })
     },
 
-    clearImportErrors() {
-      set({ importErrors: [] })
-    },
-
-    async importerDoublon(id) {
-      const doublon = get().importDoublons.find((d) => d.id === id)
-      if (!doublon) return
-      set((state) => ({
-        importDoublons: state.importDoublons.filter((d) => d.id !== id),
-      }))
-      const db = await baseOuverte()
-      if (db) await db.saveTrack(doublon.track)
-      set((state) => ({ tracks: [...state.tracks, doublon.track] }))
-      await recompute()
-    },
-
-    ignorerDoublon(id) {
-      set((state) => ({
-        importDoublons: state.importDoublons.filter((d) => d.id !== id),
-      }))
-    },
-
     async demarrerDemonstration() {
       // Les boucles locales sont embarquées avec le site : la démonstration
       // fonctionne hors ligne, sur des données réelles et licenciées, sans
@@ -1894,11 +1583,26 @@ export const useAppStore = create<AppState>()((set, get) => {
       await recompute()
     },
 
-    ignorerTousDoublons() {
-      // Redéposer une archive entière produit autant de propositions que de
-      // sorties : sans ce geste, il faudrait les écarter une par une.
-      set({ importDoublons: [] })
-    },
+    ...trancheImport({
+      set,
+      etat: () => get(),
+      baseOuverte,
+      recompute,
+      protegerLeStockage,
+      sortirDeLaDemonstration: () => sortirDeLaDemonstration(get),
+      /*
+        La fiche se ferme si elle montre l'itinéraire qu'on supprime.
+
+        Passé en dépendance nommée plutôt que lu depuis `get()` : la tranche
+        n'a pas à savoir que la fiche détail existe, encore moins comment
+        elle s'appelle. C'est ce qui a rendu le couplage visible en écrivant
+        cette liste — l'import touche à sept choses distinctes, et il fallait
+        les nommer une à une pour s'en apercevoir.
+      */
+      fermerLaFicheSi: (id) => {
+        if (get().detailItineraryId === id) get().closeItineraryDetail()
+      },
+    }),
 
     ...trancheFiche({
       set,
