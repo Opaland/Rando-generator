@@ -90,6 +90,13 @@ const LARGEURS = [
  * - une **zone sans itinéraire** met à l'écran un message d'erreur qui
  *   n'apparaît nulle part ailleurs. Un texte qui ne se voit qu'en cas
  *   d'échec est exactement celui qu'on n'a jamais regardé de près.
+ *
+ * Le sixième est arrivé le 25/08, et par le même chemin que le quatrième :
+ * en cherchant ce que les cinq autres ne montraient pas. Le panneau
+ * **« Trouver une sortie »** est un `<details>` replié — aucun des cinq
+ * états ne l'ouvre, donc aucune de ses seize commandes n'avait jamais été
+ * mesurée, dont les trois ajoutées la nuit précédente. Ce qui est replié par
+ * défaut est ce qu'une sonde oublie par défaut.
  */
 const ETATS = [
   'accueil',
@@ -97,6 +104,7 @@ const ETATS = [
   'fiche ouverte',
   'mode simple',
   'zone sans itinéraire',
+  'filtres ouverts',
 ] as const
 type Etat = (typeof ETATS)[number]
 
@@ -151,6 +159,26 @@ async function atteindre(
     timeout: 15_000,
   })
   if (etat === 'zone chargée' || etat === 'mode simple') return
+
+  if (etat === 'filtres ouverts') {
+    /*
+      La liste vit sous l'onglet « progression » en compact, et non sous
+      « carte » : la sonde jetable qui a mené à cet état a cherché deux fois
+      au mauvais endroit avant que l'inventaire du DOM ne le dise.
+    */
+    if (compact) await ouvrirOnglet(page, 'progression')
+    const panneau = page.getByTestId('discovery-filters')
+    await panneau.locator('summary').click()
+    /*
+      On **prouve** que le panneau s'est ouvert, comme le mode simple prouve
+      qu'il a pris : sans cela, un `<details>` resté replié ferait remesurer
+      l'état « zone chargée » sous un autre nom — trois tests verts de plus,
+      pas une mesure de plus.
+    */
+    await expect(panneau.getByTestId('list-length')).toBeVisible()
+    return
+  }
+
   await ouvrirLaFiche(page, compact)
 }
 
@@ -424,6 +452,26 @@ for (const vue of LARGEURS) {
        * bascule d'attribution. Ils sont dans notre DOM et sous notre doigt, et
        * ils étaient à 29 px. Ce qui reste listé sans bloquer est donc réduit
        * aux liens d'attribution — assez peu pour que la liste garde un sens.
+       *
+       * ## Ce que la question ne voyait pas jusqu'au 25/08
+       *
+       * Elle interrogeait `button, a[href], summary, [role="button"],
+       * input[type="range"]`. **Ni `select`, ni `input` hors `range`, ni
+       * `textarea`** : vingt-cinq commandes du dépôt, dont les seize du
+       * panneau de filtres, n'avaient jamais été mesurées. Elles se sont
+       * révélées toutes à 44 px — le plancher CSS les tenait déjà — mais
+       * c'était par chance, pas par surveillance.
+       *
+       * **La cible d'une case à cocher est son `label`, pas la case.** Une
+       * case fait treize pixels ; cliquer son étiquette la bascule, et c'est
+       * garanti par HTML, pas par une convention. Mesurer la case seule
+       * rapporterait un défaut là où le doigt a de la place.
+       *
+       * Cette indulgence s'arrête là. Pour un `select`, un champ de texte ou
+       * un `textarea`, cliquer l'étiquette **donne le focus sans ouvrir la
+       * liste ni poser le curseur** : ce qu'on vise reste la commande. Leur
+       * accorder la boîte de l'étiquette aurait déclaré conforme un menu de
+       * douze pixels posé à côté d'un long libellé.
        */
       test('les cibles font la taille du geste qui les vise', async ({
         page,
@@ -436,22 +484,29 @@ for (const vue of LARGEURS) {
             const notres: { quoi: string; l: number; h: number }[] = []
             const maplibre: { quoi: string; l: number; h: number }[] = []
             const cibles = document.querySelectorAll(
-              'button, a[href], summary, [role="button"], input[type="range"]',
+              'button, a[href], summary, [role="button"], select, textarea, input',
             )
             for (const el of Array.from(cibles)) {
-              const r = el.getBoundingClientRect()
-              if (r.width < 2 || r.height < 2) continue
+              const propre = el.getBoundingClientRect()
+              if (propre.width < 2 || propre.height < 2) continue
               const style = getComputedStyle(el)
               if (style.visibility === 'hidden' || style.display === 'none') {
                 continue
               }
               if (el.tagName === 'A' && el.closest('p, li, span')) continue
+              // Voir plus haut : seules la case et le bouton radio héritent
+              // de la boîte de leur étiquette.
+              const coche =
+                el instanceof HTMLInputElement &&
+                (el.type === 'checkbox' || el.type === 'radio')
+              const etiquette = coche ? el.closest('label') : null
+              const r = (etiquette ?? el).getBoundingClientRect()
               if (r.height >= plancher && r.width >= plancher) continue
               const fiche = {
                 quoi:
                   el.getAttribute('data-testid') ??
                   el.getAttribute('aria-label') ??
-                  el.textContent.trim().slice(0, 28),
+                  (etiquette ?? el).textContent.trim().slice(0, 28),
                 l: Math.round(r.width),
                 h: Math.round(r.height),
               }

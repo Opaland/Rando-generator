@@ -137,9 +137,9 @@
 
   /* Typographie : pas de police distante (les données ne quittent pas le
      navigateur, les requêtes de polices non plus). */
-  --font-display: 'Avenir Next', 'Futura', 'Trebuchet MS', 'Segoe UI',
-    system-ui, sans-serif;
-  --font-sans: system-ui, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  --font-display:
+    "Avenir Next", "Futura", "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
+  --font-sans: system-ui, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
 
   /* L'échelle typographique complète. Elle existe pour qu'un seul endroit
      décide de ces tailles : l'application se lit dehors, en marchant, en
@@ -256,7 +256,9 @@
      Le repli additionne le pire cas de chaque terme : réserver trop de place
      coûte quelques pixels, en recouvrir une mention exigée par l'ODbL et la
      Licence Ouverte coûte autre chose. */
-  --bande-attribution: calc(64px + var(--hauteur-onglets) + var(--hauteur-poignee));
+  --bande-attribution: calc(
+    64px + var(--hauteur-onglets) + var(--hauteur-poignee)
+  );
   --z-onglets: 10; /* Prototype #171 : barre d'onglets, au-dessus de la
                       feuille — une navigation que la feuille dépliée
                       recouvrirait ne serait plus une navigation. */
@@ -346,7 +348,10 @@ a:focus-visible,
   font-size: var(--texte-courant);
   font-weight: 600;
   border: 1px solid transparent;
-  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s,
+    color 0.15s;
 }
 
 .btn-primary {
@@ -466,6 +471,36 @@ a:focus-visible,
   min-height: var(--cible-mini);
 }
 
+/*
+  Les commandes de formulaire, au curseur comme au doigt (issue #302).
+
+  La liste ci-dessous et celle de la question 4 des règles d'écran avaient
+  **le même angle mort** : ni `select`, ni `input` hors `range`, ni
+  `textarea`. Vingt-cinq commandes du dépôt n'étaient donc ni tenues par le
+  CSS ni surveillées par la sonde — et les deux boutons radio du seuil
+  « bouclé » faisaient 22 px de haut sur un écran de bureau, sous le
+  plancher de 24 px de WCAG 2.5.8. C'est le réglage qui décide de ce que le
+  mot « bouclé » veut dire partout ailleurs.
+
+  **La cible d'une case à cocher est son étiquette, pas la case.** Une case
+  fait treize pixels ; cliquer son `label` la bascule, et c'est garanti par
+  HTML. C'est donc le `label` qu'on plancherise — et `:has()` permet de le
+  dire sans ajouter une classe à recopier, ce que le §4 proscrit.
+
+  Cette règle-ci vaut aux deux tailles de pointeur, contrairement à celle
+  des boutons qui ne vit que sous `pointer: coarse`. Cette asymétrie est
+  héritée, pas décidée aujourd'hui : l'étendre aux boutons de bureau
+  déplacerait toutes les barres d'action de l'application, et ça se mesure
+  avant de se poser. Les règles d'écran surveillent désormais les deux cas.
+*/
+select,
+textarea,
+input:not([type="checkbox"], [type="radio"], [type="hidden"], [type="file"]),
+label:has(> input[type="checkbox"]),
+label:has(> input[type="radio"]) {
+  min-height: var(--cible-mini);
+}
+
 @media (pointer: coarse) {
   /*
     Au doigt, une cible fait quarante-quatre pixels. Une règle, un endroit.
@@ -502,8 +537,13 @@ a:focus-visible,
   button,
   a[href],
   summary,
-  [role='button'],
-  input[type='range'] {
+  [role="button"],
+  input[type="range"],
+  select,
+  textarea,
+  input:not([type="checkbox"], [type="radio"], [type="hidden"], [type="file"]),
+  label:has(> input[type="checkbox"]),
+  label:has(> input[type="radio"]) {
     min-height: var(--cible-mini);
   }
 
@@ -529,11 +569,11 @@ a:focus-visible,
 }
 
 .acc-summary::marker {
-  content: '';
+  content: "";
 }
 
 .acc-summary::after {
-  content: '▾';
+  content: "▾";
   flex: none;
   font-size: var(--texte-mention);
   color: var(--gris-vert);
@@ -610,28 +650,28 @@ details[open] > .acc-summary::after {
   button,
   summary,
   select,
-  input[type='search'],
-  input[type='text'],
-  input[type='number'] {
+  input[type="search"],
+  input[type="text"],
+  input[type="number"] {
     min-height: 44px;
   }
 
   /* La coche reste discrète visuellement, mais sa zone de contact ne l'est
      plus : c'est l'étiquette entière qui devient la cible. */
-  input[type='checkbox'],
-  input[type='radio'] {
+  input[type="checkbox"],
+  input[type="radio"] {
     width: 24px;
     height: 24px;
   }
 
-  label:has(input[type='checkbox']),
-  label:has(input[type='radio']) {
+  label:has(input[type="checkbox"]),
+  label:has(input[type="radio"]) {
     min-height: 44px;
   }
 
   /* Un curseur de 16 px de haut se rate au doigt ; on élargit la zone sans
      grossir le trait. */
-  input[type='range'] {
+  input[type="range"] {
     height: 44px;
   }
 
@@ -644,16 +684,15 @@ details[open] > .acc-summary::after {
   }
 }
 
-
 /* Un champ de saisie garde par défaut la largeur de vingt caractères, quelle
    que soit la place disponible. À 200 % de texte sur un écran de 360 px,
    cette largeur intrinsèque passait à 395 px et forçait tout le panneau à
    580 px : le tableau de bord se retrouvait coupé, à faire défiler
    latéralement. C'est le genre de débordement qui rend une page inutilisable
    en grossissement bien avant qu'elle ne devienne illisible (issue #173). */
-input[type='text'],
-input[type='search'],
-input[type='number'],
+input[type="text"],
+input[type="search"],
+input[type="number"],
 select {
   min-width: 0;
   max-width: 100%;
@@ -701,7 +740,7 @@ aside :is(button, label, p, li, h2, h3, span, output) {
    `zoom` ou un `transform` : les rem suivent, les media queries continuent
    de décrire des pixels réels, et rien ne se retrouve tronqué hors du cadre
    sur un écran de 360 px. */
-:root[data-gros-texte='oui'] {
+:root[data-gros-texte="oui"] {
   font-size: 125%;
 
   /* Les trois paliers de texte secondaire montent d'autant : à 200 %, un
@@ -727,6 +766,7 @@ aside :is(button, label, p, li, h2, h3, span, output) {
 
 /* Les bordures d'un pixel disparaissent quand on a du mal à voir : elles
    passent à deux, sans toucher à la mise en page (les paddings restent). */
-:root[data-gros-texte='oui'] :is(button, input, select, textarea, summary):focus-visible {
+:root[data-gros-texte="oui"]
+  :is(button, input, select, textarea, summary):focus-visible {
   outline-width: 3px;
 }

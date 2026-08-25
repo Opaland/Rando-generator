@@ -1,4 +1,5 @@
 import { polylineLengthMeters } from './sampling.ts'
+import { distanceMeters } from './geo.ts'
 import type { Itinerary, LonLat } from './types.ts'
 
 /**
@@ -224,13 +225,44 @@ export interface Bande {
 export function bandesDeRevetement(itinerary: Itinerary): Bande[] {
   const bandes: Bande[] = []
   let curseur = 0
+  let finPrecedente: LonLat | null = null
   for (const way of itinerary.ways) {
+    /*
+      Le saut d'un way au suivant compte dans l'axe (constat du 25/08 sur la
+      Via Lugdunum : « les terrains sont coupés »).
+
+      Le profil altimétrique mesure la polyligne **concaténée** : entre deux
+      ways disjoints il parcourt la ligne droite qui les relie, et cette
+      distance est sur son axe. Les bandes l'ignoraient, si bien qu'elles
+      s'arrêtaient d'autant plus tôt que l'itinéraire était troué — à
+      mi-largeur sur les deux cents kilomètres de la Via Lugdunum, où les
+      bandes et la courbe ne parlaient plus de la même chose.
+
+      Rien n'est peint sur le saut : personne n'a relevé ce qu'il y a là, et
+      le §2 interdit d'y mettre une valeur. Il n'y a pas non plus de seuil à
+      inventer — un saut nul ne décale rien, et deux ways contigus se
+      comportent exactement comme avant.
+
+      Le calcul vit **avant** la garde sur la longueur, et non après : un way
+      d'un seul point ne fait pas de bande, mais son point est dans
+      `itineraryCoords`, donc dans l'axe du profil. L'ignorer rouvrirait le
+      même écart en plus petit.
+    */
+    const debut = way.coords[0]
+    const saut =
+      finPrecedente && debut ? distanceMeters(finPrecedente, debut) : 0
+    curseur += saut
+    finPrecedente = way.coords.at(-1) ?? finPrecedente
+
     const longueur = polylineLengthMeters(way.coords)
     // Un way d'un seul point n'a pas de longueur : l'inclure créerait une
     // bande vide, et une bande vide se dessine comme un trait parasite.
     if (longueur <= 0) continue
+
     const { famille, origine, surface } = revetementDuChemin(way.tags)
-    const derniere = bandes.at(-1)
+    // Fusionner par-dessus un trou peindrait le revêtement du tronçon
+    // précédent sur une distance que personne n'a relevée.
+    const derniere = saut > 0 ? undefined : bandes.at(-1)
     // Fusion des voisins équivalents : sans elle, un long itinéraire rendrait
     // des centaines de bandes identiques, illisibles et coûteuses à peindre.
     //

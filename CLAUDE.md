@@ -125,6 +125,39 @@ Le remède n'est pas d'en écrire moins — ces commentaires portent le pourquoi
 et c'est ce qui manque partout ailleurs. C'est de les traiter comme des
 assertions : quand une phrase dit « parce que X », **X se vérifie**, et de
 préférence par un test plutôt que par une relecture.
+## 4ter. Deux listes qui disent la même règle ont le même trou
+
+Le 25/08, deux défauts trouvés dans la même heure, sur des sujets sans
+rapport, avec la même forme :
+
+- la liste des commandes plancherisées par `src/index.css` et celle mesurée
+  par la question 4 de `regles-d-ecran.spec.ts` étaient **la même liste,
+  écrite deux fois** — et il y manquait `select`, `input` et `textarea` des
+  deux côtés. Vingt-cinq commandes du dépôt n'étaient ni tenues ni
+  surveillées, et deux boutons radio faisaient 22 px ;
+- la distance cumulée le long d'un itinéraire se calculait **trois fois**,
+  par trois chemins. Sur une relation OSM désordonnée — le cas ordinaire —
+  les trois rendent 4 685 m, 10 931 m et un troisième nombre (#303).
+
+Aucun des deux n'était visible dans un diff. **Les deux fichiers ne changent
+jamais ensemble, et chacun paraît complet quand on le lit seul.**
+
+C'est le §4 vu depuis l'autre bout. Le §4 dit de nommer une garde plutôt que
+de la recopier — mais on ne sait pas qu'on recopie au moment où on le fait,
+et après, plus personne ne le voit.
+
+Trois issues, dans cet ordre :
+
+1. **une fonction nommée** appelée des deux côtés ;
+2. **un test qui asserte que les deux sont d'accord**, quand elles ne peuvent
+   pas être partagées — du CSS et du TypeScript ne s'importent pas.
+   `scripts/listes-jumelles.mjs` fait exactement ça, tourne dans `npm run
+   listes`, et échoue en nommant le genre manquant ;
+3. **une issue**, quand décider laquelle a raison change ce qui est calculé
+   (§2).
+
+Et jamais un commentaire disant « penser à mettre à jour l'autre » : le
+§6quater est formel, s'il faut le lire il ne garde rien.
 
 ---
 
@@ -272,10 +305,10 @@ résultat obtenu autrement se jette, il ne se discute pas.
 Les règles d'écran (`tests/e2e/regles-d-ecran.spec.ts`) posent cinq
 questions mesurables — qu'est-ce qui est peint par-dessus quoi, qu'est-ce
 qui est écrasé, qu'est-ce qui déborde sans le dire, qu'est-ce qu'on ne peut
-pas toucher, qu'est-ce qui sort du cadre — à trois largeurs et dans trois
+pas toucher, qu'est-ce qui sort du cadre — à trois largeurs et dans six
 états.
 
-Les trois états ne sont pas décoratifs. La première version n'auscultait
+Les états ne sont pas décoratifs. La première version n'auscultait
 que l'écran d'accueil : une injection remettant le profil écrasé passait au
 vert, parce que le profil n'existe pas encore à ce moment-là. Élargie aux
 états, la même sonde a trouvé du neuf le jour même — les cinq commandes de
@@ -283,6 +316,13 @@ zoom du profil, à 28 px.
 
 **Une sonde se juge sur ce qu'elle trouve quand on remet un défaut, pas sur
 le nombre de ses assertions.**
+
+Le 25/08, un sixième état est arrivé par le même chemin : le panneau
+« Trouver une sortie » est un `<details>` **replié par défaut**, qu'aucun des
+cinq n'ouvrait. Ses seize commandes n'avaient jamais été mesurées. Élargie,
+la sonde a trouvé du neuf le jour même — deux boutons radio à 22 px, sous le
+plancher de 24 px de WCAG 2.5.8. **Ce qui est replié par défaut est ce qu'une
+sonde oublie par défaut.**
 
 ## 6sexies. Ce qui est mesurable se mesure ; le reste se décide, et se dit
 

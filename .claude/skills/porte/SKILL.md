@@ -1,12 +1,12 @@
 ---
 name: porte
-description: Lance la porte complète avant commit sur Sentiers — lint, typecheck, couverture, build, e2e Playwright et monkey — dans le bon ordre et avec les bons pièges évités. À utiliser avant tout commit, et quand on veut savoir si l'arbre est sain.
+description: Lance la porte complète avant commit sur Sentiers — lint, listes jumelles, typecheck, couverture, build, e2e Playwright et monkey — dans le bon ordre et avec les bons pièges évités. À utiliser avant tout commit, et quand on veut savoir si l'arbre est sain.
 ---
 
 # La porte complète
 
-Le hook `PreToolUse` ne couvre que ce qui tient en une minute (lint,
-typecheck, tests unitaires). Cette procédure lance le reste.
+Le hook `PreToolUse` ne couvre que ce qui tient en une minute (lint, listes
+jumelles, typecheck, tests unitaires). Cette procédure lance le reste.
 
 ## L'ordre, et pourquoi
 
@@ -15,6 +15,7 @@ précédente, autant échouer tôt.
 
 ```bash
 npm run lint
+npm run listes             # le CSS et la sonde d'écran, même règle (§4ter)
 npx tsc -b --noEmit        # PAS `tsc --noEmit` : voir plus bas
 npm run coverage           # seuil 90 % de branches sur src/core
 npm run build              # SANS masquer la sortie

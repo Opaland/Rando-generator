@@ -36,8 +36,8 @@ export PW_CHROMIUM_PATH=/opt/pw-browsers/chromium
 npx playwright test tests/e2e/regles-d-ecran.spec.ts --workers=1
 ```
 
-Trente-six mesures : recouvrements, dessins écrasés, débordements, cibles
-tactiles — à trois largeurs, dans trois états, plus le mode gros texte. Lis
+Soixante-trois mesures : recouvrements, dessins écrasés, débordements, cibles
+tactiles — à trois largeurs, dans six états, plus le mode gros texte. Lis
 les messages d'échec : ils portent les chiffres.
 
 ## 2. Regarde vraiment
