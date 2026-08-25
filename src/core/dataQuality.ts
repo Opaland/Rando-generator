@@ -1,5 +1,5 @@
 import { distanceMeters } from './geo.ts'
-import { chainWays } from './stages.ts'
+import { chainWays } from './chainage.ts'
 import type { Itinerary, LonLat } from './types.ts'
 
 /**

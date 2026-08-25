@@ -1,15 +1,67 @@
 import { slicePolyline } from './sampling.ts'
+import { chainWays } from './chainage.ts'
 import type { Itinerary, LonLat, Network, Sample, Track } from './types.ts'
 import { STEP_METERS } from './types.ts'
 
 /**
- * Concatène les coordonnées de tous les ways d'un itinéraire, dans l'ordre
- * des membres — approximation raisonnable pour un profil altimétrique ou une
- * boîte englobante (l'ordre des membres d'une relation OSM entretenue suit
- * généralement le sens de l'itinéraire).
+ * La géométrie d'un itinéraire, **dans l'ordre de la marche** (issue #303).
+ *
+ * ## Ce que cette fonction rendait avant, et pourquoi c'était faux
+ *
+ * Elle concaténait les ways dans l'ordre des membres, sous un commentaire
+ * qui appelait ça une « approximation raisonnable », au motif que « l'ordre
+ * des membres d'une relation OSM entretenue suit généralement le sens de
+ * l'itinéraire ».
+ *
+ * Cette phrase n'a jamais été mesurée. Sur trois tronçons **contigus**
+ * donnés dans l'ordre quelconque d'OSM, l'un décrit à l'envers — le cas
+ * ordinaire, pas un cas tordu — l'ancienne version rendait **10 931 m** là
+ * où l'itinéraire en fait **4 685**. Le profil altimétrique montrait des
+ * montées et des descentes qui n'existaient pas : c'étaient les
+ * allers-retours d'un bout à l'autre du tracé, échantillonnés en ligne
+ * droite.
+ *
+ * C'est le §4bis dans sa forme la plus coûteuse — une justification qui
+ * excuse une approximation, et que personne ne relit.
+ *
+ * ## Ce que le chaînage ne prétend pas
+ *
+ * Il ne répare pas une relation trouée : ce que `chainWays` ne peut pas
+ * raccrocher est ajouté à la suite, pour ne perdre aucun kilomètre, et le
+ * saut compte dans l'axe — c'est une distance qu'on parcourt en ligne droite
+ * sur le graphique. `core/dataQuality.ts` la mesure et la fiche la dit.
+ *
+ * `tests/unit/axeDesDistances.test.ts` asserte l'accord des trois axes —
+ * celui-ci, celui des bandes de terrain et celui des étapes — plutôt qu'un
+ * nombre recopié : un nombre vieillit, un accord non.
  */
+function memePoint(a: LonLat | undefined, b: LonLat | undefined): boolean {
+  if (!a || !b) return false
+  return a[0] === b[0] && a[1] === b[1]
+}
+
 export function itineraryCoords(itinerary: Itinerary): LonLat[] {
-  return itinerary.ways.flatMap((way) => way.coords)
+  const parId = new Map(itinerary.ways.map((way) => [way.osmWayId, way]))
+  const coords: LonLat[] = []
+  for (const maillon of chainWays(itinerary.ways)) {
+    const way = parId.get(maillon.wayId)
+    if (!way) continue
+    const points = maillon.reversed ? [...way.coords].reverse() : way.coords
+    /*
+      On ne répète pas le point de jonction quand deux tronçons se touchent :
+      un doublon ne change pas la longueur, mais il fait une marche de zéro
+      mètre dans l'échantillonnage du profil, et deux relevés d'altitude au
+      même endroit.
+    */
+    const debut =
+      coords.length > 0 && memePoint(coords[coords.length - 1], points[0])
+        ? 1
+        : 0
+    for (let i = debut; i < points.length; i += 1) {
+      coords.push(points[i] as LonLat)
+    }
+  }
+  return coords
 }
 
 /** GeoJSON minimal — évite une dépendance de types externe dans core. */
@@ -54,7 +106,11 @@ const NETWORK_PRIORITY: Record<Network, number> = {
 }
 
 function lineFeature<P>(coordinates: LonLat[], properties: P): LineFeature<P> {
-  return { type: 'Feature', geometry: { type: 'LineString', coordinates }, properties }
+  return {
+    type: 'Feature',
+    geometry: { type: 'LineString', coordinates },
+    properties,
+  }
 }
 
 export interface TrailGeoJSON {
@@ -91,7 +147,9 @@ export function buildTrailGeoJSON(
         if (!existing.itineraryIds.includes(itin.osmRelationId)) {
           existing.itineraryIds.push(itin.osmRelationId)
         }
-        if (NETWORK_PRIORITY[itin.network] < NETWORK_PRIORITY[existing.network]) {
+        if (
+          NETWORK_PRIORITY[itin.network] < NETWORK_PRIORITY[existing.network]
+        ) {
           existing.network = itin.network
           existing.itineraryId = itin.osmRelationId
         }
