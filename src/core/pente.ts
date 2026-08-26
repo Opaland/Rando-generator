@@ -118,6 +118,41 @@ export function penteMaximale(profil: ElevationProfile): MesureDePente {
 }
 
 /**
+ * La plus forte pente parmi plusieurs morceaux de chemin (issue #323).
+ *
+ * Sur une relation trouée, le profil enjambe les interruptions en ligne
+ * droite : une pente calculée d'un bord à l'autre d'un trou de huit cents
+ * mètres mesure une falaise que personne ne montera, parce que personne n'y
+ * passera. `tronconsContinus` sépare les morceaux ; celle-ci prend le pire de
+ * chacun.
+ *
+ * Quand aucun morceau n'est mesurable, l'état rendu est celui qui explique le
+ * mieux : « trop fine » l'emporte sur « sans altitude », parce qu'il y a
+ * quelque chose à dire.
+ */
+export function penteMaximaleSurTroncons(
+  troncons: ElevationProfile[],
+): MesureDePente {
+  let meilleure: Pente | null = null
+  let pasLePlusLong: number | null = null
+
+  for (const troncon of troncons) {
+    const mesure = penteMaximale(troncon)
+    if (mesure.etat === 'mesuree') {
+      if (meilleure === null || mesure.pente.pourcent > meilleure.pourcent) {
+        meilleure = mesure.pente
+      }
+    } else if (mesure.etat === 'trop-fine') {
+      pasLePlusLong = Math.max(pasLePlusLong ?? 0, mesure.pasLePlusLong)
+    }
+  }
+
+  if (meilleure !== null) return { etat: 'mesuree', pente: meilleure }
+  if (pasLePlusLong !== null) return { etat: 'trop-fine', pasLePlusLong }
+  return { etat: 'sans-altitude' }
+}
+
+/**
  * La phrase qui accompagne le chiffre — et qui ne doit jamais être remplacée
  * par le chiffre seul.
  *

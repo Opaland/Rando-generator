@@ -31,6 +31,22 @@ import type { LonLat, TrailWay } from './types.ts'
 /** Précision de regroupement des extrémités de tronçons (~1 m). */
 const NODE_PRECISION_DEG = 1e-5
 
+/**
+ * En deçà, une interruption relève de l'imprécision de saisie, pas d'un trou.
+ *
+ * Le seuil vivait dans `core/dataQuality.ts`, qui s'en servait pour compter
+ * les trous d'une relation. `core/mapdata.ts` en a besoin pour la même chose —
+ * savoir quels segments de la polyligne chaînée sont des sauts et non du
+ * chemin (issue #323) — et deux constantes qui disent la même règle
+ * finiraient par ne plus la dire pareil (§4ter).
+ *
+ * Il est ici plutôt que là-bas parce que c'est le chaînage qui décide où les
+ * morceaux se recollent : `NODE_PRECISION_DEG` dit ce qui est *le même point*,
+ * celui-ci dit ce qui est *un vrai trou*. Les deux répondent à la même
+ * question à deux échelles, et se lisent ensemble.
+ */
+export const MIN_GAP_METERS = 100
+
 function nodeKey(point: LonLat): string {
   return `${Math.round(point[0] / NODE_PRECISION_DEG)},${Math.round(point[1] / NODE_PRECISION_DEG)}`
 }

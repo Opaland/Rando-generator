@@ -1,4 +1,5 @@
 import { distanceMeters } from './geo.ts'
+import type { Interruption } from './mapdata.ts'
 import type { ElevationProfile, LonLat } from './types.ts'
 
 /** Erreur du service altimétrique, message affichable tel quel à l'utilisateur. */
@@ -138,6 +139,99 @@ export interface ElevationStats {
  * une variation n'est comptée que si elle dépasse `thresholdMeters` depuis le
  * dernier extremum. Retourne null si aucune altitude n'est exploitable.
  */
+/**
+ * Découpe un profil aux interruptions du tracé (issue #323).
+ *
+ * Sur une relation trouée, `itineraryCoords` met les morceaux bout à bout :
+ * entre deux d'entre eux il reste un segment droit qui ne correspond à aucun
+ * chemin. Le service altimétrique répond très bien pour ce segment-là — il
+ * rend l'altitude du sol sous une ligne droite qui coupe à travers champs,
+ * franchit une combe, passe sous une falaise.
+ *
+ * Ces mètres-là entraient dans le D+, dans le D− et dans la pente maximale,
+ * et rien à l'écran ne disait lesquels. Sur « La Sente du Sanglier », relevée
+ * par Cédric le 25/08 : **3,9 km d'interruptions sur 14,6 — 27 % de l'axe.**
+ *
+ * Les points qui tombent **strictement à l'intérieur** d'un saut sont écartés :
+ * ce sont des relevés d'un terrain qu'on ne traversera pas. Ceux qui tombent
+ * exactement sur une borne appartiennent au morceau de chemin qui les touche.
+ *
+ * Nommé plutôt que refait : trois choses en dépendent — le D+, la pente et le
+ * dessin de la courbe — et elles doivent couper aux mêmes endroits.
+ */
+export function tronconsContinus(
+  profil: ElevationProfile,
+  interruptions: Interruption[],
+): ElevationProfile[] {
+  const bornes = [...interruptions].sort(
+    (a, b) => a.debutMetres - b.debutMetres,
+  )
+  const troncons: ElevationProfile[] = []
+  let courant: ElevationProfile = { distances: [], elevations: [], coords: [] }
+  let k = 0
+
+  const fermer = () => {
+    if (courant.distances.length > 0) troncons.push(courant)
+    courant = { distances: [], elevations: [], coords: [] }
+  }
+
+  for (let i = 0; i < profil.distances.length; i += 1) {
+    const distance = profil.distances[i]
+    if (typeof distance !== 'number') continue
+    // Le point est-il au-delà de l'interruption courante ? Alors elle est
+    // franchie, et ce qui suit appartient au morceau suivant.
+    while (k < bornes.length && distance >= (bornes[k]?.finMetres ?? 0)) {
+      fermer()
+      k += 1
+    }
+    const saut = bornes[k]
+    if (saut && distance > saut.debutMetres) {
+      // Strictement dans le saut : ce relevé décrit un sol qu'on ne foulera
+      // pas. Le garder ferait monter le D+ d'une combe qui n'est pas sur le
+      // chemin.
+      fermer()
+      continue
+    }
+    courant.distances.push(distance)
+    courant.elevations.push(profil.elevations[i] ?? null)
+    const point = profil.coords[i]
+    if (point) courant.coords.push(point)
+  }
+  fermer()
+  return troncons
+}
+
+/**
+ * Le cumul des dénivelées de plusieurs morceaux, sans compter ce qui les
+ * sépare.
+ *
+ * Les gains et les pertes s'additionnent morceau par morceau ; l'altitude
+ * minimale et maximale sont celles de l'ensemble — ce sont des relevés du
+ * terrain réel, ils restent vrais quel que soit le découpage.
+ */
+export function statsCumulees(
+  troncons: ElevationProfile[],
+  thresholdMeters = 3,
+): ElevationStats | null {
+  let gain = 0
+  let loss = 0
+  let min = Infinity
+  let max = -Infinity
+  let quelqueChose = false
+
+  for (const troncon of troncons) {
+    const stats = elevationStats(troncon.elevations, thresholdMeters)
+    if (stats === null) continue
+    quelqueChose = true
+    gain += stats.gain
+    loss += stats.loss
+    min = Math.min(min, stats.min)
+    max = Math.max(max, stats.max)
+  }
+
+  return quelqueChose ? { gain, loss, min, max } : null
+}
+
 export function elevationStats(
   elevations: (number | null)[],
   thresholdMeters = 3,
