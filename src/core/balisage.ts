@@ -24,6 +24,16 @@ export interface Balisage {
   fond: string
   /** Le symbole posé dessus, ex. `red_bar`. */
   premierPlan: string
+  /**
+   * Le second symbole, quand la balise en porte deux (ex. `white_dot`).
+   *
+   * La grammaire l'admet depuis toujours ; nous ne le lisions pas. Un sentier
+   * balisé « rectangle rouge **et** disque blanc » était décrit comme un
+   * simple rectangle rouge — pas faux, incomplet, et **incomplet en
+   * silence** (issue #290). C'est le mode d'échec que ce dépôt connaît le
+   * mieux : une omission qui a l'air d'une réponse.
+   */
+  secondPlan: string | null
   /** Le texte porté par la balise, quand elle en porte un (ex. « 7 »). */
   texte: string | null
 }
@@ -42,11 +52,24 @@ export function lireBalisage(tag: string | undefined): Balisage | null {
   if (champs.length < 3) return null
   const [couleurVoie, fond, premierPlan] = champs as [string, string, string]
   if (!couleurVoie || !fond || !premierPlan) return null
+  /*
+    Le second symbole ne peut occuper que la quatrième place : la grammaire
+    est positionnelle. On le reconnaît au `_` — un nom de symbole en porte
+    toujours un (`red_bar`, `blue_dot`), un texte de balise pratiquement
+    jamais, puisque c'est un numéro ou une lettre.
+  */
+  const quatrieme = champs[3]
+  const secondPlan =
+    quatrieme && quatrieme.includes('_') ? quatrieme : null
   // Le texte est le premier champ suivant qui n'est pas un nom de symbole.
-  // Un nom de symbole porte toujours un `_` (`red_bar`, `blue_dot`), un texte
-  // de balise pratiquement jamais — c'est un numéro ou une lettre.
   const texte = champs.slice(3).find((c) => c !== '' && !c.includes('_'))
-  return { couleurVoie, fond, premierPlan, texte: texte ?? null }
+  return {
+    couleurVoie,
+    fond,
+    premierPlan,
+    secondPlan,
+    texte: texte ?? null,
+  }
 }
 
 /**
@@ -138,16 +161,47 @@ function lireSymbole(brut: string): { couleur: string; forme: string } | null {
  * sait pas — là où un mot approximatif enverrait quelqu'un chercher une
  * marque qui n'existe pas.
  */
+/**
+ * « rectangle rouge », « bande blanche » — l'accord se fait sur la forme.
+ *
+ * Nommé plutôt que recopié : la question se pose désormais deux fois, pour le
+ * premier symbole et pour le second, et une garde transverse se nomme (§4).
+ */
+function nommerSymbole(symbole: { couleur: string; forme: string }): string {
+  const couleur = FEMININ.has(symbole.forme)
+    ? (FEMININS_COULEUR[symbole.couleur] ?? symbole.couleur)
+    : symbole.couleur
+  return `${symbole.forme} ${couleur}`
+}
+
 export function decrireBalisage(tag: string | undefined): string | null {
   const lu = lireBalisage(tag)
   if (!lu) return null
   const symbole = lireSymbole(lu.premierPlan)
   const fond = COULEURS[lu.fond]
   if (!symbole || !fond) return null
-  const couleur = FEMININ.has(symbole.forme)
-    ? (FEMININS_COULEUR[symbole.couleur] ?? symbole.couleur)
-    : symbole.couleur
   const fondAccorde = FEMININS_COULEUR[fond] ?? fond
-  const base = `${symbole.forme} ${couleur} sur fond ${fond === 'blanc' ? fond : fondAccorde}`
+  const surFond = `sur fond ${fond === 'blanc' ? fond : fondAccorde}`
+
+  /*
+    Le second symbole, quand il y en a un (issue #290).
+
+    Deux cas, et le second est celui qui compte : s'il n'est pas dans nos
+    tables, on **le dit** au lieu de le laisser tomber. Rendre `null` pour
+    tout le tag perdrait un premier symbole parfaitement lu ; l'ignorer
+    rendrait une description incomplète qui a l'air complète — exactement ce
+    que l'issue reproche.
+  */
+  const second = lu.secondPlan ? lireSymbole(lu.secondPlan) : null
+  const symboles =
+    second !== null
+      ? `${nommerSymbole(symbole)} et ${nommerSymbole(second)}`
+      : nommerSymbole(symbole)
+  const inconnu =
+    lu.secondPlan !== null && second === null
+      ? ', plus un second symbole que nous ne savons pas lire'
+      : ''
+
+  const base = `${symboles} ${surFond}${inconnu}`
   return lu.texte ? `${base}, marqué « ${lu.texte} »` : base
 }

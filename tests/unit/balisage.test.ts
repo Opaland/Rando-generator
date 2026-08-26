@@ -22,6 +22,7 @@ describe('lireBalisage', () => {
     expect(lireBalisage('red:white:red_bar')).toEqual({
       couleurVoie: 'red',
       fond: 'white',
+      secondPlan: null,
       premierPlan: 'red_bar',
       texte: null,
     })
@@ -118,5 +119,75 @@ describe('decrireBalisage', () => {
   it('rend null sur un tag illisible', () => {
     expect(decrireBalisage('n’importe quoi')).toBeNull()
     expect(decrireBalisage(undefined)).toBeNull()
+  })
+})
+
+
+/**
+ * Le second symbole (issue #290), trouvé par la revue de persona du sprint 2.
+ *
+ * Marc, baliseur bénévole : la grammaire d'`osmc:symbol` admet **deux**
+ * premiers plans —
+ *
+ *     voie : fond : premier_plan : second_plan : texte : couleur_texte
+ *
+ * — et nous n'en lisions qu'un. Un sentier balisé « rectangle rouge **et**
+ * disque blanc » était décrit comme un simple rectangle rouge : pas faux,
+ * incomplet, et incomplet **en silence**.
+ */
+describe('le second symbole (#290)', () => {
+  it('décrit les deux symboles quand la balise en porte deux', () => {
+    expect(decrireBalisage('red:white:red_bar:white_dot')).toBe(
+      'rectangle rouge et disque blanc sur fond blanc',
+    )
+  })
+
+  it('accorde le second symbole comme le premier', () => {
+    // « bande blanche », pas « bande blanc ». L'accord se fait sur la forme,
+    // et il se posait déjà pour le premier : la question est nommée une fois
+    // (§4) plutôt que recopiée pour le second.
+    expect(decrireBalisage('red:white:red_bar:white_stripe')).toBe(
+      'rectangle rouge et bande blanche sur fond blanc',
+    )
+  })
+
+  it('ne confond pas un second symbole avec un texte de balise', () => {
+    // La grammaire est positionnelle : le quatrième champ est un second
+    // symbole s'il porte un `_`, un texte sinon. « 7 » est un texte.
+    expect(decrireBalisage('red:white:red_bar:7')).toBe(
+      'rectangle rouge sur fond blanc, marqué « 7 »',
+    )
+    expect(lireBalisage('red:white:red_bar:7')?.secondPlan).toBeNull()
+  })
+
+  it('porte les deux et le texte', () => {
+    expect(decrireBalisage('red:white:red_bar:white_dot:7')).toBe(
+      'rectangle rouge et disque blanc sur fond blanc, marqué « 7 »',
+    )
+  })
+
+  it('dit qu’il y a un second symbole même quand il ne sait pas le lire', () => {
+    /*
+      Le cœur de l'issue. Trois façons de traiter un second symbole absent
+      de nos tables, et deux sont mauvaises :
+
+      - rendre `null` pour tout le tag perdrait un premier symbole
+        parfaitement lu ;
+      - l'ignorer rendrait une description incomplète **qui a l'air
+        complète** — c'est exactement ce que #290 reproche ;
+      - le dire coûte huit mots et ne ment pas.
+    */
+    const texte = decrireBalisage('red:white:red_bar:mauve_hexagone')
+    expect(texte).toContain('rectangle rouge sur fond blanc')
+    expect(texte).toMatch(/second symbole/i)
+  })
+
+  it('ignore la couleur du texte, qui n’est pas un symbole', () => {
+    // Sixième champ de la grammaire. Sans `_`, il ne peut pas être pris pour
+    // un symbole ; et il ne doit pas non plus être pris pour le texte, qui
+    // est le champ d'avant.
+    expect(decrireBalisage('red:white:red_bar:white_dot:7:black')).toBe(
+      'rectangle rouge et disque blanc sur fond blanc, marqué « 7 »',
+    )
   })
 })
