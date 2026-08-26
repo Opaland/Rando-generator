@@ -19,7 +19,8 @@
     "monkey": "MONKEY=1 playwright test tests/e2e/monkey.spec.ts --workers=2",
     "og-image": "node scripts/og-image.mjs",
     "mutation": "stryker run",
-    "mesure": "MESURE=1 playwright test tests/e2e/mesure-bibliotheque.spec.ts --workers=1"
+    "mesure": "MESURE=1 playwright test tests/e2e/mesure-bibliotheque.spec.ts --workers=1",
+    "mesures-osm": "RESEAU=1 vitest run tests/unit/mesuresReseau.test.ts"
   },
   "dependencies": {
     "idb": "^8.0.3",
