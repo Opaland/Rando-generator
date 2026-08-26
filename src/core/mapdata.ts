@@ -1,5 +1,6 @@
 import { slicePolyline } from './sampling.ts'
-import { chainWays } from './chainage.ts'
+import { chainWays, MIN_GAP_METERS } from './chainage.ts'
+import { distanceMeters } from './geo.ts'
 import type { Itinerary, LonLat, Network, Sample, Track } from './types.ts'
 import { STEP_METERS } from './types.ts'
 
@@ -40,28 +41,94 @@ function memePoint(a: LonLat | undefined, b: LonLat | undefined): boolean {
   return a[0] === b[0] && a[1] === b[1]
 }
 
-export function itineraryCoords(itinerary: Itinerary): LonLat[] {
+/**
+ * Un segment de la polyligne chaînée qui n'est **pas du chemin** (issue #323).
+ *
+ * Quand la relation est trouée, `chainWays` met les morceaux bout à bout pour
+ * ne perdre aucun kilomètre : entre la fin de l'un et le début du suivant, il
+ * reste un segment droit qui ne correspond à aucun way. Les bornes sont des
+ * distances cumulées le long de la polyligne rendue par `itineraryCoords`,
+ * c'est-à-dire le même axe que celui du profil altimétrique.
+ */
+export interface Interruption {
+  /** Distance cumulée où le saut commence, en mètres. */
+  debutMetres: number
+  /** Distance cumulée où il finit. */
+  finMetres: number
+}
+
+interface TraceChainee {
+  coords: LonLat[]
+  interruptions: Interruption[]
+}
+
+/**
+ * La géométrie et ses sauts, **d'une seule passe**.
+ *
+ * Les deux se déduisent de la même boucle et doivent parler du même axe : les
+ * calculer séparément ferait deux fonctions qui disent la même règle, et qui
+ * finiraient par ne plus la dire pareil (§4ter). Le point de jonction
+ * dédoublonné en est l'exemple immédiat — un décalage d'un point suffirait à
+ * placer une interruption à côté de là où elle est.
+ */
+function chainerLeTrace(itinerary: Itinerary): TraceChainee {
   const parId = new Map(itinerary.ways.map((way) => [way.osmWayId, way]))
   const coords: LonLat[] = []
+  const interruptions: Interruption[] = []
+  let cumul = 0
+
   for (const maillon of chainWays(itinerary.ways)) {
     const way = parId.get(maillon.wayId)
     if (!way) continue
     const points = maillon.reversed ? [...way.coords].reverse() : way.coords
+    const premier = points[0]
+    if (!premier) continue
     /*
       On ne répète pas le point de jonction quand deux tronçons se touchent :
       un doublon ne change pas la longueur, mais il fait une marche de zéro
       mètre dans l'échantillonnage du profil, et deux relevés d'altitude au
       même endroit.
     */
-    const debut =
-      coords.length > 0 && memePoint(coords[coords.length - 1], points[0])
-        ? 1
-        : 0
-    for (let i = debut; i < points.length; i += 1) {
-      coords.push(points[i] as LonLat)
+    const dernier = coords[coords.length - 1]
+    const colle = memePoint(dernier, premier)
+    if (dernier && !colle) {
+      const saut = distanceMeters(dernier, premier)
+      /*
+        Le même seuil que celui des trous annoncés sur la fiche, et le même
+        objet : sous cent mètres, deux extrémités « séparées » sont le même
+        point saisi deux fois. Importé, pas recopié.
+      */
+      if (saut >= MIN_GAP_METERS) {
+        interruptions.push({ debutMetres: cumul, finMetres: cumul + saut })
+      }
+      cumul += saut
+    }
+    for (let i = colle ? 1 : 0; i < points.length; i += 1) {
+      const point = points[i] as LonLat
+      const precedent = coords[coords.length - 1]
+      if (precedent) cumul += distanceMeters(precedent, point)
+      coords.push(point)
     }
   }
-  return coords
+  return { coords, interruptions }
+}
+
+export function itineraryCoords(itinerary: Itinerary): LonLat[] {
+  return chainerLeTrace(itinerary).coords
+}
+
+/**
+ * Les segments de l'axe qui ne sont pas du chemin.
+ *
+ * Sur « La Sente du Sanglier », relevée par Cédric le 25/08 : cinq morceaux,
+ * 3,9 km d'interruptions sur 14,6 — **27 % de l'axe du profil**. Le service
+ * altimétrique répond très bien pour ces segments-là : il rend l'altitude du
+ * sol sous une ligne droite qui coupe à travers champs. Ces mètres entraient
+ * dans le D+, dans le D− et dans la pente maximale, et rien à l'écran ne
+ * disait lesquels.
+ */
+export function interruptionsDuTrace(itinerary: Itinerary): Interruption[] {
+  return chainerLeTrace(itinerary).interruptions
 }
 
 /** GeoJSON minimal — évite une dépendance de types externe dans core. */

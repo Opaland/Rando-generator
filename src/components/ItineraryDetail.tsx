@@ -21,8 +21,8 @@ import { lienSortant } from '../core/lienSortant.ts'
 import { ecartAuParcours, phraseDEcart } from '../core/ecartAuParcours.ts'
 import { ORDRE_TERRAIN } from '../core/legende.ts'
 import { TERRAIN_LABELS } from '../lib/revetementDisplay.ts'
-import { elevationStats } from '../core/elevation.ts'
-import { itineraryCoords } from '../core/mapdata.ts'
+import { statsCumulees, tronconsContinus } from '../core/elevation.ts'
+import { itineraryCoords, interruptionsDuTrace } from '../core/mapdata.ts'
 import { vientDOpenStreetMap } from '../core/provenance.ts'
 import {
   situerPois,
@@ -52,7 +52,7 @@ import { DeclarerParcouru } from './DeclarerParcouru.tsx'
 import { ElevationChart } from './ElevationChart.tsx'
 import { ProgressBalise } from './ProgressBalise.tsx'
 import styles from './ItineraryDetail.module.css'
-import { penteMaximale, libellePente } from '../core/pente.ts'
+import { penteMaximaleSurTroncons, libellePente } from '../core/pente.ts'
 import { bandesDeRevetement } from '../core/revetement.ts'
 
 /**
@@ -148,14 +148,28 @@ export function ItineraryDetail() {
     new Date(),
   )
 
-  const stats = elevationProfile
-    ? elevationStats(elevationProfile.elevations)
-    : null
+  /*
+    Les morceaux de chemin, séparés des sauts (issue #323).
+
+    Sur une relation trouée, le profil enjambe les interruptions en ligne
+    droite. Le service altimétrique répond très bien pour ces segments-là : il
+    rend l'altitude du sol sous une droite qui coupe à travers champs. Sur « La
+    Sente du Sanglier », 3,9 km sur 14,6 — 27 % de l'axe — ne sont pas le
+    chemin, et entraient pourtant dans le D+, dans le D− et dans la pente.
+
+    Le découpage est fait une fois ici et passé aux trois consommateurs : le
+    cumul, la pente et la courbe doivent couper aux mêmes endroits.
+  */
+  const interruptions = interruptionsDuTrace(itin)
+  const troncons = elevationProfile
+    ? tronconsContinus(elevationProfile, interruptions)
+    : []
+  const stats = statsCumulees(troncons)
   // Pente maximale (issue #179) : Farid, en fauteuil, et Nadia et Yann avec
   // une poussette en ont besoin pour décider de s'engager. Le chiffre n'est
   // jamais rendu seul — `libellePente` porte la résolution avec lui.
   const pente = elevationProfile
-    ? libellePente(penteMaximale(elevationProfile))
+    ? libellePente(penteMaximaleSurTroncons(troncons))
     : null
   /*
     Les bandes viennent de la géométrie complète des ways, pas du profil
@@ -609,6 +623,7 @@ export function ItineraryDetail() {
                 « Sous les pieds » le dit déjà, une fois, en toutes lettres.
               */
               bandes={solDecritParLaSource ? bandes : []}
+              interruptions={interruptions}
             />
             <p className={styles.elevationStats}>
               D+ {Math.round(stats.gain)} m · D− {Math.round(stats.loss)} m ·{' '}

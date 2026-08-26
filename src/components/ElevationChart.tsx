@@ -3,7 +3,9 @@ import {
   fillElevationGaps,
   libelleResolution,
   pointAtDistance,
+  tronconsContinus,
 } from '../core/elevation.ts'
+import type { Interruption } from '../core/mapdata.ts'
 import { reperesDuProfil } from '../core/reperes.ts'
 import {
   couvertureRevetement,
@@ -70,9 +72,16 @@ const PAS_CLAVIER = 0.02
 export function ElevationChart({
   profile,
   bandes = [],
+  interruptions = [],
 }: {
   profile: ElevationProfile
   bandes?: Bande[]
+  /**
+   * Les segments de l'axe qui ne sont pas du chemin (issue #323). La courbe
+   * s'y interrompt : un trait tiré d'un bord à l'autre décrit un terrain
+   * réel, mais pas celui qu'on marchera.
+   */
+  interruptions?: Interruption[]
 }) {
   const setElevationHover = useAppStore((s) => s.setElevationHover)
   const pois = useAppStore((s) => s.pois)
@@ -104,19 +113,64 @@ export function ElevationChart({
   // ne sait pas vers quoi.
   const reperes = reperesDuProfil(profile, pois)
 
-  const points = profile.distances.map((d, i) => {
-    const elevation = elevations[i] ?? min
-    const y =
-      BAS_PROFIL - ((elevation - min) / span) * (BAS_PROFIL - 2 * PADDING)
-    return [xDe(d), y] as const
-  })
+  /*
+    Les altitudes comblées, retrouvables par distance : `tronconsContinus`
+    rend des sous-profils dont les indices ne sont plus ceux d'origine, et
+    reprendre `elevations[i]` dessus lirait l'altitude d'un autre point.
+  */
+  const elevationsParDistance = new Map(
+    profile.distances.map((d, i) => [d, elevations[i] ?? min]),
+  )
 
-  const linePath = points
-    .map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`)
+  /*
+    La courbe se dessine morceau par morceau (issue #323).
+
+    Sur une relation trouée, deux points consécutifs du profil peuvent se
+    trouver de part et d'autre d'un saut de plusieurs centaines de mètres. Le
+    trait qui les relie décrit un terrain réel — celui qui est sous la ligne
+    droite — mais pas celui qu'on marchera. Un blanc dit la vérité ; un trait
+    la déguise, et rien ne le distingue d'une montée.
+
+    Le découpage est celui de `tronconsContinus`, le même que celui du D+ et
+    de la pente : les trois doivent couper aux mêmes endroits.
+  */
+  const morceaux = tronconsContinus(profile, interruptions).map((troncon) =>
+    troncon.distances.map((d, i) => {
+      const elevation = elevationsParDistance.get(d) ?? min
+      const y =
+        BAS_PROFIL - ((elevation - min) / span) * (BAS_PROFIL - 2 * PADDING)
+      return [xDe(d), y, i] as const
+    }),
+  )
+  const linePath = morceaux
+    .map((morceau) =>
+      morceau
+        .map(
+          ([x, y], i) =>
+            `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`,
+        )
+        .join(' '),
+    )
+    .filter((chemin) => chemin.length > 0)
     .join(' ')
-  const areaPath =
-    `${linePath} L${(points[points.length - 1]?.[0] ?? WIDTH).toFixed(1)},${BAS_PROFIL} ` +
-    `L${(points[0]?.[0] ?? 0).toFixed(1)},${BAS_PROFIL} Z`
+  const areaPath = morceaux
+    .filter((morceau) => morceau.length > 0)
+    .map((morceau) => {
+      const premier = morceau[0]
+      const dernier = morceau[morceau.length - 1]
+      if (!premier || !dernier) return ''
+      const trait = morceau
+        .map(
+          ([x, y], i) =>
+            `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`,
+        )
+        .join(' ')
+      return (
+        `${trait} L${dernier[0].toFixed(1)},${BAS_PROFIL} ` +
+        `L${premier[0].toFixed(1)},${BAS_PROFIL} Z`
+      )
+    })
+    .join(' ')
 
   const survole = curseur === null ? null : pointAtDistance(profile, curseur)
   const couverture = couvertureRevetement(bandes)

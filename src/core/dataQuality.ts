@@ -1,5 +1,5 @@
 import { distanceMeters } from './geo.ts'
-import { chainWays } from './chainage.ts'
+import { chainWays, MIN_GAP_METERS } from './chainage.ts'
 import type { Itinerary, LonLat } from './types.ts'
 
 /**
@@ -16,9 +16,6 @@ import type { Itinerary, LonLat } from './types.ts'
 
 /** Au-delà, la donnée mérite une actualisation (le cache dure 30 jours). */
 export const STALE_DAYS = 30
-
-/** En deçà, une interruption relève de l'imprécision de saisie, pas d'un trou. */
-const MIN_GAP_METERS = 100
 
 export interface GeometryGap {
   from: LonLat
