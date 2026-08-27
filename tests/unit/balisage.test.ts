@@ -191,3 +191,130 @@ describe('le second symbole (#290)', () => {
     )
   })
 })
+
+
+/**
+ * Les moitiés de balise (issue #290, mesuré le 27/08).
+ *
+ * Sur 1 035 relations pédestres des Vosges, 33 portent un `osmc:symbol` que
+ * nous ne savons pas lire. La mesure a dit lesquelles, et elle a **réfuté**
+ * ce que j'avais annoncé une heure plus tôt : je pensais que le fond vide
+ * était la moitié du problème, et **zéro** cas échouait pour cette raison.
+ * Toutes échouent sur une forme absente de la table :
+ *
+ *     18 × upper      5 × right      1 × modern
+ *
+ * `lower` y était pourtant depuis toujours, traduit « demi-disque » — ce qui
+ * affirme une forme ronde que la notation ne dit pas. Les quatre moitiés vont
+ * ensemble, et se disent littéralement.
+ */
+describe('les moitiés de balise (#290)', () => {
+  it('nomme la moitié sans affirmer la forme du support', () => {
+    // « moitié inférieure rouge » est vraie que la balise soit ronde, carrée
+    // ou triangulaire. « demi-disque rouge » ne l'est que si elle est ronde,
+    // et le wiki qui le dirait est hors d'atteinte depuis cette machine.
+    expect(decrireBalisage('red:white:red_lower')).toBe(
+      'moitié inférieure rouge sur fond blanc',
+    )
+  })
+
+  it('lit les trois moitiés qui manquaient', () => {
+    expect(decrireBalisage('red:white:white_upper')).toBe(
+      'moitié supérieure blanche sur fond blanc',
+    )
+    expect(decrireBalisage('red:white:red_right')).toBe(
+      'moitié droite rouge sur fond blanc',
+    )
+    expect(decrireBalisage('red:white:green_left')).toBe(
+      'moitié gauche verte sur fond blanc',
+    )
+  })
+
+  it('accorde la couleur au féminin, comme « moitié » l’exige', () => {
+    // Le piège du genre : « moitié supérieure blanc » se lit mal et se
+    // remarque. L'accord se fait sur la forme, et les quatre moitiés sont
+    // féminines.
+    expect(decrireBalisage('red:white:white_upper')).toContain('blanche')
+    expect(decrireBalisage('red:white:green_lower')).toContain('verte')
+  })
+
+  it('lit une balise à deux moitiés, qui est le cas vosgien courant', () => {
+    // `orange::yellow_upper:red_lower` — la forme la plus fréquente parmi les
+    // illisibles, et elle porte **deux** symboles : c'est le second plan
+    // livré le 26/08 qui la rend descriptible d'un coup.
+    expect(decrireBalisage('red:white:yellow_upper:red_lower:501')).toBe(
+      'moitié supérieure jaune et moitié inférieure rouge sur fond blanc, marqué « 501 »',
+    )
+  })
+
+  it('nomme la coquille de Saint-Jacques, ancienne ou moderne', () => {
+    /*
+      `shell_modern` est un nom de forme **entier**, pas un `couleur_forme` :
+      le découpage au premier `_` en ferait « couleur *shell*, forme
+      *modern* ». Le symbole n'y porte pas de couleur propre, et on ne lui en
+      invente pas — annoncer une couleur qu'on n'aura pas devant les yeux est
+      exactement ce que ce module refuse de faire.
+    */
+    expect(decrireBalisage('blue:blue:shell_modern')).toBe(
+      'coquille sur fond bleu',
+    )
+    expect(decrireBalisage('blue:blue:yellow_shell')).toBe(
+      'coquille jaune sur fond bleu',
+    )
+  })
+})
+
+
+/**
+ * Les champs qui ont le droit d'être vides (issue #290, mesuré le 27/08).
+ *
+ * La mesure s'est corrigée elle-même en deux temps, et c'est instructif :
+ *
+ * - **premier passage** : « aucun des 33 illisibles n'échoue à cause du fond
+ *   vide ». Vrai — ils échouaient tous sur `upper` ou `right`, absents de la
+ *   table ;
+ * - **second passage**, une fois `upper` ajouté : quinze d'entre eux
+ *   n'échouent plus **que** pour cette raison.
+ *
+ * Les deux constats sont exacts à leur instant. C'est le §4bis pris sur le
+ * fait : une conclusion vieillit dès que ce qu'elle décrit a bougé.
+ */
+describe('les champs vides de la notation (#290)', () => {
+  it('accepte un fond vide : le symbole est peint sans cartouche', () => {
+    // `red::white_upper:red_lower:501:black` — la forme la plus fréquente
+    // des Vosges, quinze relations sur 1 035.
+    expect(decrireBalisage('red::white_upper:red_lower:501:black')).toBe(
+      'moitié supérieure blanche et moitié inférieure rouge, marqué « 501 »',
+    )
+  })
+
+  it('n’invente pas de fond quand il n’y en a pas', () => {
+    // La clause « sur fond … » disparaît, elle ne devient pas « sur fond
+    // blanc » — un cartouche blanc et pas de cartouche ne se ressemblent pas
+    // sur un tronc d'arbre.
+    expect(decrireBalisage('red::red_bar')).toBe('rectangle rouge')
+    expect(decrireBalisage('red::red_bar')).not.toContain('fond')
+  })
+
+  it('décrit une balise qui ne porte qu’un texte', () => {
+    // `red:red::IVV:white` — sept relations vosgiennes. Sans symbole à
+    // décrire il reste le mot, et c'est tout ce qu'on dira.
+    expect(decrireBalisage('red:red::IVV:white')).toBe(
+      'balise sur fond rouge, marquée « IVV »',
+    )
+  })
+
+  it('refuse ce qui n’a vraiment rien à décrire', () => {
+    // Ni fond, ni symbole, ni texte : il n'y a pas de phrase à écrire, et
+    // une ligne « Balisé : » vide vaut moins que pas de ligne du tout.
+    expect(decrireBalisage('red::')).toBeNull()
+    expect(decrireBalisage('red:white:')).toBeNull()
+  })
+
+  it('refuse toujours un fond qu’il ne sait pas nommer', () => {
+    // Un fond vide est une absence déclarée ; un fond « mauve » est une
+    // couleur qu'on ne sait pas rendre. Les confondre ferait taire le
+    // cartouche au lieu de dire qu'on ne l'a pas compris.
+    expect(decrireBalisage('red:mauve:red_bar')).toBeNull()
+  })
+})
