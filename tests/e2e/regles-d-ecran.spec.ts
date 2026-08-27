@@ -106,6 +106,24 @@ const ETATS = [
   'mode simple',
   'zone sans itinéraire',
   'filtres ouverts',
+  /*
+    Les deux états que la sonde ne voyait pas, et le premier est le plus
+    gênant : c'est **l'écran livré**.
+
+    Depuis #322 les grands itinéraires sont repliés par défaut, et une ligne
+    annonce combien sont masqués avec un bouton pour les rendre. Or tous les
+    chemins de cette sonde appellent `afficherTousLesReseaux` juste après
+    avoir chargé la zone — donc la ligne est cliquée et disparaît avant
+    qu'aucune mesure ne la voie. La sonde mesurait six états, dont aucun
+    n'était celui que quelqu'un ouvre.
+
+    Le second est le bouton qui déplie les points d'intérêt (#322 volet 1) :
+    il n'apparaît qu'au-delà d'une douzaine, et la fixture ordinaire en compte
+    trop peu. Ce qui est replié par défaut est ce qu'une sonde oublie par
+    défaut (§6quinquies) — deux fois de suite, pour la même raison.
+  */
+  'réseaux masqués',
+  'points repliés',
 ] as const
 type Etat = (typeof ETATS)[number]
 
@@ -117,6 +135,19 @@ async function atteindre(
   const overpass = await mockExternalNetwork(page)
   await mockTilesOk(page)
   await mockElevation(page)
+  /*
+    Pour mesurer le bouton qui déplie les points d'intérêt, il faut qu'il y
+    ait de quoi replier : la fixture ordinaire compte trop peu de points.
+    La route est réenregistrée **avant** la navigation — Playwright donne la
+    main à la plus récente.
+  */
+  if (etat === 'points repliés') {
+    await page.route('**/api/interpreter', (route) => {
+      const corps = route.request().postData() ?? ''
+      if (!corps.includes('drinking_water')) return route.fallback()
+      return route.fulfill({ json: beaucoupDePois() })
+    })
+  }
   await page.goto('/')
   await fermerLeGuide(page)
   if (etat === 'accueil') return
@@ -159,6 +190,22 @@ async function atteindre(
   await expect(page.getByTestId('zone-meta')).toContainText('itinéraire', {
     timeout: 15_000,
   })
+  /*
+    L'état « réseaux masqués » est le seul à ne pas déplier : c'est
+    précisément ce qu'il mesure — l'écran tel qu'il est livré, avec sa ligne
+    d'annonce et son bouton.
+  */
+  if (etat === 'réseaux masqués') {
+    /*
+      Comme pour les filtres : en compact la liste vit sous l'onglet
+      « progression », pas sous « carte ». La sonde me l'a réappris en
+      rougissant six fois — trois largeurs tactiles, deux mesures — et le
+      fichier le disait déjà vingt lignes plus bas.
+    */
+    if (compact) await ouvrirOnglet(page, 'progression')
+    await expect(page.getByTestId('list-masques')).toBeVisible()
+    return
+  }
   await afficherTousLesReseaux(page)
   if (etat === 'zone chargée' || etat === 'mode simple') return
 
@@ -182,6 +229,32 @@ async function atteindre(
   }
 
   await ouvrirLaFiche(page, compact)
+
+  if (etat === 'points repliés') {
+    /*
+      On **prouve** que le bouton est là, comme les filtres prouvent que le
+      panneau s'est ouvert : sans cette assertion, une fixture qui aurait
+      cessé de rendre assez de points ferait remesurer « fiche ouverte » sous
+      un autre nom — un état de plus au tableau, pas une mesure de plus.
+    */
+    await expect(page.getByTestId('poi-deplier')).toBeVisible({
+      timeout: 15_000,
+    })
+  }
+}
+
+/** Trente points sur le tracé, de quoi dépasser le seuil de repli. */
+function beaucoupDePois(): unknown {
+  return {
+    version: 0.6,
+    elements: Array.from({ length: 30 }, (_, i) => ({
+      type: 'node',
+      id: 9_700 + i,
+      lat: 45.4,
+      lon: 4.5 + i * 0.0012,
+      tags: { amenity: 'drinking_water', name: `Fontaine ${String(i)}` },
+    })),
+  }
 }
 
 /**
