@@ -95,7 +95,7 @@ export function lireBalisage(tag: string | undefined): Balisage | null {
  * qu'un mot approximatif. Mieux vaut une fiche sans ligne « balisage » qu'une
  * fiche qui annonce une couleur qu'on n'aura pas devant les yeux.
  */
-const COULEURS: Record<string, string> = {
+export const COULEURS: Record<string, string> = {
   red: 'rouge',
   blue: 'bleu',
   green: 'vert',
@@ -142,11 +142,21 @@ const FORMES: Record<string, string> = {
     18 fois, `right` 5 fois, alors que `lower` était là depuis toujours. Les
     trois vont ensemble ou ne veulent rien dire.
 
-    Le wiki OpenStreetMap, qui donnerait la géométrie exacte, est refusé par
-    la politique réseau de cette machine — vérifié le 27/08. On s'en tient
-    donc à ce qui est certain : le nom du champ, traduit littéralement. Une
-    « moitié inférieure rouge » est vraie que la balise soit ronde, carrée ou
-    triangulaire.
+    **Le wiki OpenStreetMap confirme.** Ce commentaire disait, le matin même,
+    qu'il était « refusé par la politique réseau de cette machine » ; la
+    politique a changé l'après-midi et la phrase est devenue fausse en six
+    heures — le §4bis à sa vitesse maximale.
+
+    Ce que le wiki dit, sur son propre exemple :
+
+      osmc:symbol = blue:yellow:white_diamond:blue_diamond_right
+      → « a diamond half white and half blue, on a yellow background »
+
+    `_right` désigne donc bien **une moitié**, et la forme est nommée
+    séparément quand elle est connue. « Moitié droite » est exact, et refuser
+    d'écrire « demi-disque » n'était pas seulement prudent : c'était juste.
+    Une « moitié inférieure rouge » est vraie que la balise soit ronde,
+    carrée ou triangulaire.
   */
   lower: 'moitié inférieure',
   upper: 'moitié supérieure',
@@ -165,8 +175,16 @@ const FORMES: Record<string, string> = {
   turned_T: 'T renversé',
 }
 
-/** Les formes féminines, pour l'accord de la couleur. */
-const FEMININ = new Set([
+/**
+ * Les formes féminines, pour l'accord de la couleur.
+ *
+ * Exportée — comme `COULEURS` et `FEMININ_DES_COULEURS` — parce que la garde
+ * de l'accord en a besoin, et qu'une garde qui ne voit pas les tables qu'elle
+ * garde ne garde rien. C'est un export **pour le test**, et cette phrase-là
+ * est vérifiable : `tests/unit/accordDesCouleurs.test.ts` les importe toutes
+ * les trois.
+ */
+export const FEMININ = new Set([
   'bande',
   'moitié inférieure',
   'moitié supérieure',
@@ -182,10 +200,39 @@ const FEMININ = new Set([
   'roue',
 ])
 
-/** Le féminin des couleurs qui en ont un. Les autres sont invariables. */
-const FEMININS_COULEUR: Record<string, string> = {
-  blanc: 'blanche',
+/**
+ * Le féminin de **chaque** couleur, ou `null` quand elle est invariable.
+ *
+ * ## Pourquoi `null` plutôt qu'une absence
+ *
+ * La version d'avant ne listait que les quatre couleurs qui changent, et
+ * traitait toute absence comme « invariable ». Une couleur oubliée était donc
+ * indiscernable d'une couleur invariable — et deux l'étaient : `bleu` et
+ * `noir`. La fiche affichait « bande bleu », « croix noir », « flèche bleu »
+ * (issue #343).
+ *
+ * Le bleu est la deuxième couleur de balisage en France, et les formes
+ * féminines sont les plus courantes de la table — bande, croix, flèche, et
+ * les quatre moitiés. La faute était donc visible sur des fiches ordinaires.
+ *
+ * En écrivant `null`, « je n'ai pas décidé » cesse de ressembler à « il n'y a
+ * rien à décider » : `tests/unit/accordDesCouleurs.test.ts` exige une entrée
+ * pour chaque couleur de `COULEURS`, et une couleur neuve ne peut plus
+ * arriver sans que quelqu'un tranche son accord.
+ *
+ * C'est le §4ter : `FEMININ` (les formes) et cette table disent la **même**
+ * règle d'accord, et rien ne les confrontait. Elles sont toutes deux finies —
+ * leur produit se vérifie donc exhaustivement plutôt qu'au cas par cas.
+ */
+export const FEMININ_DES_COULEURS: Record<string, string | null> = {
+  rouge: null,
+  bleu: 'bleue',
   vert: 'verte',
+  jaune: null,
+  orange: null,
+  noir: 'noire',
+  blanc: 'blanche',
+  marron: null,
   violet: 'violette',
   gris: 'grise',
 }
@@ -240,7 +287,7 @@ function nommerSymbole(symbole: {
   // une marque qu'on n'aura pas devant les yeux.
   if (symbole.couleur === null) return symbole.forme
   const couleur = FEMININ.has(symbole.forme)
-    ? (FEMININS_COULEUR[symbole.couleur] ?? symbole.couleur)
+    ? (FEMININ_DES_COULEURS[symbole.couleur] ?? symbole.couleur)
     : symbole.couleur
   return `${symbole.forme} ${couleur}`
 }
@@ -258,7 +305,13 @@ export function decrireBalisage(tag: string | undefined): string | null {
   const surFond =
     fond === null
       ? ''
-      : ` sur fond ${fond === 'blanc' ? fond : (FEMININS_COULEUR[fond] ?? fond)}`
+      : /*
+           « sur fond » est masculin : la couleur ne s'accorde pas ici, et
+           la seule raison pour laquelle cette ligne consultait la table des
+           féminins était une confusion. Elle rend donc la couleur telle
+           quelle.
+        */
+        ` sur fond ${fond}`
 
   /*
     Une balise qui ne porte qu'un texte — `red:red::IVV:white`. Sans symbole
