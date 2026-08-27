@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork } from './helpers.ts'
+import { cocher, mockExternalNetwork } from './helpers.ts'
 
 /**
  * Les grands itinéraires ne s'imposent plus (issue #322).
@@ -126,11 +126,12 @@ test('ce qui est masqué est annoncé, et se rend d’un clic', async ({
 test('la case du réseau rend le GR aux deux surfaces', async ({ page }) => {
   await chargerLePilat(page)
 
-  await page
-    .getByRole('group', { name: 'Filtrer par réseau' })
-    .getByRole('checkbox')
-    .first()
-    .check()
+  await cocher(
+    page
+      .getByRole('group', { name: 'Filtrer par réseau' })
+      .getByRole('checkbox')
+      .first(),
+  )
 
   await expect(page.getByTestId('itinerary-list')).toContainText('GR 7')
   await expect

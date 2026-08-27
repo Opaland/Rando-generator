@@ -666,7 +666,7 @@ export async function activerLeGrosTexte(
 ): Promise<void> {
   const bascule = page.getByTestId('gros-texte')
   await atteindreLeReglageDAffichage(page, compact, bascule)
-  await bascule.check()
+  await cocher(bascule)
   // L'attribut est posé sur la racine : l'attendre, plutôt que de supposer
   // que le clic a déjà repeint.
   await expect
@@ -689,8 +689,7 @@ export async function activerLeModeSimple(
 ): Promise<void> {
   const choix = page.getByTestId('mode-simple')
   await atteindreLeReglageDAffichage(page, compact, choix)
-  await choix.check()
-  await expect.poll(() => choix.isChecked()).toBe(true)
+  await cocher(choix)
 }
 
 /**
@@ -837,4 +836,31 @@ export async function afficherTousLesReseaux(page: Page): Promise<void> {
       { timeout: 20_000 },
     )
     .toBe(true)
+}
+
+/**
+ * Cocher une commande dont l'état coché vient du store, et **converger**.
+ *
+ * `locator.check()` clique puis vérifie l'état sur une brève fenêtre. C'est
+ * une photo, et les commandes de Sentiers mettent un temps non nul à
+ * répondre : `checked` y est calculé depuis le store (`checked={mode ===
+ * ...}`), et la valeur ne revient qu'après un rendu React, parfois après une
+ * écriture asynchrone — la précision de suivi passe même par une temporisation
+ * de 250 ms.
+ *
+ * Mesuré le 27/08 : `jalon-franchi.spec.ts` a rougi sur
+ * `tolerance-normal.check()` avec « Clicking the checkbox did not change its
+ * state », **en suite complète uniquement**, sur un bouton que le rapport
+ * d'erreur montre coché quelques millisecondes plus tard. C'est la troisième
+ * fois que cette famille frappe (CLAUDE.md §6ter) : ce n'était ni un ordre ni
+ * un défaut, mais un instant.
+ *
+ * Dix-huit appels à `.check()` disaient la même règle dans neuf fichiers —
+ * §4ter. Ils passent tous par ici maintenant : cliquer, puis attendre l'état
+ * voulu, avec l'assertion **dans** la boucle. Un clic réellement perdu fait
+ * toujours échouer la convergence, chiffres à l'appui.
+ */
+export async function cocher(commande: Locator): Promise<void> {
+  await commande.click()
+  await expect(commande).toBeChecked()
 }
