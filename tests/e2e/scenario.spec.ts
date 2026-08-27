@@ -1,5 +1,10 @@
 import { test, expect } from '@playwright/test'
-import { afficherTousLesReseaux, mockExternalNetwork, buildGpx } from './helpers.ts'
+import {
+  afficherTousLesReseaux,
+  cocher,
+  mockExternalNetwork,
+  buildGpx,
+} from './helpers.ts'
 
 /**
  * Scénario nominal complet, Overpass mocké (fixture enregistrée) :
@@ -58,7 +63,7 @@ test('charge une zone, importe un GPX, recalcule et persiste', async ({
 
   // 4. Resserrer la tolérance à 25 m → recalcul → plus rien ne matche.
   // Le chemin normal depuis l'issue #174 : un cran nommé, pas un curseur.
-  await page.getByTestId('tolerance-precis').check()
+  await cocher(page.getByTestId('tolerance-precis'))
   await expect(page.getByTestId('tolerance-detail')).toContainText('25 m')
   await expect(page.getByTestId('global-pct')).toHaveText('0 %')
   await expect(page.getByTestId('itinerary-card-pct')).toHaveText('0 %')

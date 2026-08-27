@@ -1,5 +1,9 @@
 import { test, expect } from '@playwright/test'
-import { afficherTousLesReseaux, mockExternalNetwork } from './helpers.ts'
+import {
+  afficherTousLesReseaux,
+  cocher,
+  mockExternalNetwork,
+} from './helpers.ts'
 
 /**
  * Issue #174 — le succès n'est pas « trois boutons existent », c'est que le
@@ -55,7 +59,7 @@ test('les crans se touchent, et le réglage fin reste accessible', async ({
     expect(boite?.height ?? 0).toBeGreaterThanOrEqual(44)
   }
 
-  await page.getByTestId('tolerance-souple').check()
+  await cocher(page.getByTestId('tolerance-souple'))
   await expect(page.getByTestId('tolerance-detail')).toContainText('100 m')
 })
 

@@ -1,5 +1,10 @@
 import { test, expect, type Page } from '@playwright/test'
-import { afficherTousLesReseaux, mockExternalNetwork, buildGpx } from './helpers.ts'
+import {
+  afficherTousLesReseaux,
+  cocher,
+  mockExternalNetwork,
+  buildGpx,
+} from './helpers.ts'
 
 /**
  * Seuil « bouclé » réglable (issue #92).
@@ -31,10 +36,10 @@ test('le seuil « bouclé » se règle, se voit, et survit au rechargement', asy
   const boucles = page.getByTestId('global-completed')
   await expect(boucles).toContainText('au moins 95 % parcourus')
 
-  await page.getByTestId('completion-90').check()
+  await cocher(page.getByTestId('completion-90'))
   await expect(boucles).toContainText('au moins 90 % parcourus')
 
-  await page.getByTestId('completion-100').check()
+  await cocher(page.getByTestId('completion-100'))
   await expect(boucles).toContainText('au moins 100 % parcourus')
 
   /*

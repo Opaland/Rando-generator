@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import {
   afficherTousLesReseaux,
+  cocher,
   buildGpx,
   fermerLeGuide,
   mockExternalNetwork,
@@ -42,7 +43,7 @@ test('le mode simple cache le jargon sans retirer la tâche', async ({
   await avecUneZoneEtUneTrace(page)
 
   await page.getByTestId('mode-affichage').locator(':scope > summary').click()
-  await page.getByTestId('mode-simple').check()
+  await cocher(page.getByTestId('mode-simple'))
 
   // Ce qui répond à « montre où on a marché » reste : la carte, les traces,
   // le grand chiffre, et de quoi charger une zone.
@@ -58,7 +59,7 @@ test('le mode simple cache le jargon sans retirer la tâche', async ({
   await expect(page.getByTestId('itinerary-list')).toHaveCount(0)
 
   // Et rien n'est perdu : le retour est immédiat.
-  await page.getByTestId('mode-complet').check()
+  await cocher(page.getByTestId('mode-complet'))
   await expect(page.getByTestId('settings')).toHaveCount(1)
   await expect(page.getByTestId('tracks-list')).toContainText('sortie.gpx')
 })
@@ -67,7 +68,7 @@ test('le mode choisi survit au rechargement', async ({ page }) => {
   await mockExternalNetwork(page)
   await page.goto('/')
   await page.getByTestId('mode-affichage').locator(':scope > summary').click()
-  await page.getByTestId('mode-simple').check()
+  await cocher(page.getByTestId('mode-simple'))
   await expect(page.getByTestId('settings')).toHaveCount(0)
 
   // Quelqu'un règle le mode pour un proche : il doit tenir.
@@ -90,7 +91,7 @@ test('le gros texte agrandit tout, y compris hors du panneau', async ({
   )
 
   await page.getByTestId('mode-affichage').locator(':scope > summary').click()
-  await page.getByTestId('gros-texte').check()
+  await cocher(page.getByTestId('gros-texte'))
 
   const tailleApres = await page.evaluate(
     () =>
@@ -119,7 +120,7 @@ test('à 200 %, rien ne déborde sur un écran de 360 px', async ({ page }) => {
   await avecUneZoneEtUneTrace(page)
 
   await page.getByTestId('mode-affichage').locator(':scope > summary').click()
-  await page.getByTestId('gros-texte').check()
+  await cocher(page.getByTestId('gros-texte'))
   // Le gros texte s'ajoute au zoom du navigateur, il ne le remplace pas :
   // quelqu'un qui a déjà réglé son téléphone à 200 % garde ce réglage.
   await page.evaluate(() => {
@@ -188,7 +189,7 @@ test('le mode simple ne peut pas enfermer, ni faire perdre une trace', async ({
   await mockExternalNetwork(page)
   await page.goto('/')
   await page.getByTestId('mode-affichage').locator(':scope > summary').click()
-  await page.getByTestId('mode-simple').check()
+  await cocher(page.getByTestId('mode-simple'))
 
   // On arrive en mode simple sans rien avoir : la tâche complète doit
   // rester possible, de bout en bout.
@@ -197,7 +198,7 @@ test('le mode simple ne peut pas enfermer, ni faire perdre une trace', async ({
 
   // La sortie du mode reste atteignable, et rend tout ce qui était caché.
   await expect(page.getByTestId('mode-affichage')).toBeVisible()
-  await page.getByTestId('mode-complet').check()
+  await cocher(page.getByTestId('mode-complet'))
   await expect(page.getByTestId('settings')).toHaveCount(1)
   await expect(page.getByTestId('backup')).toHaveCount(1)
 
@@ -216,10 +217,10 @@ test('la sauvegarde reste exportable après un passage en mode simple', async ({
   await avecUneZoneEtUneTrace(page)
 
   await page.getByTestId('mode-affichage').locator(':scope > summary').click()
-  await page.getByTestId('mode-simple').check()
+  await cocher(page.getByTestId('mode-simple'))
   await expect(page.getByTestId('backup')).toHaveCount(0)
 
-  await page.getByTestId('mode-complet').check()
+  await cocher(page.getByTestId('mode-complet'))
   await page.getByTestId('backup').locator(':scope > summary').click()
   await expect(page.getByTestId('backup-export')).toBeEnabled()
 })

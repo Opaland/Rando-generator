@@ -1,5 +1,10 @@
 import { test, expect } from '@playwright/test'
-import { afficherTousLesReseaux, mockExternalNetwork, buildGpx } from './helpers.ts'
+import {
+  afficherTousLesReseaux,
+  cocher,
+  mockExternalNetwork,
+  buildGpx,
+} from './helpers.ts'
 
 /**
  * Franchissement d'un jalon. Fixture Pilat : le GPX décalé de 15 m au nord
@@ -17,7 +22,7 @@ test('franchir un jalon est annoncé une fois, sobrement', async ({ page }) => {
   await afficherTousLesReseaux(page)
 
   // Tolérance serrée : la trace ne crédite rien.
-  await page.getByTestId('tolerance-precis').check()
+  await cocher(page.getByTestId('tolerance-precis'))
   await expect(page.getByTestId('tolerance-detail')).toContainText('25 m')
   await page.getByTestId('gpx-input').setInputFiles({
     name: 'gr7.gpx',
@@ -29,7 +34,7 @@ test('franchir un jalon est annoncé une fois, sobrement', async ({ page }) => {
   await expect(page.getByTestId('celebration')).toHaveCount(0)
 
   // On desserre : le GR 7 passe d'un coup à 100 %.
-  await page.getByTestId('tolerance-normal').check()
+  await cocher(page.getByTestId('tolerance-normal'))
   await expect(page.getByTestId('global-pct')).toHaveText('54,5 %')
 
   const annonce = page.getByTestId('celebration')
