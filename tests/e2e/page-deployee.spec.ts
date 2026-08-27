@@ -1,4 +1,5 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
+import { relayerLeVraiReseau } from './relais-reseau'
 
 /**
  * La page réellement déployée, et non celle qu'on vient de construire.
@@ -22,15 +23,30 @@ import { test, expect } from '@playwright/test'
  *
  * ## Pourquoi elle est sautée par défaut
  *
- * Elle a besoin du vrai réseau. Le conteneur de développement n'y donne pas
- * accès à un navigateur : `curl` sort par le proxy sortant, Chromium non — il
- * rend `ERR_CONNECTION_RESET` même avec `--proxy-server`, et le journal du
- * proxy ne voit passer que sa télémétrie en clair. Mesuré le 27/08.
+ * Elle a besoin du vrai réseau. Chromium ne traverse pas le proxy sortant du
+ * conteneur de développement : `ERR_CONNECTION_RESET` même avec
+ * `--proxy-server`, mesuré le 27/08 et **revérifié le même soir** sur
+ * `https://opaland.github.io/Rando-generator/`, où les deux tests échouent
+ * ainsi.
  *
- * Elle tourne donc **là où le réseau existe** : dans le workflow de
- * déploiement, juste après la publication. C'est d'ailleurs sa place
- * naturelle — une sonde de déploiement qui ne s'exécute pas au déploiement
- * ne garde rien (§6quater).
+ * Sa place reste le workflow de déploiement, juste après la publication —
+ * une sonde de déploiement qui ne s'exécute pas au déploiement ne garde rien
+ * (§6quater).
+ *
+ * ## Mais « le conteneur ne peut pas » avait cessé d'être vrai
+ *
+ * L'en-tête concluait de cette mesure que la sonde était injouable ici. La
+ * mesure tient toujours ; la conclusion, non — `relais-reseau.ts` tire les
+ * réponses côté Node, où le proxy fonctionne. Une justification vieillit
+ * comme le reste (§4bis), et celle-ci a vieilli en trois heures.
+ *
+ * Le relais n'est posé **que** lorsqu'un proxy sortant est déclaré, c'est-à-
+ * dire là où le navigateur ne sort pas seul. Dans le workflow de
+ * déploiement, la sonde reste un vrai chargement par la pile réseau de
+ * Chromium ; ici, les octets viennent du même serveur publié, par un autre
+ * chemin. Ce qu'elle garde — l'artefact publié sert-il tous ses assets — est
+ * le même des deux côtés ; ce que seul le workflow exerce est la pile réseau
+ * du navigateur elle-même.
  *
  * Le même motif que `tests/unit/mesuresReseau.test.ts` : une variable
  * d'environnement, et un saut franc plutôt qu'un test qui passerait sans
@@ -62,6 +78,21 @@ import { test, expect } from '@playwright/test'
 
 const URL_DEPLOYEE = process.env['SENTIERS_URL']
 
+/**
+ * Le proxy sortant du conteneur, quand il y en a un — voir l'en-tête. Rien
+ * n'est posé sans lui : là où le navigateur sort seul, il sort seul.
+ */
+const PROXY = process.env['HTTPS_PROXY']
+
+if (PROXY) {
+  test.use({ proxy: { server: PROXY, bypass: 'localhost,127.0.0.1' } })
+}
+
+async function relayerSiLeNavigateurNeSortPas(page: Page): Promise<void> {
+  if (!PROXY) return
+  await relayerLeVraiReseau(page)
+}
+
 test.describe('la page déployée', () => {
   test.skip(
     !URL_DEPLOYEE,
@@ -69,6 +100,7 @@ test.describe('la page déployée', () => {
   )
 
   test('répond, monte, et ne perd aucun asset', async ({ page }) => {
+    await relayerSiLeNavigateurNeSortPas(page)
     /*
       Les échecs de requête sont collectés **avant** la navigation : un asset
       manquant échoue pendant le chargement, et un écouteur posé après aurait
@@ -131,6 +163,7 @@ test.describe('la page déployée', () => {
       exactement le genre de fichier qu'un déploiement oublie sans que rien
       ne rougisse.
     */
+    await relayerSiLeNavigateurNeSortPas(page)
     const base = (URL_DEPLOYEE as string).replace(/\/?$/, '/')
     const reponse = await page.goto(`${base}pourquoi.html`, { timeout: 30_000 })
     expect(reponse?.status()).toBe(200)

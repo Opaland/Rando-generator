@@ -51,9 +51,17 @@ const REPOS_ENTRE_ESSAIS_MS = 3_000
 const patienter = (ms: number): Promise<void> =>
   new Promise((resoudre) => setTimeout(resoudre, ms))
 
-/** Ce qui est servi par l'application elle-même, et n'a rien à relayer. */
-function estServiParLApplication(url: URL, origineLocale: string): boolean {
-  return url.origin === origineLocale
+/**
+ * Ce que le navigateur atteint tout seul, et qui n'a donc rien à relayer.
+ *
+ * La règle est « la boucle locale », et non « l'origine de l'application » :
+ * servie depuis GitHub Pages, l'application est elle-même hors d'atteinte de
+ * Chromium dans ce conteneur, et ses propres fichiers doivent passer par le
+ * relais comme le reste. Une règle écrite sur l'origine aurait marché en
+ * local et échoué exactement là où on veut regarder.
+ */
+function estSurCetteMachine(url: URL): boolean {
+  return ['localhost', '127.0.0.1', '[::1]', '::1'].includes(url.hostname)
 }
 
 export interface Relais {
@@ -67,15 +75,12 @@ export interface Relais {
   tentatives: () => TentativeReseau[]
 }
 
-export async function relayerLeVraiReseau(
-  page: Page,
-  origineLocale = 'http://localhost:4173',
-): Promise<Relais> {
+export async function relayerLeVraiReseau(page: Page): Promise<Relais> {
   const tentatives: TentativeReseau[] = []
 
   const relayer = async (route: Route): Promise<void> => {
     const url = new URL(route.request().url())
-    if (estServiParLApplication(url, origineLocale)) {
+    if (estSurCetteMachine(url)) {
       await route.continue()
       return
     }
