@@ -1,12 +1,17 @@
 import { describe, it } from 'vitest'
-import { fetchOverpass, parseOverpassResponse } from '../../src/core/overpass.ts'
+import {
+  OVERPASS_MIRRORS,
+  fetchOverpass,
+  parseOverpassResponse,
+  type OverpassResponse,
+} from '../../src/core/overpass.ts'
 import { chainWays } from '../../src/core/chainage.ts'
 import { itineraryCoords, interruptionsDuTrace } from '../../src/core/mapdata.ts'
 import { polylineLengthMeters } from '../../src/core/sampling.ts'
 import { decrireBalisage } from '../../src/core/balisage.ts'
 
 /**
- * Les cinq mesures qui attendent un réseau (issue #331).
+ * Les mesures qui demandent un réseau (issue #331).
  *
  * ```
  * npm run mesures-osm
@@ -14,10 +19,15 @@ import { decrireBalisage } from '../../src/core/balisage.ts'
  *
  * ## Pourquoi ce fichier existe
  *
- * Cinq issues sont bloquées sur des chiffres qu'aucune machine de ce projet
- * n'a jamais pu aller chercher : le proxy sortant refuse `overpass-api.de`,
- * `www.openstreetmap.org` et tout le reste — mesuré le 26/08, voir
+ * Cinq issues étaient bloquées sur des chiffres qu'aucune machine de ce
+ * projet ne pouvait aller chercher : le proxy sortant refusait
+ * `overpass-api.de` et le reste — mesuré le 26/08, voir
  * `docs/AUDIT_LOCAL_26_08.md`.
+ *
+ * **Ce n'est plus vrai depuis le 27/08**, l'environnement ayant été ouvert.
+ * Ce qui bloque désormais est d'une autre nature, et bien plus banal : les
+ * miroirs limitent une IP qui les interroge en rafale. D'où la liste de
+ * miroirs propre à ces mesures, et surtout le témoin ci-dessous.
  *
  * Chaque issue porte sa requête, dispersée dans cinq pages GitHub — c'est-à-
  * dire nulle part, le jour où quelqu'un aura enfin du réseau. Ce fichier les
@@ -93,10 +103,83 @@ function elementsDe(brut: unknown): ElementTague[] {
   return (brut as { elements?: ElementTague[] }).elements ?? []
 }
 
+/**
+ * Les miroirs employés **par ces mesures**, et non par l'application.
+ *
+ * `OVERPASS_MIRRORS` sert les gens qui utilisent Sentiers ; cette liste sert
+ * à mesurer. Les deux n'ont pas les mêmes contraintes : ici on accepte un
+ * miroir lointain et lent pourvu qu'il réponde, là il faut la latence.
+ *
+ * **Vérifié le 27/08.** Les deux miroirs de l'application coupaient la
+ * connexion (`Connection reset`) après une dizaine de requêtes depuis cette
+ * machine — une limitation par IP, pas la politique réseau : `curl` sortait
+ * très bien vers d'autres hôtes au même moment.
+ */
+const MIROIRS_DE_MESURE = [
+  'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+  ...OVERPASS_MIRRORS,
+]
+
+/** Toutes les mesures passent par là, plutôt que par le défaut. */
+function mesurer(requete: string): Promise<OverpassResponse> {
+  return fetchOverpass(requete, { mirrors: MIROIRS_DE_MESURE })
+}
+
+/**
+ * La boîte du Pilat, et le nombre qu'elle doit rendre.
+ *
+ * C'est le **témoin** de toutes les mesures qui suivent, et il vient d'un
+ * raté : le 27/08, la requête de #321 a rendu **zéro relation** sur
+ * `overpass.osm.ch`, ce qui se lit exactement comme « rien n'est mappé
+ * autour de Porcelette » — la conclusion que l'issue attendait. Le même
+ * miroir rendait 115 relations sur Berne et 0 sur le Pilat : une base
+ * **suisse**, dont le silence sur la Moselle ne voulait rien dire.
+ *
+ * Une réponse vide d'un miroir non vérifié est indiscernable d'une réponse
+ * vide vraie. C'est le §1bis appliqué à une source de données : la mesure
+ * pouvait passer pour une raison qu'on n'avait pas voulue.
+ *
+ * 56 relations, mesuré le 27/08 sur `overpass-api.de` **et** sur
+ * `maps.mail.ru`. Le nombre bougera avec la donnée OSM ; ce qui compte est
+ * l'ordre de grandeur, pas l'égalité stricte.
+ */
+const TEMOIN_PILAT = {
+  bbox: '45.20,4.30,45.60,4.90',
+  attendu: 56,
+}
+
 describe.skipIf(!ACTIF)('mesures OpenStreetMap (issue #331)', () => {
+  /**
+   * La mesure qui doit tourner **avant** les autres.
+   *
+   * Elle ne répond à aucune issue : elle dit si le miroir qui répond a la
+   * donnée qu'on croit lui demander. Sans elle, toute réponse vide des
+   * mesures suivantes est ambiguë — et l'ambiguïté penche toujours du côté
+   * de la conclusion qu'on espérait.
+   */
+  it('0 — témoin : le miroir a-t-il la France ?', { timeout: 300_000 }, async () => {
+    titre('Témoin de couverture — le Pilat, avant toute autre mesure')
+    const brut = await mesurer(`[out:json][timeout:120];
+relation["route"="hiking"](${TEMOIN_PILAT.bbox});
+out ids;`)
+    const trouvees = elementsDe(brut).length
+    ligne(`relations pédestres sur le Pilat : ${String(trouvees)}`)
+    ligne(`attendu (27/08)                  : ~${String(TEMOIN_PILAT.attendu)}`)
+    ligne('')
+    if (trouvees === 0) {
+      ligne('ZÉRO. Le miroir qui a répondu n’a pas la France. **Ne lire aucune')
+      ligne('des mesures suivantes** : leurs réponses vides ne diront rien de')
+      ligne('la donnée, seulement de la base interrogée.')
+      return
+    }
+    ligne('À lire : un ordre de grandeur comparable → la couverture française')
+    ligne('est là, et une réponse vide plus bas veut dire quelque chose. Très')
+    ligne('en dessous → miroir régional ou base partielle, mêmes précautions.')
+  })
+
   it('1 — la relation de « Rando Saint-Joseph » (#301)', { timeout: 300_000 }, async () => {
     titre('#301 — relation 6628093, annoncée à 0,5 km sur la fiche')
-    const brut = await fetchOverpass(`[out:json][timeout:180];
+    const brut = await mesurer(`[out:json][timeout:180];
 relation(6628093);
 out meta geom;
 way(r);
@@ -129,7 +212,7 @@ out tags;`)
 
   it('2 — Porcelette : relations contre chemins balisés (#321)', { timeout: 300_000 }, async () => {
     titre('#321 — Porcelette (Moselle) : trois PR au village, zéro proposée')
-    const brut = await fetchOverpass(`[out:json][timeout:180];
+    const brut = await mesurer(`[out:json][timeout:180];
 area["name"="Porcelette"]["admin_level"="8"]->.a;
 (
   relation["route"](area.a);
@@ -159,7 +242,7 @@ out tags;`)
 
   it('3 — la part des balisages que nous savons lire (#290)', { timeout: 600_000 }, async () => {
     titre('#290 — osmc:symbol exploitable, département des Vosges')
-    const brut = await fetchOverpass(`[out:json][timeout:180];
+    const brut = await mesurer(`[out:json][timeout:180];
 area["ISO3166-2"="FR-88"]->.a;
 relation["route"~"^(hiking|foot|walking)$"](area.a);
 out tags;`)
@@ -192,7 +275,7 @@ out tags;`)
 
   it('4 — qu’est-ce qu’un « GR » pour le code (#322)', { timeout: 600_000 }, async () => {
     titre('#322 — la part des itinéraires portant un network exploitable')
-    const brut = await fetchOverpass(`[out:json][timeout:180];
+    const brut = await mesurer(`[out:json][timeout:180];
 area["ref:INSEE"="69"]->.a;
 relation["route"~"^(hiking|foot|walking)$"](area.a);
 out tags;`)
@@ -228,7 +311,7 @@ out tags;`)
 
   it('5 — les PR du Rhône (#20)', { timeout: 600_000 }, async () => {
     titre('#20 — inventaire des PR du Rhône dans OpenStreetMap')
-    const brut = await fetchOverpass(`[out:json][timeout:180];
+    const brut = await mesurer(`[out:json][timeout:180];
 area["ref:INSEE"="69"]->.a;
 relation["route"~"^(hiking|foot|walking)$"](area.a);
 out tags;`)
