@@ -101,3 +101,72 @@ export function comptesMasques(
     (n) => ({ network: n, nombre: comptes.get(n) as number }),
   )
 }
+
+/**
+ * Combien de points d'intérêt s'affichent avant que le reste se replie
+ * (#322, volet 1).
+ *
+ * ## Ce que la liste longue coûte vraiment
+ *
+ * L'issue disait « la liste des points d'intérêt fait plusieurs écrans avant
+ * qu'on ait vu le profil ». **C'est faux, et je l'ai écrit** : le profil
+ * altimétrique est au-dessus dans la fiche. Ce que la liste enterre est ce
+ * qui la suit — et ce qui la suit est l'avertissement sur le couchage libre :
+ *
+ * > « Couchage libre » regroupe refuges non gardés, cabanes et appentis :
+ * > gratuits et sans réservation, mais ni garantis ouverts ni entretenus.
+ *
+ * Quelqu'un qui prépare une nuit dehors doit donc faire défiler trois cents
+ * entrées pour lire la phrase qui le concerne le plus. Le motif du repli est
+ * celui-là, pas celui que j'avais écrit.
+ *
+ * ## Le seuil, et pourquoi il se tranche
+ *
+ * Il ne change **pas ce qui est calculé** : les points écartés restent
+ * comptés, situés et annoncés. Il ne change que l'ordre dans lequel on les
+ * rencontre. Le §2 le range donc du côté de ce qui se décide au jugement — à
+ * condition d'écrire les pistes envisagées et écartées, ce que voici.
+ *
+ * Les trois seules fiches réelles dont ce dépôt ait le compte :
+ *
+ * | fiche | points |
+ * |---|---|
+ * | Rando Saint-Joseph | 7 |
+ * | Au cœur des Monts d'Or | 44 |
+ * | Via Lugdunum | ~330 |
+ *
+ * - **tout replier derrière un bouton** : une fiche de sept points coûterait
+ *   un clic pour rien, et c'est le cas courant ;
+ * - **replier au-delà de N écrans** : ce serait la bonne mesure, et elle
+ *   n'existe pas ici — une hauteur en pixels dépend de l'appareil, de la
+ *   taille de texte et du nombre de lignes de chaque entrée. Un module de
+ *   `core` ne peut pas la connaître, et la faire remonter du DOM ferait
+ *   dépendre un calcul d'une mise en page ;
+ * - **replier par distance de détour** : c'est déjà le travail du rayon de
+ *   #318, et c'est une autre question — « est-ce sur mon chemin » n'est pas
+ *   « y en a-t-il trop à lire » ;
+ * - **douze**, retenu : au-dessus des sept d'une fiche courte réelle, donc
+ *   une fiche courte ne gagne jamais de clic ; assez bas pour que les deux
+ *   grosses se replient.
+ *
+ * Ce n'est pas un seuil emprunté à une norme, contrairement aux 44 px de
+ * WCAG 2.5.5 : c'est un nombre tranché ici, et il est écrit comme tel
+ * (§6sexies).
+ */
+export const POIS_AVANT_REPLI = 12
+
+/** Ce qu'on montre d'emblée, et ce qui attend un clic. */
+export function replierLesPois<T>(
+  pois: readonly T[],
+): { montres: T[]; replies: T[] } {
+  /*
+    Un seul point de plus que le seuil ne se replie pas : le bouton
+    « afficher 1 autre point » coûterait un geste pour gagner une ligne, et
+    ferait deux lignes là où il y en avait une.
+  */
+  if (pois.length <= POIS_AVANT_REPLI + 1) return { montres: [...pois], replies: [] }
+  return {
+    montres: pois.slice(0, POIS_AVANT_REPLI),
+    replies: pois.slice(POIS_AVANT_REPLI),
+  }
+}

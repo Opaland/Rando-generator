@@ -108,7 +108,11 @@ existant via `PW_CHROMIUM_PATH=/chemin/vers/chrome npm run e2e`.
    fait 153, et le tracé long **barre l'écran** au lieu de l'informer. Une
    ligne au-dessus de la liste dit combien sont ainsi **masqués** et les
    rend d'un clic — un itinéraire absent sans que rien ne le signale serait
-   un mensonge par omission.
+   un mensonge par omission. Sur une fiche, la liste des points
+   d'intérêt se replie au-delà d'une douzaine, pour la même raison : sur un
+   grand itinéraire, trois cents entrées enterrent l'avertissement qui les
+   suit — celui qui rappelle qu'un refuge non gardé n'est ni garanti ouvert
+   ni entretenu.
 
    **Le balisage vient de ce qui est peint sur l'arbre**, quand
    OpenStreetMap le porte : Sentiers lit le tag `osmc:symbol`, qui décrit la

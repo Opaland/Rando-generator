@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { useAppStore } from '../store/appStore.ts'
+import { replierLesPois } from '../core/lisibilite.ts'
 import { useDeborde } from '../lib/deborde.ts'
 import {
   displayName,
@@ -70,6 +72,20 @@ export function ItineraryDetail() {
     qui garde l'ordre des crochets stable d'un rendu à l'autre.
   */
   const [poserLePanneau, deborde] = useDeborde()
+  /*
+    Quelle fiche a été dépliée, et non « est-elle dépliée » (#322, volet 1).
+
+    Un booléen aurait demandé un effet pour le remettre à zéro en changeant
+    d'itinéraire — et un `setState` dans un effet est un rendu en cascade que
+    le lint refuse, à raison. En gardant **l'identifiant**, la remise à zéro
+    n'existe plus : une autre fiche n'est simplement pas celle qu'on a
+    dépliée. Il n'y a rien à synchroniser, donc rien qui puisse se
+    désynchroniser.
+
+    Posé ici, avec les autres crochets, parce que deux retours anticipés
+    suivent : l'ordre des crochets doit être le même à chaque rendu.
+  */
+  const [ficheDepliee, setFicheDepliee] = useState<number | null>(null)
   const detailItineraryId = useAppStore((s) => s.detailItineraryId)
   const itineraries = useAppStore((s) => s.itineraries)
   const customItineraries = useAppStore((s) => s.customItineraries)
@@ -140,6 +156,22 @@ export function ItineraryDetail() {
   const { retenus: pois, ecartes: poisEcartes } = poisDuChemin(
     situerPois(poisBruts, itineraryCoords(itin)),
   )
+  /*
+    Le repli de la liste (#322, volet 1).
+
+    Ce qu'une liste de trois cents entrées enterre n'est pas le profil — il
+    est au-dessus — mais l'avertissement sur le couchage libre, qui la suit :
+    quelqu'un qui prépare une nuit dehors devrait tout faire défiler pour lire
+    la phrase qui le concerne le plus.
+
+    L'état se remet à « replié » quand on change d'itinéraire. Sans cela, une
+    fiche déployée laisserait la suivante déployée, et le repli ne
+    s'appliquerait qu'à la première fiche de la séance — un défaut qui ne se
+    voit qu'en ouvrant deux fiches d'affilée.
+  */
+  const poisDeplies = ficheDepliee === itin.osmRelationId
+  const { montres: poisMontres, replies: poisReplies } = replierLesPois(pois)
+  const poisAffiches = poisDeplies ? pois : poisMontres
   // Un point d'eau emporté il y a trois mois peut avoir été supprimé ou
   // tari : le servir sans le dire serait la promesse que le service worker
   // refuse de faire depuis toujours (issue #153).
@@ -685,7 +717,7 @@ export function ItineraryDetail() {
         )}
         {pois.length > 0 && (
           <ul className={styles.poiList} data-testid="detail-poi-list">
-            {pois.map((poi) => {
+            {poisAffiches.map((poi) => {
               const {
                 phone,
                 website,
@@ -788,6 +820,27 @@ export function ItineraryDetail() {
               )
             })}
           </ul>
+        )}
+
+        {poisReplies.length > 0 && !poisDeplies && (
+          /*
+            Le compte est dans le bouton, pas dans une phrase à côté : c'est
+            ce qu'on lit quand on décide de cliquer. Et il dit « autres », au
+            pluriel toujours — la garde de `replierLesPois` interdit qu'il
+            n'y en ait qu'un.
+          */
+          <p className={styles.hint}>
+            <button
+              type="button"
+              className={styles.deplierPois}
+              data-testid="poi-deplier"
+              onClick={() => {
+                setFicheDepliee(itin.osmRelationId)
+              }}
+            >
+              Afficher les {poisReplies.length} autres points
+            </button>
+          </p>
         )}
 
         {hasSleepingSpot && (
