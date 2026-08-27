@@ -128,3 +128,55 @@ describe('« sur fond » ne s’accorde jamais', () => {
     expect(phrase).toBe(`rectangle rouge sur fond ${fr}`)
   })
 })
+
+/**
+ * Les balises sans forme (mesure du Rhône, #290).
+ *
+ * Treize relations sur cent cinquante-sept portaient un `osmc:symbol`
+ * **valide** que `decrireBalisage` refusait — 8 % du département, dont la
+ * fiche n'affichait aucune ligne de balisage alors que la donnée était là et
+ * descriptible. Deux familles.
+ */
+describe('une balise sans symbole dessus', () => {
+  it('se dit quand même, en forme courte', () => {
+    // `blue:blue` — la grammaire admet deux champs, nous en exigions trois.
+    expect(decrireBalisage('blue:blue')).toBe('balise sur fond bleu')
+    expect(decrireBalisage('red:red')).toBe('balise sur fond rouge')
+  })
+
+  it('refuse le champ unique, qui ne décrit aucune balise', () => {
+    // `red` seul ne dit que la couleur de la voie.
+    expect(decrireBalisage('red')).toBeNull()
+  })
+
+  it('garde le texte quand il y en a un', () => {
+    expect(decrireBalisage('red:red::IVV:white')).toBe(
+      'balise sur fond rouge, marquée « IVV »',
+    )
+  })
+})
+
+describe('un premier plan qui est une couleur nue', () => {
+  it('se décrit comme une marque, sans inventer de forme', () => {
+    /*
+      `white:white:white:SR 1:red` — le champ dit la couleur de ce qui est
+      peint, pas sa géométrie. « aplat » affirmerait une surface pleine que
+      la notation ne garantit pas.
+    */
+    expect(decrireBalisage('white:white:white:SR 1:red')).toBe(
+      'marque blanche sur fond blanc, marquée « SR 1 »',
+    )
+  })
+
+  it('accorde la couleur, parce que « marque » est féminin', () => {
+    expect(decrireBalisage('blue:yellow:black:QB:black')).toBe(
+      'marque noire sur fond jaune, marquée « QB »',
+    )
+  })
+
+  it('n’avale pas un nom de forme inconnu pour autant', () => {
+    // `zigzag` n'est ni une couleur ni une forme connue : on rend `null`
+    // plutôt qu'une description approximative (#286).
+    expect(decrireBalisage('red:white:zigzag')).toBeNull()
+  })
+})
