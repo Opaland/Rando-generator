@@ -498,8 +498,22 @@ faire.
   chemin parallèle), moitié → 50 %, way partagé compté 1× en global, plus
   une série de scénarios adverses (traversée perpendiculaire, GPS peu
   échantillonné, saut, aller-retour).
-- Aucun test ne touche le réseau : Overpass est une fixture enregistrée,
-  Playwright intercepte tout le trafic externe.
+- **La porte ne touche pas au réseau** : Overpass y est une fixture
+  enregistrée, et Playwright intercepte tout le trafic externe. C'est ce qui
+  la rend lisible — un rouge y veut dire « le code est cassé », jamais
+  « Overpass est surchargé ».
+- **Hors de la porte, deux commandes interrogent les vrais serveurs**, parce
+  qu'une suite entièrement sur fixtures ne dit rien de ce que rendent Overpass
+  et l'IGN aujourd'hui :
+  - `npm run reel` lance l'application dans un navigateur contre les vrais
+    services, sans un seul mock (`tests/e2e/reel.spec.ts`) ;
+  - `npm run mesures-osm` pose des questions chiffrées à Overpass, pour
+    trancher une issue plutôt que pour garder un comportement
+    (`tests/unit/mesuresReseau.test.ts`).
+
+  Les deux sont sautées par défaut et le disent dans chaque rapport. Quand un
+  miroir ne rend rien, elles se sautent **en nommant l'hôte et la raison** :
+  on ne conclut pas d'une absence de mesure.
 - **Tests unitaires du store** (`tests/unit/appStore.test.ts`) : cache de zone,
   forçage, repli sur un cache périmé, séquencement de deux chargements
   concurrents, dédoublonnage à l'import, bornage de la tolérance. Une fabrique
