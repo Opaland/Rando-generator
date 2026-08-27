@@ -52,8 +52,9 @@ const fichiers: Record<string, string> = import.meta.glob<string>(
  * reprendre exactement ce qu'on vient de rendre.
  */
 const PLAFONDS: Record<string, number> = {
-  'appStore.ts': 1_450,
+  'appStore.ts': 1_350,
   'trancheZone.ts': 540,
+  'trancheSauvegarde.ts': 260,
   'trancheImport.ts': 480,
   'enregistrementSlice.ts': 370,
   'trancheTrace.ts': 360,

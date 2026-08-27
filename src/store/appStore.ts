@@ -1,17 +1,5 @@
 import { create } from 'zustand'
 import { libelleDeZone } from '../core/overpass.ts'
-import {
-  backupFilename,
-  buildBackup,
-  compresserBackup,
-  resumeFusion,
-  fusionnerItineraires,
-  fusionnerTraces,
-  lireArchiveBackup,
-  serialiserBackup,
-  BackupError,
-} from '../core/backup.ts'
-import { downloadBlob } from '../lib/download.ts'
 import type { Lieu } from '../core/geocode.ts'
 import { resumeObjectif, type ResumeObjectif } from '../core/objectifs.ts'
 import type { ParcoursDeclare } from '../core/declaratif.ts'
@@ -84,7 +72,9 @@ import {
   type ActionsFiche,
   type EtatFiche,
 } from './trancheFiche.ts'
+import { downloadBlob } from '../lib/download.ts'
 import { fetchLocalBoucles, trancheZone } from './trancheZone.ts'
+import { trancheSauvegarde } from './trancheSauvegarde.ts'
 export type { DoublonEnAttente } from './trancheImport.ts'
 import {
   trancheImport,
@@ -916,117 +906,6 @@ export const useAppStore = create<AppState>()((set, get) => {
       }
     },
 
-    async exporterSauvegarde() {
-      // Une sauvegarde de démonstration n'aurait aucun sens, et rapporterait
-      // des sorties fictives dans les vraies données au moment de la relire.
-      await sortirDeLaDemonstration(get)
-      const etat = get()
-      const backup = buildBackup({
-        tracks: etat.tracks,
-        customItineraries: etat.customItineraries,
-        settings: {
-          toleranceMeters: etat.toleranceMeters,
-          completionPct: etat.completionPct,
-        },
-        // Sans cela, quinze PR cochés à la main disparaîtraient au premier
-        // changement de navigateur — et la sauvegarde, « la seule copie qui
-        // vous appartienne », mentirait par omission (issue #158).
-        parcoursDeclares: etat.parcoursDeclares,
-        exportedAt: new Date().toISOString(),
-      })
-      const octets = await compresserBackup(serialiserBackup(backup))
-      downloadBlob(
-        backupFilename(backup.exportedAt),
-        new Blob([octets as BlobPart], { type: 'application/gzip' }),
-      )
-    },
-
-    async importerSauvegarde(file) {
-      // Fusionner une sauvegarde avec des sorties fictives les laisserait en
-      // mémoire, comptées dans les statistiques, jusqu'au rechargement
-      // suivant (trouvé à la revue du sprint 2).
-      await sortirDeLaDemonstration(get)
-      let backup
-      try {
-        backup = await lireArchiveBackup(await file.arrayBuffer())
-      } catch (error) {
-        set((state) => ({
-          importErrors: [
-            ...state.importErrors,
-            `${file.name} : ${
-              error instanceof BackupError
-                ? error.message
-                : 'lecture impossible.'
-            }`,
-          ],
-        }))
-        return
-      }
-
-      const traces = fusionnerTraces(get().tracks, backup.tracks)
-      const persos = fusionnerItineraires(
-        get().customItineraries,
-        backup.customItineraries,
-      )
-
-      const db = await baseOuverte()
-      if (db) {
-        for (const track of traces.tracks.slice(get().tracks.length)) {
-          await db.saveTrack(track)
-        }
-        for (const itin of persos.itineraries.slice(
-          get().customItineraries.length,
-        )) {
-          await db.saveCustomItinerary(itin)
-        }
-      }
-
-      /*
-        Les déclarations se fusionnent comme le reste : ce qui est déjà là
-        l'emporte, la sauvegarde complète. Écraser ferait disparaître une
-        déclaration faite depuis l'export, exactement comme cela arrivait
-        aux traces avant qu'on le corrige.
-      */
-      const declaresFusionnes = [
-        ...get().parcoursDeclares,
-        ...backup.parcoursDeclares.filter(
-          (d) =>
-            !get().parcoursDeclares.some(
-              (deja) => deja.itineraryId === d.itineraryId,
-            ),
-        ),
-      ]
-      if (db) {
-        for (const declaration of declaresFusionnes) {
-          await db.declarerParcours(declaration)
-        }
-      }
-
-      set({
-        tracks: traces.tracks,
-        customItineraries: persos.itineraries,
-        parcoursDeclares: declaresFusionnes,
-      })
-      if (traces.ajoutees > 0 || persos.ajoutes > 0) await recompute()
-
-      // Les réglages ne sont repris que s'ils sont présents : une sauvegarde
-      // ne doit pas remettre la tolérance à zéro parce qu'elle est ancienne.
-      if (typeof backup.settings.toleranceMeters === 'number') {
-        await get().setTolerance(backup.settings.toleranceMeters)
-      }
-      if (typeof backup.settings.completionPct === 'number') {
-        await get().setCompletionPct(backup.settings.completionPct)
-      }
-
-      set({
-        backupMessage: resumeFusion(traces, persos),
-      })
-    },
-
-    clearBackupMessage() {
-      set({ backupMessage: null })
-    },
-
     async basculerObjectif(id) {
       const actuels = get().objectifs
       const objectifs = actuels.includes(id)
@@ -1308,6 +1187,29 @@ export const useAppStore = create<AppState>()((set, get) => {
       },
     }),
 
+    ...trancheSauvegarde({
+      set,
+      lire: () => {
+        const etat = get()
+        return {
+          tracks: etat.tracks,
+          customItineraries: etat.customItineraries,
+          parcoursDeclares: etat.parcoursDeclares,
+          toleranceMeters: etat.toleranceMeters,
+          completionPct: etat.completionPct,
+        }
+      },
+      signalerErreurImport: (message) => {
+        set((state) => ({ importErrors: [...state.importErrors, message] }))
+      },
+      quitterLaDemonstration: () => sortirDeLaDemonstration(get),
+      baseOuverte,
+      recalculer: recompute,
+      setTolerance: (valeur) => get().setTolerance(valeur),
+      setCompletionPct: (valeur) => get().setCompletionPct(valeur),
+      telecharger: downloadBlob,
+      maintenant: () => new Date().toISOString(),
+    }),
     ...trancheFiche({
       set,
       etatFiche: () => get(),
