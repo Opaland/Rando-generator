@@ -70,9 +70,20 @@ test('depuis la carte, chaque onglet montre son contenu', async ({ page }) => {
     // transition de 0,2 s sur sa hauteur, et une photographie prise pendant
     // l'animation ne dit rien de l'état final. La première version de ce
     // test mesurait une feuille de 117 px là où elle en fait 405.
+    /*
+      Le délai est **au-dessus du pire cas observé, pas du cas ordinaire** —
+      le même raisonnement que le `globalTimeout` de `playwright.config.ts`.
+
+      La convergence était juste ; c'est son budget qui ne l'était pas. Cinq
+      secondes (le défaut) suffisent isolément — mesuré vert trois fois de
+      suite — et pas en suite complète, où la machine peint plus lentement :
+      l'onglet « réglages » est tombé une fois, le 27/08. Une porte qui
+      rougit sur la lenteur d'une machine ne mesure plus le code.
+    */
     await expect
       .poll(() => estAlEcran(page, cible), {
         message: `l’onglet « ${onglet} » n’a rien montré à l’écran`,
+        timeout: 15_000,
       })
       .toBe(true)
   }
