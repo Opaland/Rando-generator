@@ -96,6 +96,7 @@ function part(numerateur: number, denominateur: number): string {
 
 interface ElementTague {
   type?: string
+  id?: number
   tags?: Record<string, string>
 }
 
@@ -427,5 +428,90 @@ out tags;`)
     ligne('')
     ligne('À lire : l’écart entre ce compte et le nombre de PR d’un')
     ligne('cartoguide papier est ce que l’issue cherche depuis le 19/08.')
+  })
+
+  /**
+   * Les variantes d'un itinéraire balisé (#333).
+   *
+   * L'issue pose trois questions et **interdit de trancher avant** de les
+   * avoir chiffrées. Les deux premières se lisent dans les tags ; la
+   * troisième — la part de géométrie commune — demande de télécharger les
+   * tracés, et c'est dit plutôt que supposé.
+   */
+  it('6 — les variantes d’itinéraires (#333)', { timeout: 900_000 }, async () => {
+    titre('#333 — variantes : superroutes et refs dérivées')
+    await nommerLaFrontiere('FR-69')
+
+    const brut = await mesurer(`[out:json][timeout:180];
+area["ISO3166-2"="FR-69"]->.a;
+relation["route"~"^(hiking|foot|walking)$"](area.a);
+out tags;`)
+    const itineraires = elementsDe(brut)
+
+    /*
+      Les superroutes qui **contiennent** ces itinéraires. `rel(br.…)` remonte
+      aux relations parentes : c'est la façon canonique de rattacher une
+      variante à son tronc, et la seule qui ne repose pas sur du texte.
+    */
+    const parents = await mesurer(`[out:json][timeout:180];
+area["ISO3166-2"="FR-69"]->.a;
+relation["route"~"^(hiking|foot|walking)$"](area.a)->.itin;
+rel(br.itin)["type"="superroute"];
+out tags;`)
+    const superroutes = elementsDe(parents)
+
+    /*
+      Une ref dérivée : `GR 7A` se rattache à `GR 7`. On la reconnaît à une
+      lettre finale collée à un numéro — et on la compte séparément parce que
+      c'est une déduction sur du texte, moins sûre qu'un lien de relation.
+    */
+    const REF_DERIVEE = /^(.*?\d+)\s?([A-Z])$/
+    const derivees = itineraires.filter((r) =>
+      REF_DERIVEE.test((r.tags?.['ref'] ?? '').trim()),
+    )
+
+    ligne(`relations pédestres          : ${String(itineraires.length)}`)
+    ligne(`superroutes qui les coiffent : ${String(superroutes.length)}`)
+    ligne(`refs dérivées (« GR 7A »)    : ${part(derivees.length, itineraires.length)}`)
+    for (const r of derivees.slice(0, 10)) {
+      ligne(`   ${(r.tags?.['ref'] ?? '').padEnd(10)} ${r.tags?.['name'] ?? ''}`)
+    }
+
+    /*
+      La question qui décide, et qu'aucun des deux comptes ne répond seul :
+      **les variantes elles-mêmes sont-elles rattachées ?**
+
+      La famille est demandée avec ses parents dans la **même** requête. Sans
+      ce témoin, une réponse vide se lirait « pas de superroute » alors
+      qu'elle pourrait dire « la requête a échoué » — le miroir venait
+      justement de rendre une erreur HTML au coup d'avant (§1bis).
+    */
+    if (derivees.length > 0) {
+      const ids = derivees.map((r) => String(r.id ?? '')).join(',')
+      const avecParents = await mesurer(`[out:json][timeout:120];
+relation(id:${ids})->.fam;
+(.fam; rel(br.fam););
+out tags;`)
+      const rendus = elementsDe(avecParents)
+      const parentsDesDerivees = rendus.length - derivees.length
+      ligne('')
+      ligne(`variantes rendues (témoin)   : ${String(rendus.length - parentsDesDerivees)}/${String(derivees.length)}`)
+      ligne(`dont rattachées à une superroute : ${String(parentsDesDerivees)}`)
+      if (rendus.length === 0) {
+        ligne('AUCUNE rendue : la requête a échoué, ne rien conclure.')
+      }
+    }
+
+    ligne('')
+    ligne('À lire : zéro superroute **et** zéro ref dérivée → il n’y a pas de')
+    ligne('variantes à rattacher dans cette zone, et l’issue attend une zone où')
+    ligne('il y en a. Des superroutes → le rattachement se lit dans la donnée,')
+    ligne('sans deviner. Des refs dérivées sans superroute → le rattachement se')
+    ligne('déduirait du texte, ce qui est moins sûr et doit être pesé.')
+    ligne('')
+    ligne('La troisième question de l’issue — quelle part de géométrie deux')
+    ligne('variantes partagent — n’est pas ici : elle demande `out geom` sur')
+    ligne('chaque relation, donc un tout autre volume. À faire quand on saura')
+    ligne('qu’il y a des variantes à mesurer.')
   })
 })
