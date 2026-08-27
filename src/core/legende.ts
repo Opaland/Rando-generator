@@ -1,4 +1,5 @@
 import type { Itinerary, Network } from './types.ts'
+import { ORDRE_DES_RESEAUX } from './reseaux.ts'
 import {
   segmentsDeRevetement,
   type FamilleRevetement,
@@ -21,25 +22,6 @@ import {
  * distinction parcouru/restant et le cas de la carte vide s'éprouvent sans
  * DOM, et se cassent en silence quand on les laisse dans un rendu.
  */
-
-/**
- * L'ordre de la charte, et non celui d'arrivée des données.
- *
- * Une légende dont les entrées changent de place selon la zone chargée se
- * relit à chaque fois. L'ordre suit celui de `NETWORK_LABELS` : du réseau le
- * plus structurant au plus local, puis ce que la personne a tracé.
- */
-const ORDRE: readonly Network[] = [
-  'GR',
-  'GRP',
-  'PR',
-  'LOCAL',
-  'PERSO',
-  // En dernier, parce que ce n'est pas un réseau mais une absence de réseau
-  // (issue #284) : la légende descend du plus structurant au plus local, puis
-  // à ce que la personne a tracé, et finit par ce qu'on ne sait pas nommer.
-  'INCONNU',
-]
 
 /**
  * L'ordre des familles de terrain : du plus roulant au moins roulant, comme
@@ -93,7 +75,7 @@ export function contenuLegende({
   for (const itineraire of tous) {
     presents.add(itineraire.network)
   }
-  const reseaux = ORDRE.filter((network) => presents.has(network))
+  const reseaux = ORDRE_DES_RESEAUX.filter((network) => presents.has(network))
 
   const regarde = tous.find((i) => i.osmRelationId === itineraireRegarde)
   const famillesPeintes = new Set<FamilleRevetement>()

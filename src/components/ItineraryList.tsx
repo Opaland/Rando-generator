@@ -24,6 +24,7 @@ import {
   type DetoursPoi,
 } from '../core/poisDeZone.ts'
 import { lireIntention } from '../core/intention.ts'
+import { RESEAUX_FILTRABLES } from '../core/reseaux.ts'
 import { ProgressBalise } from './ProgressBalise.tsx'
 import styles from './ItineraryList.module.css'
 
@@ -35,20 +36,6 @@ function formatDetourCourt(metres: number): string {
   return `${(metres / 1_000).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} km`
 }
 
-/**
- * Les réseaux filtrables. Écrite à la main et non dérivée du type : `PERSO`
- * n'a rien à faire ici — les itinéraires persos ont leur propre section.
- *
- * `INCONNU` y figure au contraire, et c'est tout l'intérêt du #284 : pouvoir
- * demander « montre-moi ce dont on ne sait rien » — ou l'inverse, ne garder
- * que ce qui est déclaré balisé avant de choisir sa sortie du dimanche.
- *
- * `tests/unit/reseauxFiltrables.test.ts` garde cette liste : TypeScript ne
- * voit rien passer quand un réseau s'ajoute au type sans s'ajouter ici, et
- * c'est exactement le mode d'échec du §4 — une condition transverse recopiée
- * à la main plutôt que nommée.
- */
-const NETWORKS: Network[] = ['GR', 'GRP', 'PR', 'LOCAL', 'INCONNU']
 
 interface Plage {
   label: string
@@ -166,7 +153,7 @@ export function ItineraryList() {
   const userPosition = useAppStore((s) => s.userPosition)
 
   const [query, setQuery] = useState('')
-  const [networks, setNetworks] = useState<Set<Network>>(new Set(NETWORKS))
+  const [networks, setNetworks] = useState<Set<Network>>(new Set(RESEAUX_FILTRABLES))
   const [sortKey, setSortKey] = useState<SortKey>('pct')
   const [longueurIndex, setLongueurIndex] = useState(0)
   const [dureeIndex, setDureeIndex] = useState(0)
@@ -457,7 +444,7 @@ export function ItineraryList() {
           role="group"
           aria-label="Filtrer par réseau"
         >
-          {NETWORKS.map((network) => (
+          {RESEAUX_FILTRABLES.map((network) => (
             <label key={network} className={styles.networkToggle}>
               <input
                 type="checkbox"
