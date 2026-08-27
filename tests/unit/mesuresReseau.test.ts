@@ -276,41 +276,63 @@ out tags;`)
    * locale qui tienne la donnée.
    */
   /**
-   * ## Un département n'est pas une chose bien définie dans ces requêtes
+   * ## Quel territoire on interroge, dit une fois et vérifié
    *
-   * Mesuré le 27/08, sur le **même** miroir et à quelques secondes d'écart :
+   * `area["ref:INSEE"="69"]` rendait 15 relations, `area["ISO3166-2"="FR-69"]`
+   * en rendait 157, et une mesure antérieure 227. Trois nombres pour « le
+   * Rhône ». La cause est mesurée, et c'est le découpage de 2015 :
    *
    * ```
-   * area["ref:INSEE"="69"]   → 15 relations
-   * area["ISO3166-2"="FR-69"] → 157 relations
-   * area["ref:INSEE"="88"]   → 1 035
-   * area["ISO3166-2"="FR-88"] → 1 035
+   * relation/7378     Rhône  admin_level=5  ref:INSEE=69   (pas d'ISO)
+   * relation/4850451  Rhône  admin_level=6  ref:INSEE=69D  ISO3166-2=FR-69
    * ```
    *
-   * Les Vosges s'accordent, le Rhône non — et la mesure 4, qui emploie
-   * `ref:INSEE`, avait rendu **227** un peu plus tôt, soit un troisième
-   * nombre. Le Rhône a été redécoupé en 2015 (département 69D et Métropole
-   * de Lyon 69M) : selon le tag et selon l'index du miroir interrogé, la
-   * même requête ne désigne pas le même territoire.
+   * Deux entités distinctes portent le même nom. La première est la
+   * circonscription départementale — elle **inclut** la Métropole de Lyon ;
+   * la seconde est le département proprement dit (69D), qui l'exclut. Les
+   * Vosges n'ont pas ce problème : les deux tags y désignent la même
+   * relation, d'où leurs 1 035 identiques.
    *
-   * **Ce qui est fiable ici est le taux, pas le compte.** « 40 % des
-   * relations portent un balisage lisible » ne dépend guère de la frontière
-   * retenue ; « il y a 157 relations dans le Rhône » en dépend entièrement.
-   * Les conclusions tirées plus bas ne portent donc que sur des parts.
+   * **On retient `ISO3166-2`**, qui désigne une frontière de niveau 6 dans
+   * les deux cas — donc la même chose d'un département à l'autre, ce que
+   * `ref:INSEE` ne garantit pas. Que le Rhône exclue alors la Métropole de
+   * Lyon est un choix assumé : « un département ordinaire » se lit mieux
+   * sans son cœur urbain.
    *
-   * Pinner la définition — un seul sélecteur, vérifié comme le témoin du
-   * Pilat vérifie la couverture — reste à faire. C'est le §4ter appliqué à
-   * ce fichier : deux façons de nommer un territoire, qui divergent en
-   * silence.
+   * Et surtout : **la mesure dit désormais quelle frontière elle a
+   * interrogée** — identifiant, nom, niveau. Un nombre sans son territoire
+   * n'est pas une mesure, c'est un chiffre.
    */
   const DEPARTEMENTS_BALISAGE = [
     { code: 'FR-88', nom: 'Vosges (massif du Club Vosgien)' },
-    { code: 'FR-69', nom: 'Rhône (département ordinaire)' },
+    { code: 'FR-69', nom: 'Rhône hors Métropole (département ordinaire)' },
   ]
+
+  /**
+   * Dit quelle frontière un code ISO désigne réellement.
+   *
+   * Appelée avant chaque comptage : sans elle, « 157 relations dans le
+   * Rhône » ne dit pas de quel Rhône on parle.
+   */
+  async function nommerLaFrontiere(iso: string): Promise<void> {
+    const brut = await mesurer(`[out:json][timeout:60];
+relation["ISO3166-2"="${iso}"]["boundary"="administrative"];
+out tags;`)
+    for (const e of elementsDe(brut)) {
+      const t = e.tags ?? {}
+      ligne(
+        `  frontière : relation ${t['ref:INSEE'] ?? '?'} « ${t['name'] ?? '?'} »` +
+          ` niveau ${t['admin_level'] ?? '?'}`,
+      )
+    }
+  }
 
   it('3 — la part des balisages que nous savons lire (#290)', { timeout: 900_000 }, async () => {
     titre('#290 — osmc:symbol exploitable, deux départements')
     for (const dept of DEPARTEMENTS_BALISAGE) {
+      ligne('')
+      ligne(`— ${dept.nom}`)
+      await nommerLaFrontiere(dept.code)
       const brut = await mesurer(`[out:json][timeout:180];
 area["ISO3166-2"="${dept.code}"]->.a;
 relation["route"~"^(hiking|foot|walking)$"](area.a);
@@ -320,8 +342,6 @@ out tags;`)
       const lisibles = avecSymbole.filter((r) =>
         decrireBalisage(r.tags?.['osmc:symbol']),
       )
-      ligne('')
-      ligne(`— ${dept.nom}`)
       ligne(`relations pédestres          : ${String(relations.length)}`)
       ligne(`portent osmc:symbol          : ${part(avecSymbole.length, relations.length)}`)
       ligne(`que nous savons lire         : ${part(lisibles.length, relations.length)}`)
@@ -351,8 +371,9 @@ out tags;`)
 
   it('4 — qu’est-ce qu’un « GR » pour le code (#322)', { timeout: 600_000 }, async () => {
     titre('#322 — la part des itinéraires portant un network exploitable')
+    await nommerLaFrontiere('FR-69')
     const brut = await mesurer(`[out:json][timeout:180];
-area["ref:INSEE"="69"]->.a;
+area["ISO3166-2"="FR-69"]->.a;
 relation["route"~"^(hiking|foot|walking)$"](area.a);
 out tags;`)
     const relations = elementsDe(brut)
@@ -361,7 +382,7 @@ out tags;`)
       const n = r.tags?.['network'] ?? '(absent)'
       compte.set(n, (compte.get(n) ?? 0) + 1)
     }
-    ligne(`relations pédestres du Rhône : ${String(relations.length)}`)
+    ligne(`relations pédestres (69D)    : ${String(relations.length)}`)
     for (const [n, c] of [...compte].sort((a, b) => b[1] - a[1])) {
       ligne(`   ${String(c).padStart(5)}  network=${n}`)
     }
@@ -387,8 +408,9 @@ out tags;`)
 
   it('5 — les PR du Rhône (#20)', { timeout: 600_000 }, async () => {
     titre('#20 — inventaire des PR du Rhône dans OpenStreetMap')
+    await nommerLaFrontiere('FR-69')
     const brut = await mesurer(`[out:json][timeout:180];
-area["ref:INSEE"="69"]->.a;
+area["ISO3166-2"="FR-69"]->.a;
 relation["route"~"^(hiking|foot|walking)$"](area.a);
 out tags;`)
     const relations = elementsDe(brut)
