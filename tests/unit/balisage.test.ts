@@ -65,9 +65,18 @@ describe('lireBalisage', () => {
    */
   it('rend null sur ce qui n’a pas la forme attendue', () => {
     expect(lireBalisage('')).toBeNull()
-    expect(lireBalisage('rouge')).toBeNull()
-    expect(lireBalisage('red:white')).toBeNull()
     expect(lireBalisage(undefined)).toBeNull()
+    /*
+      Un champ unique ne décrit aucune balise : `rouge` ne dit que la couleur
+      de la voie.
+
+      `red:white` en revanche **est** lu depuis la mesure du Rhône : deux
+      champs sont une forme courte admise par la grammaire — une balise
+      blanche sans symbole dessus. Ce test l'attendait `null`, et c'était la
+      règle qui faisait taire sept relations rhodaniennes.
+    */
+    expect(lireBalisage('rouge')).toBeNull()
+    expect(lireBalisage('red:white')?.fond).toBe('white')
   })
 
   it('tolère les espaces autour des champs', () => {
@@ -308,7 +317,19 @@ describe('les champs vides de la notation (#290)', () => {
     // Ni fond, ni symbole, ni texte : il n'y a pas de phrase à écrire, et
     // une ligne « Balisé : » vide vaut moins que pas de ligne du tout.
     expect(decrireBalisage('red::')).toBeNull()
-    expect(decrireBalisage('red:white:')).toBeNull()
+  })
+
+  it('décrit un fond seul, qui est déjà une balise', () => {
+    /*
+      `red:white:` était refusé, au motif qu'il n'y avait « rien à décrire ».
+      C'était faux : un cartouche blanc **est** ce qu'on voit sur l'arbre, et
+      le dire vaut mieux que se taire. La mesure du Rhône a montré le coût de
+      cette règle — sept relations muettes sur cent cinquante-sept.
+
+      Ce qui reste refusé est le cas d'à côté, `red::` : pas de fond non plus,
+      donc vraiment rien.
+    */
+    expect(decrireBalisage('red:white:')).toBe('balise sur fond blanc')
   })
 
   it('refuse toujours un fond qu’il ne sait pas nommer', () => {

@@ -49,8 +49,23 @@ export interface Balisage {
 export function lireBalisage(tag: string | undefined): Balisage | null {
   if (!tag) return null
   const champs = tag.split(':').map((c) => c.trim())
-  if (champs.length < 3) return null
-  const [couleurVoie, fond, premierPlan] = champs as [string, string, string]
+  /*
+    Deux champs suffisent — `blue:blue`, une balise bleue sans symbole dessus.
+
+    La grammaire admet la forme courte, et nous la refusions : `< 3` rendait
+    `null`, donc aucune ligne de balisage. Mesuré le 27/08 sur le Rhône, sept
+    relations dans ce cas (`blue:blue`, `red:red`, `green:green`,
+    `yellow:yellow`) — sur cent cinquante-sept, ce n'est pas anecdotique.
+
+    Un seul champ reste refusé : `red` seul ne dit que la couleur de la voie,
+    et ne décrit aucune balise.
+  */
+  if (champs.length < 2) return null
+  const [couleurVoie, fond, premierPlan = ''] = champs as [
+    string,
+    string,
+    string?,
+  ]
   if (!couleurVoie) return null
   /*
     Le fond et le premier plan peuvent être **vides**, et c'est une
@@ -314,13 +329,40 @@ export function decrireBalisage(tag: string | undefined): string | null {
         ` sur fond ${fond}`
 
   /*
-    Une balise qui ne porte qu'un texte — `red:red::IVV:white`. Sans symbole
-    à décrire, il reste le mot, et c'est tout ce qu'on dira. Rendre `null`
-    ferait disparaître une ligne dont la donnée est pourtant complète.
+    Une balise sans symbole dessus — deux cas, et le mot « balise » suffit
+    aux deux.
+
+    `red:red::IVV:white` : le premier plan est vide et un texte suit. Sept
+    relations vosgiennes.
+
+    `blue:blue` : il n'y a pas de troisième champ du tout. Une balise bleue,
+    sans rien peint dessus. Sept relations rhodaniennes.
+
+    Sans fond **ni** texte il ne resterait rien à dire, et on rend `null`.
   */
   if (lu.premierPlan === '') {
-    if (!lu.texte) return null
-    return `balise${surFond}, marquée « ${lu.texte} »`
+    if (lu.texte) return `balise${surFond}, marquée « ${lu.texte} »`
+    return fond === null ? null : `balise${surFond}`
+  }
+
+  /*
+    Un premier plan qui est une **couleur nue** plutôt qu'un `couleur_forme`
+    — `white:white:white:SR 1:red`, `blue:yellow:black:QB:black`.
+
+    La notation l'admet : le champ dit alors la couleur de ce qui est peint,
+    sans en nommer la forme. Nous rendions `null`, donc rien.
+
+    « aplat noir » a été écarté : c'est un mot de métier, et il affirme une
+    surface pleine que la notation ne garantit pas. « marque » dit ce qu'on
+    sait — une marque de cette couleur — sans inventer sa géométrie, et c'est
+    la même prudence que les quatre moitiés (§2, seuil de présentation
+    tranché ici, pistes écartées écrites).
+  */
+  const couleurSeule = COULEURS[lu.premierPlan]
+  if (couleurSeule) {
+    const marque = `marque ${FEMININ_DES_COULEURS[couleurSeule] ?? couleurSeule}`
+    const base = `${marque}${surFond}`
+    return lu.texte ? `${base}, marquée « ${lu.texte} »` : base
   }
 
   const symbole = lireSymbole(lu.premierPlan)
