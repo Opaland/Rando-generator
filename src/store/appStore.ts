@@ -4,11 +4,7 @@ import type { Lieu } from '../core/geocode.ts'
 import { resumeObjectif, type ResumeObjectif } from '../core/objectifs.ts'
 import type { ParcoursDeclare } from '../core/declaratif.ts'
 import { outingHighlights, type OutingHighlight } from '../core/outing.ts'
-import {
-  estModeAffichage,
-  lireDrapeau,
-  type ModeAffichage,
-} from '../core/affichage.ts'
+import { estModeAffichage, lireDrapeau } from '../core/affichage.ts'
 import {
   apiDuNavigateur,
   demanderPersistance,
@@ -56,9 +52,18 @@ import {
   openSentiersDb,
   DbError,
   type SentiersDb,
-  type SettingKey,
 } from '../db/database.ts'
-import { ecrireReglage } from '../db/reglages.ts'
+import {
+  creerEnregistreurDeReglage,
+  oublierReglagesTouches,
+  repriseAuDemarrage,
+} from './reglagesPersistants.ts'
+import {
+  AFFICHAGE_PAR_DEFAUT,
+  trancheAffichage,
+  type ActionsAffichage,
+  type EtatAffichage,
+} from './trancheAffichage.ts'
 import {
   TRACE_VIDE,
   trancheTrace,
@@ -101,26 +106,6 @@ import { computeMatching } from './matchingClient.ts'
  * Un ensemble nommé, consulté par `init`, plutôt qu'une condition recopiée
  * sur chacun des sept réglages (CLAUDE.md §4).
  */
-const reglagesTouches = new Set<SettingKey>()
-
-/** À appeler dans chaque setter, avant d'écrire. */
-function marquerTouche(clef: SettingKey): void {
-  reglagesTouches.add(clef)
-}
-
-/**
- * Ce qu'il faut retenir au démarrage : la base, sauf si la personne a déjà
- * tranché entre-temps.
- */
-function repriseAuDemarrage<T>(clef: SettingKey, deLaBase: T, enMemoire: T): T {
-  return reglagesTouches.has(clef) ? enMemoire : deLaBase
-}
-
-/** Pour les tests : repartir d'une session vierge. */
-export function oublierReglagesTouches(): void {
-  reglagesTouches.clear()
-}
-
 /**
  * Réunit ce qui vient de la base et ce qui est déjà en mémoire, sans doublon.
  * Les entrées mémoire absentes de la base — importées pendant que celle-ci se
@@ -159,7 +144,9 @@ export interface AppState
     EtatFiche,
     ActionsFiche,
     EtatImport,
-    ActionsImport {
+    ActionsImport,
+    EtatAffichage,
+    ActionsAffichage {
   // Persistance
   db: SentiersDb | null
   dbWarning: string | null
@@ -252,30 +239,7 @@ export interface AppState
    * Null tant que rien n'a été mesuré.
    */
   stockage: EtatDuStockage | null
-  /**
-   * Registre d'affichage (issue #173). Deux modes, mêmes données, même
-   * calcul : le mode simple cache, il n'enlève pas.
-   */
-  modeAffichage: ModeAffichage
-  /** Tout agrandi et contrasté, y compris les libellés portés par la carte. */
-  grosTexte: boolean
-  /**
-   * Le guide de premier lancement a-t-il été fermé ?
-   *
-   * Persisté, parce que la plainte porte précisément sur « quand on ouvre
-   * l'appli » : un guide qui revient à chaque rechargement n'a pas été fermé,
-   * il a été repoussé. Ce qui le rouvre est le rappel de `rappelGuideVisible`.
-   */
-  guideFerme: boolean
-  /**
-   * Le panneau latéral a-t-il été replié ?
-   *
-   * Sur téléphone la feuille avait déjà trois positions ; au-dessus de
-   * 800 px la colonne était définitive et prenait 390 px de carte sans
-   * qu'aucun geste puisse la rendre. Persisté pour la même raison que
-   * ci-dessus.
-   */
-  panneauReplie: boolean
+  // Les quatre réglages d'écran viennent de `EtatAffichage` (§155).
 
   // Itinéraires créés par l'utilisateur (réseau PERSO, ids négatifs)
   customItineraries: Itinerary[]
@@ -380,10 +344,6 @@ export interface AppState
   arreterDemonstration: () => Promise<void>
   /** Mesure l'espace occupé et le mode de stockage obtenu. */
   rafraichirStockage: () => Promise<void>
-  setModeAffichage: (mode: ModeAffichage) => Promise<void>
-  setGrosTexte: (actif: boolean) => Promise<void>
-  setGuideFerme: (ferme: boolean) => Promise<void>
-  setPanneauReplie: (replie: boolean) => Promise<void>
   toggleGeolocation: () => void
 }
 
@@ -618,50 +578,15 @@ export const useAppStore = create<AppState>()((set, get) => {
     if (db) await db.setSetting('lastZoneKey', zoneKey)
   }
 
-  /**
-   * Enregistre un réglage, et le montre — dans cet ordre, sans attente
-   * entre les deux (issue #203).
-   *
-   * Les sept setters faisaient :
-   *
-   *     set({ completionPct: seuil })          // l'écran change tout de suite
-   *     const db = await baseOuverte()
-   *     if (db) await db.setSetting(…, seuil)  // la base apprend après
-   *
-   * Entre les deux, l'interface affirmait quelque chose que la base ne savait
-   * pas encore. Un rechargement dans cette fenêtre annulait la transaction, et
-   * le réglage revenait à sa valeur précédente **alors que la personne l'avait
-   * vu changer**.
-   *
-   * `ecrireReglage` écrit dans `localStorage`, dont le contrat est synchrone :
-   * quand il rend la main, c'est écrit. Il n'y a plus de fenêtre à fermer — il
-   * n'y a plus de fenêtre, et l'écran répond toujours dans le même geste.
-   *
-   * **Montrer après avoir écrit** a été essayé et abandonné : une case cochée
-   * contrôlée par React revient visiblement à son ancien état le temps de
-   * l'écriture. Vingt-trois tests de bout en bout l'ont dit d'une seule voix.
-   * Échanger une perte rare contre un sursaut à chaque clic n'est pas un
-   * progrès. Le détail est dans `db/reglages.ts`.
-   *
-   * Le repli sur IndexedDB n'est pas décoratif : certains navigateurs
-   * verrouillent `localStorage` et pas l'autre. La fenêtre de #203 revient
-   * alors, et c'est dit plutôt que masqué.
-   *
-   * Une fonction nommée plutôt que sept séquences recopiées (§4) — c'est
-   * l'ancienne forme qui le montre le mieux : sept copies du même défaut.
-   */
-  async function enregistrerReglage(
-    clef: SettingKey,
-    valeur: string | number,
-    appliquer: () => void,
-  ): Promise<void> {
-    marquerTouche(clef)
-    const ecrit = ecrireReglage(clef, valeur)
-    appliquer()
-    if (ecrit) return
-    const db = await baseOuverte()
-    if (db) await db.setSetting(clef, valeur)
-  }
+  /*
+    L'écriture des réglages est une fonction nommée, partagée par les
+    objectifs, la tolérance, le seuil de complétion et les quatre réglages
+    d'écran. Elle vit dans `reglagesPersistants.ts` avec le registre de ce
+    qui a été touché et la règle de reprise : les trois n'ont de sens
+    qu'ensemble, et les séparer laissait à chaque appelant le soin de les
+    enchaîner dans le bon ordre (§4).
+  */
+  const enregistrerReglage = creerEnregistreurDeReglage({ baseOuverte })
 
   return {
     db: null,
@@ -706,10 +631,7 @@ export const useAppStore = create<AppState>()((set, get) => {
     ...IMPORT_AU_REPOS,
     demonstration: false,
     stockage: null,
-    modeAffichage: 'complet',
-    grosTexte: false,
-    guideFerme: false,
-    panneauReplie: false,
+    ...AFFICHAGE_PAR_DEFAUT,
     backupMessage: null,
     lieux: [],
     lieuxLoading: false,
@@ -1028,31 +950,7 @@ export const useAppStore = create<AppState>()((set, get) => {
       set({ celebration: null })
     },
 
-    async setModeAffichage(mode) {
-      await enregistrerReglage('modeAffichage', mode, () => {
-        set({ modeAffichage: mode })
-      })
-    },
-
-    async setGrosTexte(actif) {
-      // Pas de booléen dans le magasin des réglages : 0/1, relu par
-      // lireDrapeau qui n'accepte que 1.
-      await enregistrerReglage('grosTexte', actif ? 1 : 0, () => {
-        set({ grosTexte: actif })
-      })
-    },
-
-    async setGuideFerme(ferme) {
-      await enregistrerReglage('guideFerme', ferme ? 1 : 0, () => {
-        set({ guideFerme: ferme })
-      })
-    },
-
-    async setPanneauReplie(replie) {
-      await enregistrerReglage('panneauReplie', replie ? 1 : 0, () => {
-        set({ panneauReplie: replie })
-      })
-    },
+    ...trancheAffichage({ set, enregistrerReglage }),
 
     async rafraichirStockage() {
       set({ stockage: await etatDuStockage(apiDuNavigateur()) })
@@ -1220,3 +1118,12 @@ export const useAppStore = create<AppState>()((set, get) => {
     })
   }
 })
+
+/*
+  Ré-export : `oublierReglagesTouches` vit désormais dans
+  `reglagesPersistants.ts`, mais une trentaine d'appels de test l'importent
+  d'ici. Déplacer la fonction *et* réécrire ses appelants dans le même lot
+  aurait mêlé un découpage à une réécriture de tests — deux diffs qui se
+  relisent mal ensemble.
+*/
+export { oublierReglagesTouches }
