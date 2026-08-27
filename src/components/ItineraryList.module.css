@@ -251,3 +251,44 @@
 .question label {
   flex: 1 1 12rem;
 }
+
+/*
+  La ligne qui annonce ce que le filtre de réseau retire (#322).
+
+  Discrète mais **pas grise** : elle porte une information dont l'absence
+  fausserait la lecture de la liste. `--gris-vert`, employé partout ailleurs
+  dans ce fichier pour les mentions secondaires, dirait « détail » d'une
+  phrase qui explique pourquoi des itinéraires manquent.
+
+  Les deux valeurs sont des jetons, et pas un choix : `tests/unit/jetons.test.ts`
+  refuse une taille ou une couleur écrite en dur. La première écriture posait
+  `0.875rem` et `var(--encre)` — un jeton qui n'existe pas hors de la carte,
+  donc une déclaration invalide dont l'élément aurait simplement hérité, sans
+  que rien ne le dise. Le test l'a attrapée ; le commentaire, lui, affirmait
+  un couple « déjà vérifié » qui ne l'était pas (§4bis).
+*/
+.masques {
+  margin: 0 0 0.5rem;
+  font-size: var(--texte-secondaire);
+  color: var(--vert-noir);
+}
+
+/*
+  Pas de `min-height` ici, et c'est délibéré.
+
+  `src/index.css` plancherise `button` à 44 px sous `pointer: coarse`, et
+  laisse le curseur de bureau à son plancher hérité. Un `min-height` écrit
+  ici serait plus spécifique que la règle partagée : il **gagnerait** contre
+  elle et ramènerait la cible sous le plancher, exactement au doigt. C'est le
+  §4 — une garde transverse se nomme, elle ne se recopie pas — et le piège
+  est ici de la recopier *plus petite* sans s'en apercevoir.
+*/
+.masques button {
+  background: none;
+  border: none;
+  padding: 0.25rem;
+  color: var(--vert-noir);
+  text-decoration: underline;
+  cursor: pointer;
+  font: inherit;
+}

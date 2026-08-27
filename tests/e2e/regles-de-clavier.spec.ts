@@ -141,6 +141,13 @@ async function atteindre(page: Page): Promise<void> {
   await expect(page.getByTestId('zone-meta')).toContainText('itinéraire', {
     timeout: 15_000,
   })
+  /*
+    Pas d'`afficherTousLesReseaux` ici : ce fichier n'ouvre aucune fiche et
+    ne nomme aucun itinéraire. Il mesure ce que la **tabulation** atteint
+    selon la position de la feuille — et le geste qui rend les GR passe par
+    l'onglet et la poignée, donc change précisément l'état que ces tests
+    asservissent.
+  */
 }
 
 for (const vue of LARGEURS) {

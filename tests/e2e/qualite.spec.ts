@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork, mockElevation } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork, mockElevation } from './helpers.ts'
 
 /**
  * Qualité de la donnée : une relation OSM trouée produit un pourcentage
@@ -46,6 +46,7 @@ test('une relation trouée le dit au lieu d’afficher un pourcentage muet', asy
   await expect(page.getByTestId('zone-meta')).toContainText('1 itinéraire', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
 
   await page
     .getByTestId('itinerary-list')
@@ -70,6 +71,7 @@ test('la liste marque les tracés incomplets sans qu’on ouvre leur fiche', asy
   await expect(page.getByTestId('zone-meta')).toContainText('1 itinéraire', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await expect(
     page
       .getByTestId('itinerary-list')
@@ -86,6 +88,7 @@ test('une relation continue n’affiche aucun avertissement', async ({ page }) =
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await page
     .getByTestId('itinerary-list')
     .getByRole('button', { name: /GRP Tour du Pilat/ })
@@ -113,6 +116,7 @@ test('la fiche dit quand le tracé a été modifié dans OpenStreetMap', async (
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await page
     .getByTestId('itinerary-list')
     .getByRole('button', { name: /GR 7/ })

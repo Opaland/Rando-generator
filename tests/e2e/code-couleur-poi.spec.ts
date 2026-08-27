@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork, mockElevation } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork, mockElevation } from './helpers.ts'
 
 /**
  * Le code couleur des points d'intérêt (demande de Cédric, 23/08).
@@ -23,6 +23,7 @@ test('la liste des points d’intérêt porte leurs couleurs', async ({ page }) 
   await expect(page.getByTestId('zone-meta')).toContainText('itinéraire', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await page
     .getByTestId('itinerary-list')
     .getByRole('button', { name: /GR 7/ })

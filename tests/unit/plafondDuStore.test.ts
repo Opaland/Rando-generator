@@ -56,6 +56,7 @@ const PLAFONDS: Record<string, number> = {
   'trancheZone.ts': 540,
   'trancheSauvegarde.ts': 260,
   'trancheDemonstration.ts': 230,
+  'reseauxVisibles.ts': 100,
   'trancheImport.ts': 480,
   'enregistrementSlice.ts': 370,
   'trancheTrace.ts': 360,

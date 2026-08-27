@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { gunzipSync } from 'node:zlib'
-import { mockExternalNetwork, buildGpx } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork, buildGpx } from './helpers.ts'
 
 /**
  * Sauvegarde complète (issue #132).
@@ -29,6 +29,7 @@ test('une sauvegarde s’enregistre, et se relit sur un appareil vierge', async 
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await page.getByTestId('gpx-input').setInputFiles({
     name: 'gr7.gpx',
     mimeType: 'application/gpx+xml',
@@ -74,6 +75,7 @@ test('une sauvegarde s’enregistre, et se relit sur un appareil vierge', async 
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await expect(page.getByTestId('tracks-empty')).toBeVisible()
 
   await page.getByTestId('backup').locator('summary').click()

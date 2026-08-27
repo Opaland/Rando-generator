@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork } from './helpers.ts'
 
 /**
  * Issue #174 — le succès n'est pas « trois boutons existent », c'est que le
@@ -18,6 +18,7 @@ test('chaque choix dit ce qu’il change sur le terrain', async ({ page }) => {
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
 
   const niveaux = page.getByTestId('tolerance-niveaux')
   await expect(niveaux).toContainText('Précis')
@@ -42,6 +43,7 @@ test('les crans se touchent, et le réglage fin reste accessible', async ({
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
 
   // La cible se touche avec des doigts qui ne visent pas bien : c'est
   // l'arthrose de Jeanine autant que le vocabulaire qui motivait l'issue.
@@ -66,6 +68,7 @@ test('une valeur intermédiaire se dit « personnalisée », pas « précise »'
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
 
   await page.getByTestId('tolerance-detail').click()
   await page.getByTestId('tolerance-slider').fill('35')

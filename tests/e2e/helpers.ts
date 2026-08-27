@@ -740,3 +740,101 @@ async function atteindreLeReglageDAffichage(
     )
     .toBe(true)
 }
+
+/**
+ * Rend visibles les réseaux repliés par défaut (issue #322).
+ *
+ * ## Pourquoi ce geste est **explicite** et non caché dans un `beforeEach`
+ *
+ * Depuis #322, les grands itinéraires ne sont dessinés ni listés tant que
+ * personne ne les demande. Or le GR 7 est le sujet principal de la fixture
+ * du Pilat : soixante-quatorze tests s'ouvrent sur lui, sa fiche, son
+ * profil, son export.
+ *
+ * Le glisser dans un réglage global aurait fait passer toute la suite sur un
+ * état que **personne ne voit au premier écran** — et le jour où le repli se
+ * casserait, aucun de ces tests ne le dirait, puisqu'aucun n'aurait jamais
+ * vu le défaut. Un test qui ne peut pas échouer sur ce qu'il traverse ne
+ * garde pas ce qu'il traverse (§1).
+ *
+ * Écrit à la main dans chaque fichier, le geste dit ce qu'il est : « ce test
+ * parle d'un GR, il faut donc le demander ». Et
+ * `grands-itineraires-replies.spec.ts` reste le seul à mesurer le défaut,
+ * parce qu'il est le seul à ne pas appeler cette fonction.
+ *
+ * À appeler **après** que la zone soit chargée : la ligne d'annonce n'existe
+ * pas tant qu'il n'y a rien à masquer.
+ *
+ * ## Où **ne pas** l'appeler
+ *
+ * Ce geste **navigue** : il ouvre l'onglet « progression » et peut déplier
+ * la feuille. Un test qui asservit la position de la feuille ou l'onglet
+ * actif ne doit donc pas l'appeler — il mesurerait l'état que l'appel vient
+ * de changer.
+ *
+ * Deux l'ont montré, l'un après l'autre : « au retour, la feuille laisse la
+ * carte visible » (`mobile.spec.ts`) attend une feuille **repliée**, et les
+ * règles de clavier mesurent ce que la tabulation atteint **selon** cette
+ * position. Aucun des deux ne nomme d'itinéraire ; ils n'avaient donc rien à
+ * demander. La règle est écrite ici plutôt que découverte une troisième
+ * fois.
+ */
+export async function afficherTousLesReseaux(page: Page): Promise<void> {
+  /*
+    L'onglet **d'abord**, et c'est tout le piège.
+
+    Sous le point de rupture, `App.tsx` ne *rend pas* les sections d'un
+    onglet inactif — `visible('listeItineraires')` les retire de l'arbre. La
+    ligne d'annonce n'existe donc pas au chargement, qui se fait sur
+    l'onglet « carte ».
+
+    La première version commençait par « rien à faire si la ligne est
+    absente » : au bureau elle marchait, sur téléphone elle **sortait tout
+    de suite sans rien faire**, en silence, et dix-huit tests s'arrêtaient
+    plus loin sur une fiche qu'ils n'arrivaient pas à ouvrir. Un raccourci
+    de sortie qui se déclenche pour une raison qu'on n'avait pas prévue est
+    le §1bis appliqué à un helper : il rendait « déjà fait » là où la
+    réponse juste était « pas encore visible ».
+  */
+  await ouvrirOnglet(page, 'progression')
+
+  const annonce = page.getByTestId('list-masques')
+  // Rien de replié — rien à faire. Le cas arrive sur les zones sans GR, et
+  // se taire vaut mieux que d'échouer sur l'absence d'un bouton.
+  if ((await annonce.count()) === 0) return
+
+  /*
+    On boucle sur **l'état final voulu** — plus rien n'est masqué — en
+    tentant chaque geste à chaque tour, plutôt que de chercher un ordre sûr
+    (§6ter).
+
+    La première version cliquait le bouton directement. Elle marchait au
+    bureau et expirait sur téléphone : sous le point de rupture, la liste
+    vit derrière un onglet, et la feuille peut être repliée. Le bouton était
+    dans le DOM — donc `count()` le trouvait — sans être atteignable, et
+    vingt tests s'arrêtaient sur un `click` qui n'aboutissait jamais.
+
+    Aucun de ces gestes n'est asserté : c'est la convergence qui l'est. Un
+    `catch` ici n'avale pas une assertion, il avale une tentative.
+  */
+  await expect
+    .poll(
+      async () => {
+        if ((await annonce.count()) === 0) return true
+        await annonce
+          .getByRole('button', { name: /tout afficher/i })
+          .click({ timeout: 1_500 })
+          .catch(() => undefined)
+        if ((await annonce.count()) === 0) return true
+        // La feuille peut être repliée : la déplier est le seul geste qui
+        // reste, l'onglet ayant déjà été ouvert plus haut.
+        await page
+          .getByTestId('sheet-handle')
+          .click({ timeout: 1_000 })
+          .catch(() => undefined)
+        return (await annonce.count()) === 0
+      },
+      { timeout: 20_000 },
+    )
+    .toBe(true)
+}

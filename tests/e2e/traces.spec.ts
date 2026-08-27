@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork, buildGpx } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork, buildGpx } from './helpers.ts'
 
 test('import multi-fichiers puis suppression : le % est recalculé', async ({
   page,
@@ -11,6 +11,7 @@ test('import multi-fichiers puis suppression : le % est recalculé', async ({
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
 
   // Deux fichiers d’un coup : un qui matche (15 m), un très loin des tracés.
   await page.getByTestId('gpx-input').setInputFiles([
@@ -83,6 +84,7 @@ test('un doublon supposé reste importable par la personne (issue #165)', async 
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
 
   const memeTrace = Buffer.from(buildGpx(15), 'utf-8')
   await page.getByTestId('gpx-input').setInputFiles([
@@ -121,6 +123,7 @@ test('un doublon écarté disparaît sans rien importer', async ({ page }) => {
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
 
   const memeTrace = Buffer.from(buildGpx(15), 'utf-8')
   await page.getByTestId('gpx-input').setInputFiles([

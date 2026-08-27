@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockOverpass, mockTilesOk, buildGpx } from './helpers.ts'
+import { afficherTousLesReseaux, mockOverpass, mockTilesOk, buildGpx } from './helpers.ts'
 
 interface TrailStats {
   base: number
@@ -33,6 +33,7 @@ test('le repli IGN → OSM conserve les tracés affichés', async ({ page }) => 
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await page.getByTestId('gpx-input').setInputFiles({
     name: 'sortie.gpx',
     mimeType: 'application/gpx+xml',

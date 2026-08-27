@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import {
+  afficherTousLesReseaux,
   fermerLeGuide,
   mockExternalNetwork,
   mockElevation,
@@ -42,6 +43,7 @@ async function ouvrirLaFiche(page: import('@playwright/test').Page) {
   await expect(page.getByTestId('zone-meta')).toContainText('itinéraire', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   /*
     Atteindre la liste, quelle que soit la largeur.
 
@@ -258,6 +260,7 @@ test.describe('sur téléphone, réseau lent', () => {
     await expect(page.getByTestId('zone-meta')).toContainText('itinéraire', {
       timeout: 15_000,
     })
+    await afficherTousLesReseaux(page)
     await ouvrirOnglet(page, 'progression')
     await page
       .getByTestId('itinerary-list')

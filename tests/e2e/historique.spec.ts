@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork } from './helpers.ts'
 
 /**
  * Issue #175 — la mécanique de l'historique à petite échelle : chercher,
@@ -66,6 +66,7 @@ test('retrouver une sortie de 2018 parmi quarante, sans dérouler la liste', asy
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await page.getByTestId('gpx-input').setInputFiles(archive())
   await expect(page.getByTestId('tracks-compte')).toContainText('40 sorties', {
     timeout: 30_000,
@@ -92,6 +93,7 @@ test('le tri change l’ordre, et le dit', async ({ page }) => {
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await page.getByTestId('gpx-input').setInputFiles(archive())
   await expect(page.getByTestId('tracks-compte')).toContainText('40 sorties', {
     timeout: 30_000,
@@ -113,6 +115,7 @@ test('une recherche sans résultat le dit, au lieu de tout montrer', async ({
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await page.getByTestId('gpx-input').setInputFiles(archive())
   await expect(page.getByTestId('tracks-compte')).toContainText('40 sorties', {
     timeout: 30_000,

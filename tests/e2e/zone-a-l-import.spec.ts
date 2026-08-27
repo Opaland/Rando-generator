@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork, mockTilesOk, fermerLeGuide } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork, mockTilesOk, fermerLeGuide } from './helpers.ts'
 
 /**
  * Issue #206 — retrouver une sortie par la zone où on l'a importée.
@@ -34,6 +34,7 @@ test('une trace importée retient la zone, et se retrouve par elle', async ({
   await expect(page.getByTestId('zone-meta')).toContainText('itinéraire', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await page.getByTestId('gpx-input').setInputFiles({
     name: 'sortie-du-jour.gpx',
     mimeType: 'application/gpx+xml',
@@ -68,6 +69,7 @@ test('la recherche de l’historique trouve par la zone', async ({ page }) => {
   await expect(page.getByTestId('zone-meta')).toContainText('itinéraire', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
 
   /*
     Trente sorties, parce que le champ de recherche n'apparaît qu'à partir

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork, mockTilesOk, fermerLeGuide, hasMap } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork, mockTilesOk, fermerLeGuide, hasMap } from './helpers.ts'
 import type { Page } from '@playwright/test'
 
 /**
@@ -118,6 +118,7 @@ for (const { largeur, hauteur } of ECRANS) {
       await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
         timeout: 15_000,
       })
+      await afficherTousLesReseaux(page)
       await expect(page.getByTestId('map-legend')).toBeVisible()
       await replierLaFeuille(page)
 
@@ -152,6 +153,7 @@ for (const { largeur, hauteur } of ECRANS) {
       await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
         timeout: 15_000,
       })
+      await afficherTousLesReseaux(page)
       await expect(page.getByTestId('map-legend')).toBeVisible()
       await replierLaFeuille(page)
 

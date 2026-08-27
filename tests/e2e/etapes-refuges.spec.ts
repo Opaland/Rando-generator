@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork, mockElevation } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork, mockElevation } from './helpers.ts'
 
 /**
  * Issue #161, point 1 — une étape en montagne est décidée par le refuge.
@@ -60,6 +60,7 @@ async function ouvrirLeGR(page: import('@playwright/test').Page) {
   await expect(page.getByTestId('zone-meta')).toContainText('1 itinéraire', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await page
     .getByTestId('itinerary-list')
     .getByRole('button', { name: /GR 400/ })

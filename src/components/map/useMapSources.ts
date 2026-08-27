@@ -7,6 +7,8 @@ import {
 } from '../../core/mapdata.ts'
 import { traceProvisoire } from '../../core/sortieEnCours.ts'
 import { useAppStore } from '../../store/appStore.ts'
+import { useReseauxVisibles } from '../../store/reseauxVisibles.ts'
+import { itinerairesVisibles } from '../../core/lisibilite.ts'
 import { poisToGeoJSON, revetementToGeoJSON } from './style.ts'
 
 /**
@@ -103,14 +105,31 @@ export function useMapSources(
   const parcoursDeclares = useAppStore((s) => s.parcoursDeclares)
   const drawWaypoints = useAppStore((s) => s.drawWaypoints)
   const detailItineraryId = useAppStore((s) => s.detailItineraryId)
+  /*
+    Les réseaux repliés ne sont pas dessinés (#322).
+
+    Le filtre s'applique aux **itinéraires**, avant la fusion des chemins, et
+    c'est ce qui rend juste le cas partagé : un chemin porté à la fois par un
+    GR et un PR reste peint, aux couleurs du PR, parce que le PR est encore
+    là pour le réclamer. Filtrer après la fusion l'aurait fait disparaître
+    avec le GR.
+
+    Les itinéraires persos ne passent pas par là : ils ont leur propre
+    section et leur propre réseau, que le panneau ne propose pas de filtrer.
+  */
+  const reseauxVisibles = useReseauxVisibles((s) => s.reseauxVisibles)
 
   // Mise à jour des couches quand les données changent.
   useEffect(() => {
     const map = mapRef.current
     if (!map || !ready) return
     const apply = () => {
-      const { base, done } = buildTrailGeoJSON(
+      const montres = itinerairesVisibles(
         itineraries,
+        new Set(reseauxVisibles),
+      )
+      const { base, done } = buildTrailGeoJSON(
+        montres,
         matching?.samples ?? [],
       )
       // Les itinéraires persos ont leur propre matching : on fusionne leurs
@@ -126,7 +145,7 @@ export function useMapSources(
       // Le déclaratif (issue #158) : sa propre source, et rien de commun avec
       // les échantillons du matching.
       const declares = buildDeclaresGeoJSON(
-        [...itineraries, ...customItineraries],
+        [...montres, ...customItineraries],
         parcoursDeclares,
       )
       void map.getSource<GeoJSONSource>('trails-declares')?.setData(declares)
@@ -199,6 +218,9 @@ export function useMapSources(
     pois,
     ready,
     styleEpoch,
+    // Sans lui, replier un réseau ne redessinerait rien avant le prochain
+    // changement de données — c'est-à-dire, le plus souvent, jamais.
+    reseauxVisibles,
   ])
 
   // Tracé en cours : ligne calculée + étapes posées.

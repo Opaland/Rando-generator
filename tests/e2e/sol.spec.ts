@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork, openDetailFromMap } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork, openDetailFromMap } from './helpers.ts'
 
 /**
  * Ce qu'il y a sous les pieds — ou sous les roues (issue #179).
@@ -47,6 +47,7 @@ test('le filtre du sol écarte ce dont on ne sait rien', async ({ page }) => {
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
 
   const liste = page.getByTestId('itinerary-list')
   await expect(liste).toContainText('GR 7')
@@ -85,6 +86,7 @@ test('la fiche donne les parts de revêtement, sans noyer l’inconnu', async ({
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   // Way 300 : `track` sans surface — propre au Sentier des Crêtes.
   await openDetailFromMap(page, 4.53, 45.405)
 

@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import {
+  afficherTousLesReseaux,
   activerLeGrosTexte,
   fermerLeGuide,
   mockElevation,
@@ -137,6 +138,7 @@ async function atteindre(
   await expect(page.getByTestId('zone-meta')).toContainText('itinéraire', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
 }
 
 for (const vue of LARGEURS) {

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork, buildGpx } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork, buildGpx } from './helpers.ts'
 
 /**
  * Scénario nominal complet, Overpass mocké (fixture enregistrée) :
@@ -29,6 +29,7 @@ test('charge une zone, importe un GPX, recalcule et persiste', async ({
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   expect(overpass.count()).toBe(1)
 
   // Sans trace : 0 %.
@@ -68,6 +69,7 @@ test('charge une zone, importe un GPX, recalcule et persiste', async ({
   await page.reload()
 
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires')
+  await afficherTousLesReseaux(page)
   await expect(page.getByTestId('tracks-list')).toContainText(
     'sortie-pilat.gpx',
   )

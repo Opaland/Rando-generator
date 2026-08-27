@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork } from './helpers.ts'
 import { buildZip, gzip } from '../fixtures/zip.ts'
 
 /**
@@ -30,6 +30,7 @@ test('une archive d’export s’ouvre sur l’appareil et livre ses traces', as
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
 
   const archive = await buildZip([
     { nom: 'activities/1001.gpx', contenu: gpxLeLongDuGr7(0, 76) },

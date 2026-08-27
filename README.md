@@ -102,6 +102,14 @@ existant via `PW_CHROMIUM_PATH=/chemin/vers/chrome npm run e2e`.
    réseau), tableau de bord (% global, km faits/restants, répartition
    GR/GRP/PR, top 5), liste triable/filtrable.
 
+   **Les grands itinéraires sont repliés par défaut**, sur la carte comme
+   dans la liste. Un GR traverse la zone de part en part : mesuré sur des
+   fiches réelles, une boucle communale fait 8,6 km quand la Via Lugdunum en
+   fait 153, et le tracé long **barre l'écran** au lieu de l'informer. Une
+   ligne au-dessus de la liste dit combien sont ainsi **masqués** et les
+   rend d'un clic — un itinéraire absent sans que rien ne le signale serait
+   un mensonge par omission.
+
    **Le balisage vient de ce qui est peint sur l'arbre**, quand
    OpenStreetMap le porte : Sentiers lit le tag `osmc:symbol`, qui décrit la
    marque réelle, plutôt que de la déduire d'une ref commençant par « GR ».

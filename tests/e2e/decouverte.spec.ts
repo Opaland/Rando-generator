@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork } from './helpers.ts'
 import decouverteFixture from '../fixtures/boucles/decouverte.json' with { type: 'json' }
 
 /**
@@ -24,6 +24,7 @@ test('les filtres de découverte trient sur durée, forme et longueur', async ({
   const list = page.getByTestId('itinerary-list')
   await expect(list).toContainText('Boucle du Vallon', { timeout: 15_000 })
   await expect(list).toContainText('Grande Traversée')
+  await afficherTousLesReseaux(page)
 
   // La durée publiée par la source est affichée telle quelle ; celle des
   // itinéraires OSM est estimée, et signalée comme telle par le « ≈ ».
@@ -70,6 +71,7 @@ test('le filtre de proximité ne retire rien tant que la position est inconnue',
   await page.getByTestId('zone-rhone').click()
   const list = page.getByTestId('itinerary-list')
   await expect(list).toContainText('Boucle du Vallon', { timeout: 15_000 })
+  await afficherTousLesReseaux(page)
 
   await page.getByTestId('discovery-filters').locator('summary').click()
   await page.getByTestId('list-nearby').selectOption({ label: 'à moins de 5 km' })
@@ -98,6 +100,7 @@ test.describe('avec une position connue', () => {
     await page.getByTestId('zone-rhone').click()
     const list = page.getByTestId('itinerary-list')
     await expect(list).toContainText('Boucle du Vallon', { timeout: 15_000 })
+    await afficherTousLesReseaux(page)
     await expect(list).toContainText('GR 7')
 
     await page.getByTestId('locate-toggle').click()

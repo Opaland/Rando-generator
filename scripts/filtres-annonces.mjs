@@ -38,6 +38,11 @@ const MOT_ATTENDU = {
   'list-eau': 'eau',
   'list-charger-pois': 'eau',
   'list-question': 'phrase',
+  // Le repli des grands itinéraires (#322) : ce n'est pas un critère qu'on
+  // choisit mais un défaut qu'on subit, donc c'est justement celui que le
+  // README doit annoncer — quelqu'un qui arrive sur le dépôt doit apprendre
+  // qu'il ne voit pas tout.
+  'list-masques': 'masqués',
 }
 
 /*

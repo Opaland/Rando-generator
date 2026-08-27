@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork, openDetailFromMap, hasMap } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork, openDetailFromMap, hasMap } from './helpers.ts'
 
 /**
  * Où l'on est par rapport au parcours suivi (issue #154).
@@ -34,6 +34,7 @@ test('la fiche dit où l’on est par rapport au parcours, sans alarmer', async 
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
 
   // Sans position active, rien n'est affiché : on ne mesure pas un écart à
   // partir d'une position qu'on n'a pas.

@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { mockExternalNetwork, buildGpx } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork, buildGpx } from './helpers.ts'
 
 /**
  * Seuil « bouclé » réglable (issue #92).
@@ -18,6 +18,7 @@ test('le seuil « bouclé » se règle, se voit, et survit au rechargement', asy
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await page.getByTestId('gpx-input').setInputFiles({
     name: 'sortie.gpx',
     mimeType: 'application/gpx+xml',

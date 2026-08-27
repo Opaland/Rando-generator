@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork, buildGpx } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork, buildGpx } from './helpers.ts'
 
 test('le bilan s’enregistre en image, fabriquée sur l’appareil', async ({
   page,
@@ -11,6 +11,7 @@ test('le bilan s’enregistre en image, fabriquée sur l’appareil', async ({
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await page.getByTestId('gpx-input').setInputFiles({
     name: 'gr7.gpx',
     mimeType: 'application/gpx+xml',

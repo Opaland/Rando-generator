@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
-import { mockExternalNetwork, buildGpx } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork, buildGpx } from './helpers.ts'
 
 /**
  * Audit d'accessibilité automatisé (axe-core, règles WCAG 2 A/AA).
@@ -17,6 +17,7 @@ test('aucune violation a11y sérieuse ou critique sur la vue principale', async 
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await page.getByTestId('gpx-input').setInputFiles({
     name: 'sortie.gpx',
     mimeType: 'application/gpx+xml',
@@ -68,6 +69,7 @@ test('aucune violation a11y dans les panneaux ajoutés (filtres, fiche, sortie)'
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await page.getByTestId('gpx-input').setInputFiles({
     name: 'sortie.gpx',
     mimeType: 'application/gpx+xml',
@@ -147,6 +149,7 @@ test('la carte s’annonce comme une région, et la liste mène partout où elle
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
 
   // Au clavier seul, sans jamais toucher la carte : sélectionner un
   // itinéraire, puis ouvrir sa fiche — les deux gestes que le clic sur un

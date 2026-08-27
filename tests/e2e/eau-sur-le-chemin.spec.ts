@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork } from './helpers.ts'
 
 /**
  * Ce qu'il y a sur le chemin, pour choisir (issue #156).
@@ -21,6 +21,7 @@ test('la liste dit où est l’eau, une fois qu’on la lui demande', async ({
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await page.getByTestId('discovery-filters').locator('summary').click()
 
   const liste = page.getByTestId('itinerary-list')
@@ -48,6 +49,7 @@ test('elle ne dit jamais qu’il n’y a pas d’eau', async ({ page }) => {
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await page.getByTestId('discovery-filters').locator('summary').click()
   await page.getByTestId('list-charger-pois').click()
   await expect(page.getByTestId('itinerary-list')).toContainText('eau à', {
@@ -78,6 +80,7 @@ test('le palier de détour filtre la liste', async ({ page }) => {
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await page.getByTestId('discovery-filters').locator('summary').click()
   await page.getByTestId('list-charger-pois').click()
 

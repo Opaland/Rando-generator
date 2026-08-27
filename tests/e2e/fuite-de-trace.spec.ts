@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork, mockTilesOk, fermerLeGuide } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork, mockTilesOk, fermerLeGuide } from './helpers.ts'
 
 /**
  * Issue #178 — le compteur « contenait vos traces » est une mesure.
@@ -50,6 +50,7 @@ async function importerEtOuvrirLePanneau(
   await expect(page.getByTestId('zone-meta')).toContainText('itinéraire', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await page.getByTestId('gpx-input').setInputFiles({
     name: 'surveillee.gpx',
     mimeType: 'application/gpx+xml',

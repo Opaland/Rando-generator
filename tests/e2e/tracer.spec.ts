@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import {
+  afficherTousLesReseaux,
   mockExternalNetwork,
   mockElevation,
   clickOnMap,
@@ -25,6 +26,7 @@ test('tracer un itinéraire sur les chemins puis l’enregistrer', async ({
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
 
   await page.getByTestId('custom-draw').click()
   const drawer = page.getByTestId('route-drawer')
@@ -63,6 +65,7 @@ test('messages clairs quand le point est hors réseau ou non relié', async ({
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await page.getByTestId('custom-draw').click()
 
   // Loin de tout tracé : rien à accrocher.
@@ -98,6 +101,7 @@ test('aller-retour, boucle et dénivelé estimé (issue #137)', async ({ page })
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await page.getByTestId('custom-draw').click()
 
   const stats = page.getByTestId('route-drawer-stats')
