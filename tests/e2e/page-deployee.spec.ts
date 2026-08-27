@@ -11,9 +11,14 @@ import { test, expect } from '@playwright/test'
  * (`/Rando-generator/`), un artefact, un cache, et un service worker — quatre
  * endroits où une application juste peut arriver cassée.
  *
- * Le piège classique est le premier : un `base` mal réglé produit des balises
- * `<script src="/assets/…">` qui répondent 404 sur un site publié dans un
- * sous-chemin. La page se charge, reste blanche, et la suite locale est verte.
+ * Le piège classique serait le premier — un `base` mal réglé produit des
+ * balises `<script src="/assets/…">` qui répondent 404 sur un site publié
+ * dans un sous-chemin, la page se charge, reste blanche, et la suite locale
+ * est verte. **Ici il est déjà évité** : `vite.config.ts` pose `base: './'`,
+ * donc les chemins sont relatifs et la page tient à n'importe quelle
+ * profondeur. Ce qui reste à garder est le reste de la chaîne — l'artefact
+ * publié, le cache, le service worker — et c'est déjà trois endroits de trop
+ * pour n'en surveiller aucun.
  *
  * ## Pourquoi elle est sautée par défaut
  *
@@ -30,6 +35,29 @@ import { test, expect } from '@playwright/test'
  * Le même motif que `tests/unit/mesuresReseau.test.ts` : une variable
  * d'environnement, et un saut franc plutôt qu'un test qui passerait sans
  * rien avoir mesuré.
+ *
+ * ## Elle échoue quand il le faut — vérifié
+ *
+ * Une sonde qu'on n'a jamais vue rouge ne vaut rien (§1), et celle-ci a
+ * d'abord été livrée sans cette preuve. Elle se fait maintenant à froid, sans
+ * réseau, en profitant d'un détail : `vite.config.ts` pose `base: './'`, donc
+ * les chemins d'assets sont **relatifs**. Servir la page depuis un
+ * sous-chemin qui n'existe pas donne un `index.html` (repli SPA) dont tous
+ * les assets répondent 404 — précisément le défaut que cette sonde cherche.
+ *
+ *     npm run preview
+ *     SENTIERS_URL=http://localhost:4173/            → 2 passent
+ *     SENTIERS_URL=http://localhost:4173/nexistepas/ → 2 échouent
+ *
+ * Mesuré le 27/08. Le second cas rougit sur « l'application monte », parce
+ * qu'aucun script ne s'est chargé — c'est bien la page blanche que l'en-tête
+ * décrit.
+ *
+ * Au passage, ce `base: './'` veut dire que le piège du chemin de base est
+ * déjà évité par construction. Ce que la sonde garde vraiment est donc
+ * l'artefact, le cache et le service worker — pas le sous-chemin. L'en-tête
+ * disait le contraire ; il est corrigé plutôt que laissé à promettre plus
+ * que ce qu'il tient.
  */
 
 const URL_DEPLOYEE = process.env['SENTIERS_URL']
@@ -45,10 +73,27 @@ test.describe('la page déployée', () => {
       Les échecs de requête sont collectés **avant** la navigation : un asset
       manquant échoue pendant le chargement, et un écouteur posé après aurait
       manqué précisément ce qu'il vient chercher.
+
+      ## Et seulement les nôtres
+
+      La première version comptait **toute** réponse ≥ 400, tuiles IGN et
+      OpenStreetMap comprises. Un hoquet de `data.geopf.fr` pendant un
+      déploiement aurait donc rendu la porte rouge pour une panne qui n'est
+      pas la nôtre — et une porte qui rougit sur l'indisponibilité d'un tiers
+      cesse d'être lue.
+
+      Ce que ce test mesure est dans son nom : **aucun de nos assets ne
+      manque**. Un asset à nous est servi par la même origine que la page
+      sondée ; le reste appartient à quelqu'un d'autre, et son
+      indisponibilité est un sujet pour l'application (qui sait déjà la
+      dire), pas pour le déploiement.
     */
+    const origine = new URL(URL_DEPLOYEE as string).origin
     const echecs: string[] = []
     page.on('response', (r) => {
-      if (r.status() >= 400) echecs.push(`${String(r.status())} ${r.url()}`)
+      if (r.status() < 400) return
+      if (!r.url().startsWith(origine)) return
+      echecs.push(`${String(r.status())} ${r.url()}`)
     })
     const erreursConsole: string[] = []
     page.on('pageerror', (e) => {
