@@ -120,8 +120,29 @@ const MIROIRS_DE_MESURE = [
   ...OVERPASS_MIRRORS,
 ]
 
+/**
+ * Le délai de courtoisie entre deux requêtes lourdes.
+ *
+ * Overpass est un service public et gratuit, et ces mesures lui demandent
+ * des départements entiers. Deux requêtes de ce poids coup sur coup font
+ * couper la connexion — mesuré le 27/08 : les Vosges passent, le Rhône qui
+ * suit immédiatement échoue au bout de deux minutes.
+ *
+ * Ce n'est pas un contournement mais la bonne manière : le miroir a raison de
+ * se protéger, et une mesure qui le martèle finit par ne plus rien mesurer
+ * du tout.
+ */
+const REPOS_ENTRE_REQUETES_MS = 5_000
+
+function patienter(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 /** Toutes les mesures passent par là, plutôt que par le défaut. */
-function mesurer(requete: string): Promise<OverpassResponse> {
+let premiereRequete = true
+async function mesurer(requete: string): Promise<OverpassResponse> {
+  if (!premiereRequete) await patienter(REPOS_ENTRE_REQUETES_MS)
+  premiereRequete = false
   return fetchOverpass(requete, { mirrors: MIROIRS_DE_MESURE })
 }
 
@@ -240,37 +261,92 @@ out tags;`)
     ligne('bruit que ça ramène.')
   })
 
-  it('3 — la part des balisages que nous savons lire (#290)', { timeout: 600_000 }, async () => {
-    titre('#290 — osmc:symbol exploitable, département des Vosges')
-    const brut = await mesurer(`[out:json][timeout:180];
-area["ISO3166-2"="FR-88"]->.a;
+  /**
+   * Deux départements, et c'est le second qui décide.
+   *
+   * La première version ne mesurait que **les Vosges**, et rendait 94,3 % —
+   * très au-dessus du seuil de ~50 % que #290 se donne. Sauf que les Vosges
+   * sont le massif du **Club Vosgien**, celui qui balise en formes
+   * géométriques et renseigne `osmc:symbol` mieux que partout ailleurs :
+   * c'est précisément pour ça que #286 s'y intéressait.
+   *
+   * Conclure « 94 % en France » depuis cet échantillon-là serait généraliser
+   * depuis le cas le plus favorable — l'erreur que le §2 interdit. Le Rhône
+   * sert donc de contre-épreuve : un département ordinaire, sans fédération
+   * locale qui tienne la donnée.
+   */
+  /**
+   * ## Un département n'est pas une chose bien définie dans ces requêtes
+   *
+   * Mesuré le 27/08, sur le **même** miroir et à quelques secondes d'écart :
+   *
+   * ```
+   * area["ref:INSEE"="69"]   → 15 relations
+   * area["ISO3166-2"="FR-69"] → 157 relations
+   * area["ref:INSEE"="88"]   → 1 035
+   * area["ISO3166-2"="FR-88"] → 1 035
+   * ```
+   *
+   * Les Vosges s'accordent, le Rhône non — et la mesure 4, qui emploie
+   * `ref:INSEE`, avait rendu **227** un peu plus tôt, soit un troisième
+   * nombre. Le Rhône a été redécoupé en 2015 (département 69D et Métropole
+   * de Lyon 69M) : selon le tag et selon l'index du miroir interrogé, la
+   * même requête ne désigne pas le même territoire.
+   *
+   * **Ce qui est fiable ici est le taux, pas le compte.** « 40 % des
+   * relations portent un balisage lisible » ne dépend guère de la frontière
+   * retenue ; « il y a 157 relations dans le Rhône » en dépend entièrement.
+   * Les conclusions tirées plus bas ne portent donc que sur des parts.
+   *
+   * Pinner la définition — un seul sélecteur, vérifié comme le témoin du
+   * Pilat vérifie la couverture — reste à faire. C'est le §4ter appliqué à
+   * ce fichier : deux façons de nommer un territoire, qui divergent en
+   * silence.
+   */
+  const DEPARTEMENTS_BALISAGE = [
+    { code: 'FR-88', nom: 'Vosges (massif du Club Vosgien)' },
+    { code: 'FR-69', nom: 'Rhône (département ordinaire)' },
+  ]
+
+  it('3 — la part des balisages que nous savons lire (#290)', { timeout: 900_000 }, async () => {
+    titre('#290 — osmc:symbol exploitable, deux départements')
+    for (const dept of DEPARTEMENTS_BALISAGE) {
+      const brut = await mesurer(`[out:json][timeout:180];
+area["ISO3166-2"="${dept.code}"]->.a;
 relation["route"~"^(hiking|foot|walking)$"](area.a);
 out tags;`)
-    const relations = elementsDe(brut)
-    const avecSymbole = relations.filter((r) => r.tags?.['osmc:symbol'])
-    const lisibles = avecSymbole.filter((r) =>
-      decrireBalisage(r.tags?.['osmc:symbol']),
-    )
-    ligne(`relations pédestres          : ${String(relations.length)}`)
-    ligne(`portent osmc:symbol          : ${part(avecSymbole.length, relations.length)}`)
-    ligne(`que nous savons lire         : ${part(lisibles.length, relations.length)}`)
-    ligne(`   …parmi celles taguées     : ${part(lisibles.length, avecSymbole.length)}`)
-    ligne('')
-    ligne('Symboles présents mais illisibles, pour enrichir les tables :')
-    const inconnus = new Map<string, number>()
-    for (const r of avecSymbole) {
-      const tag = r.tags?.['osmc:symbol']
-      if (tag && !decrireBalisage(tag)) {
-        inconnus.set(tag, (inconnus.get(tag) ?? 0) + 1)
+      const relations = elementsDe(brut)
+      const avecSymbole = relations.filter((r) => r.tags?.['osmc:symbol'])
+      const lisibles = avecSymbole.filter((r) =>
+        decrireBalisage(r.tags?.['osmc:symbol']),
+      )
+      ligne('')
+      ligne(`— ${dept.nom}`)
+      ligne(`relations pédestres          : ${String(relations.length)}`)
+      ligne(`portent osmc:symbol          : ${part(avecSymbole.length, relations.length)}`)
+      ligne(`que nous savons lire         : ${part(lisibles.length, relations.length)}`)
+      ligne(`   …parmi celles taguées     : ${part(lisibles.length, avecSymbole.length)}`)
+      const inconnus = new Map<string, number>()
+      for (const r of avecSymbole) {
+        const tag = r.tags?.['osmc:symbol']
+        if (tag && !decrireBalisage(tag)) {
+          inconnus.set(tag, (inconnus.get(tag) ?? 0) + 1)
+        }
+      }
+      if (inconnus.size > 0) {
+        ligne('  symboles présents mais illisibles :')
+        for (const [tag, n] of [...inconnus].sort((a, b) => b[1] - a[1]).slice(0, 10)) {
+          ligne(`   ${String(n).padStart(4)} × ${tag}`)
+        }
       }
     }
-    for (const [tag, n] of [...inconnus].sort((a, b) => b[1] - a[1]).slice(0, 20)) {
-      ligne(`   ${String(n).padStart(4)} × ${tag}`)
-    }
     ligne('')
-    ligne('À lire : c’est la troisième ligne qui décide. Sous ~50 %, peindre')
-    ligne('la carte au balisage donnerait une carte à deux régimes, où l’on ne')
-    ligne('saurait plus si le jaune veut dire « PR » ou « balisé jaune ».')
+    ligne('À lire : c’est la ligne « que nous savons lire » du **Rhône** qui')
+    ligne('décide, pas celle des Vosges. Sous ~50 %, peindre la carte au')
+    ligne('balisage donnerait une carte à deux régimes, où l’on ne saurait')
+    ligne('plus si le jaune veut dire « PR » ou « balisé jaune ». Un écart')
+    ligne('marqué entre les deux départements est lui-même une réponse :')
+    ligne('la couverture dépend alors du massif, donc d’où l’on marche.')
   })
 
   it('4 — qu’est-ce qu’un « GR » pour le code (#322)', { timeout: 600_000 }, async () => {
