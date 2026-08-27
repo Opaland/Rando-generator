@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork, mockGeocode } from './helpers.ts'
+import { mockExternalNetwork, mockGeocode, pilatGrOnly } from './helpers.ts'
 
 /**
  * Recherche par nom de lieu (issue #131).
@@ -46,12 +46,38 @@ test('chercher une ville charge les sentiers autour', async ({ page }) => {
   // La liste de propositions se referme une fois le choix fait.
   await expect(page.getByTestId('lieu-results')).toHaveCount(0)
 
-  // « Actualiser les tracés » doit refaire la requête. Sur une zone « autour
-  // d'un lieu », le bouton ne faisait rien du tout — la clé de zone n'est pas
-  // un identifiant de la liste des zones, et l'échec était silencieux.
+  /*
+    « Actualiser les tracés » doit refaire la requête. Sur une zone « autour
+    d'un lieu », le bouton ne faisait rien du tout — la clé de zone n'est pas
+    un identifiant de la liste des zones, et l'échec était silencieux.
+
+    **La fixture change avant le clic, et c'est ce qui rend le test un
+    test.** La version d'avant attendait de relire « 3 itinéraires » : ce
+    texte était déjà à l'écran depuis vingt lignes, donc l'attente rendait la
+    main tout de suite, et le comptage d'appels qui suivait était une photo
+    prise avant que la requête ne soit partie. Elle est tombée une fois en
+    suite complète, jamais isolée — la signature du §6ter, et la cause du
+    §1bis : une assertion qui pouvait passer pour une raison qu'on n'avait
+    pas voulue.
+
+    Mesuré, et pas seulement raisonné : en remettant le défaut d'origine —
+    le bouton qui ne rejoue pas une zone « autour d'un lieu » — l'ancienne
+    version **échouait** — mais sur le comptage, jamais sur l'attente, qui
+    rendait la main aussitôt. Elle n'était donc pas creuse : elle
+    discriminait, à un instant qu'elle ne contrôlait pas. C'est la nuance du §6ter — pas un
+    ordre supposé, un **instant** supposé.
+
+    En réduisant la fixture au seul GR 7, « 1 itinéraire » ne peut apparaître
+    qu'après une **nouvelle** réponse : la discrimination passe dans
+    l'assertion qui converge, et le comptage qui suit ne peut plus être lu
+    trop tôt. C'est ce que fait déjà `resilience.spec.ts` pour la même règle
+    sur une zone prédéfinie ; les deux tests disaient la même chose, un seul
+    la vérifiait au bon moment (§4ter).
+  */
   const appelsAvant = overpass.count()
+  overpass.setFixture(pilatGrOnly())
   await page.getByTestId('zone-refresh').click()
-  await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
+  await expect(page.getByTestId('zone-meta')).toContainText('1 itinéraire', {
     timeout: 15_000,
   })
   expect(overpass.count()).toBeGreaterThan(appelsAvant)
