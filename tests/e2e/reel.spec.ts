@@ -59,6 +59,18 @@ const BORNE_D_ATTENTE_MS = 7 * 60 * 1000
 const ACTIF = process.env['REEL'] === '1'
 const PROXY = process.env['HTTPS_PROXY']
 
+/**
+ * Ce qu'on ouvre : la prévisualisation locale, ou **la page déployée** quand
+ * `SENTIERS_URL` la désigne.
+ *
+ * Les deux valent la peine et ne disent pas la même chose. En local, on
+ * mesure le code qu'on vient d'écrire contre les vrais serveurs ; sur la page
+ * publiée, on mesure ce que les gens ouvrent vraiment — l'artefact, son
+ * chemin de base, son cache — contre ces mêmes serveurs. Le second est le
+ * seul des deux qui puisse contredire le premier.
+ */
+const CIBLE = process.env['SENTIERS_URL'] ?? '/'
+
 /*
   Le proxy sortant du conteneur, quand il y en a un. Il n'est pas lu par
   Chromium — voir l'en-tête de `relais-reseau.ts` — mais par le contexte de
@@ -115,7 +127,7 @@ test.describe('contre les vrais services', () => {
     page.on('pageerror', (erreur) => {
       echecsJs.push(erreur.message)
     })
-    await page.goto('/')
+    await page.goto(CIBLE)
     await page.getByTestId('zone-pilat').click()
 
     /*
@@ -139,7 +151,7 @@ test.describe('contre les vrais services', () => {
     page,
   }) => {
     const relais = await relayerLeVraiReseau(page)
-    await page.goto('/')
+    await page.goto(CIBLE)
     await page.getByTestId('lieu-input').fill('Porcelette')
     await page.getByTestId('lieu-submit').click()
 
@@ -162,7 +174,7 @@ test.describe('contre les vrais services', () => {
 
   test('une fiche affiche un profil venu de l’IGN', async ({ page }) => {
     const relais = await relayerLeVraiReseau(page)
-    await page.goto('/')
+    await page.goto(CIBLE)
     await page.getByTestId('zone-pilat').click()
     await attendreLaZone(page, relais)
 
