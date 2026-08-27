@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import {
+  afficherTousLesReseaux,
   mockExternalNetwork,
   mockElevation,
   fermerLeGuide,
@@ -31,6 +32,7 @@ async function ouvrirLaFiche(page: Page): Promise<boolean> {
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   if (!(await hasMap(page))) return false
   // Par la liste plutôt que par un clic sur la carte : au doigt, la feuille
   // couvre le bas du cadre et le clic tombe dessus. C'est le chemin que
@@ -110,6 +112,7 @@ for (const { nom, viewport } of [
       await expect(page.getByTestId('zone-meta')).toContainText('itinéraire', {
         timeout: 15_000,
       })
+      await afficherTousLesReseaux(page)
       test.skip(!(await hasMap(page)), 'WebGL indisponible')
       await ouvrirOnglet(page, 'progression')
       await page

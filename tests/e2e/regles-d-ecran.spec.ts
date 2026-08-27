@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import {
+  afficherTousLesReseaux,
   activerLeGrosTexte,
   activerLeModeSimple,
   fermerLeGuide,
@@ -158,6 +159,7 @@ async function atteindre(
   await expect(page.getByTestId('zone-meta')).toContainText('itinéraire', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   if (etat === 'zone chargée' || etat === 'mode simple') return
 
   if (etat === 'filtres ouverts') {

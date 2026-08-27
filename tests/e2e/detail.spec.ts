@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import {
+  afficherTousLesReseaux,
   mockExternalNetwork,
   mockElevation,
   buildGpx,
@@ -23,6 +24,7 @@ test('cliquer un tracé sur la carte ouvre la fiche détail (altimétrie + POI)'
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
 
   // Un point du GR 7 (way 100 de la fixture Pilat, lat 45.4, lon 4.5–4.505).
   await openDetailFromMap(page, 4.502, 45.4)
@@ -117,6 +119,7 @@ test('la vue 3D incline la caméra ; la fermer la remet à plat', async ({
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await openDetailFromMap(page, 4.502, 45.4)
   await expect(page.getByTestId('itinerary-detail')).toBeVisible()
 
@@ -147,6 +150,7 @@ test('sélectionner un itinéraire depuis la liste zoome dessus sans ouvrir le d
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
 
   // La caméra ne bouge qu'une fois la carte prête : sans cette attente, le
   // test mesure l'absence de mouvement d'une carte qui n'écoute pas encore.
@@ -194,6 +198,7 @@ test('une trace importée met bien la fiche détail à 100 % (altimétrie indisp
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await page.getByTestId('gpx-input').setInputFiles({
     name: 'sortie.gpx',
     mimeType: 'application/gpx+xml',
@@ -222,6 +227,7 @@ test('parcourir le profil altimétrique pose un marqueur sur le tracé', async (
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await openDetailFromMap(page, 4.502, 45.4)
   await expect(page.getByTestId('itinerary-detail')).toBeVisible()
   await expect(page.getByTestId('itinerary-detail')).toContainText('D+', {
@@ -285,6 +291,7 @@ test('le repère posé sur le profil reste quand on regarde la carte', async ({
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await page
     .getByTestId('itinerary-list')
     .getByRole('button', { name: /GR 7/ })
@@ -342,6 +349,7 @@ test('la pente est donnée avec la longueur sur laquelle elle est moyennée', as
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await openDetailFromMap(page, 4.502, 45.4)
   await expect(page.getByTestId('itinerary-detail')).toContainText('D+', {
     timeout: 10_000,
@@ -398,6 +406,7 @@ test('une pente sous le pas du modèle se dit, au lieu de s’afficher en centai
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await page
     .getByTestId('itinerary-list')
     .getByRole('button', { name: /GRP Tour du Pilat/ })
@@ -434,6 +443,7 @@ test('le revêtement se lit sur le profil, et le profil se zoome', async ({
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await openDetailFromMap(page, 4.502, 45.4)
   await expect(page.getByTestId('itinerary-detail')).toContainText('D+', {
     timeout: 10_000,
@@ -496,6 +506,7 @@ test('zoomé, le curseur clavier ne sort jamais du cadre', async ({ page }) => {
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await openDetailFromMap(page, 4.502, 45.4)
   await expect(page.getByTestId('itinerary-detail')).toContainText('D+', {
     timeout: 10_000,

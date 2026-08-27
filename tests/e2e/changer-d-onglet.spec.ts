@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork, buildGpx, estAlEcran } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork, buildGpx, estAlEcran } from './helpers.ts'
 import type { Page } from '@playwright/test'
 
 /**
@@ -36,6 +36,7 @@ async function avecUneZone(page: Page): Promise<void> {
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
 }
 
 test('depuis la carte, chaque onglet montre son contenu', async ({ page }) => {

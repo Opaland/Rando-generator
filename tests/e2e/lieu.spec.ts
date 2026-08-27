@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork, mockGeocode, pilatGrOnly } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork, mockGeocode, pilatGrOnly } from './helpers.ts'
 
 /**
  * Recherche par nom de lieu (issue #131).
@@ -33,6 +33,7 @@ test('chercher une ville charge les sentiers autour', async ({ page }) => {
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await expect(page.getByTestId('zone-section')).toContainText(
     'Autour de Saint-Étienne',
   )
@@ -80,6 +81,7 @@ test('chercher une ville charge les sentiers autour', async ({ page }) => {
   await expect(page.getByTestId('zone-meta')).toContainText('1 itinéraire', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   expect(overpass.count()).toBeGreaterThan(appelsAvant)
   await expect(page.getByTestId('zone-section')).toContainText(
     'Autour de Saint-Étienne',
@@ -121,4 +123,5 @@ test('un service de recherche en panne renvoie vers les zones de la liste', asyn
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
 })

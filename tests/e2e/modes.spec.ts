@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import {
+  afficherTousLesReseaux,
   buildGpx,
   fermerLeGuide,
   mockExternalNetwork,
@@ -23,6 +24,7 @@ async function avecUneZoneEtUneTrace(page: Page): Promise<void> {
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await ouvrirOnglet(page, 'sorties')
   await page.getByTestId('gpx-input').setInputFiles({
     name: 'sortie.gpx',

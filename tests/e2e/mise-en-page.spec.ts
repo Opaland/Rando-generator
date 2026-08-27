@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork } from './helpers.ts'
 
 test('la précision de suivi GPS reste repliée tant qu’il n’y a rien à régler', async ({
   page,
@@ -15,6 +15,7 @@ test('la précision de suivi GPS reste repliée tant qu’il n’y a rien à ré
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await expect(reglages).toHaveAttribute('open', /.*/)
 
   // Et le choix de l'utilisateur prime ensuite sur l'automatisme.
@@ -58,6 +59,7 @@ test('la section Zone est repliée au retour sur l’application', async ({
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   // Elle reste ouverte : l'utilisateur est peut-être en train d'en essayer
   // plusieurs, et lui replier la liste sous le nez serait pénible.
   await expect(zone).toHaveAttribute('open', /.*/)
@@ -68,6 +70,7 @@ test('la section Zone est repliée au retour sur l’application', async ({
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await expect(zone).not.toHaveAttribute('open', /.*/)
   // Le nom de la zone active reste lisible, section repliée.
   await expect(zone.locator('summary')).toContainText('PNR du Pilat')

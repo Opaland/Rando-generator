@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork } from './helpers.ts'
 
 /**
  * Issue #148 — une trace trop espacée pour être située doit le dire.
@@ -32,6 +32,7 @@ test('une trace trop espacée est expliquée, pas seulement comptée à zéro', 
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
 
   // ~1,7 km entre deux points.
   await page.getByTestId('gpx-input').setInputFiles({
@@ -61,6 +62,7 @@ test('une trace ordinaire n’est accompagnée d’aucun avertissement', async (
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
 
   // ~16 m entre deux points : l'enregistrement normal d'une montre.
   await page.getByTestId('gpx-input').setInputFiles({

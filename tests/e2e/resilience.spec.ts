@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import pilatFixture from '../fixtures/overpass/pilat.json' with { type: 'json' }
 import {
+  afficherTousLesReseaux,
   mockTiles,
   mockOverpass,
   pilatGrOnly,
@@ -28,6 +29,7 @@ test('bascule sur le second miroir Overpass si le premier échoue', async ({
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   expect(mirror1Calls).toBe(1)
   expect(mirror2Calls).toBe(1)
   // Pas de message d'erreur : la bascule est transparente.
@@ -45,6 +47,7 @@ test('« Actualiser les tracés » recharge une zone en ignorant le cache', asyn
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   expect(overpass.count()).toBe(1)
 
   // Les données côté OSM ont « changé » : la fixture ne contient plus que le GR 7.
@@ -53,6 +56,7 @@ test('« Actualiser les tracés » recharge une zone en ignorant le cache', asyn
   await expect(page.getByTestId('zone-meta')).toContainText('1 itinéraire', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   expect(overpass.count()).toBe(2)
 })
 
@@ -68,6 +72,7 @@ test('changer de zone met à jour les données ; zéro résultat est expliqué',
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
 
   // Zone 2 : Overpass renvoie d'autres données → l'UI doit refléter le changement.
   overpass.setFixture(pilatGrOnly())
@@ -75,6 +80,7 @@ test('changer de zone met à jour les données ; zéro résultat est expliqué',
   await expect(page.getByTestId('zone-meta')).toContainText('1 itinéraire', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   expect(overpass.count()).toBe(2)
 
   // Zone 3 : aucun itinéraire → message explicite, interface non bloquée.
@@ -85,6 +91,7 @@ test('changer de zone met à jour les données ; zéro résultat est expliqué',
     { timeout: 15_000 },
   )
   await expect(page.getByTestId('zone-meta')).toContainText('0 itinéraire')
+  await afficherTousLesReseaux(page)
   // Les boutons de zone sont réactivés : on peut recharger ailleurs.
   await expect(page.getByTestId('zone-pilat')).toBeEnabled()
 })
@@ -101,6 +108,7 @@ test('recherche par ref : chargement puis actualisation possibles', async ({
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   expect(overpass.count()).toBe(1)
 
   // Le bouton d'actualisation existe aussi pour les recherches par ref.
@@ -109,6 +117,7 @@ test('recherche par ref : chargement puis actualisation possibles', async ({
   await expect(page.getByTestId('zone-meta')).toContainText('1 itinéraire', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   expect(overpass.count()).toBe(2)
 })
 
@@ -132,12 +141,14 @@ test('une zone choisie dès l’ouverture est bien mise en cache', async ({
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   expect(overpass.count()).toBe(1)
 
   await page.reload()
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   // Restaurée depuis le cache : aucune nouvelle interrogation.
   expect(overpass.count()).toBe(1)
 })

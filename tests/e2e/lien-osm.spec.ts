@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork, mockElevation } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork, mockElevation } from './helpers.ts'
 
 /**
  * Issue #160 — un signalement devient une contribution.
@@ -48,6 +48,7 @@ test('une relation trouée mène à OpenStreetMap, cadrée sur le trou', async (
   await expect(page.getByTestId('zone-meta')).toContainText('1 itinéraire', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await page
     .getByTestId('itinerary-list')
     .getByRole('button', { name: /GR 500/ })

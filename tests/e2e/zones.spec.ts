@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork } from './helpers.ts'
 
 test('les départements d’Auvergne-Rhône-Alpes sont chargeables', async ({
   page,
@@ -11,6 +11,7 @@ test('les départements d’Auvergne-Rhône-Alpes sont chargeables', async ({
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   expect(overpass.count()).toBe(1)
 
   // Une autre zone de la région reste accessible dans la foulée.
@@ -29,6 +30,7 @@ test('un grand itinéraire se charge en un clic, sans taper sa ref', async ({
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   // Le bouton reflète la sélection en cours.
   await expect(page.getByTestId('featured-gr65')).toHaveAttribute(
     'aria-pressed',

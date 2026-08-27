@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import {
+  afficherTousLesReseaux,
   mockExternalNetwork,
   hasMap,
   waitForMapReady,
@@ -23,6 +24,7 @@ test('afficher sa position sur la carte, puis arrêter le suivi', async ({
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
 
   // La caméra n'obéit qu'une fois la carte chargée (cf. issue #111).
   await waitForMapReady(page)

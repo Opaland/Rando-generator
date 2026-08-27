@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork } from './helpers.ts'
 import bouclesFixture from '../fixtures/boucles/metropole.json' with { type: 'json' }
 
 test('la zone Rhône fusionne les boucles locales open data (réseau Boucle)', async ({
@@ -19,6 +19,7 @@ test('la zone Rhône fusionne les boucles locales open data (réseau Boucle)', a
   await expect(page.getByTestId('zone-meta')).toContainText('6 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
 
   const list = page.getByTestId('itinerary-list')
   await expect(list).toContainText('Les Vallons de la Beffe')
@@ -53,6 +54,7 @@ test('l’asset de boucles indisponible ne casse pas le chargement de zone', asy
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await expect(page.getByTestId('zone-error')).toHaveCount(0)
 })
 

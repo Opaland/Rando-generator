@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork } from './helpers.ts'
 
 /**
  * Import d'un TCX (Garmin Training Center). La trace synthétique longe le
@@ -37,6 +37,7 @@ test('une vieille archive au format TCX s’importe comme un GPX', async ({
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
 
   await page.getByTestId('gpx-input').setInputFiles({
     name: 'activite.tcx',

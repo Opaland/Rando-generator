@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork } from './helpers.ts'
 
 /**
  * Issue #156 — « 420 m D+ » ne dit pas « facile ».
@@ -18,6 +18,7 @@ test('la liste et la fiche qualifient l’effort, sans jouer à la cotation', as
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
 
   // Dans la liste, à côté des chiffres et non à leur place.
   const effortListe = page.getByTestId('itineraire-effort').first()

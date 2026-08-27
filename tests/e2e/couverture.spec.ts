@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork, buildGpx } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork, buildGpx } from './helpers.ts'
 
 /**
  * Une trace au large du Pilat — la Bretagne fera l'affaire. Deux points
@@ -27,6 +27,7 @@ test('le tableau de bord dit combien de sorties tombent hors de la zone chargée
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
 
   // Une sortie dans le Pilat : elle compte des deux côtés, rien à expliquer.
   await page.getByTestId('gpx-input').setInputFiles({

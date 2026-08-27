@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork, hasMap, openDetailFromMap } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork, hasMap, openDetailFromMap } from './helpers.ts'
 import type { Page } from '@playwright/test'
 
 /**
@@ -60,6 +60,7 @@ async function ouvrirLeProfil(page: Page): Promise<boolean> {
   await expect(page.getByTestId('zone-meta')).toContainText('itinéraire', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   if (!(await hasMap(page))) return false
   await openDetailFromMap(page, 4.502, 45.4)
   await expect(page.getByTestId('itinerary-detail')).toBeVisible({

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork, openDetailFromMap } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork, openDetailFromMap } from './helpers.ts'
 
 /**
  * Ce qui est peint sur l'arbre (issue #286).
@@ -22,6 +22,7 @@ test('la fiche dit le balisage réel, pas seulement le réseau', async ({
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   /*
     Le chemin **300**, et pas le 200 : celui-ci est partagé avec le GR 7, et
     `NETWORK_PRIORITY` donne au GR la couleur et la fiche d'un tronçon commun.
@@ -56,6 +57,7 @@ test('aucune ligne de balisage quand OSM n’en décrit pas', async ({ page }) =
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   // Un point du GR 7 (way 100 du fixture, lat 45.4, lon 4.5–4.505).
   await openDetailFromMap(page, 4.502, 45.4)
   await expect(page.getByTestId('itinerary-detail')).toContainText('GR 7')

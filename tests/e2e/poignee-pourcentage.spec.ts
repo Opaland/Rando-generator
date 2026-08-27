@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork, fermerLeGuide } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork, fermerLeGuide } from './helpers.ts'
 
 /**
  * AUDIT_UX.md, constat U5 — « 0 % parcourus » s'affichait avant qu'il y ait
@@ -44,6 +44,7 @@ test('dès qu’une zone est chargée, elle donne le pourcentage', async ({
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
 
   // Zéro pour cent d'un parcours qu'on n'a pas encore marché est une vraie
   // mesure : il y a un dénominateur.

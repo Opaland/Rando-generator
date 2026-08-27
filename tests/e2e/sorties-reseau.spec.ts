@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork } from './helpers.ts'
 
 /**
  * Issue #178 — la confidentialité est écrite partout, ressentie nulle part.
@@ -49,6 +49,7 @@ test('aucune requête ne transporte les points de la trace importée', async ({
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
 
   await page.getByTestId('gpx-input').setInputFiles(gpxTemoin())
   await expect(page.getByTestId('tracks-list')).toContainText('temoin.gpx')
@@ -76,6 +77,7 @@ test('le compteur montre ce qui est sorti, service par service', async ({
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
 
   await page.getByRole('button', { name: 'À propos' }).click()
   const panneau = page.getByTestId('sorties-reseau')
@@ -132,6 +134,7 @@ test('une destination non répertoriée est refusée par le navigateur', async (
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
 
   const refus = await page.evaluate(async () => {
     try {

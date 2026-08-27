@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork } from './helpers.ts'
 import pilatFixture from '../fixtures/overpass/pilat.json' with { type: 'json' }
 
 /**
@@ -41,6 +41,7 @@ test('épingler un itinéraire montre ce qu’il reste, et y emmène', async ({
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   // Une sortie qui ne fait qu'une partie du GR 7 : il reste donc quelque
   // chose à montrer.
   await page.getByTestId('gpx-input').setInputFiles({
@@ -94,6 +95,7 @@ test('un objectif épinglé dans une autre zone est dit, pas oublié', async ({
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await page
     .getByTestId('itinerary-list')
     .getByRole('button', { name: /GR 7 —/ })

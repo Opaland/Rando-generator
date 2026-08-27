@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork, buildGpx } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork, buildGpx } from './helpers.ts'
 
 test('exporter un itinéraire en GPX depuis la fiche détail', async ({
   page,
@@ -47,6 +47,7 @@ test('un itinéraire OSM exporté porte l’attribution ODbL', async ({ page }) 
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
 
   await page
     .getByTestId('itinerary-list')

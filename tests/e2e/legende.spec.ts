@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork, mockTilesOk, fermerLeGuide, buildGpx, hasMap, ouvrirOnglet } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork, mockTilesOk, fermerLeGuide, buildGpx, hasMap, ouvrirOnglet } from './helpers.ts'
 import type { Page } from '@playwright/test'
 
 /**
@@ -35,6 +35,7 @@ test('zone chargée : seuls ses réseaux, et pas les états', async ({ page }) =
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
 
   const legende = page.getByTestId('map-legend')
   await expect(legende).toBeVisible()
@@ -85,6 +86,7 @@ test('trace importée : parcouru et restant apparaissent', async ({ page }) => {
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await ouvrirOnglet(page, 'sorties')
   await page.getByTestId('gpx-input').setInputFiles({
     name: 'sortie.gpx',

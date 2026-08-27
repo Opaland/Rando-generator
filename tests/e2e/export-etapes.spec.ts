@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork, mockElevation } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork, mockElevation } from './helpers.ts'
 
 /**
  * La fixture Pilat ne contient que des tracés de quelques kilomètres, sous le
@@ -52,6 +52,7 @@ test('le découpage s’exporte en GPX, avec ses coupures', async ({ page }) => 
   await expect(page.getByTestId('zone-meta')).toContainText('1 itinéraire', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await page
     .getByTestId('itinerary-list')
     .getByRole('button', { name: /GR 400/ })

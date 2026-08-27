@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork, buildGpx } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork, buildGpx } from './helpers.ts'
 
 /**
  * « Ce jour-là, vous avez couvert X km du GR 7 » (issue #6). Le tableau de
@@ -16,6 +16,7 @@ test('déplier une trace montre ce que la sortie a fait avancer', async ({
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await page.getByTestId('gpx-input').setInputFiles({
     name: 'sortie-du-15-juin.gpx',
     mimeType: 'application/gpx+xml',
@@ -48,6 +49,7 @@ test('une sortie hors des itinéraires balisés le dit sans détour', async ({
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   // 5 km au nord de tout tracé de la fixture.
   await page.getByTestId('gpx-input').setInputFiles({
     name: 'ailleurs.gpx',

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork, buildGpx } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork, buildGpx } from './helpers.ts'
 
 /**
  * « Prochaine sortie » : la question qui vient juste après le pourcentage.
@@ -19,6 +19,7 @@ test('la prochaine sortie propose le plus long tronçon restant', async ({
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
 
   const proposition = page.getByTestId('next-outing')
   await expect(proposition).toBeVisible()

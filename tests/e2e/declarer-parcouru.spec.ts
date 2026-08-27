@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { fermerLeGuide, mockExternalNetwork } from './helpers.ts'
+import { afficherTousLesReseaux, fermerLeGuide, mockExternalNetwork } from './helpers.ts'
 
 /**
  * Issue #158 — « j'ai fait celui-là », sans trace GPX.
@@ -19,6 +19,7 @@ async function chargerLaZone(page: import('@playwright/test').Page) {
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
 }
 
 async function ouvrirLaFiche(page: import('@playwright/test').Page) {

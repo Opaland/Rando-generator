@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork, buildGpx } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork, buildGpx } from './helpers.ts'
 
 /**
  * Franchissement d'un jalon. Fixture Pilat : le GPX décalé de 15 m au nord
@@ -14,6 +14,7 @@ test('franchir un jalon est annoncé une fois, sobrement', async ({ page }) => {
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
 
   // Tolérance serrée : la trace ne crédite rien.
   await page.getByTestId('tolerance-precis').check()

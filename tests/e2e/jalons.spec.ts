@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork, buildGpx } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork, buildGpx } from './helpers.ts'
 
 /**
  * Jalons et itinéraires bouclés. Fixture Pilat : le GPX décalé de 15 m au
@@ -15,6 +15,7 @@ test('un itinéraire bouclé est signalé, les autres annoncent leur prochain ja
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
 
   // Sans trace, rien n'est bouclé et le premier jalon est annoncé.
   await expect(page.getByTestId('global-completed')).toHaveCount(0)

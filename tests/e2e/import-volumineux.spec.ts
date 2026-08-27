@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork } from './helpers.ts'
 
 /**
  * Import multi-fichiers volumineux : l'attente doit avoir un sujet.
@@ -35,6 +35,7 @@ test('un lot de gros GPX annonce le fichier en cours et arrive au bout', async (
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
 
   const fichiers = [0, 1, 2].map((i) => ({
     name: `traversee-${i + 1}.gpx`,

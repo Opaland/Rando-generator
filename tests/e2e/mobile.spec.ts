@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import {
+  afficherTousLesReseaux,
   buildGpx,
   fermerLeGuide,
   mockElevation,
@@ -42,6 +43,7 @@ test('aucune cible tactile sous 24 px sur un écran de téléphone', async ({
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await ouvrirOnglet(page, 'sorties')
   await page.getByTestId('gpx-input').setInputFiles({
     name: 'sortie.gpx',
@@ -105,6 +107,7 @@ test('le profil altimétrique répond au doigt, pas seulement à la souris', asy
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await ouvrirOnglet(page, 'progression')
   await page
     .getByTestId('itinerary-list')
@@ -155,6 +158,7 @@ test('la légende et l’attribution ne se recouvrent pas sur téléphone', asyn
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await expect(page.getByTestId('map-legend')).toBeVisible()
 
   // L'attribution est une obligation ODbL et Licence Ouverte : elle doit
@@ -198,6 +202,7 @@ test('rien ne descend sous 13 px sur un écran de téléphone', async ({
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await ouvrirOnglet(page, 'sorties')
   await page.getByTestId('gpx-input').setInputFiles({
     name: 'sortie.gpx',
@@ -289,6 +294,7 @@ test('la carte occupe le cadre, le panneau devient une feuille', async ({
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
 
   // Même feuille ouverte à mi-hauteur, la carte est plus visible qu'avant
   // cette disposition, où elle plafonnait à 338 px sur 844.
@@ -335,6 +341,13 @@ test('la carte occupe le cadre, le panneau devient une feuille', async ({
   }
 })
 
+/*
+  Pas d'`afficherTousLesReseaux` ici, contrairement aux autres tests de ce
+  fichier : celui-ci ne parle que de la **position de la feuille**, jamais
+  d'un itinéraire. Or déplier les réseaux passe par la poignée, donc déplie
+  la feuille — le geste ferait échouer l'assertion qu'il est censé servir.
+  La règle « on demande les GR partout » a une exception, et c'est ici.
+*/
 test('au retour, la feuille laisse la carte visible', async ({ page }) => {
   await mockExternalNetwork(page)
   await mockTilesOk(page)
@@ -372,6 +385,7 @@ test('la fiche détail laisse voir le tracé dont elle parle', async ({
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   await ouvrirOnglet(page, 'progression')
   await page
     .getByTestId('itinerary-list')

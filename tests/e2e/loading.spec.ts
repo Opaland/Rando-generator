@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import pilatFixture from '../fixtures/overpass/pilat.json' with { type: 'json' }
-import { mockTiles, MIRROR_1, MIRROR_2 } from './helpers.ts'
+import { afficherTousLesReseaux, mockTiles, MIRROR_1, MIRROR_2 } from './helpers.ts'
 
 test('le chargement d’une zone peut être annulé sans bloquer l’UI', async ({
   page,
@@ -63,6 +63,7 @@ test('l’attente dissuade de recharger la page', async ({ page }) => {
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
   // L'attente finie, la consigne disparaît avec elle.
   await expect(loading).toHaveCount(0)
 })
@@ -118,4 +119,5 @@ test('la bascule de miroir affiche un message de nouvelle tentative', async ({
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
 })

@@ -25,6 +25,8 @@ import {
 } from '../core/poisDeZone.ts'
 import { lireIntention } from '../core/intention.ts'
 import { RESEAUX_FILTRABLES } from '../core/reseaux.ts'
+import { comptesMasques } from '../core/lisibilite.ts'
+import { useReseauxVisibles } from '../store/reseauxVisibles.ts'
 import { ProgressBalise } from './ProgressBalise.tsx'
 import styles from './ItineraryList.module.css'
 
@@ -153,7 +155,21 @@ export function ItineraryList() {
   const userPosition = useAppStore((s) => s.userPosition)
 
   const [query, setQuery] = useState('')
-  const [networks, setNetworks] = useState<Set<Network>>(new Set(RESEAUX_FILTRABLES))
+  /*
+    Les réseaux montrés viennent du store et non d'un `useState` : la carte
+    lit le même état, et une ligne rendue à la liste sans l'être à la carte
+    serait un itinéraire cliquable dont le tracé n'apparaît nulle part
+    (#322).
+  */
+  const reseauxVisibles = useReseauxVisibles((s) => s.reseauxVisibles)
+  const basculerReseau = useReseauxVisibles((s) => s.basculerReseau)
+  const afficherTousLesReseaux = useReseauxVisibles(
+    (s) => s.afficherTousLesReseaux,
+  )
+  const networks = useMemo(
+    () => new Set<Network>(reseauxVisibles),
+    [reseauxVisibles],
+  )
   const [sortKey, setSortKey] = useState<SortKey>('pct')
   const [longueurIndex, setLongueurIndex] = useState(0)
   const [dureeIndex, setDureeIndex] = useState(0)
@@ -294,6 +310,20 @@ export function ItineraryList() {
     depuisQuestion,
   ])
 
+  /*
+    Ce que le filtre de réseau retire, par réseau.
+
+    Compté sur **tous** les itinéraires chargés, et pas sur les lignes
+    affichées : les autres filtres — longueur, durée, sol — en écartent
+    d'autres, et les mêler ferait dire à la phrase « 12 GR masqués » ce
+    qu'elle ne veut pas dire. Elle ne parle que du filtre de réseau, et c'est
+    ce que son texte annonce.
+  */
+  const masques = useMemo(
+    () => comptesMasques(itineraries, networks),
+    [itineraries, networks],
+  )
+
   const filtresActifs =
     filters.minKm !== null ||
     filters.maxKm !== null ||
@@ -399,15 +429,6 @@ export function ItineraryList() {
 
   if (itineraries.length === 0) return null
 
-  const toggleNetwork = (network: Network) => {
-    setNetworks((prev) => {
-      const next = new Set(prev)
-      if (next.has(network)) next.delete(network)
-      else next.add(network)
-      return next
-    })
-  }
-
   const reinitialiser = () => {
     setLongueurIndex(0)
     setDureeIndex(0)
@@ -450,7 +471,7 @@ export function ItineraryList() {
                 type="checkbox"
                 checked={networks.has(network)}
                 onChange={() => {
-                  toggleNetwork(network)
+                  basculerReseau(network)
                 }}
               />
               {NETWORK_BADGES[network]}
@@ -473,6 +494,31 @@ export function ItineraryList() {
           </select>
         </label>
       </div>
+
+      {/*
+        Ce qui est replié se dit (#322).
+
+        Un GR absent de la liste sans que rien ne le signale est un mensonge
+        par omission : la personne conclut qu'il n'y a pas de GR dans la
+        zone, ce qui est faux. La ligne est **au-dessus** du panneau
+        « Trouver une sortie », replié par défaut — le §6quinquies vaut aussi
+        pour un lecteur : ce qui est replié par défaut est ce qu'on oublie
+        par défaut.
+      */}
+      {masques.length > 0 && (
+        <p className={styles.masques} data-testid="list-masques">
+          {masques
+            .map((m) => `${String(m.nombre)} ${NETWORK_BADGES[m.network]}`)
+            .join(', ')}{' '}
+          {masques.length === 1 && masques[0]?.nombre === 1
+            ? 'est masqué'
+            : 'sont masqués'}{' '}
+          par le filtre de réseau.{' '}
+          <button type="button" onClick={afficherTousLesReseaux}>
+            Tout afficher
+          </button>
+        </p>
+      )}
 
       <details className={styles.discovery} data-testid="discovery-filters">
         <summary className={styles.discoverySummary}>

@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import {
+  afficherTousLesReseaux,
   mockExternalNetwork,
   mockTilesOk,
   fermerLeGuide,
@@ -24,6 +25,7 @@ test.describe('une question en toutes lettres', () => {
     await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
       timeout: 15_000,
     })
+    await afficherTousLesReseaux(page)
     await ouvrirOnglet(page, 'progression')
     await page.getByTestId('discovery-filters').locator('summary').click()
   })

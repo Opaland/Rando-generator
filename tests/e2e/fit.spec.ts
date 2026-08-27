@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork } from './helpers.ts'
 import { buildFit } from '../fixtures/fit.ts'
 
 /**
@@ -32,6 +32,7 @@ test('une trace de montre au format FIT s’importe comme un GPX', async ({
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
+  await afficherTousLesReseaux(page)
 
   await page.getByTestId('gpx-input').setInputFiles({
     name: 'activite.fit',
