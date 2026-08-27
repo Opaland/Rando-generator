@@ -4,7 +4,6 @@ import type { Lieu } from '../core/geocode.ts'
 import { resumeObjectif, type ResumeObjectif } from '../core/objectifs.ts'
 import type { ParcoursDeclare } from '../core/declaratif.ts'
 import { outingHighlights, type OutingHighlight } from '../core/outing.ts'
-import { construireDemonstration } from '../core/demonstration.ts'
 import {
   estModeAffichage,
   lireDrapeau,
@@ -75,6 +74,7 @@ import {
 import { downloadBlob } from '../lib/download.ts'
 import { fetchLocalBoucles, trancheZone } from './trancheZone.ts'
 import { trancheSauvegarde } from './trancheSauvegarde.ts'
+import { trancheDemonstration } from './trancheDemonstration.ts'
 export type { DoublonEnAttente } from './trancheImport.ts'
 import {
   trancheImport,
@@ -1028,39 +1028,6 @@ export const useAppStore = create<AppState>()((set, get) => {
       set({ celebration: null })
     },
 
-    async demarrerDemonstration() {
-      // Les boucles locales sont embarquées avec le site : la démonstration
-      // fonctionne hors ligne, sur des données réelles et licenciées, sans
-      // faire attendre Overpass au tout premier écran.
-      const boucles = await fetchLocalBoucles()
-      const sorties = construireDemonstration(boucles)
-      if (sorties.length === 0) {
-        set({
-          zoneError:
-            'La démonstration n’a pas pu être préparée. Choisissez une zone pour commencer.',
-        })
-        return
-      }
-      const maintenant = new Date().toISOString()
-      set({
-        demonstration: true,
-        itineraries: boucles,
-        zoneKey: 'demonstration',
-        zoneLabel: 'Démonstration — Métropole de Lyon',
-        zoneError: null,
-        zoneLoading: false,
-        tracks: sorties.map((sortie) => ({
-          id: `demo-${String(sortie.itineraire)}`,
-          filename: sortie.nom,
-          points: sortie.points,
-          date: maintenant,
-          importedAt: maintenant,
-          elevationGain: null,
-        })),
-      })
-      await recompute()
-    },
-
     async setModeAffichage(mode) {
       await enregistrerReglage('modeAffichage', mode, () => {
         set({ modeAffichage: mode })
@@ -1089,65 +1056,6 @@ export const useAppStore = create<AppState>()((set, get) => {
 
     async rafraichirStockage() {
       set({ stockage: await etatDuStockage(apiDuNavigateur()) })
-    },
-
-    async arreterDemonstration() {
-      if (!get().demonstration) return
-      set((etat) => ({
-        demonstration: false,
-        // Les sorties fictives partent ; les boucles restent, elles sont
-        // réelles. La zone est renommée pour ce qu'elle est vraiment.
-        tracks: etat.tracks.filter((t) => !t.id.startsWith('demo-')),
-        zoneKey:
-          etat.zoneKey === 'demonstration' ? 'boucles-lyon' : etat.zoneKey,
-        zoneLabel:
-          etat.zoneKey === 'demonstration'
-            ? 'Boucles communales — Métropole de Lyon'
-            : etat.zoneLabel,
-        celebration: null,
-      }))
-      await recompute()
-    },
-
-    async quitterDemonstration() {
-      if (!get().demonstration) return
-      set({
-        demonstration: false,
-        itineraries: [],
-        tracks: [],
-        zoneKey: null,
-        zoneLabel: null,
-        selectedItineraryId: null,
-        detailItineraryId: null,
-        celebration: null,
-      })
-      /*
-        La base n'a jamais rien reçu de la démonstration : il n'y a rien à
-        défaire, seulement à relire ce qui existait vraiment.
-
-        Les déclarations (#158) manquaient à cette relecture — elles
-        n'existaient pas quand elle a été écrite, et le commentaire affirmait
-        pourtant « rien n'est perdu ». Trouvé à la revue du sprint.
-
-        Le défaut est **latent et non atteignable aujourd'hui** : l'entrée de
-        la démonstration ne vit que dans le guide de premier lancement, qu'un
-        revenant — le seul à pouvoir avoir des déclarations — a déjà fermé.
-        C'est un accident de navigation qui protège, pas une garantie ; la
-        relecture est donc rendue symétrique de celle des traces plutôt que
-        laissée à cet accident.
-      */
-      const db = await baseOuverte()
-      if (db) {
-        const [tracks, customItineraries, parcoursDeclares] = await Promise.all(
-          [
-            db.listTracks(),
-            db.listCustomItineraries(),
-            db.listerParcoursDeclares(),
-          ],
-        )
-        set({ tracks, customItineraries, parcoursDeclares })
-      }
-      await recompute()
     },
 
     /*
@@ -1185,6 +1093,22 @@ export const useAppStore = create<AppState>()((set, get) => {
       fermerLaFicheSi: (id) => {
         if (get().detailItineraryId === id) get().closeItineraryDetail()
       },
+    }),
+
+    ...trancheDemonstration({
+      set,
+      lire: () => {
+        const etat = get()
+        return {
+          demonstration: etat.demonstration,
+          tracks: etat.tracks,
+          zoneKey: etat.zoneKey,
+        }
+      },
+      bouclesLocales: fetchLocalBoucles,
+      baseOuverte,
+      recalculer: recompute,
+      maintenant: () => new Date().toISOString(),
     }),
 
     ...trancheSauvegarde({
