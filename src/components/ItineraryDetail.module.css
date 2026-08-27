@@ -440,3 +440,20 @@
   color: var(--gris-vert);
   margin: var(--espace-1) 0 0;
 }
+
+/*
+  Le bouton qui déplie le reste des points d'intérêt (#322, volet 1).
+
+  Pas de `min-height` ici : `src/index.css` plancherise `button` à 44 px sous
+  `pointer: coarse`, et un sélecteur de module l'emporterait en spécificité —
+  on rétrécirait la cible au doigt en croyant l'écrire (§4).
+*/
+.deplierPois {
+  background: none;
+  border: none;
+  padding: 0.25rem 0;
+  color: var(--vert-noir);
+  text-decoration: underline;
+  cursor: pointer;
+  font: inherit;
+}

@@ -1,8 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import {
+  POIS_AVANT_REPLI,
   RESEAUX_REPLIES_PAR_DEFAUT,
   comptesMasques,
   itinerairesVisibles,
+  replierLesPois,
   reseauxVisiblesParDefaut,
 } from '../../src/core/lisibilite.ts'
 import { RESEAUX_FILTRABLES } from '../../src/core/reseaux.ts'
@@ -109,5 +111,72 @@ describe('ce qui est masqué se compte', () => {
     expect(comptesMasques(tous, new Set<Network>(['PR']))).toEqual([
       { network: 'GR', nombre: 1 },
     ])
+  })
+})
+
+/**
+ * Le repli des points d'intérêt (#322, volet 1).
+ *
+ * Ce que la liste longue enterre n'est pas le profil — il est au-dessus —
+ * mais l'avertissement sur le couchage libre, qui la suit. Trois cents
+ * entrées séparent quelqu'un qui prépare une nuit dehors de la phrase qui le
+ * concerne le plus.
+ */
+describe('replierLesPois', () => {
+  const points = (n: number) => Array.from({ length: n }, (_, i) => i)
+
+  it('ne replie rien sur une fiche courte', () => {
+    // Sept, c'est « Rando Saint-Joseph » : elle ne doit pas gagner de clic.
+    const { montres, replies } = replierLesPois(points(7))
+    expect(montres).toHaveLength(7)
+    expect(replies).toEqual([])
+  })
+
+  it('ne replie pas non plus juste au seuil', () => {
+    expect(replierLesPois(points(POIS_AVANT_REPLI)).replies).toEqual([])
+  })
+
+  /**
+   * Le cas qui justifie le `+ 1` de la garde.
+   *
+   * Un bouton « afficher 1 autre point » coûte un geste pour gagner une
+   * ligne — et en occupe deux là où il y en avait une. Le repli serait plus
+   * long que ce qu'il replie.
+   */
+  it('ne replie pas un seul point', () => {
+    const { montres, replies } = replierLesPois(points(POIS_AVANT_REPLI + 1))
+    expect(montres).toHaveLength(POIS_AVANT_REPLI + 1)
+    expect(replies).toEqual([])
+  })
+
+  it('replie dès qu’il y en a deux à replier', () => {
+    const { montres, replies } = replierLesPois(points(POIS_AVANT_REPLI + 2))
+    expect(montres).toHaveLength(POIS_AVANT_REPLI)
+    expect(replies).toHaveLength(2)
+  })
+
+  it('replie une fiche de Grande Randonnée', () => {
+    // L'ordre de grandeur de la Via Lugdunum.
+    const { montres, replies } = replierLesPois(points(330))
+    expect(montres).toHaveLength(POIS_AVANT_REPLI)
+    expect(replies).toHaveLength(330 - POIS_AVANT_REPLI)
+  })
+
+  it('ne perd ni ne réordonne aucun point', () => {
+    /*
+      La garde qui compte : un repli est une **présentation**, pas un filtre.
+      Les points écartés par le rayon de #318 sont, eux, réellement retirés —
+      et la fiche le dit. Ici, rien ne disparaît : montrés et repliés
+      recomposent exactement la liste d'origine, dans l'ordre.
+    */
+    const tous = points(50)
+    const { montres, replies } = replierLesPois(tous)
+    expect([...montres, ...replies]).toEqual(tous)
+  })
+
+  it('ne touche pas au tableau qu’on lui donne', () => {
+    const tous = points(50)
+    replierLesPois(tous)
+    expect(tous).toHaveLength(50)
   })
 })
