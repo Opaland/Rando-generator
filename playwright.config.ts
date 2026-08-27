@@ -34,7 +34,23 @@ export default defineConfig({
     processus, au démarrage : il n'y a plus d'intervalle entre la
     vérification et l'usage. Voir l'en-tête du fichier pour le raté daté.
   */
-  globalSetup: './tests/e2e/dist-a-jour.ts',
+  /*
+    Deux réglages sautent quand `SENTIERS_URL` est posé, et il faut dire
+    pourquoi plutôt que de le laisser deviner.
+
+    La sonde de déploiement (`page-deployee.spec.ts`) interroge un site
+    **déjà publié**. Elle n'a donc ni serveur de prévisualisation à démarrer
+    ni `dist/` local à comparer aux sources : le contrôle de fraîcheur
+    n'aurait rien à garder, et le refuser au démarrage empêcherait la seule
+    sonde qui regarde ce que les gens voient vraiment.
+
+    Le §6quater interdit d'écarter un garde-fou en silence : hors de ce mode,
+    les deux restent en place mot pour mot, et `SENTIERS_URL` n'est posé que
+    par le workflow de déploiement.
+  */
+  ...(process.env.SENTIERS_URL
+    ? {}
+    : { globalSetup: './tests/e2e/dist-a-jour.ts' }),
   globalTimeout: 70 * 60 * 1000,
   reporter: process.env.CI ? 'github' : 'list',
   use: {
@@ -50,9 +66,13 @@ export default defineConfig({
       : {}),
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
-  webServer: {
-    command: 'npm run preview',
-    url: 'http://localhost:4173',
-    reuseExistingServer: !process.env.CI,
-  },
+  ...(process.env.SENTIERS_URL
+    ? {}
+    : {
+        webServer: {
+          command: 'npm run preview',
+          url: 'http://localhost:4173',
+          reuseExistingServer: !process.env.CI,
+        },
+      }),
 })

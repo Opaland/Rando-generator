@@ -42,7 +42,40 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Déployer sur GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  # La seule sonde qui regarde ce que les gens voient vraiment.
+  #
+  # Toute la suite e2e tourne sur `dist/` servi en local : elle prouve que le
+  # code est juste, jamais que GitHub Pages sert quelque chose d'utilisable.
+  # Entre les deux il y a un chemin de base, un artefact, un cache et un
+  # service worker — quatre endroits où une application juste arrive cassée.
+  #
+  # Elle tourne ici, après le déploiement, parce que c'est le seul endroit qui
+  # ait le vrai réseau **et** la vraie page. Le conteneur de développement n'y
+  # donne pas accès à un navigateur (mesuré le 27/08 : `curl` sort par le
+  # proxy, Chromium rend ERR_CONNECTION_RESET).
+  verifier-la-page-deployee:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Installer les dépendances
+        run: npm ci
+      - name: Installer Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Sonder la page publiée
+        env:
+          # L'URL que le déploiement vient de rendre, et non une constante
+          # recopiée : un dépôt renommé changerait l'une sans l'autre (§4).
+          SENTIERS_URL: ${{ needs.deploy.outputs.page_url }}
+        run: npx playwright test tests/e2e/page-deployee.spec.ts --workers=1
