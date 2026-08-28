@@ -861,6 +861,22 @@ export async function afficherTousLesReseaux(page: Page): Promise<void> {
  * toujours échouer la convergence, chiffres à l'appui.
  */
 export async function cocher(commande: Locator): Promise<void> {
-  await commande.click()
+  /*
+    Ne cliquer que s'il y a quelque chose à cocher.
+
+    Trouvé en revue de sprint, par la question inverse : « qu'est-ce que ce
+    remplacement a retiré ? ». `.check()` ne fait rien sur une commande déjà
+    cochée ; `.click()`, sur une **case**, la décoche. Les dix-huit appels
+    remplacés n'exerçaient pas ce cas — la suite était verte — mais le piège
+    était posé pour le suivant, sous un nom qui promet le contraire.
+
+    Mesuré : `cocher` appelé deux fois sur `gros-texte` échouait à la seconde,
+    la case ayant basculé. Un radio n'a pas ce défaut (recliquer le laisse
+    coché), et c'est ce qui rendait le trou invisible.
+
+    La convergence n'y perd rien : une commande décochée est cliquée puis
+    attendue comme avant, et `toBeChecked` reste seul juge de l'état final.
+  */
+  if (!(await commande.isChecked())) await commande.click()
   await expect(commande).toBeChecked()
 }
