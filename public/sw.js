@@ -21,16 +21,61 @@
  * emporté volontairement n'est pas un profil périmé qu'on n'a pas demandé.
  */
 
-const VERSION = 'sentiers-v1'
-const CACHE_APP = `${VERSION}-app`
-const CACHE_TUILES = `${VERSION}-tuiles`
+/**
+ * L'empreinte de la construction, réécrite au build par le greffon
+ * `sentiers-precache-sw` de vite.config.ts — exactement comme `__PRECACHE__`
+ * juste en dessous.
+ *
+ * ## Pourquoi elle a dû naître (issue #370)
+ *
+ * Il y avait ici `const VERSION = 'sentiers-v1'`, écrite une fois le premier
+ * jour et jamais rechangée. L'`activate` supprimait les caches dont le nom ne
+ * commence pas par `VERSION` — or les trois commençaient par `sentiers-v1`.
+ * Le filtre n'en retenait aucun : **le ménage ne s'est jamais exécuté**, en
+ * plus de deux cents déploiements.
+ *
+ * Les six fichiers de `dist/assets/` portent un nom haché qui change à chaque
+ * construction : chacun est donc une clé neuve, pas un remplacement. 1,88 Mo
+ * s'ajoutaient à chaque livraison dans le seul cache que rien ne borne.
+ *
+ * ## Dérivée du contenu, pas de l'horloge
+ *
+ * L'empreinte est un condensé de la liste des fichiers hachés. Une
+ * reconstruction qui ne change rien rend donc la même empreinte et **ne purge
+ * rien** : on ne jette pas le hors-ligne de quelqu'un pour un build à vide.
+ */
+const EMPREINTE = '__EMPREINTE__'
+
+/**
+ * Le préfixe commun à tous les caches d'application, quelle que soit leur
+ * empreinte. C'est lui que l'`activate` balaie — et lui seul.
+ */
+const PREFIXE_APP = 'sentiers-app-'
+const CACHE_APP = `${PREFIXE_APP}${EMPREINTE}`
+
+/**
+ * Celui d'avant #370, à emporter une bonne fois : c'est le nom qu'ont
+ * aujourd'hui tous les navigateurs ayant déjà ouvert Sentiers.
+ */
+const CACHE_APP_HERITE = 'sentiers-v1-app'
+
+/*
+ * **Nom littéral, délibérément figé.**
+ *
+ * Ce cache ne doit PAS être purgé à chaque version : il est borné à 600
+ * entrées, et le vider à chaque livraison rendrait grise une carte qu'on
+ * venait de consulter. Le « v1 » y est désormais un vestige, gardé tel quel
+ * pour que ce qui est déjà en place reste trouvable — aucune migration,
+ * aucune perte.
+ */
+const CACHE_TUILES = 'sentiers-v1-tuiles'
 /*
  * Ce qu'on a demandé à emporter. Séparé des tuiles pour deux raisons : ce
  * cache-ci n'est pas un LRU — on ne jette pas une randonnée qu'on a
  * téléchargée pour partir demain — et un profil altimétrique n'a rien à
  * faire dans une réserve dimensionnée pour des images.
  */
-const CACHE_TERRAIN = `${VERSION}-terrain`
+const CACHE_TERRAIN = 'sentiers-v1-terrain'
 
 /**
  * Liste des fichiers de l'application, réécrite au build par le greffon
@@ -133,8 +178,26 @@ self.addEventListener('activate', (event) => {
       .keys()
       .then((noms) =>
         Promise.all(
+          /*
+            Ne balaie que les caches d'application périmés — jamais « tout ce
+            qu'on ne reconnaît pas ».
+
+            La forme d'avant supprimait tout nom étranger à la version
+            courante. Rendue vivante par une empreinte variable, elle aurait
+            emporté `CACHE_TERRAIN` à chaque mise à jour, c'est-à-dire la
+            randonnée que quelqu'un a téléchargée exprès pour partir demain,
+            là où il n'y aura pas de réseau. Silencieusement, et peut-être le
+            matin du départ.
+
+            Le défaut corrigé aurait ainsi coûté plus cher que le défaut
+            (#370). `tests/unit/swMenage.test.ts` tient les deux moitiés.
+          */
           noms
-            .filter((nom) => !nom.startsWith(VERSION))
+            .filter(
+              (nom) =>
+                nom === CACHE_APP_HERITE ||
+                (nom.startsWith(PREFIXE_APP) && nom !== CACHE_APP),
+            )
             .map((nom) => caches.delete(nom)),
         ),
       )
