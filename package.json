@@ -12,6 +12,7 @@
     "textes": "node scripts/filtres-annonces.mjs",
     "chemins": "node scripts/chemins-cites.mjs",
     "couverture-village": "node scripts/couverture-village.mjs",
+    "poids-communes": "NODE_USE_ENV_PROXY=1 node scripts/poids-communes.mjs",
     "typecheck": "tsc -b",
     "test": "vitest run",
     "test:watch": "vitest",
