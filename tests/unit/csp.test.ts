@@ -7,11 +7,21 @@ import { HOTES_CONTACTES } from '../../src/core/journalSortant.ts'
  * La politique de sécurité de contenu dit la vérité (24/08 — « on va mettre
  * l'application sur un serveur »).
  *
- * GitHub Pages ne permet aucun en-tête : la promesse écrite en haut de chaque
- * écran — « vos traces GPX ne quittent jamais votre navigateur » — n'était
- * qu'une affirmation, gardée par des tests et par la bonne volonté. Sur un
- * serveur, elle devient **une règle appliquée par le navigateur** : une
- * requête vers un hôte non listé est refusée avant de partir.
+ * GitHub Pages ne permet aucun **en-tête** : la promesse écrite en haut de
+ * chaque écran — « vos traces GPX ne quittent jamais votre navigateur » —
+ * n'était qu'une affirmation, gardée par des tests et par la bonne volonté.
+ * Sur un serveur, elle devient **une règle appliquée par le navigateur** :
+ * une requête vers un hôte non listé est refusée avant de partir.
+ *
+ * **Depuis #375, une balise `<meta http-equiv>` la porte aussi sur Pages.**
+ * Ce paragraphe disait « aucun en-tête, donc rien à faire » ; c'était vrai
+ * des en-têtes et faux de la conclusion — une balise n'en est pas un, et
+ * elle couvre `connect-src`, précisément la directive qui porte la promesse.
+ * §4bis : une justification vieillit comme le reste.
+ *
+ * Ce qu'elle ne couvre pas — `frame-ancestors` — est écrit dans
+ * `deploy/csp.conf`, et `tests/e2e/politique-dans-la-page.spec.ts` mesure ce
+ * que la page sert réellement.
  *
  * Ce fichier garde ce que cela suppose : que la liste soit juste. Elle peut
  * être fausse dans les deux sens, et les deux coûtent cher :

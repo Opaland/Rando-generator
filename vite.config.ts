@@ -113,16 +113,119 @@ function politiqueDeSecurite(): string {
   return trouve[1]
 }
 
+/**
+ * Les directives qu'une balise `<meta http-equiv>` ne peut pas porter.
+ *
+ * La spécification les ignore en balise — elles n'ont de sens que dans un
+ * en-tête HTTP. Les y laisser produirait un avertissement dans la console à
+ * chaque chargement, et surtout ferait croire qu'elles s'appliquent.
+ */
+const IGNOREES_EN_BALISE = ['frame-ancestors', 'report-uri', 'sandbox']
+
+/**
+ * La politique telle qu'une balise peut la porter (issue #375).
+ *
+ * ## Pourquoi une balise
+ *
+ * `deploy/csp.conf` est soigné, gardé dans les deux sens par
+ * `tests/unit/csp.test.ts`, et les tests de bout en bout tournent sous lui.
+ * Et pourtant, sur `opaland.github.io`, `curl` ne rendait **ni en-tête ni
+ * balise** : tout ce travail protégeait le serveur de prévisualisation et
+ * une image conteneur que rien ne déploie.
+ *
+ * Le dépôt en avait tiré « Pages ne laisse poser aucun en-tête, donc rien à
+ * faire ». C'est vrai **des en-têtes**. Une balise `<meta http-equiv>` n'en
+ * est pas un, et elle couvre `connect-src` — précisément la directive qui
+ * porte la promesse du produit.
+ *
+ * ## Ce qu'elle ne couvre pas, et qu'il faut dire
+ *
+ * `frame-ancestors 'none'` reste servi par nginx et **ne l'est pas** sur
+ * Pages : une balise ne peut pas l'exprimer. C'est une vraie perte, pas un
+ * détail — le déménagement vers un vrai serveur garde donc sa raison d'être.
+ *
+ * ## Dérivée, jamais recopiée
+ *
+ * Même source que l'en-tête de prévisualisation, à trois directives près.
+ * Recopier la politique ici aurait créé la jumelle que quatre instances de
+ * #367 viennent de coûter (§4ter).
+ */
+function politiquePourBalise(): string {
+  const gardees = politiqueDeSecurite()
+    .split(';')
+    .map((directive) => directive.trim())
+    .filter(
+      (directive) =>
+        directive !== '' &&
+        !IGNOREES_EN_BALISE.includes(directive.split(/\s+/)[0] ?? ''),
+    )
+
+  if (gardees.length === 0) {
+    throw new Error(
+      'deploy/csp.conf : il ne reste aucune directive après avoir retiré ' +
+        "celles qu'une balise ignore. La page serait servie sans politique.",
+    )
+  }
+  return gardees.join('; ')
+}
+
+/**
+ * Pose la politique dans `index.html`, à la place que le navigateur exige :
+ * **avant tout ce qu'elle doit gouverner**. Une balise posée après un script
+ * ne s'applique pas à lui.
+ */
+function baliseDeLaPolitique(): string {
+  return `<meta http-equiv="Content-Security-Policy" content="${politiquePourBalise()}" />`
+}
+
+/** Le point d'ancrage : première balise de chaque `<head>` du dépôt. */
+const APRES = '<meta charset="UTF-8" />'
+
+function poser(html: string, quoi: string): string {
+  if (!html.includes(APRES)) {
+    throw new Error(
+      `sentiers-csp-balise : « ${APRES} » introuvable dans ${quoi}. La page` +
+        ' serait servie sans politique de sécurité, et rien ne le dirait.',
+    )
+  }
+  return html.replace(APRES, `${APRES}\n    ${baliseDeLaPolitique()}`)
+}
+
+function politiqueDansLaPage(): Plugin {
+  return {
+    name: 'sentiers-csp-balise',
+    transformIndexHtml: {
+      order: 'pre',
+      handler: (html: string) => poser(html, 'index.html'),
+    },
+    /*
+      `pourquoi.html` est servie **telle quelle** depuis `public/` : Vite ne
+      la transforme pas, `transformIndexHtml` ne la voit jamais. Elle serait
+      donc restée sans politique pendant que l'application en gagnait une.
+
+      C'est le §3 dans sa forme la plus banale — la surface qu'une correction
+      oublie — et c'est le test de bout en bout qui l'a trouvée, pas la
+      relecture. Elle est traitée ici plutôt que dans un second greffon : une
+      question, un endroit (§4ter).
+    */
+    async closeBundle() {
+      const chemin = path.resolve('dist/pourquoi.html')
+      const html = await readFile(chemin, 'utf-8')
+      await writeFile(chemin, poser(html, 'pourquoi.html'))
+    },
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), precacheServiceWorker()],
+  plugins: [react(), precacheServiceWorker(), politiqueDansLaPage()],
   base: './',
   /*
     Les mêmes en-têtes qu'en production, sur le serveur de prévisualisation.
 
-    C'est lui que Playwright interroge : sans cette ligne, les 285 tests
-    tourneraient contre une page sans politique, et la première fois que
-    quelqu'un l'éprouverait serait en production.
+    C'est lui que Playwright interroge : sans cette ligne, les tests de bout
+    en bout tourneraient contre une page sans politique, et la première fois
+    que quelqu'un l'éprouverait serait en production.
   */
   preview: {
     headers: { 'Content-Security-Policy': politiqueDeSecurite() },
