@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import {
+  appelsOverpassStabilisesA,
   afficherTousLesReseaux,
   cocher,
   mockExternalNetwork,
@@ -35,7 +36,7 @@ test('charge une zone, importe un GPX, recalcule et persiste', async ({
     timeout: 15_000,
   })
   await afficherTousLesReseaux(page)
-  expect(overpass.count()).toBe(1)
+  await appelsOverpassStabilisesA(overpass, 1)
 
   // Sans trace : 0 %.
   await expect(page.getByTestId('global-pct')).toHaveText('0 %')
@@ -68,9 +69,25 @@ test('charge une zone, importe un GPX, recalcule et persiste', async ({
   await expect(page.getByTestId('global-pct')).toHaveText('0 %')
   await expect(page.getByTestId('itinerary-card-pct')).toHaveText('0 %')
 
-  // 5. Recharger : plus aucun appel Overpass autorisé, tout vient d'IndexedDB.
+  /*
+    5. Recharger : plus aucun appel Overpass autorisé, tout vient d'IndexedDB.
+
+    Le comptage qui concluait ce test était **décoratif** (#336) : le
+    compteur appartient au gestionnaire qu'on vient de retirer par
+    `unroute`, il ne peut donc plus bouger quoi que fasse l'application. Un
+    `toBe(1)` qui ne peut pas échouer est ce que le §1 appelle un test qui ne
+    prouve rien.
+
+    Ce qui garde vraiment ce test, c'est l'`abort()` — un appel réseau ferait
+    échouer les assertions d'écran qui suivent. On compte donc les appels
+    **refusés**, un compteur qui, lui, est vivant.
+  */
   await page.unroute('**/api/interpreter')
-  await page.route('**/api/interpreter', (route) => route.abort())
+  let refuses = 0
+  await page.route('**/api/interpreter', (route) => {
+    refuses += 1
+    void route.abort()
+  })
   await page.reload()
 
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires')
@@ -80,7 +97,10 @@ test('charge une zone, importe un GPX, recalcule et persiste', async ({
   )
   await expect(page.getByTestId('tolerance-detail')).toContainText('25 m')
   await expect(page.getByTestId('global-pct')).toHaveText('0 %')
-  expect(overpass.count()).toBe(1)
+  expect(
+    refuses,
+    `${String(refuses)} appel(s) Overpass ont été tentés au rechargement : la zone n'est pas venue du cache`,
+  ).toBe(0)
 })
 
 test('affiche un message clair pour un GPX corrompu', async ({ page }) => {

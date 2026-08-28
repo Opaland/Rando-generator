@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import pilatFixture from '../fixtures/overpass/pilat.json' with { type: 'json' }
 import {
+  appelsOverpassStabilisesA,
   afficherTousLesReseaux,
   mockTiles,
   mockOverpass,
@@ -48,7 +49,7 @@ test('« Actualiser les tracés » recharge une zone en ignorant le cache', asyn
     timeout: 15_000,
   })
   await afficherTousLesReseaux(page)
-  expect(overpass.count()).toBe(1)
+  await appelsOverpassStabilisesA(overpass, 1)
 
   // Les données côté OSM ont « changé » : la fixture ne contient plus que le GR 7.
   overpass.setFixture(pilatGrOnly())
@@ -57,7 +58,7 @@ test('« Actualiser les tracés » recharge une zone en ignorant le cache', asyn
     timeout: 15_000,
   })
   await afficherTousLesReseaux(page)
-  expect(overpass.count()).toBe(2)
+  await appelsOverpassStabilisesA(overpass, 2)
 })
 
 test('changer de zone met à jour les données ; zéro résultat est expliqué', async ({
@@ -81,7 +82,7 @@ test('changer de zone met à jour les données ; zéro résultat est expliqué',
     timeout: 15_000,
   })
   await afficherTousLesReseaux(page)
-  expect(overpass.count()).toBe(2)
+  await appelsOverpassStabilisesA(overpass, 2)
 
   // Zone 3 : aucun itinéraire → message explicite, interface non bloquée.
   overpass.setFixture({ version: 0.6, elements: [] })
@@ -109,7 +110,7 @@ test('recherche par ref : chargement puis actualisation possibles', async ({
     timeout: 15_000,
   })
   await afficherTousLesReseaux(page)
-  expect(overpass.count()).toBe(1)
+  await appelsOverpassStabilisesA(overpass, 1)
 
   // Le bouton d'actualisation existe aussi pour les recherches par ref.
   overpass.setFixture(pilatGrOnly())
@@ -118,7 +119,7 @@ test('recherche par ref : chargement puis actualisation possibles', async ({
     timeout: 15_000,
   })
   await afficherTousLesReseaux(page)
-  expect(overpass.count()).toBe(2)
+  await appelsOverpassStabilisesA(overpass, 2)
 })
 
 /*
@@ -142,13 +143,24 @@ test('une zone choisie dès l’ouverture est bien mise en cache', async ({
     timeout: 15_000,
   })
   await afficherTousLesReseaux(page)
-  expect(overpass.count()).toBe(1)
+  await appelsOverpassStabilisesA(overpass, 1)
 
+  /*
+    Le cache se prouve par ce que l'écran montre, pas par un compteur.
+
+    La fixture ne contient plus que le GR 7 : **si** une interrogation
+    repartait, la zone rechargée dirait « 1 itinéraire ». Elle en dit trois,
+    donc rien n'est reparti — une observable positive, là où « le compteur
+    n'a pas bougé » ne prouve que l'instant où on l'a lu (#336).
+
+    Le compte reste asserté juste après, mais il n'est plus ce qui porte la
+    conclusion.
+  */
+  overpass.setFixture(pilatGrOnly())
   await page.reload()
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
   await afficherTousLesReseaux(page)
-  // Restaurée depuis le cache : aucune nouvelle interrogation.
-  expect(overpass.count()).toBe(1)
+  await appelsOverpassStabilisesA(overpass, 1)
 })

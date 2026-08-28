@@ -169,6 +169,56 @@ export async function mockOverpass(page: Page): Promise<OverpassMock> {
 }
 
 /**
+ * Le temps qu'on laisse à un appel Overpass de plus pour se montrer.
+ *
+ * **Une borne, pas un budget.** L'interception de Playwright est en
+ * processus : entre l'émission d'une requête et l'incrément du compteur, il
+ * s'écoule des microsecondes. Ce demi-second est là pour la charge de la
+ * suite complète, où tout s'étire — c'est la famille du §6ter.
+ *
+ * Ce qu'il ne prouve pas, et qu'il ne faut pas lui faire dire : qu'aucun
+ * appel n'arrivera *jamais*. Un appel émis dix secondes plus tard passerait
+ * au travers. Aucune fenêtre finie ne prouve une négative ; celle-ci écarte
+ * les cas réels — un cache qui rate, une zone rechargée dans la foulée.
+ */
+const REPOS_AVANT_DE_CONCLURE_MS = 500
+
+/**
+ * Compter les appels Overpass **en convergeant**, au lieu de photographier
+ * le compteur (issue #336).
+ *
+ * `mockOverpass` incrémente dans le gestionnaire de route, c'est-à-dire
+ * quand Playwright intercepte. Lire `overpass.count()` juste après un geste
+ * ne dit donc rien : la requête peut être partie sans être encore comptée.
+ * Et le sens de l'erreur décide de ce que ça coûte —
+ *
+ * - lu trop tôt, un `toBeGreaterThan` **échoue à tort** : c'est le défaut qui
+ *   est tombé dans `lieu.spec.ts`, le moins grave des deux puisqu'il se voit ;
+ * - lu trop tôt, un `toBe(1)` **passe à tort** : un test vert qui ne garde
+ *   rien, ce que le §1 appelle un test qui ne peut pas échouer.
+ *
+ * Cette fonction fait les deux moitiés : elle **attend** d'atteindre le
+ * compte (ce qui retire le premier défaut), puis **tient** pendant une
+ * fenêtre bornée en vérifiant qu'il ne le dépasse pas (ce qui retire le
+ * second). Quatre comptages disaient la même règle à la main ; §4ter.
+ */
+export async function appelsOverpassStabilisesA(
+  overpass: OverpassMock,
+  attendu: number,
+): Promise<void> {
+  await expect
+    .poll(() => overpass.count(), { timeout: 15_000 })
+    .toBe(attendu)
+  await new Promise((resoudre) =>
+    setTimeout(resoudre, REPOS_AVANT_DE_CONCLURE_MS),
+  )
+  expect(
+    overpass.count(),
+    `un appel Overpass de plus est arrivé après coup (attendu ${String(attendu)})`,
+  ).toBe(attendu)
+}
+
+/**
  * Mocke l'API Adresse de la BAN (recherche par nom de lieu, issue #131).
  *
  * La réponse suit le format documenté : un GeoJSON de points, `label` et
