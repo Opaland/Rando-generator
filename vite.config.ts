@@ -1,5 +1,6 @@
 /// <reference types="vitest/config" />
 import { readdir, readFile, writeFile } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { defineConfig, type Plugin } from 'vite'
@@ -42,14 +43,46 @@ function precacheServiceWorker(): Plugin {
         './data/boucles-metropole-lyon.json',
         ...assets.map((nom) => `./assets/${nom}`),
       ]
+      /*
+        L'empreinte de la construction (issue #370).
+
+        Dérivée des **noms hachés** eux-mêmes, et non d'un horodatage : ce
+        sont eux qui changent quand le contenu change, et eux seuls. Une
+        reconstruction à l'identique rend donc la même empreinte, et
+        l'`activate` du service worker ne purge rien — on ne jette pas le
+        hors-ligne de quelqu'un pour un build à vide.
+
+        Douze caractères : de quoi rendre une collision hors de portée sans
+        allonger un nom de cache que personne ne lit.
+      */
+      const empreinte = createHash('sha256')
+        .update([...assets].sort().join('\n'))
+        .digest('hex')
+        .slice(0, 12)
+
       const source = await readFile(swPath, 'utf-8')
-      await writeFile(
-        swPath,
-        source.replace(
+      const reecrit = source
+        .replace(
           'self.__PRECACHE__ = []',
           `self.__PRECACHE__ = ${JSON.stringify(fichiers)}`,
-        ),
-      )
+        )
+        .replace("const EMPREINTE = '__EMPREINTE__'", `const EMPREINTE = '${empreinte}'`)
+
+      /*
+        Bruyant plutôt que silencieux : si l'un des deux marqueurs disparaît
+        de `public/sw.js`, la construction doit échouer ici. Un service worker
+        livré avec `__EMPREINTE__` littérale ne purgerait plus jamais rien, et
+        rien à l'écran ne le dirait — c'est le défaut qu'on vient de corriger,
+        reconstitué en silence (§6quater).
+      */
+      if (reecrit.includes('__EMPREINTE__') || reecrit.includes('__PRECACHE__ = []')) {
+        throw new Error(
+          'sentiers-precache-sw : un marqueur de public/sw.js n’a pas été' +
+            ' remplacé. Le service worker livré serait inerte.',
+        )
+      }
+
+      await writeFile(swPath, reecrit)
     },
   }
 }
