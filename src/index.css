@@ -544,23 +544,40 @@ label:has(> input[type="radio"]) {
   input:not([type="checkbox"], [type="radio"], [type="hidden"], [type="file"]),
   label:has(> input[type="checkbox"]),
   label:has(> input[type="radio"]) {
-    min-height: var(--cible-mini);
-  }
+    /*
+      Les **deux** dimensions, et non la seule hauteur (issue #363).
 
-  /* Une cible n'est pas qu'une hauteur : la bascule d'attribution de
-     MapLibre fait vingt-quatre pixels de large. */
-  .maplibregl-ctrl button {
+      WCAG 2.5.5 demande 44 × 44. Cette règle n'a longtemps posé que la
+      hauteur, et une seule exception portait la largeur : la bascule
+      d'attribution de MapLibre, avec pour justification « une cible n'est
+      pas qu'une hauteur ».
+
+      La phrase était juste et la règle est restée locale. C'est le §4 pris
+      par l'autre bout : non pas une garde recopiée trois fois et oubliée la
+      quatrième, mais une garde **découverte une fois et jamais
+      généralisée**.
+
+      Ce qui l'a rendue visible : la largeur tablette (1024, tactile) ajoutée
+      aux règles d'écran. Le badge « PR » y mesurait 43 px de large et le
+      badge « ? » 34 px — pour 44 px de haut, le plancher faisant son travail
+      sur la seule dimension qu'il tenait. Aucune des trois autres largeurs
+      ne pouvait le voir : en compact les badges sont plus larges, et à
+      1280 px le pointeur est fin.
+    */
+    min-height: var(--cible-mini);
     min-width: var(--cible-mini);
   }
 
   /* Le texte courant garde ses liens à sa taille : ce sont des mots, et un
      mot de quarante-quatre pixels de haut au milieu d'un paragraphe déplace
-     la ligne au lieu de la servir. */
+     la ligne au lieu de la servir. La largeur pour la même raison — un mot
+     court ne s'étire pas pour devenir une cible. */
   p a,
   li a,
   span a,
   .maplibregl-ctrl-attrib a {
     min-height: 0;
+    min-width: 0;
   }
 }
 
