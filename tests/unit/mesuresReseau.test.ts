@@ -139,6 +139,14 @@ function patienter(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+/**
+ * Le même égard, en plus léger, pour le service altimétrique de l'IGN
+ * (mesure 7). Six points isolés ne pèsent rien à côté d'un département
+ * Overpass : la courtoisie suffit, la précaution n'est pas nécessaire. Ce
+ * nombre ne change aucun résultat — il n'espace que des requêtes.
+ */
+const REPOS_ENTRE_POINTS_IGN_MS = 500
+
 /** Toutes les mesures passent par là, plutôt que par le défaut. */
 let premiereRequete = true
 async function mesurer(requete: string): Promise<OverpassResponse> {
@@ -513,5 +521,76 @@ out tags;`)
     ligne('variantes partagent — n’est pas ici : elle demande `out geom` sur')
     ligne('chaque relation, donc un tout autre volume. À faire quand on saura')
     ligne('qu’il y a des variantes à mesurer.')
+  })
+
+  /**
+   * Le service altimétrique, et non Overpass — mais la même discipline.
+   *
+   * `PAS_MINIMAL_METRES` (src/core/pente.ts) décide si une pente est
+   * calculée. Sa justification disait que la ressource `ign_rge_alti_wld`
+   * est « un assemblage mondial » et qu'on prend donc la valeur la plus
+   * grossière des deux annoncées. Mesuré le 28/08 : **c'est faux**, la
+   * ressource ne couvre que la France.
+   *
+   * Cette mesure existe pour que ça ne se réécrive pas de mémoire une
+   * troisième fois. Elle n'asserte rien — comme les autres, elle affiche.
+   */
+  it('7 — l’emprise du modèle de terrain de l’IGN (#316)', { timeout: 300_000 }, async () => {
+    titre('#316 — que couvre `ign_rge_alti_wld`, et que dit-il de lui-même')
+
+    const POINTS = [
+      { nom: 'Pilat (Loire)', lon: 4.6, lat: 45.4 },
+      { nom: 'Chamonix (Haute-Savoie)', lon: 6.87, lat: 45.92 },
+      { nom: 'Guadeloupe (DOM)', lon: -61.55, lat: 16.24 },
+      { nom: 'Berne (Suisse)', lon: 7.45, lat: 46.95 },
+      { nom: 'Turin (Italie)', lon: 7.69, lat: 45.07 },
+      { nom: 'Barcelone (Espagne)', lon: 2.17, lat: 41.39 },
+    ] as const
+
+    let titreDeLaRessource = '(non rendu)'
+    let exactitude = '(non rendue)'
+    for (const point of POINTS) {
+      const adresse =
+        'https://data.geopf.fr/altimetrie/1.0/calcul/alti/rest/elevation.json' +
+        `?lon=${String(point.lon)}&lat=${String(point.lat)}` +
+        '&resource=ign_rge_alti_wld&measures=true'
+      let z = 'échec'
+      try {
+        const reponse = await fetch(adresse)
+        const corps = (await reponse.json()) as {
+          elevations?: {
+            z?: number
+            acc?: string
+            measures?: { title?: string }[]
+          }[]
+        }
+        const premier = corps.elevations?.[0]
+        if (premier?.z !== undefined) z = premier.z.toFixed(2)
+        if (premier?.acc !== undefined) exactitude = premier.acc
+        const dit = premier?.measures?.[0]?.title
+        if (dit !== undefined) titreDeLaRessource = dit
+      } catch (erreur) {
+        z = `échec — ${(erreur as Error).message.split('\n')[0]}`
+      }
+      ligne(`${point.nom.padEnd(26)} : z = ${z}`)
+      await patienter(REPOS_ENTRE_POINTS_IGN_MS)
+    }
+
+    ligne('')
+    ligne(`le service se nomme : ${titreDeLaRessource}`)
+    ligne(`exactitude déclarée : ${exactitude}`)
+    ligne('')
+    ligne('À lire : `-99999` est le témoin de non-couverture de l’IGN, celui')
+    ligne('que `elevation.ts` filtre déjà (`value > -9000`). Trois voisins')
+    ligne('européens à -99999 et la Guadeloupe à une vraie altitude → la')
+    ligne('ressource couvre la France, pas le monde, quoi qu’en dise son')
+    ligne('suffixe `_wld`.')
+    ligne('')
+    ligne('Ce que ça ne dit pas, et qui manque encore à #316 : le pas de la')
+    ligne('grille par zone. Le service répond « Variable suivant la source de')
+    ligne('mesure », donc il ne le dira pas. Il faut la spécification produit')
+    ligne('RGE ALTI — et tant qu’elle n’est pas lue, `PAS_MINIMAL_METRES` ne')
+    ligne('bouge pas : le §2 interdit de changer un seuil qui décide de ce qui')
+    ligne('est calculé sur une justification qu’on vient de trouver fausse.')
   })
 })
