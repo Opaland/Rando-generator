@@ -52,16 +52,41 @@ const patienter = (ms: number): Promise<void> =>
   new Promise((resoudre) => setTimeout(resoudre, ms))
 
 /**
- * Ce que le navigateur atteint tout seul, et qui n'a donc rien à relayer.
+ * Ce qui est servi par cette machine — et donc, ici, par le `dist/` du dépôt.
  *
- * La règle est « la boucle locale », et non « l'origine de l'application » :
- * servie depuis GitHub Pages, l'application est elle-même hors d'atteinte de
- * Chromium dans ce conteneur, et ses propres fichiers doivent passer par le
- * relais comme le reste. Une règle écrite sur l'origine aurait marché en
- * local et échoué exactement là où on veut regarder.
+ * Deux questions différentes s'appuient sur cette seule réponse, et c'est
+ * voulu (§4ter) :
+ *
+ * - le relais n'a rien à relayer d'une adresse que le navigateur atteint
+ *   déjà. La règle est « la boucle locale » et non « l'origine de
+ *   l'application » : servie depuis GitHub Pages, l'application est
+ *   elle-même hors d'atteinte de Chromium dans ce conteneur, et ses propres
+ *   fichiers doivent passer par le relais comme le reste ;
+ * - `playwright.config.ts` n'a de `dist/` à comparer aux sources que si la
+ *   cible est justement servie d'ici.
+ *
+ * Écrire cette règle deux fois donnerait deux listes disant la même chose,
+ * dans deux fichiers qui ne changent jamais ensemble.
  */
-function estSurCetteMachine(url: URL): boolean {
+export function estSurCetteMachine(url: URL): boolean {
   return ['localhost', '127.0.0.1', '[::1]', '::1'].includes(url.hostname)
+}
+
+/** La même question, posée sur une adresse qui peut être illisible. */
+export function cibleServieDIci(adresse: string | undefined): boolean {
+  if (adresse === undefined || adresse === '') return true
+  try {
+    return estSurCetteMachine(new URL(adresse))
+  } catch {
+    /*
+      Une adresse qu'on n'arrive pas à lire est traitée comme locale : le
+      contrôle de fraîcheur reste posé. Se tromper dans ce sens coûte un
+      `npm run build` de trop ; se tromper dans l'autre laisse tester une
+      version périmée, ce qui est le raté que tout ce dispositif existe pour
+      empêcher.
+    */
+    return true
+  }
 }
 
 export interface Relais {

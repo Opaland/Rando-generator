@@ -1,4 +1,24 @@
 import { defineConfig, devices } from '@playwright/test'
+import { cibleServieDIci } from './tests/e2e/relais-reseau'
+
+/**
+ * La cible sondée, et si elle est servie par cette machine.
+ *
+ * L'ancienne condition était « `SENTIERS_URL` est posée », justifiée par
+ * « elle n'est posée que par le workflow de déploiement ». Cette phrase
+ * n'était pas fausse quand elle a été écrite ; elle l'est devenue le 27/08,
+ * quand `SENTIERS_URL=http://localhost:4173/` a servi deux fois à vérifier
+ * que la sonde rougit (§1) — et l'en-tête de `page-deployee.spec.ts`
+ * documente cet usage. Le contrôle de fraîcheur sautait donc précisément
+ * dans le cas où il garde encore quelque chose : une cible locale **est**
+ * `dist/`.
+ *
+ * La question juste n'est pas « qui a posé la variable » mais « y a-t-il un
+ * `dist/` derrière cette adresse ». Voir `relais-reseau.ts`, d'où la règle
+ * vient — une seule fois.
+ */
+const CIBLE = process.env.SENTIERS_URL
+const CIBLE_LOCALE = cibleServieDIci(CIBLE)
 
 export default defineConfig({
   testDir: 'tests/e2e',
@@ -48,9 +68,7 @@ export default defineConfig({
     les deux restent en place mot pour mot, et `SENTIERS_URL` n'est posé que
     par le workflow de déploiement.
   */
-  ...(process.env.SENTIERS_URL
-    ? {}
-    : { globalSetup: './tests/e2e/dist-a-jour.ts' }),
+  ...(CIBLE_LOCALE ? { globalSetup: './tests/e2e/dist-a-jour.ts' } : {}),
   globalTimeout: 70 * 60 * 1000,
   reporter: process.env.CI ? 'github' : 'list',
   use: {
@@ -66,13 +84,13 @@ export default defineConfig({
       : {}),
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
-  ...(process.env.SENTIERS_URL
-    ? {}
-    : {
+  ...(CIBLE === undefined
+    ? {
         webServer: {
           command: 'npm run preview',
           url: 'http://localhost:4173',
           reuseExistingServer: !process.env.CI,
         },
-      }),
+      }
+    : {}),
 })

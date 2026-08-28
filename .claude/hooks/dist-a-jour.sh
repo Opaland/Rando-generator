@@ -26,6 +26,10 @@
 # Il ne construit pas à votre place. Construire en silence rendrait le temps
 # d'exécution imprévisible et masquerait un build cassé derrière un test
 # lent — le même défaut, déplacé.
+#
+# Il ne juge pas non plus les sondes lancées contre une cible déjà servie
+# (`SENTIERS_URL`) : décider s'il y a un `dist/` derrière une adresse demande
+# de lire son hôte, et cette règle vit ailleurs. Voir plus bas.
 set -uo pipefail
 
 entree=$(cat 2>/dev/null || echo '{}')
@@ -35,6 +39,21 @@ case "$commande" in
   *"playwright test"*) ;;
   *) exit 0 ;;
 esac
+
+# `SENTIERS_URL` désigne une cible déjà servie ailleurs. Savoir si elle a un
+# `dist/` derrière elle demande de lire son hôte, et cette règle est écrite
+# **une seule fois**, en TypeScript, dans `tests/e2e/relais-reseau.ts` : la
+# recopier ici en ferait deux listes disant la même chose dans deux langages
+# qui ne changent jamais ensemble (§4ter, et c'est exactement ce qui vient de
+# se produire entre ce hook et `playwright.config.ts`).
+#
+# On s'efface donc, et `globalSetup` tranche — il s'exécute dans le processus
+# de test, là où le §6quater veut que le contrôle vive. Ce hook n'est que le
+# refus le plus précoce, pas le seul.
+case "$commande" in
+  *SENTIERS_URL=*) exit 0 ;;
+esac
+[ -n "${SENTIERS_URL:-}" ] && exit 0
 
 racine=$(git rev-parse --show-toplevel 2>/dev/null || echo .)
 cd "$racine" || exit 0
