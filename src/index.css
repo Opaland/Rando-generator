@@ -787,3 +787,118 @@ aside :is(button, label, p, li, h2, h3, span, output) {
   :is(button, input, select, textarea, summary):focus-visible {
   outline-width: 3px;
 }
+
+/*
+  Ce qui traverse le papier (issue #362).
+
+  ## Pourquoi une feuille d'impression est plus qu'un confort ici
+
+  L'application promet que rien ne quitte le navigateur. Le corollaire est
+  qu'il n'y a **pas de « partager par mail »** : le papier est le seul chemin
+  hors de l'appareil qui ne trahisse pas la promesse. C'est le geste le plus
+  aligné avec le produit, et c'était le seul qui n'avait jamais été dessiné.
+
+  Persona neuf de la revue globale du 28/08 : **Paul, 62 ans**, prépare ses
+  sorties sur ordinateur et met la fiche dans la poche de son coupe-vent. Pas
+  de téléphone en montagne — batterie, pluie, et il n'aime pas ça.
+
+  ## Ce qui est décidé ici, et qui ne se mesure pas
+
+  Le §2 demande de dire quand on tranche. Trois choix, tous de dessin :
+
+  1. **la fiche seule**, quand elle est ouverte — c'est ce que Paul emporte ;
+  2. **la carte ne s'imprime pas.** Une capture de tuiles rend mal en noir et
+     blanc, et l'attribution IGN/OSM deviendrait un problème de licence sur
+     un papier qui circule. Un lien vaut mieux qu'une image fausse ;
+  3. **les commandes disparaissent.** Un bouton sur du papier est un mensonge.
+
+  ## Ce qui ne demandait rien
+
+  Le réseau est déjà écrit **en toutes lettres** dans la fiche
+  (`NETWORK_BADGES` rend « GR », « PR »…), et le balisage en une phrase
+  (`decrireBalisage`). Une imprimante noir et blanc est le daltonisme de #360
+  poussé à son terme : ici, le canal texte existait déjà.
+*/
+@media print {
+  /*
+    Le fond blanc et l'encre noire sont imposés : `--blanc-papier` est un
+    beige, joli à l'écran et coûteux en cartouche.
+  */
+  body {
+    background: #fff;
+    color: #000;
+  }
+
+  /*
+    L'ossature ne traverse pas : en-tête, carte, commandes, pied.
+
+    `[data-testid='map']` et non `main` : la fiche détail est un `<aside>`
+    rendu **dans** `<main>`, en surimpression de la carte. Cacher `main` la
+    faisait disparaître avec elle — trouvé par la sonde d'impression au
+    premier passage, j'avais supposé la fiche dans le panneau latéral.
+  */
+  body > header,
+  [data-testid='map'],
+  [data-testid='pied-panneau'],
+  [data-testid='sheet-handle'],
+  [data-testid='panneau-replier'],
+  [data-testid='panneau-rendre'],
+  [data-testid='onboarding-rouvrir'] {
+    display: none !important;
+  }
+
+  /*
+    **Quand une fiche est ouverte, elle est la feuille.**
+
+    Le panneau latéral disparaît alors : Paul veut sa fiche de route, pas le
+    sélecteur de zone et le gestionnaire de traces. La fiche n'existe dans le
+    DOM que lorsqu'elle est ouverte, donc `:has()` suffit à distinguer les
+    deux cas sans une ligne de TypeScript.
+
+    Ma première version dépliait le panneau au lieu de le cacher, et la fiche
+    — en `position: absolute` — se retrouvait à 3 247 px du haut, écrasée à
+    33 px. Le commentaire disait « la fiche seule » et le code disait autre
+    chose ; c'est la sonde qui a tranché.
+  */
+  body:has([data-testid='itinerary-detail']) [data-testid='sidebar'] {
+    display: none !important;
+  }
+
+  /* La fiche cesse d'être une surimpression : elle devient la page. */
+  [data-testid='itinerary-detail'] {
+    position: static !important;
+    width: auto !important;
+    max-width: none !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    transform: none !important;
+    box-shadow: none !important;
+    border: 0 !important;
+    break-inside: avoid-page;
+  }
+
+  /*
+    Sans fiche ouverte, c'est la liste qu'on imprime — le panneau redevient
+    une page ordinaire au lieu d'une colonne de hauteur fixe.
+  */
+  [data-testid='layout'],
+  [data-testid='sidebar'] {
+    display: block !important;
+    position: static !important;
+    width: auto !important;
+    max-width: none !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    transform: none !important;
+  }
+
+  /* Une fiche ne se coupe pas au milieu d'un titre. */
+  h1,
+  h2,
+  h3,
+  h4 {
+    break-after: avoid-page;
+  }
+}
