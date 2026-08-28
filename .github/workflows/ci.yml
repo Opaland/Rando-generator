@@ -32,6 +32,8 @@ jobs:
         run: npm run listes
       - name: Textes (le README annonce tous les filtres qui existent)
         run: npm run textes
+      - name: Chemins cités (un commentaire qui nomme un fichier affirme qu'il existe)
+        run: npm run chemins
       - name: Typecheck
         run: npm run typecheck
       - name: Tests unitaires (couverture ≥ 90 % sur src/core)

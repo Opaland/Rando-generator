@@ -50,6 +50,11 @@ lancer "listes"    npm run listes --silent
 # le 25/08, et aucune revue de diff ne pouvait l'attraper : le README
 # n'était dans aucun diff (CLAUDE.md §3).
 lancer "textes"    npm run textes --silent
+
+# Un commentaire qui nomme un fichier affirme qu'il existe. Le fantôme
+# `reseauxFiltrables.test.ts` a été annoncé plusieurs jours par un
+# commentaire, sans avoir jamais été écrit (§4bis).
+lancer "chemins"   npm run chemins --silent
 # `tsc -b` et non `tsc --noEmit` : ce dépôt utilise les références de
 # projet, et `tsc --noEmit` seul rend 0 sans rien vérifier. Mesuré : un
 # fichier délibérément cassé passait la première commande et échouait la
@@ -64,4 +69,4 @@ if [ -n "$echecs" ]; then
   exit 0
 fi
 
-jq -nc '{systemMessage:"Porte avant commit : lint, listes jumelles, textes, typecheck et tests unitaires au vert."}'
+jq -nc '{systemMessage:"Porte avant commit : lint, listes jumelles, textes, chemins cités, typecheck et tests unitaires au vert."}'
