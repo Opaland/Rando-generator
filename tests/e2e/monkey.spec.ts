@@ -3,7 +3,7 @@ import { mockExternalNetwork, buildGpx } from './helpers.ts'
 import { GPX_MALFORMED, GPX_NO_TRKPT } from '../fixtures/gpx.ts'
 
 /**
- * Monkey testing incarné — persona « Bernard », 64 ans, randonneur retraité :
+ * Monkey testing incarné — persona « Bernard », 62 ans, randonneur retraité :
  * enthousiaste, impatient, brouillon. Il clique partout (parfois deux fois),
  * importe n'importe quoi, secoue les réglages, tape des choses absurdes,
  * recharge la page quand « ça rame ». Aucune de ces maladresses ne doit

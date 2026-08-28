@@ -270,3 +270,174 @@ chiffres, et l'aveu quand ils manquent.
 **Ces deux personas jugent des sprints 2 et 4.** Ils ont été écrits *avant*
 l'exécution, pour ne pas être taillés sur mesure autour de ce qui aura été
 livré.
+
+---
+
+# Deux personas que ce document avait oubliés — trouvés le 28/08
+
+**Théo et Jeanine sont nommés partout, sauf ici.** CLAUDE.md §10 les emploie
+pour définir ce qui ne peut pas être fermé sans preuve humaine, la feuille de
+route les cite dans la ligne #173, quatre fichiers de tests s'y réfèrent, la
+skill `audit-ui` les fait choisir la vue, et `src/core/affichage.ts` justifie
+un choix de conception par Théo. Ils n'avaient pas de fiche dans le seul
+document dont c'est le métier.
+
+C'est le §3 dans sa forme la plus banale : une correction — ici, un ajout —
+qui n'a jamais atteint la surface canonique. Personne ne pouvait l'attraper
+dans un diff, puisqu'aucun diff ne touche ce document et les autres ensemble.
+
+Les deux fiches ci-dessous ne contiennent **rien de neuf** : elles rassemblent
+ce que le dépôt disait déjà d'eux, à ses sept endroits.
+
+## Théo, 9 ans
+
+Lit mal de près. Regarde ce qu'il a marché avec sa famille, sur le téléphone
+d'un adulte ou sur l'ordinateur du salon.
+
+Ce qu'il exige de l'application : **le gros texte**, aux deux largeurs
+extrêmes (issue #173). `src/core/affichage.ts` s'appuie sur lui pour un choix
+de conception — la comparaison entre personnes doit rester lisible, « Théo
+doit pouvoir regarder ce qu'il a marché ».
+
+Ce qui le fait décrocher : un chiffre qu'il ne peut pas lire, ou un mot de
+vocabulaire de randonneur employé sans être expliqué.
+
+**Sa tâche de validation, session E3–E4 : mener une tâche complète sans
+aide.** Tant qu'elle n'a pas eu lieu, #173 reste ouverte même si le code est
+fini — c'est l'exemple que le §10 de CLAUDE.md donne.
+
+## Jeanine, 76 ans
+
+N'a jamais eu de smartphone. Arthrose des mains : viser une petite cible lui
+coûte, et un geste maintenu lui est pénible.
+
+Ce qu'elle exige : **la première ouverture doit s'expliquer** — guide affiché,
+aucun raccourci supposé connu. Et des cibles qu'on atteint sans précision :
+c'est son arthrose, autant que le vocabulaire, qui motive le plancher de
+`tests/e2e/tolerance.spec.ts`.
+
+Ce qui la fait renoncer : un réglage qu'il faut deviner, ou un panneau qui se
+referme parce qu'elle a tremblé.
+
+**Sa tâche de validation, comme Théo : régler la précision sans aide**, en
+session, pas dans Playwright — `tests/e2e/tolerance.spec.ts` le dit lui-même.
+
+---
+
+# Huit personas de la revue globale — 28/08
+
+Écrits pour une revue globale, et non pour un sprint : le but n'était pas de
+juger ce qui venait d'être livré, mais de **choisir où regarder** dans une
+application que six personas connaissaient déjà bien.
+
+Chacun est choisi pour viser un angle **mesurable** que les six précédents
+n'atteignent pas. C'est la contrainte qui a rendu la passe utile : un persona
+attachant mais dont on ne peut rien mesurer produit des impressions, et les
+impressions ne se corrigent pas.
+
+**Quatre ont trouvé quelque chose, quatre n'ont rien trouvé.** Les seconds
+comptent autant, et sont écrits ici pour qu'on ne recommence pas la mesure
+dans six mois.
+
+## Ceux qui ont trouvé
+
+### Malik, 34 ans, deutéranope — issue #360
+
+Environ un homme sur douze ne sépare pas les rouges des verts. Malik lit la
+carte, pas la légende : il suit un trait.
+
+**Trouvé, chiffré :** GR (`#c8102e`) et GRP (`#b34a08`) sont à ΔE 31,3 en
+vision normale et **ΔE 6,9** en vision deutéranope. Ce n'est pas « proche »,
+c'est la même couleur. Et c'est la paire qui décide si l'on regarde un
+sentier de grande randonnée ou un GR de Pays.
+
+Ce qui rend le défaut instructif : le dépôt **connaissait la règle** et
+l'appliquait déjà deux fois — le revêtement « autre » se distingue par les
+tirets, l'itinéraire déclaré parcouru aussi. Le réseau, lui, n'avait que la
+couleur.
+
+### Ahmed, 51 ans, tablette en paysage — issue #363
+
+Prépare ses sorties sur une tablette posée sur la table de la cuisine.
+
+**Trouvé, le jour même où la largeur a été ajoutée à la sonde :** 1024 px est
+la seule combinaison « large **et** tactile », et deux cibles y passaient sous
+le plancher de WCAG 2.5.5 — le badge « PR » à 43 px de large, le badge « ? » à
+34 px, pour 44 px de haut.
+
+La cause n'était pas locale : le plancher ne posait que `min-height`. Une
+règle générale découverte une fois, écrite pour un seul sélecteur, jamais
+généralisée.
+
+### Paul, 62 ans, imprime tout — issue #362
+
+Pas de téléphone en montagne : batterie, pluie, et il n'aime pas ça. Il
+prépare sur ordinateur et met la fiche dans sa poche.
+
+**Trouvé :** aucune feuille d'impression n'existait. Ce qui sortait de
+l'imprimante était l'interface — panneau, onglets, boutons de zoom — sur un
+fond beige qui vide une cartouche.
+
+Ce que Paul révèle et qu'aucun autre persona ne voyait : l'application promet
+que rien ne quitte le navigateur, donc **il n'y a pas de « partager par
+mail »**. Le papier est le seul chemin hors de l'appareil qui ne trahisse pas
+la promesse — le geste le plus aligné avec le produit, et le seul qui n'avait
+jamais été dessiné.
+
+### Yuki, 27 ans, thème sombre toute l'année — issue #361
+
+**Trouvé :** zéro occurrence de `prefers-color-scheme` dans tout le dépôt. La
+palette est un thème clair unique.
+
+À comparer avec `prefers-reduced-motion`, respecté en deux endroits : la
+préférence système est consultée pour le mouvement et ignorée pour la
+lumière. Un départ se prépare à l'aube, et 400 nits de blanc dans un dortoir
+réveillent tout le monde.
+
+## Ceux qui n'ont rien trouvé
+
+Ce sont des mesures, pas des impressions : elles sont datées et
+reproductibles, et elles évitent de refaire le chemin.
+
+### René, 71 ans, troubles vestibulaires
+
+Une animation qui glisse lui donne le vertige.
+
+**Rien à signaler.** `prefers-reduced-motion` est respecté dans
+`src/index.css` et dans `src/lib/useCountUp.ts` — les compteurs qui montent
+s'arrêtent de monter pour qui l'a demandé.
+
+### Farida, 38 ans, iPhone SE saturé, huit cents traces
+
+**Rien à signaler.** Le quota de stockage est traité en trois endroits :
+`src/store/enregistrementSlice.ts` (une écriture ratée ne bloque pas les
+suivantes), `src/db/reglages.ts` (rend `false` quand le magasin refuse) et
+`src/core/stockage.ts` (interroge `estimate()`).
+
+### Gérard, 71 ans, tremblements essentiels
+
+Vise mal, et un geste qui demande de garder le doigt appuyé en glissant lui
+est impossible.
+
+**Rien à signaler** sur le profil altimétrique, qui était le suspect : il
+porte `tabIndex={0}` et `onKeyDown`, donc le survol a un équivalent clavier.
+Aucune commande n'est au glisser seul.
+
+### Björn, 45 ans, suédois, navigateur en anglais
+
+**Rien à signaler, et c'est un choix assumé plutôt qu'un oubli.** `lang="fr"`
+est juste — l'application *est* française —, et les `toLocaleDateString('fr-FR')`
+répartis dans huit fichiers sont cohérents avec ce choix. Ce n'est pas un
+défaut : c'est un périmètre, et il est tenu partout.
+
+## Ce que cette passe a appris sur la méthode
+
+**Un persona ne vaut que par l'angle mesurable qu'il ouvre.** Les quatre qui
+ont trouvé visaient chacun une propriété qu'on peut interroger — une
+simulation de dichromatie, une largeur de fenêtre, un `@media`, un attribut.
+Les quatre qui n'ont rien trouvé visaient les mêmes sortes de propriétés, et
+ont rendu un verdict tout aussi net.
+
+Aucun des huit n'a produit une phrase du genre « l'interface pourrait être
+plus claire ». C'était la contrainte de départ, et c'est ce qui distingue
+cette passe d'un tour de table.
