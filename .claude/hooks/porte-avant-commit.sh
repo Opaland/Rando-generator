@@ -2,8 +2,8 @@
 # Porte rapide avant tout commit (voir CLAUDE.md).
 #
 # Ne contient QUE ce qui tient en moins d'une minute : lint, listes
-# jumelles, typecheck,
-# tests unitaires. Le build, les e2e et le monkey restent dans /porte —
+# jumelles, textes annoncés, chemins cités, typecheck, tests unitaires.
+# Le build, les e2e et le monkey restent dans /porte —
 # les mettre ici rendrait chaque commit insupportable, et un garde-fou
 # qu'on désactive ne garde rien.
 #
