@@ -104,11 +104,21 @@ le **sol** et l'**eau**, livrés deux jours plus tôt, n'y étaient pas.
 
 Trois sprints après la leçon, la leçon n'avait rien empêché. Un `grep`
 mémorisé n'est pas un garde-fou — c'est une bonne intention. Il y a
-maintenant `scripts/filtres-annonces.mjs` (`npm run textes`, dans le hook et
-dans la CI) : chaque commande du panneau a un mot qui la désigne dans le
-README, et un `data-testid` inconnu **fait échouer le script** plutôt que
-d'être ignoré. Un filtre neuf ne peut donc plus passer sans que quelqu'un
-décide du mot qui l'annonce.
+maintenant `scripts/commandes-annoncees.mjs` (`npm run textes`, dans le hook
+et dans la CI) : chaque commande a un mot qui la désigne dans le README, et
+un `data-testid` inconnu **fait échouer le script** plutôt que d'être ignoré.
+Une commande neuve ne peut donc plus passer sans que quelqu'un décide du mot
+qui l'annonce.
+
+**Et le 28/08, une quatrième fois** — hors du panneau, cette fois. La feuille
+d'impression livrée le matin même n'était annoncée nulle part : ni bouton, ni
+README, ni PRD. Le script ne regardait que « Trouver une sortie » ; il couvre
+maintenant aussi les boutons de la fiche, et il a été renommé pour ça
+(issue #369).
+
+Ce qui vaut d'être retenu du renommage : c'est `npm run chemins` qui a
+signalé que le §3 citait encore l'ancien nom. Une garde en a attrapé une
+autre — c'est à ça qu'on voit qu'elles servent.
 
 Il garde l'**existence**, jamais la justesse de la phrase : celle-là se
 relit, et le §2 interdit de prétendre mesurer ce qui se décide.

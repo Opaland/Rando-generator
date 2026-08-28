@@ -125,3 +125,37 @@ test('rien ne déborde de la largeur du papier', async ({ page }) => {
     )
     .toBeLessThanOrEqual(0)
 })
+
+test('le bouton qui imprime existe, se touche, et sort de la feuille', async ({
+  page,
+}) => {
+  await ouvrirUneFiche(page)
+
+  /*
+    Issue #369. La feuille d'impression était livrée depuis le 28/08 et rien
+    ne disait qu'elle existait : ni bouton, ni README, ni PRD. Une fonction
+    qu'on ne découvre qu'en devinant Ctrl+P n'est pas une fonction livrée —
+    et Jeanine, 76 ans, qui n'a jamais eu de smartphone, ne connaît pas ce
+    raccourci.
+
+    Trois questions, et la troisième est celle qui compte : un bouton
+    d'impression qui figure sur la feuille qu'il imprime est un défaut que
+    seul le média « print » peut montrer.
+  */
+  const bouton = page.getByTestId('itinerary-detail-imprimer')
+  await expect(bouton).toBeVisible()
+
+  // Ce qui est **peint** à cet endroit, pas seulement ce qui a un rectangle
+  // non vide : `toBeVisible` accepte un élément écrêté (§1bis).
+  expect(await estAlEcran(page, 'itinerary-detail-imprimer')).toBe(true)
+
+  const cible = await bouton.boundingBox()
+  expect(cible).not.toBeNull()
+  // WCAG 2.5.5 — le plancher que le reste de la fiche respecte déjà.
+  expect(cible?.height ?? 0).toBeGreaterThanOrEqual(44)
+
+  await page.emulateMedia({ media: 'print' })
+  await expect
+    .poll(async () => bouton.isVisible(), { timeout: 5_000 })
+    .toBe(false)
+})

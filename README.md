@@ -179,6 +179,12 @@ existant via `PW_CHROMIUM_PATH=/chemin/vers/chrome npm run e2e`.
     est dessinée sur l'appareil et ne contient aucune coordonnée : des totaux
     et des noms d'itinéraires publics, rien d'autre.
 
+    Une fiche s'**imprime** aussi, par son bouton : sur le papier, la fiche
+    seule — sans la carte, sans les panneaux, sans les commandes, et sur fond
+    blanc plutôt que sur le beige de l'écran. C'est le seul chemin hors de
+    l'appareil qui ne trahisse pas la promesse : sans compte ni serveur, il
+    n'y a pas de « partager par mail ».
+
 ### Déclarer un parcours, sans trace GPX
 
 La majorité des randonneurs n'enregistrent rien. Depuis la fiche d'un

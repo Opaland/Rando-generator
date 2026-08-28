@@ -843,7 +843,10 @@ aside :is(button, label, p, li, h2, h3, span, output) {
   [data-testid='sheet-handle'],
   [data-testid='panneau-replier'],
   [data-testid='panneau-rendre'],
-  [data-testid='onboarding-rouvrir'] {
+  [data-testid='onboarding-rouvrir'],
+  /* Le bouton qui déclenche l'impression n'a rien à faire sur la feuille
+     qu'il imprime (issue #369). */
+  [data-testid='itinerary-detail-imprimer'] {
     display: none !important;
   }
 

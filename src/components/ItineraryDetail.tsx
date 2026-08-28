@@ -372,6 +372,27 @@ export function ItineraryDetail() {
         >
           Exporter en GPX
         </button>
+        {/*
+          La feuille d'impression existait depuis le 28/08 et rien ne le
+          disait : `grep -i imprim` sur les sources, le README et le PRD ne
+          rendait que le CSS (issue #369). Une fonction qu'on ne découvre
+          qu'en devinant Ctrl+P n'est pas une fonction livrée — et c'est
+          Jeanine, 76 ans, qui n'a jamais eu de smartphone, que celle-ci
+          servait en premier.
+
+          `window.print()` et rien de plus : la mise en page est entièrement
+          dans le bloc `@media print` de `src/index.css`.
+        */}
+        <button
+          type="button"
+          className="btn-secondary"
+          data-testid="itinerary-detail-imprimer"
+          onClick={() => {
+            window.print()
+          }}
+        >
+          Imprimer cette fiche
+        </button>
         {/* `key` : changer d'itinéraire remonte le bouton, ce qui recalcule
             son corridor et oublie le téléchargement précédent. */}
         <BoutonEmporter
