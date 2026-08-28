@@ -48,10 +48,63 @@ export interface CachedZone {
  *
  * À incrémenter quand la requête Overpass rapporte quelque chose de
  * nouveau, faute de quoi les copies plus anciennes prétendent répondre à
- * une question qu'on ne leur a pas posée. 1 = les tags de revêtement des
- * chemins membres (issue #179).
+ * une question qu'on ne leur a pas posée.
+ *
+ * - **1** = les tags de revêtement des chemins membres (issue #179) ;
+ * - **2** = `osmc:symbol` et `operator`, le balisage peint sur l'arbre
+ *   (issue #286, livré le 24/08 — et l'incrément oublié jusqu'au 28,
+ *   issue #371).
+ *
+ * La consigne ci-dessus existait depuis le 22/08 et n'a pas suffi : #286 est
+ * passé deux jours plus tard sans que personne ne la relise. C'est pourquoi
+ * `CHAMPS_MIS_EN_CACHE` la double d'une liste que
+ * `tests/unit/schemaDeZone.test.ts` compare à ce que le parseur écrit — une
+ * consigne qu'il faut penser à lire ne garde rien (§6quater).
  */
-export const SCHEMA_ZONE = 1
+export const SCHEMA_ZONE = 2
+
+/**
+ * Les champs qu'une zone en cache peut porter, au schéma courant.
+ *
+ * Épinglés **ici**, à côté de la version qu'ils justifient, plutôt que
+ * déduits du type `Itinerary` : ce type porte aussi `details`,
+ * `attribution` et `importe`, qui viennent d'un fichier déposé ou d'un tracé
+ * dessiné, jamais d'Overpass. Les inclure ferait rougir la garde sur des
+ * ajouts qui ne touchent pas le cache de zone — et une garde qui rougit à
+ * tort finit désactivée.
+ *
+ * `osmcSymbol` et `operator` ne sont écrits que si le tag existe (#286 : « le
+ * cache de zone ne grossit pas de deux `null` par relation »). Cette liste
+ * décrit donc ce qu'une relation **peut** porter, pas ce que chacune porte.
+ *
+ * ## Le `depuis`, et ce qu'il rend difficile
+ *
+ * Chaque champ dit à quel schéma il est apparu, et le test asserte que le
+ * plus grand des `depuis` **est** `SCHEMA_ZONE`. Un champ neuf s'écrit donc
+ * `depuis: SCHEMA_ZONE + 1`, et le test reste rouge tant que la constante
+ * n'a pas suivi : l'incrément devient le chemin le plus court.
+ *
+ * Ce qu'il ne rend pas impossible, et il faut le dire : écrire `depuis: 2`
+ * sur un champ ajouté aujourd'hui. Le test passerait — mais il aura fallu
+ * affirmer noir sur blanc que ce champ existe depuis le schéma 2, ce qui est
+ * faux et se voit en relecture. Une garde déplace le mensonge à un endroit
+ * où on le lit ; elle ne l'interdit pas.
+ */
+export const CHAMPS_MIS_EN_CACHE: readonly {
+  champ: string
+  depuis: number
+}[] = [
+  { champ: 'osmRelationId', depuis: 1 },
+  { champ: 'ref', depuis: 1 },
+  { champ: 'name', depuis: 1 },
+  { champ: 'network', depuis: 1 },
+  { champ: 'ways', depuis: 1 },
+  { champ: 'totalMeters', depuis: 1 },
+  { champ: 'fetchedAt', depuis: 1 },
+  { champ: 'osmUpdatedAt', depuis: 1 },
+  { champ: 'osmcSymbol', depuis: 2 },
+  { champ: 'operator', depuis: 2 },
+]
 
 export type SettingKey =
   | 'toleranceMeters'
