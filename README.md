@@ -529,7 +529,21 @@ faire.
 - Un clic sur la carte vise 2 px de canvas : les tests qui ouvrent une fiche
   **réessaient le clic avec l'assertion dans la boucle**, plutôt que de parier
   sur un seul essai (la CI masquait ces échecs derrière ses relances).
-- CI GitHub Actions : lint + typecheck + tests (couverture) + build + e2e.
+- CI GitHub Actions : `lint`, **`listes`**, **`textes`**, **`chemins`**,
+  `typecheck`, tests (couverture), `build`, `e2e`. Les trois en gras sont des
+  gardes nées d'un raté daté, et chacune échoue en nommant ce qui manque :
+  - `listes` — le CSS et la sonde d'écran plancherisent la même liste de
+    commandes, écrite deux fois ; elles avaient le même trou ;
+  - `textes` — chaque filtre du panneau a un mot qui le désigne dans ce
+    README, et un filtre neuf ne peut plus passer sans que quelqu'un décide
+    du sien ;
+  - `chemins` — un commentaire qui nomme un fichier affirme qu'il existe.
+    `tests/unit/reseauxFiltrables.test.ts` a été annoncé plusieurs jours par
+    un commentaire sans avoir jamais été écrit.
+
+  Cette ligne énumérait « lint + typecheck + tests + build + e2e » et oubliait
+  déjà `listes` et `textes` : une phrase sur ce que fait l'intégration
+  continue vieillit comme les autres.
 - Avant release : smoke test manuel sur données réelles — voir
   [docs/RELEASE.md](./docs/RELEASE.md).
 - Monkey testing : `npm run monkey` déchaîne « Bernard » (persona brouillon et
