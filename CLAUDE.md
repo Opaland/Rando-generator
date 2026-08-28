@@ -196,7 +196,8 @@ commande ou un test derrière, soit la phrase change.
 Un item par PR. TDD sur `src/core`. Commits en français.
 
 **La porte complète avant de committer** — `/porte` la lance :
-`lint`, `typecheck`, `coverage`, `build`, `e2e`, `monkey`.
+`lint`, `listes`, `textes`, `chemins`, `typecheck`, `coverage`, `build`,
+`e2e`, `monkey`.
 
 Trois pièges mesurés sur ce dépôt :
 
@@ -342,7 +343,7 @@ résultat obtenu autrement se jette, il ne se discute pas.
 Les règles d'écran (`tests/e2e/regles-d-ecran.spec.ts`) posent cinq
 questions mesurables — qu'est-ce qui est peint par-dessus quoi, qu'est-ce
 qui est écrasé, qu'est-ce qui déborde sans le dire, qu'est-ce qu'on ne peut
-pas toucher, qu'est-ce qui sort du cadre — à trois largeurs et dans six
+pas toucher, qu'est-ce qui sort du cadre — à quatre largeurs et dans huit
 états.
 
 Les états ne sont pas décoratifs. La première version n'auscultait
