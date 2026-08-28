@@ -30,23 +30,51 @@ export interface Pente {
 /**
  * La longueur en deçà de laquelle une pente n'est pas calculée (issue #316).
  *
- * **Ce nombre est emprunté, pas choisi.** C'est le pas du modèle numérique de
- * terrain que la Géoplateforme sert sous la ressource `ign_rge_alti_wld`
- * appelée par `src/core/elevation.ts` : RGE ALTI, annoncé au pas de 1 m ou
- * 5 m selon les zones. Le §2 distingue un seuil inventé d'un seuil pris à une
- * source publiée ; celui-ci est de la seconde espèce, comme les 24 px de
- * WCAG 2.5.8 ailleurs dans ce dépôt.
+ * **Ce nombre est emprunté, pas choisi** — c'est le pas annoncé du modèle
+ * numérique de terrain que la Géoplateforme sert sous la ressource
+ * `ign_rge_alti_wld`, appelée par `src/core/elevation.ts`. Le §2 distingue un
+ * seuil inventé d'un seuil pris à une source publiée ; celui-ci est de la
+ * seconde espèce, comme les 24 px de WCAG 2.5.8 ailleurs dans ce dépôt.
  *
- * **Pourquoi 5 et non 1**, puisque les deux sont annoncés : la ressource est
- * un assemblage mondial. Sur la France métropolitaine elle sert du RGE ALTI
- * fin ; ailleurs, un modèle mondial bien plus grossier. Prendre la valeur la
- * plus fine serait optimiste précisément là où la donnée est la pire, et le
- * module ne peut pas savoir, point par point, de quel côté de la frontière il
- * se trouve.
+ * ## Ce que le service dit de lui-même, mesuré
  *
- * Ce que ça change concrètement : une dénivelée de 3 m sur 40 cm — deux nœuds
- * OSM d'une courbe serrée — donnait 750 %. Sous ce plancher, elle ne donne
- * plus rien du tout, et la fiche le dit.
+ * La mesure 7 de `tests/unit/mesuresReseau.test.ts` l'interroge :
+ *
+ * - il se nomme « Pyramide RGE Alti France Entière (Métropole, DOM et COM
+ *   couvertes) » ;
+ * - il déclare une exactitude **« Variable suivant la source de mesure »** :
+ *   il refuse d'en donner une seule ;
+ * - hors de cette emprise il ne rend rien — Berne, Turin et Barcelone
+ *   répondent `-99999`, le témoin de non-couverture que `elevation.ts` filtre
+ *   déjà. La Guadeloupe et Chamonix rendent une altitude.
+ *
+ * ## Une justification qui était fausse
+ *
+ * Ce commentaire disait, jusqu'au 28/08 : « la ressource est un assemblage
+ * mondial ; sur la France métropolitaine elle sert du RGE ALTI fin, ailleurs
+ * un modèle mondial bien plus grossier », et c'est de là qu'il tirait le
+ * choix de 5 plutôt que 1.
+ *
+ * **Il n'y a pas d'ailleurs.** Le suffixe `_wld` m'avait fait écrire une
+ * histoire plausible ; les trois `-99999` la réfutent. Une justification
+ * vieillit comme le reste, et celle-là était fausse dès l'écriture (§4bis).
+ *
+ * ## Ce qui reste à établir, et pourquoi le nombre ne bouge pas
+ *
+ * Que RGE ALTI soit publié au pas de 1 m **ou** 5 m selon les zones n'a pas
+ * été reconfirmé sur une source publiée : la fiche produit de l'IGN est
+ * rendue par script et ne se lit pas ainsi. Tant que ce n'est pas établi,
+ * `PAS_MINIMAL_METRES` ne bouge pas : il décide de **ce qui est calculé**, et
+ * le §2 interdit d'inventer un tel seuil — ou d'en changer sur une
+ * justification qu'on vient de trouver fausse.
+ *
+ * Ce qui trancherait : la spécification produit RGE ALTI, qui donne le pas de
+ * la grille par zone. Suivi en #316.
+ *
+ * Ce que ce plancher change concrètement, et qui ne dépend pas de ce débat :
+ * une dénivelée de 3 m sur 40 cm — deux nœuds OSM d'une courbe serrée —
+ * donnait 750 %. Sous ce plancher, elle ne donne plus rien du tout, et la
+ * fiche le dit.
  */
 export const PAS_MINIMAL_METRES = 5
 
