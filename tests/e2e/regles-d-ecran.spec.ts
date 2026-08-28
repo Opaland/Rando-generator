@@ -65,6 +65,25 @@ import {
 const LARGEURS = [
   { nom: 'téléphone', width: 390, height: 844, tactile: true },
   { nom: 'point de rupture', width: 800, height: 900, tactile: true },
+  /*
+    La tablette en paysage (issue #363).
+
+    Les trois autres largeurs mesuraient **de part et d'autre** du seuil des
+    onglets sans jamais s'en approcher, et surtout : c'est la seule
+    combinaison « large **et** tactile » du lot.
+
+    | largeur | tactile | disposition |
+    |---|---|---|
+    | 390 | oui | compacte |
+    | 800 | oui | compacte |
+    | **1024** | **oui** | **panneau** |
+    | 1280 | non | panneau |
+
+    Le plancher des cibles vit sous `@media (pointer: coarse)`. Une commande
+    dessinée pour la souris, servie dans la disposition à panneau, et
+    touchée au doigt : aucune des trois autres vues ne peut le voir.
+  */
+  { nom: 'tablette paysage', width: 1024, height: 768, tactile: true },
   { nom: 'PC', width: 1280, height: 800, tactile: false },
 ] as const
 
