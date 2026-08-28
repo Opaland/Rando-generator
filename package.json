@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "listes": "node scripts/listes-jumelles.mjs",
-    "textes": "node scripts/filtres-annonces.mjs",
+    "textes": "node scripts/commandes-annoncees.mjs",
     "chemins": "node scripts/chemins-cites.mjs",
     "couverture-village": "node scripts/couverture-village.mjs",
     "poids-communes": "NODE_USE_ENV_PROXY=1 node scripts/poids-communes.mjs",
