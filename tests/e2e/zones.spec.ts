@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { afficherTousLesReseaux, mockExternalNetwork } from './helpers.ts'
+import { appelsOverpassStabilisesA, afficherTousLesReseaux, mockExternalNetwork } from './helpers.ts'
 
 test('les départements d’Auvergne-Rhône-Alpes sont chargeables', async ({
   page,
@@ -12,7 +12,7 @@ test('les départements d’Auvergne-Rhône-Alpes sont chargeables', async ({
     timeout: 15_000,
   })
   await afficherTousLesReseaux(page)
-  expect(overpass.count()).toBe(1)
+  await appelsOverpassStabilisesA(overpass, 1)
 
   // Une autre zone de la région reste accessible dans la foulée.
   await expect(page.getByTestId('zone-haute-savoie')).toBeEnabled()
