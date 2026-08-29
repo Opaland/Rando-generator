@@ -352,6 +352,67 @@ function tagsUtiles(
   return Object.keys(retenus).length > 0 ? retenus : undefined
 }
 
+/**
+ * Les relations d'itinéraire dont le tracé n'est nulle part dans ce résultat.
+ *
+ * ## Pourquoi la question ne se pose pas comme on croit
+ *
+ * `parseOverpassResponse` écarte toute relation dépourvue de membre `way`.
+ * C'est le cas des **super-relations** — un long itinéraire découpé en
+ * tronçons, dont les membres sont des relations filles. Écarter n'est pas
+ * perdre : si une fille est dans la même réponse, son tracé y est, et la
+ * super-relation ne ferait qu'un doublon.
+ *
+ * Mesuré le 29/08 autour de Porcelette (issue #400) : deux relations sur
+ * neuf sont des super-relations — GR 5G et Via Regia — et **les deux nomment
+ * les mêmes trois filles**, dont l'une était bien là. Prévenir l'utilisateur
+ * dans ce cas-là aurait été un faux positif, c'est-à-dire la façon la plus
+ * sûre de lui apprendre à ignorer l'avertissement suivant.
+ *
+ * La question utile est donc : *le tracé est-il absent de ce qui reste ?*
+ *
+ * ## Pourquoi elle exige des filles
+ *
+ * Une première version signalait **toute** relation écartée. La suite l'a
+ * refusée sur sa propre fixture : `pilat.json` porte une « Relation sans
+ * géométrie » dont l'unique membre est un nœud. Elle disparaît, c'est vrai —
+ * mais elle n'a de tracé nulle part, ni ici ni dans OSM. Prévenir pour une
+ * relation cassée en amont, c'est le faux positif qui apprend à ignorer
+ * l'alerte suivante, et le §1bis dit ce que ça coûte.
+ *
+ * Exiger au moins une relation fille resserre l'affirmation sur ce qu'on peut
+ * soutenir : **le tracé existe, il est ailleurs, il n'est pas venu.** C'est
+ * une phrase vraie qu'on peut écrire à l'écran.
+ *
+ * ## Ce qu'elle lit, et pourquoi
+ *
+ * Elle compare des identifiants de relations à ceux des itinéraires obtenus.
+ * Elle **ne relit pas** la condition qui écarte : ce serait la même règle
+ * écrite deux fois, et le §4ter dit ce qu'il advient de ces couples-là. Le
+ * bénéfice est concret : une super-relation écartée demain pour un motif
+ * qu'on n'a pas prévu sera signalée sans que cette fonction change.
+ */
+export function relationsPerdues(
+  data: OverpassResponse,
+  itineraires: Itinerary[],
+): number[] {
+  const rendus = new Set(itineraires.map((i) => i.osmRelationId))
+  const perdues: number[] = []
+  for (const element of data.elements) {
+    if (element.type !== 'relation') continue
+    // Sans tag `route`, ce n'est pas un itinéraire : une limite
+    // administrative ou un multipolygone n'a rien à faire dans la liste.
+    if (element.tags?.route === undefined) continue
+    if (rendus.has(element.id)) continue
+    const filles = (element.members ?? []).filter((m) => m.type === 'relation')
+    // Sans fille, on ne sait pas que le tracé existe : voir ci-dessus.
+    if (filles.length === 0) continue
+    if (filles.some((m) => rendus.has(m.ref))) continue
+    perdues.push(element.id)
+  }
+  return perdues
+}
+
 export function parseOverpassResponse(
   data: OverpassResponse,
   fetchedAt: string,
