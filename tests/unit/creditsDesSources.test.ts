@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   attributionHtml,
   attributionTexte,
+  creditsDesSources,
   IGN,
   IGN_RELIEF,
   MARQUES_FFRANDONNEE,
@@ -13,7 +14,8 @@ import {
   ATTRIBUTION,
   ATTRIBUTION_OSM,
 } from '../../src/components/map/style.ts'
-import { attributionDe } from '../../src/core/gpxExport.ts'
+import { attributionDe, gpxAttributionFor } from '../../src/core/gpxExport.ts'
+import type { Network } from '../../src/core/types.ts'
 import { makeItinerary, straightLine } from '../fixtures/synthetic.ts'
 
 /**
@@ -147,5 +149,98 @@ describe('le GPX exporté crédite les mêmes gens que l’écran', () => {
     expect(attributionDe(local)?.author).toBe(
       `${METROPOLE.devant ?? ''}${METROPOLE.qui}`,
     )
+  })
+})
+
+/**
+ * L'habillage suit la provenance, pour tout réseau (issue #388).
+ *
+ * ## Ce que ce bloc garde, et ce qu'il ne garde plus
+ *
+ * Il ne compare plus deux tables. Il n'y en a qu'une : `attributionDe`, dans
+ * le cœur. `creditsDesSources` ne décide de rien — elle habille ce que le
+ * cœur a répondu.
+ *
+ * Ce qui peut encore casser, et que ceci garde : qu'une provenance rendue
+ * par le cœur ne trouve pas son habillage et sorte sous un autre nom, ou
+ * qu'un crédit apparaisse là où le cœur n'en voit aucun. Les deux se
+ * traduiraient par une attribution fausse sur l'image de partage.
+ *
+ * La boucle porte sur **tous** les réseaux, énumérés ici. Un réseau neuf
+ * fait échouer le compte avant de faire échouer une comparaison : c'est ce
+ * qui empêche ce test d'être vert parce qu'il ne regarde plus rien.
+ */
+describe('chaque provenance du cœur trouve son habillage', () => {
+  const TOUS: Network[] = ['GR', 'GRP', 'PR', 'LOCAL', 'PERSO', 'INCONNU']
+
+  it('la liste des réseaux est complète', () => {
+    const attendus: Record<Network, true> = {
+      GR: true,
+      GRP: true,
+      PR: true,
+      LOCAL: true,
+      PERSO: true,
+      INCONNU: true,
+    }
+    expect(
+      [...TOUS].sort(),
+      'un réseau a été ajouté au type sans être éprouvé ici : sa provenance' +
+        ' pourrait sortir sous un mauvais nom sans que rien ne rougisse',
+    ).toEqual(Object.keys(attendus).sort())
+  })
+
+  for (const reseau of TOUS) {
+    it(`${reseau} : l’image nomme qui le GPX nomme`, () => {
+      const duGpx = gpxAttributionFor(reseau)
+
+      if (duGpx === null) {
+        expect(
+          creditsDesSources([]),
+          `${reseau} ne doit rien dans le GPX : l'image ne doit créditer` +
+            ` personne non plus, sous peine de se contredire.`,
+        ).toEqual([])
+        return
+      }
+
+      const habilles = creditsDesSources([duGpx])
+      expect(habilles).toHaveLength(1)
+      const credit = habilles[0]
+      expect(
+        `${credit?.devant ?? ''}${credit?.qui ?? ''}`,
+        `le GPX crédite « ${duGpx.author} » et l'image quelqu'un d'autre.`,
+      ).toBe(duGpx.author)
+    })
+  }
+
+  /*
+    Une source déclarée par un fichier importé — le cas de Léa (#87). Elle
+    n'est dans aucune table : c'est précisément pourquoi la version keyée sur
+    le réseau était fausse.
+  */
+  it('habille une source inconnue sous le nom qu’elle déclare', () => {
+    const credits = creditsDesSources([
+      {
+        author: 'Département de l’Ain',
+        license: 'https://www.etalab.gouv.fr/licence-ouverte-open-licence',
+      },
+    ])
+    expect(credits).toHaveLength(1)
+    expect(attributionTexte(...credits)).toBe(
+      'Itinéraires © Département de l’Ain',
+    )
+  })
+
+  /*
+    Dédoublonnage sur le **nom** et non sur la référence : `attributionDe`
+    rend une constante partagée pour les réseaux OSM, mais un objet neuf par
+    source déclarée. Sans ce cas, deux itinéraires de l'Ain crédités deux
+    fois passeraient.
+  */
+  it('ne crédite pas deux fois le même producteur', () => {
+    const ain = {
+      author: 'Département de l’Ain',
+      license: 'https://www.etalab.gouv.fr/licence-ouverte-open-licence',
+    }
+    expect(creditsDesSources([ain, { ...ain }])).toHaveLength(1)
   })
 })

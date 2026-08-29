@@ -28,6 +28,8 @@
  * licence à la main.
  */
 
+import type { GpxAttribution } from '../core/gpxExport.ts'
+
 /** Un crédit : à qui, pour quoi, sous quelle licence, et où lire celle-ci. */
 export interface Credit {
   /** Ce qu'on doit à cette source, tel qu'il apparaît dans la phrase. */
@@ -43,8 +45,17 @@ export interface Credit {
   readonly devant?: string
   /** Le nom du producteur, seul mot que le lien habille. */
   readonly qui: string
-  /** La licence, entre parenthèses. */
-  readonly licence: string
+  /**
+   * La licence, entre parenthèses — absente quand on ne la connaît pas.
+   *
+   * Une source déclarée par un fichier importé porte une **adresse** de
+   * licence, pas son nom court : le PDIPR de Léa dit
+   * `etalab.gouv.fr/licence-ouverte-open-licence` et non « Licence Ouverte »
+   * (issue #87). Écrire l'adresse entre parenthèses serait illisible, et
+   * inventer le nom court serait inventer un fait — le §2 interdit les deux.
+   * On crédite alors sans nommer la licence.
+   */
+  readonly licence?: string
   /** Où la licence se lit — l'ODbL l'exige, les autres s'en accommodent. */
   readonly lien: string
 }
@@ -110,15 +121,20 @@ export const OSM_FOND_ET_TRACES: Credit = {
 export const MARQUES_FFRANDONNEE =
   'GR®, GR de Pays® et PR® sont des marques de la FFRandonnée.'
 
+/** ` (ODbL)`, ou rien du tout quand la licence n'a pas de nom court. */
+function entreParentheses(credit: Credit): string {
+  return credit.licence === undefined ? '' : ` (${credit.licence})`
+}
+
 /** Un crédit en HTML, le nom du producteur cliquable. */
 function enHtml(credit: Credit): string {
   const devant = credit.devant ?? ''
-  return `${credit.quoi} © ${devant}<a href="${credit.lien}">${credit.qui}</a> (${credit.licence})`
+  return `${credit.quoi} © ${devant}<a href="${credit.lien}">${credit.qui}</a>${entreParentheses(credit)}`
 }
 
 /** Le même crédit en texte nu — pour un canevas, ou pour du papier. */
 function enTexte(credit: Credit): string {
-  return `${credit.quoi} © ${credit.devant ?? ''}${credit.qui} (${credit.licence})`
+  return `${credit.quoi} © ${credit.devant ?? ''}${credit.qui}${entreParentheses(credit)}`
 }
 
 /** Le séparateur entre deux crédits, partout le même. */
@@ -132,4 +148,55 @@ export function attributionHtml(...credits: Credit[]): string {
 /** La ligne d'attribution en texte nu, pour tout le reste. */
 export function attributionTexte(...credits: Credit[]): string {
   return credits.map(enTexte).join(ENTRE_DEUX)
+}
+
+/** Le nom complet du producteur, tel qu'une attribution le nomme. */
+function nomComplet(credit: Credit): string {
+  return `${credit.devant ?? ''}${credit.qui}`
+}
+
+/**
+ * Les crédits dus par un ensemble de provenances (issue #388).
+ *
+ * ## Pourquoi des provenances et non des réseaux
+ *
+ * Ma première version prenait des `Network` et les traduisait par une table
+ * — `GR` → OpenStreetMap, `LOCAL` → Métropole, `PERSO` → rien. Elle était
+ * fausse pour le cas même qui a fait écrire `attributionDe` : **le PDIPR de
+ * Léa** arrive en `PERSO` et déclare « Département de l'Ain » sous Licence
+ * Ouverte (issue #87). Cette table l'aurait crédité à OpenStreetMap — une
+ * attribution *fausse*, c'est-à-dire le défaut de #388 aggravé plutôt que
+ * corrigé.
+ *
+ * Et c'était une table de plus disant la même règle que le `switch` de
+ * `gpxAttributionFor`, avec le trou en propre que le §4ter promet à toute
+ * paire de listes. La règle est déjà nommée : `attributionDe`. On part donc
+ * de sa réponse.
+ *
+ * ## Ce que fait celle-ci
+ *
+ * Elle ne décide de rien — elle **habille**. Une provenance connue reçoit sa
+ * formule soignée (« Itinéraires © les contributeurs OpenStreetMap
+ * (ODbL) ») ; une provenance déclarée par un fichier importé est créditée
+ * sous le nom qu'elle donne, sans nom de licence puisqu'on n'en a que
+ * l'adresse.
+ */
+export function creditsDesSources(
+  sources: readonly GpxAttribution[],
+): Credit[] {
+  const connus = new Map<string, Credit>(
+    [OSM, METROPOLE].map((credit) => [nomComplet(credit), credit]),
+  )
+  const credits: Credit[] = []
+  for (const source of sources) {
+    const credit = connus.get(source.author) ?? {
+      quoi: 'Itinéraires',
+      qui: source.author,
+      lien: source.license,
+    }
+    if (!credits.some((deja) => nomComplet(deja) === nomComplet(credit))) {
+      credits.push(credit)
+    }
+  }
+  return credits
 }

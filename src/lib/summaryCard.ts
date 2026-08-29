@@ -1,7 +1,7 @@
 import { formatKm } from './format.ts'
 import { NETWORK_COLORS } from './networkDisplay.ts'
 import { ENCRE, GRIS_VERT, PAPIER } from './couleursPartagees.ts'
-import { attributionTexte, OSM } from './attribution.ts'
+import { attributionTexte, creditsDesSources } from './attribution.ts'
 import type { Summary } from '../core/summary.ts'
 
 /** Format des cartes d'aperçu des réseaux sociaux (1,91:1). */
@@ -32,7 +32,15 @@ function anneesTexte(period: { from: string; to: string }): string {
  * quelqu'un — une image faite pour être partagée ne doit pas trahir ce que
  * l'application promet de garder.
  */
-function drawSummaryCard(
+/**
+ * Exporté pour que `tests/unit/carteDePartage.test.ts` puisse relever ce que
+ * l'image **écrit** — l'affirmation est vraie au moment où elle est faite, et
+ * le test la rend vérifiable plutôt que déclarative (§4bis).
+ *
+ * `summaryCardBlob` exige un vrai `<canvas>` ; passer par elle obligeait à
+ * truquer `document`, ce qui mesurait la sonde autant que le code.
+ */
+export function drawSummaryCard(
   ctx: CanvasRenderingContext2D,
   summary: Summary,
 ): void {
@@ -97,7 +105,35 @@ function drawSummaryCard(
     C'est une composition, pas une recopie — le nom de la licence ne
     s'écrit plus ici (issue #386).
   */
-  ctx.fillText(attributionTexte(OSM), 64, CARD_HEIGHT - 28)
+  /*
+    Ce que l'image montre, et rien d'autre (issue #388).
+
+    Elle écrivait « Itinéraires © les contributeurs OpenStreetMap (ODbL) »
+    en dur, quel que soit son contenu. Or `buildSummary` ne filtre sur aucun
+    réseau : une boucle communale de la Métropole de Lyon, versée sous
+    Licence Ouverte 2.0, y figure par son nom — mesuré — et n'était créditée
+    à personne.
+
+    Créditée **selon ce qui est affiché** et non toujours : écrire « Boucles
+    locales © Métropole de Lyon » sur une image qui ne montre que des GR
+    vosgiens serait une attribution fausse, c'est-à-dire le défaut qu'on
+    corrige, retourné. C'est le même raisonnement que `Relief` plutôt que
+    `Fond` sur la feuille imprimée (#386).
+
+    Et **rien** quand il n'y a rien à créditer — un bilan sans itinéraire,
+    ou fait de tracés réellement dessinés à la main. Ce n'est pas un crédit
+    perdu : `gpxAttributionFor` répond déjà `null` dans ce cas, et une image
+    qui créditerait OpenStreetMap là où l'export GPX ne crédite personne
+    serait la prochaine paire de listes en désaccord.
+
+    Ce qui garde cette ligne d'être vide par accident n'est donc pas ici,
+    mais dans `tests/unit/summary.test.ts` : c'est lui qui asserte que les
+    provenances remontent bien des itinéraires.
+  */
+  const credits = creditsDesSources(summary.sources)
+  if (credits.length > 0) {
+    ctx.fillText(attributionTexte(...credits), 64, CARD_HEIGHT - 28)
+  }
 }
 
 /** Fabrique l'image PNG du bilan, entièrement en mémoire. */
