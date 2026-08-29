@@ -113,6 +113,78 @@ export function assessItinerary(
         ' : la progression ne porte que sur les tronçons présents.',
     )
   }
+  /*
+    Une relation qui ne contient qu'un seul chemin (issue #301).
+
+    « Rando Saint-Joseph », relation 6628093 : un unique chemin de 471 m, ni
+    `ref` ni `network`, créée en 2016 et jamais reprise. Elle s'affiche à
+    côté d'un GR de 153 km, et **le chiffre qu'on en donne est juste** — 0,5
+    km est toute la géométrie qu'elle porte. C'est la donnée qui est
+    incomplète, pas le calcul.
+
+    Le signal est **structurel** et non métrique : « un seul chemin membre »
+    ne demande aucun seuil. Écarter en deçà d'une longueur en aurait demandé
+    un, et le §2 l'interdit tant que la distribution n'est pas regardée.
+
+    Mesuré avant d'écrire cette phrase — l'issue posait le verrou « si c'est
+    20 %, ça devient du bruit » : **1 relation sur 26**, soit 4 %, sur le
+    Pilat, la Loire et l'ouest lyonnais. La valeur suivante est 3 chemins :
+    le cas est isolé, pas le bas d'un continuum.
+
+    Au conditionnel, et c'est délibéré. À la différence de « géométrie en
+    morceaux », rien ici ne condamne le pourcentage : ce qui manque manque
+    dans OpenStreetMap, et nos données ne peuvent pas le savoir.
+    « Probablement » est le maximum qu'on puisse affirmer.
+
+    `pieces === 1` plutôt que `ways.length === 1` seul : une relation vide a
+    déjà son propre avertissement, plus grave, et deux phrases sur le même
+    écran diraient deux choses du même fait.
+
+    **Et le chemin doit être ouvert.** Un chemin unique et fermé est une
+    boucle complète — une boucle communale en est exactement une — et la
+    dire « probablement incomplète » serait fausse. Cette nuance n'est pas
+    de moi : le test « ne compte pas un chemin fermé comme une interruption »
+    existait, il a rougi sur ma première version, et il avait raison.
+
+    Vérifié sur les deux cas réels avant de conclure : le chemin de
+    « Rando Saint-Joseph » (149884421, 30 nœuds) et celui du « Circuit de la
+    Ronde des Vergers » (364456256, 8 nœuds) sont **tous deux ouverts**. La
+    mesure de 4 % n'est donc pas entamée par cette exclusion.
+
+    **Et l'itinéraire ne doit rien déclarer.** L'issue le disait, et je
+    l'avais laissé tomber en écrivant le code :
+
+    > une liaison assumée porterait un `ref` ou un `network`, celle-ci n'a
+    > que `route=hiking`
+
+    C'est un test de bout en bout qui l'a rattrapé — la fixture modélise le
+    GRP Tour du Pilat, 140 km réels, par un chemin unique, et l'avertissement
+    y apparaissait sur un itinéraire manifestement déclaré. Le raccourci de
+    fixture était le révélateur, pas la cause : sans ce garde-fou, n'importe
+    quel GR modélisé sommairement aurait été traité de fragment.
+
+    Les deux cas réels mesurés n'ont **ni `ref` ni `network`** : la
+    restriction n'entame pas non plus la mesure de 4 %.
+  */
+  const seul = itinerary.ways.length === 1 ? itinerary.ways[0] : null
+  const premier = seul?.coords[0]
+  const dernier = seul?.coords[seul.coords.length - 1]
+  const boucleFermee =
+    premier !== undefined &&
+    dernier !== undefined &&
+    premier[0] === dernier[0] &&
+    premier[1] === dernier[1]
+
+  const rienDeDeclare =
+    (itinerary.ref === null || itinerary.ref === '') &&
+    itinerary.network === 'INCONNU'
+
+  if (pieces === 1 && seul !== null && !boucleFermee && rienDeDeclare) {
+    warnings.push(
+      'Cette relation ne contient qu’un seul chemin : elle est probablement' +
+        ' incomplète dans OpenStreetMap.',
+    )
+  }
   if (ageDays !== null && ageDays > STALE_DAYS) {
     warnings.push(
       `Tracés téléchargés il y a ${ageDays} jours — « Actualiser les tracés » ira rechercher les corrections apportées depuis.`,
