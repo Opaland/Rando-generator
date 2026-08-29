@@ -837,7 +837,19 @@ aside :is(button, label, p, li, h2, h3, span, output) {
     faisait disparaître avec elle — trouvé par la sonde d'impression au
     premier passage, j'avais supposé la fiche dans le panneau latéral.
   */
-  body > header,
+  /*
+    `[data-testid='en-tete']` et non `body > header` (issue #385).
+
+    Le sélecteur d'origine ne désignait **aucun** élément : React monte dans
+    `#root`, l'en-tête n'est donc pas un enfant direct de `body`. Mesuré en
+    média print, il sortait à 1280×56 en `display: flex` — le logo, le
+    bandeau « Vos traces GPX ne quittent jamais votre navigateur », « Pourquoi
+    Sentiers » et « À propos », sur la fiche de route qu'on met dans sa poche.
+
+    Et le test qui l'affirmait masqué passait sur un sélecteur vide :
+    `toBeHidden()` est satisfait par l'absence.
+  */
+  [data-testid='en-tete'],
   [data-testid='map'],
   [data-testid='pied-panneau'],
   [data-testid='sheet-handle'],

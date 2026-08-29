@@ -53,10 +53,31 @@ test('à l’impression, l’ossature disparaît et la fiche reste', async ({
 
   /*
     `toBeHidden` et non `estAlEcran` : ici on asserte une **absence**, et
-    `display: none` la produit franchement. Le piège du §1bis est l'inverse —
-    croire visible ce qui est écrêté — et il ne s'applique pas à ce sens-là.
+    `display: none` la produit franchement. Le piège du §1bis n'est pas
+    celui-là — croire visible ce qui est écrêté — mais il y en avait un
+    autre, et il a tenu une journée entière.
+
+    ## Ce que cette ligne disait, et pourquoi elle ne prouvait rien
+
+    Elle visait `body > header`. Ce sélecteur ne désigne **aucun** élément :
+    React monte dans `#root`, l'en-tête n'est donc pas un enfant direct de
+    `body`. Et `toBeHidden()` est satisfait par l'absence — le test passait,
+    passerait toujours, et prouvait le contraire de ce qu'on lui demandait.
+
+    Mesuré pendant ce temps, en média print : l'en-tête sortait à 1280×56 en
+    `display: flex`, avec le bandeau de confidentialité, sur la fiche de
+    route (#385).
+
+    **Une assertion d'absence doit d'abord prouver que sa cible existe**,
+    sinon elle mesure sa propre requête. D'où le compte ci-dessous, avant le
+    masquage.
   */
-  await expect(page.locator('body > header')).toBeHidden()
+  await expect(
+    page.getByTestId('en-tete'),
+    'l’en-tête n’existe pas : l’assertion de masquage qui suit mesurerait sa' +
+      ' propre requête et passerait pour rien (#385)',
+  ).toHaveCount(1)
+  await expect(page.getByTestId('en-tete')).toBeHidden()
   /*
     La **carte**, et non `<main>` : la fiche est un `<aside>` rendu dedans.
     Cette assertion disait `main` au premier jet, et elle encodait une
