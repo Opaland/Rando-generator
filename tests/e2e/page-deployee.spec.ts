@@ -154,6 +154,97 @@ test.describe('la page déployée', () => {
     ).toEqual([])
   })
 
+  /**
+   * La politique de sécurité bloque-t-elle quelque chose ? (issues #375, #386)
+   *
+   * ## Pourquoi cette question n'était pas déjà posée
+   *
+   * `politique-dans-la-page.spec.ts` compare la balise à l'en-tête : elle
+   * garde que la politique **est** celle du fichier. Le test ci-dessus garde
+   * qu'aucun de nos assets ne manque. Aucun des deux ne demande ce que le
+   * navigateur **refuse**.
+   *
+   * Et une violation de `connect-src` ne se produit pas au chargement : elle
+   * attend le premier appel tiers, c'est-à-dire le clic sur une zone. La
+   * balise a donc été déployée le 29/08 sans que rien, dans le dépôt, ne
+   * puisse dire si elle grisait la carte pour tout le monde.
+   *
+   * Mesuré à la main ce matin-là : zéro violation, 45 itinéraires ramenés
+   * d'Overpass sur la vraie page. Mais cette sonde-là était jetable, et le
+   * §1bis dit ce qu'elle vaut comme garde — rien. Celle-ci reste.
+   *
+   * ## Ce qu'elle ne fait pas rougir
+   *
+   * L'indisponibilité d'un tiers. Overpass ou l'IGN peuvent tomber ; ce test
+   * ne demande pas que la zone se charge, il demande qu'**aucune violation
+   * ne soit signalée**. Une politique qui bloque le fait savoir, et un
+   * serveur qui répond 500 ne produit aucune violation.
+   *
+   * C'est la même règle que le test précédent, pour la même raison : une
+   * porte qui rougit sur la panne de quelqu'un d'autre cesse d'être lue.
+   */
+  test('la politique ne bloque rien de ce dont l’application a besoin', async ({
+    page,
+  }) => {
+    test.setTimeout(120_000)
+
+    /*
+      Posé **avant** la navigation, et par `addInitScript` plutôt que par un
+      écouteur Playwright : une violation au chargement précède tout ce qu'on
+      pourrait poser après, et c'est précisément celle qu'on vient chercher.
+      La même raison que la collecte des échecs de requête plus haut.
+    */
+    await page.addInitScript(() => {
+      const vues: string[] = []
+      ;(window as unknown as { __violations: string[] }).__violations = vues
+      // Pas de conversion de type : le nom de l'événement suffit à le typer,
+      // et eslint refuse à juste titre une assertion qui n'apprend rien.
+      document.addEventListener('securitypolicyviolation', (violation) => {
+        vues.push(`${violation.violatedDirective} ← ${violation.blockedURI}`)
+      })
+    })
+
+    await relayerSiLeNavigateurNeSortPas(page)
+    await page.goto(URL_DEPLOYEE as string, { timeout: 30_000 })
+
+    const violations = async (): Promise<string[]> =>
+      page.evaluate(
+        () =>
+          (window as unknown as { __violations?: string[] }).__violations ?? [],
+      )
+
+    expect(
+      await violations(),
+      'la politique bloque quelque chose dès le chargement',
+    ).toEqual([])
+
+    /*
+      Puis le geste qui déclenche les appels tiers — tuiles, Overpass, IGN.
+      C'est là que `connect-src` et `img-src` sont réellement éprouvés, et
+      c'est ce que le chargement seul ne dit pas.
+    */
+    const zone = page.getByTestId('zone-pilat')
+    await expect(zone).toBeVisible({ timeout: 20_000 })
+    await zone.click()
+
+    /*
+      On attend que la zone réponde **ou** qu'elle échoue, sans exiger l'un
+      ni l'autre : ce qui est asserté est le relevé des violations, pas la
+      disponibilité d'Overpass. `catch` avale ici une attente, pas une
+      assertion — la distinction du §6ter.
+    */
+    await page
+      .getByTestId('zone-meta')
+      .waitFor({ state: 'visible', timeout: 60_000 })
+      .catch(() => {})
+
+    const apres = await violations()
+    expect(
+      apres,
+      `la politique bloque ce dont l'application a besoin : ${apres.join(' | ')}`,
+    ).toEqual([])
+  })
+
   test('sert la page « pourquoi », qui est un fichier à part', async ({
     page,
   }) => {
