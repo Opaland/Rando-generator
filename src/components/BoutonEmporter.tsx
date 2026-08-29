@@ -21,13 +21,15 @@ import styles from './BoutonEmporter.module.css'
  *
  * Deux choses qu'il faut savoir en le lisant :
  *
- * - **le nombre de tuiles est exact, son poids est inconnu.** L'issue
- *   demandait « le budget affiché avant de lancer », c'est-à-dire des
- *   mégaoctets. Personne n'a mesuré ce que pèse une tuile de la
- *   Géoplateforme sur un secteur de montagne ; annoncer « environ 40 Mo »
- *   serait le nombre inventé que CLAUDE.md §2 interdit. Ce qui s'affiche
- *   avant est donc un compte de tuiles, et ce qui s'affiche pendant et
- *   après sont des octets **reçus**, comptés par le service worker ;
+ * - **le nombre de tuiles est exact ; le poids est mesuré mais pas
+ *   affiché.** L'issue demandait « le budget affiché avant de lancer »,
+ *   c'est-à-dire des mégaoctets. Ils sont connus depuis le 29/08
+ *   (`docs/MESURE_TUILES.md`) — mais un corridor de village pèse « de
+ *   l'ordre de quatre mégaoctets », avec des tuiles qui vont du simple au
+ *   double, et choisir comment dire cette fourchette est une décision, pas
+ *   une mesure (#397). Ce qui s'affiche avant reste donc un compte de
+ *   tuiles, et ce qui s'affiche pendant et après sont des octets **reçus**,
+ *   comptés par le service worker ;
  * - **fermer la fiche arrête le téléchargement.** Le corridor d'un GR de
  *   200 km compte des milliers de tuiles : rien ne doit continuer à
  *   marteler la Géoplateforme derrière un écran qu'on a quitté.
