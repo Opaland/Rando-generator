@@ -44,7 +44,7 @@ describe('les crédits composés rendent ce qui était écrit à la main', () =>
   it('l’attribution du fond IGN, au caractère près', () => {
     expect(ATTRIBUTION).toBe(
       'Fond © <a href="https://www.ign.fr/">IGN</a> (Plan IGN, licence' +
-        ' ouverte Etalab) · Itinéraires © les contributeurs <a' +
+        ' ouverte Etalab 2.0) · Itinéraires © les contributeurs <a' +
         ' href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' +
         ' (ODbL) · Boucles locales © <a' +
         ' href="https://data.grandlyon.com/">Métropole de Lyon</a> (Licence' +
@@ -76,7 +76,7 @@ describe('les crédits composés rendent ce qui était écrit à la main', () =>
   */
   it('la forme texte ne perd pas le nom de la licence', () => {
     expect(attributionTexte(IGN_RELIEF, OSM, METROPOLE)).toBe(
-      'Relief © IGN (Plan IGN, licence ouverte Etalab) · Itinéraires © les' +
+      'Relief © IGN (Plan IGN, licence ouverte Etalab 2.0) · Itinéraires © les' +
         ' contributeurs OpenStreetMap (ODbL) · Boucles locales © Métropole' +
         ' de Lyon (Licence Ouverte)',
     )

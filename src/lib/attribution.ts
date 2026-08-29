@@ -75,11 +75,24 @@ export const OSM: Credit = {
   lien: 'https://www.openstreetmap.org/copyright',
 }
 
-/** Le fond de carte par défaut. */
+/**
+ * Le fond de carte par défaut.
+ *
+ * **« 2.0 » n'est pas décoratif.** La Licence Ouverte a deux versions, et la
+ * seconde n'a pas les mêmes clauses que la première : nommer la licence sans
+ * sa version, c'est nommer deux licences à la fois.
+ *
+ * Retrouvé à la revue du 29/08, et c'était mon erreur : avant elle, la
+ * version était écrite quatre fois — `About.tsx`, trois passages du README —
+ * et omise une seule, dans la chaîne de la carte. En composant les crédits
+ * (#386) j'ai unifié sur **l'omission**, et je l'ai propagée au pied du
+ * panneau et à `pourquoi.html`. La divergence a donc grandi pendant que je
+ * croyais la supprimer.
+ */
 export const IGN: Credit = {
   quoi: 'Fond',
   qui: 'IGN',
-  licence: 'Plan IGN, licence ouverte Etalab',
+  licence: 'Plan IGN, licence ouverte Etalab 2.0',
   lien: 'https://www.ign.fr/',
 }
 
