@@ -344,8 +344,23 @@ async function ouvrirLaFiche(page: Page, compact: boolean): Promise<void> {
  * le doigt touchera ici » — là où les rectangles n'y répondent pas.
  */
 async function recouvrementsDe(page: Page, testId: string) {
-  return page.evaluate((id: string) => {
-    const cible = document.querySelector(`[data-testid="${id}"]`)
+  return recouvrementsDuSelecteur(page, `[data-testid="${testId}"]`)
+}
+
+/**
+ * La même question, posée à un sélecteur quelconque.
+ *
+ * `recouvrementsDe` ne savait viser qu'un `data-testid`, et c'est ce qui a
+ * laissé passer #392 : le contrôle d'attribution de MapLibre n'en porte pas
+ * — il appartient à la bibliothèque — donc la question 1 ne pouvait pas
+ * l'atteindre, et ne l'atteignait pas.
+ *
+ * Généralisée plutôt que recopiée : la grille d'échantillonnage et la règle
+ * « un ancêtre n'est pas un recouvrement » vivent ici une seule fois (§4).
+ */
+async function recouvrementsDuSelecteur(page: Page, selecteur: string) {
+  return page.evaluate((sel: string) => {
+    const cible = document.querySelector(sel)
     if (!cible) return []
     const r = cible.getBoundingClientRect()
     if (r.width < 2 || r.height < 2) return []
@@ -371,7 +386,7 @@ async function recouvrementsDe(page: Page, testId: string) {
       }
     }
     return trouves
-  }, testId)
+  }, selecteur)
 }
 
 /**
@@ -658,6 +673,54 @@ for (const vue of LARGEURS) {
       expect(
         dessus,
         `fiche recouverte à ${vue.nom} par ${JSON.stringify(dessus)}`,
+      ).toEqual([])
+    })
+  })
+}
+
+/**
+ * Le crédit de la carte reste-t-il peint ? (issue #392)
+ *
+ * ## Ce que la question 1 ne demandait pas
+ *
+ * Elle interroge la fiche et les panneaux — tout ce qui porte un
+ * `data-testid`. Le contrôle d'attribution de MapLibre n'en porte pas : il
+ * appartient à la bibliothèque. Il n'était donc dans aucune liste, et la
+ * sonde était verte pendant que, mesuré, **zéro point sur vingt** en était
+ * peint à 390 comme à 800.
+ *
+ * Ce n'est pas un détail d'affichage. L'ODbL et la Licence Ouverte demandent
+ * le crédit sur ce qui est montré ; une mention servie, présente dans le DOM
+ * et recouverte n'est pas une mention. `toContainText` l'aurait pourtant
+ * validée — c'est le §1bis, et il coûte ici une licence.
+ *
+ * ## L'état choisi, et pourquoi celui-là
+ *
+ * « zone chargée », c'est-à-dire la feuille à mi-hauteur : la disposition
+ * livrée dès qu'on choisit une zone, et celle où la carte est visible **en
+ * même temps** que le panneau. C'est là que le crédit est dû et qu'il
+ * manquait.
+ *
+ * La feuille dépliée en grand n'est pas éprouvée ici : elle ne laisse que
+ * 24 px de carte, ce qui n'est pas une carte affichée. Le dire plutôt que de
+ * le taire — c'est une décision, pas une mesure (§2).
+ */
+for (const vue of LARGEURS) {
+  test.describe(`le crédit de la carte reste peint — ${vue.nom}`, () => {
+    test.use({
+      viewport: { width: vue.width, height: vue.height },
+      hasTouch: vue.tactile,
+    })
+
+    test('rien ne recouvre l’attribution de la carte', async ({ page }) => {
+      await atteindre(page, 'zone chargée', vue.tactile)
+      const dessus = await recouvrementsDuSelecteur(
+        page,
+        '.maplibregl-ctrl-attrib-inner',
+      )
+      expect(
+        dessus,
+        `crédit de la carte recouvert à ${vue.nom} par ${JSON.stringify(dessus)}`,
       ).toEqual([])
     })
   })

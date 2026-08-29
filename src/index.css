@@ -243,6 +243,15 @@
      l'attribution (AUDIT_UX.md, constat U4). Deux nombres séparés dérivent
      en silence : c'est déjà arrivé à `--hauteur-onglets`. */
   --hauteur-poignee: 52px;
+  /* Hauteur de la feuille à mi-course, écrite une seule fois.
+     Trois choses en dépendent : la feuille elle-même, la même sous la
+     disposition à onglets (qui lui retranche la barre), et les commandes de
+     la carte, qui doivent passer **au-dessus** d'elle sans quoi le crédit
+     de la carte n'est peint nulle part (issue #392).
+     Le nombre était déjà écrit deux fois avant cette issue. Une troisième
+     copie l'aurait rendu faux le jour où quelqu'un aurait ajusté la
+     feuille — §4ter. */
+  --hauteur-feuille-moitie: 48vh;
   /* Bande réservée en bas de la carte à la mention d'attribution : sa
      hauteur propre, plus tout ce qui la pousse vers le haut (barre d'onglets
      et poignée de la feuille sur téléphone).

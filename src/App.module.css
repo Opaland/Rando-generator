@@ -353,7 +353,7 @@
   .moitie {
     /* Assez pour travailler dans le panneau, en laissant la carte plus
        visible qu'elle ne l'était avant cette disposition (338 px sur 844). */
-    max-height: 48vh;
+    max-height: var(--hauteur-feuille-moitie);
   }
 
   .pleine {
@@ -484,6 +484,40 @@
   }
 }
 
+/*
+  Et quand la feuille est à mi-course, il faut passer au-dessus d'**elle**
+  (issue #392).
+
+  La règle précédente relève les commandes de la barre d'onglets et de la
+  poignée — c'est-à-dire de la feuille **repliée**. Or dès qu'on choisit une
+  zone, la feuille s'ouvre à mi-hauteur : elle monte alors à 48 vh, et le
+  crédit de la carte, relevé de 108 px seulement, se retrouve dessous.
+
+  Mesuré à 390 × 844, zone chargée, vingt points le long de la ligne
+  d'attribution : **zéro** peint. Idem à 800. Le repli compact « (i) » de
+  MapLibre, 24 px, n'était pas peint non plus — il n'y avait donc aucun
+  chemin pour voir à qui la carte est due.
+
+  `--bande-attribution` ne pouvait rien : elle écarte de l'attribution ce qui
+  est peint **sur la carte** — le bouton « Ma position », l'état vide. La
+  feuille, elle, n'est pas sur la carte : elle est par-dessus.
+
+  `:has()` sur le conteneur plutôt qu'une classe portée par la carte : c'est
+  la feuille qui décide, et elle est le frère précédent. Rien à faire
+  remonter en JavaScript pour ça.
+
+  La feuille dépliée en grand n'est pas traitée : elle ne laisse que 24 px de
+  carte, ce qui n'est pas une carte affichée. Décision, pas mesure (§2).
+*/
+@media (max-width: 800px) {
+  .layout:has([data-position='moitie']) .main :global(.maplibregl-ctrl-bottom-left),
+  .layout:has([data-position='moitie']) .main :global(.maplibregl-ctrl-bottom-right) {
+    bottom: calc(
+      var(--hauteur-feuille-moitie) + env(safe-area-inset-bottom, 0px)
+    );
+  }
+}
+
 /* La barre occupe cinquante-quatre pixels, et ils se prennent sur la feuille,
    pas sur la carte. L'audit mobile (constat M1) a rendu la carte dominante
    par décision, pas par accident : la laisser rétrécir à chaque ajout
@@ -492,7 +526,7 @@
    312 px sur 844. */
 @media (max-width: 800px) {
   :root[data-maquette='onglets'] .moitie {
-    max-height: calc(48vh - var(--hauteur-onglets));
+    max-height: calc(var(--hauteur-feuille-moitie) - var(--hauteur-onglets));
   }
 }
 
