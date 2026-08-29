@@ -552,9 +552,11 @@ function App() {
               {/*
                 Composé, plus recopié (issue #386). La formule de l'IGN change
                 au passage : ce pied disait « Fond de carte © IGN (Etalab
-                2.0) » là où la carte dit « Fond © IGN (Plan IGN, licence
+                2.0) » là où la carte disait « Fond © IGN (Plan IGN, licence
                 ouverte Etalab) ». Deux phrases pour une même licence, et
-                aucun diff ne les montrait ensemble — c'est le §4ter.
+                aucun diff ne les montrait ensemble — c'est le §4ter. La
+                phrase composée garde les deux moitiés justes : le nom du
+                produit, et le « 2.0 » que la carte omettait.
               */}
               {attributionTexte(OSM, IGN)} · {MARQUES_FFRANDONNEE}
             </footer>
