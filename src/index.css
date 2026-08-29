@@ -863,6 +863,67 @@ aside :is(button, label, p, li, h2, h3, span, output) {
   }
 
   /*
+    **Le papier n'a pas de hauteur de fenêtre.**
+
+    `html`, `body`, `#root` et la colonne de l'application sont tous en
+    `height: 100%`, et cette colonne est un conteneur flexible dont
+    `[data-testid='layout']` prend le reste par `flex: 1`. À l'écran c'est
+    ce qu'on veut : une application qui tient dans la fenêtre. À
+    l'impression, ça épingle toute la mise en page à **une** hauteur de
+    fenêtre, et tout ce qui dépasse est peint hors de sa boîte, par-dessus
+    ce qui suit.
+
+    Mesuré en média `print`, fiche du GR 7 ouverte, fenêtre de 720 px :
+    `[data-testid='layout']` haut de **608 px**, le `<main>` qu'il contient
+    haut de **1 550 px**. Le crédit ajouté juste après, à 620 px, était
+    recouvert par la liste des points d'intérêt — `elementFromPoint` en son
+    centre rendait un `<li>`, pas lui.
+
+    Le bloc d'impression posait déjà `height: auto !important` sur le
+    layout ; ça ne pouvait rien, parce que la hauteur d'un élément flexible
+    est décidée par son conteneur et non par la sienne. Il fallait défaire
+    la colonne, pas retoucher son enfant.
+
+    Rien de ceci n'a été introduit par le crédit : la feuille se recouvrait
+    déjà elle-même, et personne ne le voyait parce qu'aucune mesure ne
+    demandait **ce qui est peint** sous la fiche.
+  */
+  html,
+  body,
+  #root,
+  [data-testid='app'] {
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
+  [data-testid='app'] {
+    display: block !important;
+  }
+
+  /*
+    Et le crédit, lui, ne sort qu'ici (issue #386).
+
+    La carte est masquée trois règles plus haut, avec le contrôle
+    d'attribution de MapLibre ; le pied du panneau l'est aussi, et il part
+    de toute façon avec la barre latérale dès qu'une fiche est ouverte. La
+    feuille n'avait donc plus aucun porteur — mesuré : ni « ODbL », ni
+    « contributeurs », ni « © » peints en média `print`.
+
+    `block` et non `revert` : le sélecteur qui l'éteint est une classe de
+    module, sa spécificité est la même, et `revert` rendrait la valeur de la
+    feuille de l'auteur — c'est-à-dire `none`. Le test le montrerait, mais
+    autant ne pas l'écrire.
+  */
+  [data-testid='attribution-impression'] {
+    display: block !important;
+    margin-top: var(--espace-6);
+    padding-top: var(--espace-4);
+    border-top: 1px solid #000;
+    font-size: 0.75rem;
+    break-inside: avoid;
+  }
+
+  /*
     **Quand une fiche est ouverte, elle est la feuille.**
 
     Le panneau latéral disparaît alors : Paul veut sa fiche de route, pas le

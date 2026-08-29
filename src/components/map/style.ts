@@ -14,6 +14,13 @@ import {
   GRIS_VERT,
   PAPIER,
 } from '../../lib/couleursPartagees.ts'
+import {
+  attributionHtml,
+  IGN,
+  METROPOLE,
+  OSM,
+  OSM_FOND_ET_TRACES,
+} from '../../lib/attribution.ts'
 import type { Itinerary, PointOfInterest } from '../../core/types.ts'
 import { segmentsDeRevetement } from '../../core/revetement.ts'
 import {
@@ -33,10 +40,14 @@ export const IGN_TILES =
   'https://data.geopf.fr/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&FORMAT=image/png&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}'
 export const OSM_TILES = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
 
-export const ATTRIBUTION =
-  'Fond © <a href="https://www.ign.fr/">IGN</a> (Plan IGN, licence ouverte Etalab) · Itinéraires © les contributeurs <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> (ODbL) · Boucles locales © <a href="https://data.grandlyon.com/">Métropole de Lyon</a> (Licence Ouverte)'
-export const ATTRIBUTION_OSM =
-  'Fond et itinéraires © les contributeurs <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> (ODbL) · Boucles locales © <a href="https://data.grandlyon.com/">Métropole de Lyon</a> (Licence Ouverte)'
+/*
+  Composées, plus recopiées (issue #386). Les chaînes rendues sont exactement
+  celles qui étaient écrites ici — `tests/unit/attribution.test.ts` les épingle
+  au caractère près — et les morceaux vivent désormais dans un seul fichier,
+  d'où la feuille d'impression les tire aussi.
+*/
+export const ATTRIBUTION = attributionHtml(IGN, OSM, METROPOLE)
+export const ATTRIBUTION_OSM = attributionHtml(OSM_FOND_ET_TRACES, METROPOLE)
 
 const NETWORK_COLOR_MATCH: ExpressionSpecification = [
   'match',

@@ -51,6 +51,14 @@ import { useEcranCompact } from './lib/ecran.ts'
 import { pourcentageMesurable } from './core/milestones.ts'
 import { useAppStore } from './store/appStore.ts'
 import styles from './App.module.css'
+import {
+  attributionTexte,
+  IGN,
+  IGN_RELIEF,
+  MARQUES_FFRANDONNEE,
+  METROPOLE,
+  OSM,
+} from './lib/attribution.ts'
 
 // La carte (MapLibre, ~900 kB) est chargée à part : le tableau de bord et les
 // listes sont utilisables immédiatement.
@@ -331,7 +339,13 @@ function App() {
   }, [init])
 
   return (
-    <div className={styles.app}>
+    /*
+      Nommé pour la feuille de style d'impression (issue #386) : elle a
+      besoin de rendre cette colonne haute comme son contenu, et le §385
+      vient de coûter une journée à un sélecteur structurel qui ne
+      désignait rien.
+    */
+    <div className={styles.app} data-testid="app">
       {/*
         `data-testid` plutôt qu'un sélecteur de structure (issue #385).
 
@@ -535,9 +549,14 @@ function App() {
               >
                 Pourquoi Sentiers&nbsp;?
               </a>
-              Itinéraires © les contributeurs OpenStreetMap (ODbL) · Fond de
-              carte © IGN (Etalab 2.0) · GR®, GR de Pays® et PR® sont des
-              marques de la FFRandonnée.
+              {/*
+                Composé, plus recopié (issue #386). La formule de l'IGN change
+                au passage : ce pied disait « Fond de carte © IGN (Etalab
+                2.0) » là où la carte dit « Fond © IGN (Plan IGN, licence
+                ouverte Etalab) ». Deux phrases pour une même licence, et
+                aucun diff ne les montrait ensemble — c'est le §4ter.
+              */}
+              {attributionTexte(OSM, IGN)} · {MARQUES_FFRANDONNEE}
             </footer>
           </div>
         </aside>
@@ -602,6 +621,31 @@ function App() {
           <LocateButton />
         </main>
       </div>
+
+      {/*
+        Le crédit qui ne part que sur le papier (issue #386).
+
+        `@media print` masque la carte — donc le contrôle d'attribution de
+        MapLibre — et le pied du panneau, qui portait le seul autre crédit.
+        Une fiche de route sortait de l'imprimante sans rien devoir à
+        personne, alors que sa distance, son dénivelé, son profil et ses
+        points d'intérêt viennent tous d'OpenStreetMap et de l'IGN. L'ODbL
+        demande le crédit sur toute production dérivée, et une feuille
+        distribuée à un groupe en est une.
+
+        `Relief` et non `Fond` : il n'y a pas de carte sur la feuille, mais
+        il y a le profil altimétrique.
+
+        Caché à l'écran par `src/index.css`, jamais par un attribut : c'est
+        la feuille de style qui décide des supports, et le §1bis demande
+        qu'un test mesure ce qui est **peint** plutôt que ce qui existe.
+      */}
+      <footer
+        className={styles.attributionImpression}
+        data-testid="attribution-impression"
+      >
+        {attributionTexte(OSM, IGN_RELIEF, METROPOLE)} · {MARQUES_FFRANDONNEE}
+      </footer>
 
       {onglets && (
         <BarreOnglets

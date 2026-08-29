@@ -180,3 +180,117 @@ test('le bouton qui imprime existe, se touche, et sort de la feuille', async ({
     .poll(async () => bouton.isVisible(), { timeout: 5_000 })
     .toBe(false)
 })
+
+/**
+ * Ce que la feuille doit aux sources dont elle est tirée (issue #386).
+ *
+ * ## La sonde qui m'a trompé
+ *
+ * Mon premier relevé cherchait « OpenStreetMap » et « IGN » dans ce qui est
+ * peint en média `print`. Les deux étaient là : le test aurait été vert, et
+ * la feuille n'en portait pas moins **aucune attribution**. Ce que les mots
+ * habitaient :
+ *
+ * - « Calculé sur la longueur, d'après ce qu'OpenStreetMap renseigne… » —
+ *   une note de qualité ;
+ * - « Tracé modifié dans OpenStreetMap le 02/04/2019 » — une note de
+ *   fraîcheur ;
+ * - « Ouvrir cette relation dans OpenStreetMap » — un lien ;
+ * - « Le service altimétrique IGN est injoignable… » — un **message
+ *   d'erreur**.
+ *
+ * Le §3 dit de chercher la formule et non le fichier ; c'en est l'autre
+ * moitié — chercher la formule et non le mot. Ce test vise donc ce qui fait
+ * d'une phrase une attribution : le symbole de droit d'auteur et le nom de
+ * la licence, dans le même élément.
+ */
+test('la feuille porte le crédit de ses sources, en toutes lettres', async ({
+  page,
+}) => {
+  await ouvrirUneFiche(page)
+  await page.emulateMedia({ media: 'print' })
+
+  const credit = page.getByTestId('attribution-impression')
+
+  /*
+    L'existence d'abord, comme pour l'en-tête plus haut : ce qui suit sont
+    des assertions de contenu, et `toContainText` sur une requête vide
+    échouerait pour la bonne raison — mais `estAlEcran` rendrait `false`
+    sans qu'on sache si c'est parce que rien n'est peint ou parce que rien
+    n'existe.
+  */
+  await expect(credit).toHaveCount(1)
+
+  /*
+    Peint, pas seulement présent. Une ligne en `display: none` porterait ce
+    texte sans que le papier n'en voie rien — et c'est très exactement l'état
+    d'avant ce correctif, à l'échelle de la page entière (§1bis).
+
+    Amené dans la fenêtre d'abord : `estAlEcran` interroge
+    `document.elementFromPoint`, qui ne connaît que la fenêtre. Sur papier
+    il n'y a pas de fenêtre — la feuille entière est visible — donc faire
+    défiler jusqu'au crédit n'affaiblit rien : c'est la seule façon de poser
+    à un navigateur une question qui parle d'une page entière. Sans ce
+    geste, la mesure rendrait `false` pour une fiche longue et `true` pour
+    une courte, ce qui ne dit rien de l'attribution.
+
+    Et le recouvrement, lui, reste mesuré : c'est justement ce que la ligne
+    ci-dessous a trouvé au premier passage — le crédit était **dans** la
+    fenêtre, à 620 px, et un `<li>` de la liste des points d'intérêt était
+    peint par-dessus, parce que la mise en page d'impression restait
+    épinglée à une hauteur de fenêtre.
+  */
+  /*
+    `scrollIntoView` par le DOM, et non `scrollIntoViewIfNeeded` de
+    Playwright : celui-ci attend que l'élément soit *visible* avant de
+    défiler, donc sur un crédit éteint il tourne cinquante fois en cinquante
+    secondes et rend « element is not visible » — vrai, mais dit par la
+    mauvaise ligne, une minute trop tard, sans la phrase qui explique ce
+    qu'on cherchait. Vérifié en réinjectant le défaut.
+
+    Le geste du DOM ne juge rien : il défile, et c'est la mesure d'après qui
+    tranche, avec son message.
+  */
+  await credit.evaluate((element) => {
+    element.scrollIntoView()
+  })
+  expect(
+    await estAlEcran(page, 'attribution-impression'),
+    'le crédit existe dans le DOM mais rien ne le peint sur la feuille',
+  ).toBe(true)
+
+  await expect(credit).toContainText('©')
+  await expect(credit).toContainText('ODbL')
+  await expect(credit).toContainText('les contributeurs OpenStreetMap')
+  await expect(credit).toContainText('IGN')
+})
+
+test('ce crédit ne se montre qu’au papier', async ({ page }) => {
+  await ouvrirUneFiche(page)
+
+  /*
+    L'autre moitié, et sans elle le correctif serait une ligne de plus dans
+    une interface qui n'en manque pas : le pied du panneau porte déjà le même
+    crédit à l'écran, et deux fois la même phrase à l'écran serait un défaut.
+
+    Le compte d'abord, ici aussi. J'avais écrit « la présence de l'élément
+    vient d'être établie par le test précédent » — un test ne s'appuie pas
+    sur son voisin, ils tournent séparément et peuvent se sauter l'un
+    l'autre. Et la phrase était de la famille du §4bis : une justification
+    qui a l'air d'expliquer et qui affirme. Vérifiée en retirant le crédit
+    du rendu : ce test restait **vert** sur zéro élément, exactement comme
+    `body > header` le faisait dans #385.
+  */
+  await expect(
+    page.getByTestId('attribution-impression'),
+    'le crédit n’existe pas : le masquage qui suit mesurerait sa propre' +
+      ' requête et passerait pour rien (#385, #386)',
+  ).toHaveCount(1)
+  await expect(page.getByTestId('attribution-impression')).toBeHidden()
+
+  /*
+    Et le pied du panneau, lui, dit bien la même chose à l'écran — sinon le
+    masquage ci-dessus retirerait le seul crédit de la page.
+  */
+  await expect(page.getByTestId('pied-panneau')).toContainText('ODbL')
+})

@@ -1,6 +1,7 @@
 import { formatKm } from './format.ts'
 import { NETWORK_COLORS } from './networkDisplay.ts'
 import { ENCRE, GRIS_VERT, PAPIER } from './couleursPartagees.ts'
+import { attributionTexte, OSM } from './attribution.ts'
 import type { Summary } from '../core/summary.ts'
 
 /** Format des cartes d'aperçu des réseaux sociaux (1,91:1). */
@@ -90,11 +91,13 @@ function drawSummaryCard(
     64,
     CARD_HEIGHT - 60,
   )
-  ctx.fillText(
-    'Itinéraires © les contributeurs OpenStreetMap (ODbL)',
-    64,
-    CARD_HEIGHT - 28,
-  )
+  /*
+    Seul OSM : l'image de partage ne montre aucun fond de carte, et les
+    boucles de la Métropole n'entrent pas dans le bilan qu'elle dessine.
+    C'est une composition, pas une recopie — le nom de la licence ne
+    s'écrit plus ici (issue #386).
+  */
+  ctx.fillText(attributionTexte(OSM), 64, CARD_HEIGHT - 28)
 }
 
 /** Fabrique l'image PNG du bilan, entièrement en mémoire. */
