@@ -429,9 +429,16 @@
     </main>
 
     <footer>
-      Itinéraires © les contributeurs OpenStreetMap (ODbL) · Fond de carte © IGN
-      (Etalab 2.0) · GR®, GR de Pays® et PR® sont des marques de la FFRandonnée.
-      Sentiers est indépendant. ·
+      <!--
+        Recopié, faute de pouvoir être importé : cette page est servie telle
+        quelle, hors du bundle. `npm run listes` reconstruit cette phrase
+        depuis src/lib/attribution.ts et échoue si elle diverge — c'est ce
+        qui l'a rattrapée le 29/08, quand l'application est passée à « Fond ©
+        IGN (Plan IGN, licence ouverte Etalab) » et pas elle (issue #386).
+      -->
+      Itinéraires © les contributeurs OpenStreetMap (ODbL) · Fond © IGN (Plan
+      IGN, licence ouverte Etalab) · GR®, GR de Pays® et PR® sont des marques
+      de la FFRandonnée. Sentiers est indépendant. ·
       <a href="https://github.com/Opaland/Rando-generator">Code source</a>
     </footer>
   </body>

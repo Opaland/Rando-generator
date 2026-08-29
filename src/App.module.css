@@ -86,6 +86,23 @@
   padding-top: var(--espace-5);
 }
 
+/*
+  Le crédit qui n'existe que sur le papier (issue #386).
+
+  `display: none` à l'écran, et non `visibility` ni un décalage hors cadre :
+  la ligne ne doit occuper aucune place, ni être lue par un lecteur d'écran
+  qui trouverait déjà la même chose au pied du panneau. `src/index.css` la
+  rallume dans son bloc `@media print`.
+
+  Le bloc d'impression vit là-bas et pas ici parce que c'est là que sont
+  toutes les décisions de support — les modules CSS sont découpés par
+  composant, l'impression est découpée par média, et mélanger les deux avait
+  déjà fait perdre une règle (§4ter).
+*/
+.attributionImpression {
+  display: none;
+}
+
 .dbWarning {
   margin: 0;
   padding: var(--espace-4) var(--espace-7);
