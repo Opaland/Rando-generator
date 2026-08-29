@@ -828,6 +828,25 @@ aside :is(button, label, p, li, h2, h3, span, output) {
   (`decrireBalisage`). Une imprimante noir et blanc est le daltonisme de #360
   poussé à son terme : ici, le canal texte existait déjà.
 */
+/*
+  La balise peinte (issue #381).
+
+  Dimensionnée en `em` : elle grandit avec le texte qu'elle accompagne, donc
+  avec le mode gros texte, sans qu'aucun pixel ne soit choisi. `1.15em` la
+  rend un peu plus haute que la capitale voisine — assez pour qu'on
+  distingue deux moitiés, pas assez pour qu'elle domine la ligne.
+
+  `vertical-align: -0.2em` cale son bas sur la ligne de base du texte plutôt
+  que sur son sommet : sans ça elle flotte au-dessus des mots.
+*/
+.balise-peinte {
+  width: 1.15em;
+  height: 1.15em;
+  vertical-align: -0.2em;
+  margin-right: 0.4em;
+  flex: none;
+}
+
 @media print {
   /*
     Le fond blanc et l'encre noire sont imposés : `--blanc-papier` est un
