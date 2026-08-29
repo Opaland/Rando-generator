@@ -119,7 +119,11 @@ export function BoutonEmporter({
           })
         }}
       >
-        {libelleTelechargement(progres, ressources.tuiles.length)}
+        {libelleTelechargement(
+          progres,
+          ressources.tuiles.length,
+          ressources.octetsEstimes,
+        )}
       </button>
       {progres === null && !sansServiceWorker && (
         <p className={styles.aide}>

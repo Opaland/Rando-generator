@@ -8,6 +8,10 @@ import {
   estAltimetrie,
   estTuileCarte,
   ressourcesDeLaRandonnee,
+  poidsEstimeDesTuiles,
+  POIDS_MOYEN_PAR_ZOOM,
+  ZOOMS_TERRAIN,
+  RAYON_CORRIDOR_METRES,
 } from '../../src/core/telechargement.ts'
 import { IGN_TILES, OSM_TILES } from '../../src/components/map/style.ts'
 import { buildElevationLineUrl } from '../../src/core/elevation.ts'
@@ -70,7 +74,7 @@ describe('ce qu’une randonnée emporte', () => {
   it('ne demande rien pour un itinéraire sans géométrie', () => {
     expect(
       ressourcesDeLaRandonnee([], { zooms: [14], rayonMetres: 500 }),
-    ).toEqual({ tuiles: [], altimetrie: null })
+    ).toEqual({ tuiles: [], altimetrie: null, octetsEstimes: 0 })
   })
 
   it('rend les tuiles du corridor et l’adresse du profil', () => {
@@ -165,5 +169,75 @@ describe('ce qui n’est pas emporté (revue globale du 23/08)', () => {
     const hote = new URL(OSM_TILES.replace(/\{[zxy]\}/g, '1')).hostname
     expect(res.tuiles.some((url) => url.includes(hote))).toBe(false)
     expect(res.tuiles.length).toBeGreaterThan(0)
+  })
+})
+
+
+/**
+ * Issue #397 volet 2 — annoncer un poids, et pas seulement un compte.
+ *
+ * Le poids d'une tuile est mesuré depuis le 29/08 (`docs/MESURE_TUILES.md`).
+ * Reste à décider ce qu'on en affiche, et le §2 range cette décision-là du
+ * côté de ce qui se tranche au jugement : elle ne change **rien** à ce qui
+ * est téléchargé, seulement à ce qui en est dit.
+ *
+ * Ce qui est éprouvé ici, ce n'est pas l'exactitude de l'estimation — elle
+ * n'en a pas, c'est une estimation. C'est qu'elle **ne sous-estime pas** :
+ * une annonce trop basse est une promesse rompue au moment où quelqu'un
+ * regarde son forfait, une annonce trop haute est une bonne surprise.
+ */
+describe('le poids estimé du corridor (#397)', () => {
+  it('somme les tuiles à leur poids moyen mesuré, zoom par zoom', () => {
+    const estime = poidsEstimeDesTuiles([
+      { z: 16, x: 0, y: 0 },
+      { z: 16, x: 1, y: 0 },
+      { z: 12, x: 0, y: 0 },
+    ])
+    expect(estime).toBe(
+      2 * POIDS_MOYEN_PAR_ZOOM[16]! + POIDS_MOYEN_PAR_ZOOM[12]!,
+    )
+  })
+
+  it('ne rend rien sans tuile, plutôt qu’un « 0 Mo » rassurant', () => {
+    expect(poidsEstimeDesTuiles([])).toBe(0)
+  })
+
+  /*
+    Un zoom hors de ZOOMS_TERRAIN n'a pas été mesuré. Le compter à zéro
+    ferait une estimation silencieusement trop basse — exactement ce que ce
+    volet cherche à éviter. On lui donne le poids le plus lourd mesuré :
+    c'est faux, mais faux du bon côté, et la tuile est comptée.
+  */
+  it('compte une tuile d’un zoom non mesuré au plus lourd connu', () => {
+    const inconnu = poidsEstimeDesTuiles([{ z: 9, x: 0, y: 0 }])
+    expect(inconnu).toBe(Math.max(...Object.values(POIDS_MOYEN_PAR_ZOOM)))
+  })
+
+  /*
+    Le corridor de « Les Vallons de la Beffe » pèse 4,6 Mo mesurés
+    (docs/MESURE_TUILES.md). L'estimation doit être au-dessus, et pas de
+    beaucoup : trop haute, elle décourage pour rien.
+  */
+  it('majore la mesure réelle sans l’exagérer', () => {
+    const MESURE_REELLE = 4_600_000
+    const corridor = [
+      ...Array.from({ length: 9 }, (_, i) => ({ z: 12, x: i, y: 0 })),
+      ...Array.from({ length: 9 }, (_, i) => ({ z: 13, x: i, y: 0 })),
+      ...Array.from({ length: 9 }, (_, i) => ({ z: 14, x: i, y: 0 })),
+      ...Array.from({ length: 12 }, (_, i) => ({ z: 15, x: i, y: 0 })),
+      ...Array.from({ length: 30 }, (_, i) => ({ z: 16, x: i, y: 0 })),
+    ]
+    const estime = poidsEstimeDesTuiles(corridor)
+    expect(estime).toBeGreaterThan(MESURE_REELLE)
+    expect(estime).toBeLessThan(MESURE_REELLE * 1.3)
+  })
+
+  it('accompagne les adresses de son estimation', () => {
+    const ressources = ressourcesDeLaRandonnee(TRACE, {
+      zooms: ZOOMS_TERRAIN,
+      rayonMetres: RAYON_CORRIDOR_METRES,
+    })
+    expect(ressources.octetsEstimes).toBeGreaterThan(0)
+    expect(ressources.tuiles.length).toBeGreaterThan(0)
   })
 })

@@ -7,10 +7,11 @@ réclamait en toutes lettres depuis #153 :
 > Ce qu'il faudrait pour trancher mieux : le poids réel d'une tuile IGN sur
 > un secteur de montagne.
 
-Faute de ce nombre, `src/components/BoutonEmporter.tsx` affiche un **compte de
-tuiles** et non des mégaoctets — annoncer « environ 40 Mo » aurait été le
-nombre inventé que le §2 interdit. Ce document ne change pas ce que le bouton
-affiche : c'est une décision de rédaction, et elle appartient à **#397**.
+Faute de ce nombre, `src/components/BoutonEmporter.tsx` a longtemps affiché un
+**compte de tuiles** et rien d'autre — annoncer « environ 40 Mo » aurait été le
+nombre inventé que le §2 interdit. Depuis **#397**, il annonce les deux : le
+compte, exact, et le poids, approché. Ce que ces mesures ont rendu possible et
+la façon dont il est calculé sont en fin de document.
 
 ## Comment la mesure est prise
 
@@ -105,9 +106,31 @@ zoom le plus fin ».
 
 ## Ce qui a changé dans le code
 
-Rien de ce que voit un utilisateur. Trois commentaires disaient « personne n'a
-mesuré ce que pèse une tuile de la Géoplateforme » ; c'était vrai jusqu'à
-aujourd'hui, et le §4bis veut qu'une justification qui vieillit soit relue.
-Ils renvoient maintenant ici, en disant que **ce qui s'affiche reste un compte
-de tuiles tant que #397 n'a pas tranché** — parce que passer du chiffre mesuré
-à un chiffre affiché n'est pas une mesure, c'est une décision.
+**Le bouton annonce désormais les deux** : « 69 tuiles, environ 4,9 Mo ». Le
+compte est exact, le poids ne l'est pas et le dit.
+
+L'estimation se calcule avec `POIDS_MOYEN_PAR_ZOOM` (`src/core/telechargement.ts`),
+qui retient **le plus lourd des deux terrains, zoom par zoom** :
+
+| zoom | retenu | d'où |
+|-----:|-------:|---|
+| 12 |  89 838 | montagne |
+| 13 | 105 422 | montagne |
+| 14 |  96 539 | ville |
+| 15 |  73 093 | ville |
+| 16 |  53 707 | ville |
+
+Ce n'est le profil d'aucun terrain réel, et c'est délibéré : l'écart entre
+ville et montagne change de signe avec le zoom, donc aucun des deux ne majore
+l'autre. Sur le corridor mesuré, la règle donne 4,9 Mo pour 4,6 Mo réels —
+elle majore de 6 % là où elle a été calibrée, de 27 % en Chartreuse. Une
+annonce trop basse est une promesse rompue au moment où quelqu'un regarde son
+forfait ; une annonce trop haute est une bonne surprise.
+
+Ces cinq nombres vivent à deux endroits — ici et dans le code — et ne changent
+jamais ensemble. `npm run listes` compare les deux et échoue en nommant le zoom
+qui a dérivé (§4ter, remède 2).
+
+Trois commentaires disaient « personne n'a mesuré ce que pèse une tuile de la
+Géoplateforme » ; c'était vrai jusqu'au 29/08 au matin, et le §4bis veut qu'une
+justification qui vieillit soit relue. Ils renvoient maintenant ici.

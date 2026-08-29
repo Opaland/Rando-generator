@@ -216,9 +216,17 @@ test.describe('emporter une randonnée depuis la fiche', () => {
     /*
       `toHaveText` et non `toContainText` : « Emporter cette randonnée »
       seul serait accepté par le second, et c'est précisément le cas qu'on
-      veut voir échouer — un bouton qui n'annoncerait aucun compte.
+      veut voir échouer — un bouton qui n'annoncerait ni compte ni poids.
+
+      Les deux sont exigés depuis #397, et pas seulement l'un des deux : le
+      compte parce qu'il est exact, le poids parce que c'est la question
+      qu'on se pose avant d'appuyer. « environ » est dans le motif — c'est
+      ce mot qui distingue une estimation d'une promesse, et le retirer
+      serait un changement de sens, pas de style.
     */
-    await expect(bouton).toHaveText(/^Emporter cette randonnée \(\d+ tuiles?\)$/)
+    await expect(bouton).toHaveText(
+      /^Emporter cette randonnée \(\d+ tuiles?, environ [\d,]+ [kM]?o\)$/,
+    )
 
     await bouton.click()
 

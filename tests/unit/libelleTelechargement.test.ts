@@ -16,34 +16,48 @@ import {
 const MO = 1024 * 1024
 
 /**
- * Issue #153 — « avec le budget affiché avant de lancer ».
+ * Issue #153 — « avec le budget affiché avant de lancer », puis #397.
  *
- * L'issue demande des mégaoctets. Elle ne les aura pas avant de lancer, et
- * il faut dire pourquoi : **personne n'a mesuré ce que pèse une tuile de la
- * Géoplateforme.** Annoncer « environ 40 Mo » serait exactement le nombre
- * inventé que CLAUDE.md §2 interdit — un chiffre caché derrière un mot
- * rassurant, plus difficile à contester qu'un chiffre affiché.
+ * L'issue demandait des mégaoctets. Elle ne les a pas eus pendant trois
+ * jours, et pour une bonne raison : personne n'avait mesuré ce que pèse une
+ * tuile de la Géoplateforme, et annoncer « environ 40 Mo » aurait été le
+ * nombre inventé que CLAUDE.md §2 interdit.
  *
- * Ce qui est affiché à la place est **exact** : le nombre de tuiles avant,
- * les octets réellement reçus pendant et après. Le jour où la mesure
- * existera, l'estimation pourra s'ajouter ; d'ici là, on ne promet que ce
- * qu'on sait.
+ * **La mesure existe depuis le 29/08** (`docs/MESURE_TUILES.md`), et le
+ * bouton annonce donc les deux : un compte de tuiles, qui est exact, et un
+ * poids, qui ne l'est pas et le dit.
+ *
+ * Ce qui est éprouvé ici est la **forme** de cette phrase. Que l'estimation
+ * majore la mesure réelle est éprouvé ailleurs, dans
+ * `telechargement.test.ts`, là où vit le calcul.
  */
 
 describe('avant de lancer', () => {
-  it('annonce le nombre de tuiles, qui est connu exactement', () => {
-    expect(libelleTelechargement(null, 104)).toBe(
-      'Emporter cette randonnée (104 tuiles)',
+  it('annonce le compte exact et le poids approché', () => {
+    expect(libelleTelechargement(null, 104, 7 * MO)).toBe(
+      'Emporter cette randonnée (104 tuiles, environ 7 Mo)',
     )
   })
 
   it('se contente du verbe quand il n’y a rien à compter', () => {
-    expect(libelleTelechargement(null, 0)).toBe('Emporter cette randonnée')
+    expect(libelleTelechargement(null, 0, 0)).toBe('Emporter cette randonnée')
   })
 
   it('accorde le singulier', () => {
-    expect(libelleTelechargement(null, 1)).toBe(
-      'Emporter cette randonnée (1 tuile)',
+    expect(libelleTelechargement(null, 1, 60_000)).toBe(
+      'Emporter cette randonnée (1 tuile, environ 58 ko)',
+    )
+  })
+
+  /*
+    Une estimation absente n'est pas une estimation nulle. Si le calcul ne
+    peut rien dire, le bouton se tait sur le poids plutôt que d'annoncer
+    « environ 0 o » — un chiffre faux et rassurant, ce que le §2 range parmi
+    les pires.
+  */
+  it('tait le poids plutôt que d’annoncer zéro', () => {
+    expect(libelleTelechargement(null, 104, 0)).toBe(
+      'Emporter cette randonnée (104 tuiles)',
     )
   })
 })
@@ -54,6 +68,7 @@ describe('pendant', () => {
       libelleTelechargement(
         { faites: 37, total: 104, octets: 2.4 * MO, echecs: 0, fini: false },
         104,
+        0,
       ),
     ).toBe('37 / 104 · 2,4 Mo')
   })
@@ -63,6 +78,7 @@ describe('pendant', () => {
       libelleTelechargement(
         { faites: 0, total: 104, octets: 0, echecs: 0, fini: false },
         104,
+        0,
       ),
     ).toBe('0 / 104 · 0 o')
   })
@@ -74,6 +90,7 @@ describe('après', () => {
       libelleTelechargement(
         { faites: 104, total: 104, octets: 6.1 * MO, echecs: 0, fini: true },
         104,
+        0,
       ),
     ).toBe('Emportée · 6,1 Mo')
   })
@@ -88,6 +105,7 @@ describe('après', () => {
       libelleTelechargement(
         { faites: 104, total: 104, octets: 5.9 * MO, echecs: 3, fini: true },
         104,
+        0,
       ),
     ).toBe('Emportée · 5,9 Mo · 3 manquantes')
   })
@@ -97,6 +115,7 @@ describe('après', () => {
       libelleTelechargement(
         { faites: 10, total: 10, octets: 1_000, echecs: 1, fini: true },
         10,
+        0,
       ),
     ).toContain('1 manquante')
   })
