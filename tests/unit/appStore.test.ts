@@ -352,6 +352,69 @@ describe('loadZone', () => {
     ).toMatch(/en partie|surestim/i)
   })
 
+  /**
+   * Un itinéraire long est souvent découpé en tronçons dans OSM : la relation
+   * parente ne porte que des relations filles, aucun chemin. `parseOverpassResponse`
+   * l'écarte, et sans ce message elle disparaît **sans un mot** — le pire des
+   * trois échecs de zone, parce que c'est le seul qui ne se voit pas.
+   *
+   * Mesuré autour de Porcelette (#400) : deux relations sur neuf. Mais leurs
+   * filles étaient là, donc rien n'était perdu — d'où le second test.
+   */
+  it('signale un itinéraire découpé dont aucun tronçon n’est revenu', async () => {
+    const orpheline = {
+      type: 'relation',
+      id: 9001,
+      tags: { route: 'hiking', name: 'GR fantôme' },
+      members: [{ type: 'relation', ref: 90_001 }],
+    }
+    fetchMock.mockImplementation((url: string) =>
+      Promise.resolve(
+        url.includes('interpreter')
+          ? reponseOverpass({
+              ...pilat,
+              elements: [...pilat.elements, orpheline],
+            })
+          : new Response('{}', { status: 200 }),
+      ),
+    )
+    await useAppStore.getState().init()
+    await useAppStore.getState().loadZone('pilat')
+    const etat = useAppStore.getState()
+    expect(etat.itineraries).toHaveLength(3)
+    expect(
+      etat.zoneError,
+      'un itinéraire écarté disparaît sans que rien ne le dise',
+    ).toMatch(/découpé en tronçons/i)
+  })
+
+  it('ne signale rien quand un tronçon de l’itinéraire découpé est là', async () => {
+    const parente = {
+      type: 'relation',
+      id: 9002,
+      tags: { route: 'hiking', name: 'GR 7 découpé' },
+      // 1001 est la première relation de la fixture du Pilat : elle est
+      // rendue, donc le tracé est à l'écran et il n'y a rien à signaler.
+      members: [{ type: 'relation', ref: 1001 }],
+    }
+    fetchMock.mockImplementation((url: string) =>
+      Promise.resolve(
+        url.includes('interpreter')
+          ? reponseOverpass({
+              ...pilat,
+              elements: [...pilat.elements, parente],
+            })
+          : new Response('{}', { status: 200 }),
+      ),
+    )
+    await useAppStore.getState().init()
+    await useAppStore.getState().loadZone('pilat')
+    expect(
+      useAppStore.getState().zoneError,
+      'avertir quand rien ne manque apprend à ignorer les avertissements',
+    ).toBeNull()
+  })
+
   it('réutilise le cache au second chargement', async () => {
     await useAppStore.getState().init()
     await useAppStore.getState().loadZone('pilat')

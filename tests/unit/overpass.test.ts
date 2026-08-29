@@ -8,6 +8,7 @@ import {
   buildAroundQuery,
   RAYON_AUTOUR_METERS,
   parseOverpassResponse,
+  relationsPerdues,
   fetchOverpass,
   OverpassError,
   OVERPASS_MIRRORS,
@@ -862,5 +863,93 @@ describe('libelleDeZone', () => {
     expect(libelleDeZone('autour:Saint-Étienne', 'Autour de Saint-Étienne')).toBe(
       'Autour de Saint-Étienne',
     )
+  })
+})
+
+/*
+  Une relation d'itinéraire peut n'avoir que des relations filles — c'est la
+  forme normale d'un long itinéraire découpé en tronçons, et OSM l'appelle une
+  super-relation. `parseOverpassResponse` l'écarte, puisqu'elle n'a aucun
+  membre de type `way`.
+
+  Mesuré le 29/08 autour de Porcelette : deux relations sur neuf sont dans ce
+  cas — GR 5G et Via Regia (issue #400). Les deux nomment les mêmes trois
+  filles, dont l'une était bien dans la réponse : rien n'était perdu, et
+  prévenir aurait été un faux positif.
+
+  D'où la question posée ici : non pas « une relation a-t-elle été écartée »,
+  mais « son tracé est-il absent de ce qui reste ». La différence est tout
+  l'écart entre une alerte utile et une alerte qu'on apprend à ignorer.
+
+  Cette fonction lit le **résultat** et non la règle qui écarte. Relire la
+  condition `ways.length === 0` en serait une seconde écriture, et le §4ter
+  dit ce qu'il advient de deux listes qui disent la même règle : elles
+  dérivent. Ici, une relation écartée pour un motif qu'on n'a pas prévu est
+  attrapée quand même.
+*/
+describe('relationsPerdues', () => {
+  const enfantPresent = {
+    type: 'relation',
+    id: 20,
+    tags: { route: 'hiking', name: 'GR 5G' },
+    members: [
+      {
+        type: 'way',
+        ref: 200,
+        geometry: [
+          { lat: 45.4, lon: 4.5 },
+          { lat: 45.4, lon: 4.51 },
+        ],
+      },
+    ],
+  }
+  const superRelation = (id: number, enfants: number[]) => ({
+    type: 'relation',
+    id,
+    tags: { route: 'hiking', name: `super ${String(id)}` },
+    members: enfants.map((ref) => ({ type: 'relation', ref })),
+  })
+
+  it('ne signale rien quand une fille de la super-relation est là', () => {
+    const data = { elements: [superRelation(10, [20, 21, 22]), enfantPresent] }
+    const perdues = relationsPerdues(data, parseOverpassResponse(data, FETCHED_AT))
+    expect(perdues).toEqual([])
+  })
+
+  it('signale la super-relation dont aucune fille n’est revenue', () => {
+    const data = { elements: [superRelation(10, [98, 99]), enfantPresent] }
+    const perdues = relationsPerdues(data, parseOverpassResponse(data, FETCHED_AT))
+    expect(perdues).toEqual([10])
+  })
+
+  it('ne signale pas une relation qui a bien donné un itinéraire', () => {
+    const data = { elements: [enfantPresent] }
+    const perdues = relationsPerdues(data, parseOverpassResponse(data, FETCHED_AT))
+    expect(perdues).toEqual([])
+  })
+
+  it('ignore les relations qui ne sont pas des itinéraires', () => {
+    const data = {
+      elements: [
+        { type: 'relation', id: 30, tags: { type: 'boundary' }, members: [] },
+        enfantPresent,
+      ],
+    }
+    const perdues = relationsPerdues(data, parseOverpassResponse(data, FETCHED_AT))
+    expect(perdues).toEqual([])
+  })
+
+  /*
+    Ce test dit l'inverse de ce que j'avais écrit d'abord. La fixture du Pilat
+    porte une « Relation sans géométrie » dont l'unique membre est un nœud :
+    ma première version la signalait, et faisait rougir un test qui passait
+    depuis toujours. Elle avait raison contre moi — cette relation-là n'a de
+    tracé nulle part, ni ici ni dans OSM, et prévenir pour elle serait le faux
+    positif qui apprend à ignorer l'alerte suivante (§1bis).
+  */
+  it('ne signale pas une relation sans fille : son tracé n’existe nulle part', () => {
+    const data = { elements: [superRelation(10, []), enfantPresent] }
+    const perdues = relationsPerdues(data, parseOverpassResponse(data, FETCHED_AT))
+    expect(perdues).toEqual([])
   })
 })

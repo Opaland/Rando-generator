@@ -30,6 +30,7 @@ import {
   fetchOverpass,
   OverpassError,
   parseOverpassResponse,
+  relationsPerdues,
   RAYON_AUTOUR_METERS,
   ZONES,
   libelleDeZone,
@@ -282,6 +283,26 @@ export function trancheZone(deps: DependancesZone): ActionsZone {
             zoneError:
               'Les serveurs OpenStreetMap ont interrompu la requête : cette zone n’est affichée qu’en partie. Vos pourcentages sont donc surestimés. Essayez un secteur plus petit pour l’avoir en entier.',
           })
+        } else {
+          /*
+            Un itinéraire découpé en tronçons dont aucun tronçon n'est revenu
+            (#400). Ce cas passe après les deux autres parce qu'il est le
+            moins grave des trois : une zone vide ou tronquée se voit, celui-ci
+            ne se voit pas du tout.
+
+            `relationsPerdues` ne compte que ce qui est réellement absent —
+            une super-relation dont une fille est là ne perd rien, et prévenir
+            alors serait le faux positif qui apprend à ignorer l'alerte
+            suivante.
+          */
+          const perdues = relationsPerdues(data, itineraries)
+          if (perdues.length > 0) {
+            const pluriel = perdues.length > 1
+            deps.set({
+              zoneError:
+                `${String(perdues.length)} itinéraire${pluriel ? 's' : ''} de cette zone ${pluriel ? 'sont découpés' : 'est découpé'} en tronçons qu’OpenStreetMap n’a pas rendus : ${pluriel ? 'ils ne sont donc pas affichés' : 'il n’est donc pas affiché'}. Le reste de la zone est complet.`,
+            })
+          }
         }
         await deps.recompute()
       } catch (error) {
