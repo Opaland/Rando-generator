@@ -104,8 +104,16 @@ export function ressourcesDeLaRandonnee(
  * objet sur un GR — et chaque zoom supplémentaire quadruple le nombre de
  * tuiles. Mesuré sur 2,3 km de GR : 104 tuiles pour ces cinq zooms.
  *
- * Ce qu'il faudrait pour trancher mieux : le poids réel d'une tuile IGN sur
- * un secteur de montagne, que personne n'a relevé.
+ * Ce qu'il faudrait pour trancher mieux était le poids réel d'une tuile IGN
+ * sur un secteur de montagne. Il est mesuré depuis le 29/08 —
+ * `docs/MESURE_TUILES.md`, `npm run poids-tuiles` — et il dit quelque chose
+ * d'inattendu pour ce choix-ci : le poids **culmine au zoom 13** et
+ * redescend ensuite. Une tuile z16 de Chartreuse pèse 3,6 fois moins qu'une
+ * z13, donc « chaque zoom supplémentaire quadruple le nombre de tuiles » ne
+ * se traduit pas en quadruplement du poids.
+ *
+ * Ce que la mesure ne dit toujours pas, c'est où couper : elle donne un
+ * coût, pas une utilité. Le choix de 12–16 reste posé au jugement.
  */
 export const ZOOMS_TERRAIN = [12, 13, 14, 15, 16]
 
@@ -122,13 +130,17 @@ export const RAYON_CORRIDOR_METRES = 500
 /**
  * Ce que dit le bouton, aux trois moments de sa vie.
  *
- * Avant : le nombre de tuiles. C'est ce qu'on sait exactement, et c'est
- * tout ce qu'on sait — l'issue #153 demandait « le budget affiché avant de
- * lancer », c'est-à-dire des mégaoctets, et elle ne les aura pas : personne
- * n'a mesuré ce que pèse une tuile de la Géoplateforme sur un secteur de
- * montagne. Annoncer « environ 40 Mo » reviendrait à cacher un nombre
- * inventé derrière un mot rassurant (CLAUDE.md §2). Le jour où la mesure
- * existera, elle se posera ici sans rien déplacer d'autre.
+ * Avant : le nombre de tuiles. C'est ce qu'on sait exactement — l'issue
+ * #153 demandait « le budget affiché avant de lancer », c'est-à-dire des
+ * mégaoctets, et annoncer « environ 40 Mo » sans les avoir mesurés aurait
+ * caché un nombre inventé derrière un mot rassurant (CLAUDE.md §2).
+ *
+ * **La mesure existe désormais** (`docs/MESURE_TUILES.md`), et ce n'est pas
+ * pour autant qu'un chiffre s'affiche ici : passer d'un poids mesuré à un
+ * poids annoncé demande de décider comment dire une fourchette qui va du
+ * simple au double. C'est une décision de rédaction, elle est ouverte en
+ * #397, et le §2 la range du côté de ce qui se tranche — à condition de le
+ * dire, ce que fait cette phrase.
  *
  * Pendant et après : des octets réellement reçus, comptés par le service
  * worker. Là, le chiffre est mesuré, et il peut être affiché sans réserve.
