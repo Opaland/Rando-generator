@@ -586,11 +586,142 @@ out tags;`)
     ligne('ressource couvre la France, pas le monde, quoi qu’en dise son')
     ligne('suffixe `_wld`.')
     ligne('')
-    ligne('Ce que ça ne dit pas, et qui manque encore à #316 : le pas de la')
-    ligne('grille par zone. Le service répond « Variable suivant la source de')
-    ligne('mesure », donc il ne le dira pas. Il faut la spécification produit')
-    ligne('RGE ALTI — et tant qu’elle n’est pas lue, `PAS_MINIMAL_METRES` ne')
-    ligne('bouge pas : le §2 interdit de changer un seuil qui décide de ce qui')
-    ligne('est calculé sur une justification qu’on vient de trouver fausse.')
+    ligne('Ce que ça ne dit pas : le pas de la grille. Le service répond')
+    ligne('« Variable suivant la source de mesure », donc il ne le dira pas.')
+    ligne('La mesure 8 ne le lui demande plus — elle le lui fait montrer.')
+  })
+
+  /**
+   * Le pas réel du modèle, mesuré sur ce qu'il rend — et non lu dans une
+   * spécification.
+   *
+   * La mesure 7 concluait qu'il fallait la fiche produit RGE ALTI, qui n'est
+   * pas lisible autrement que par un script. C'était chercher la réponse au
+   * mauvais endroit : ce qui décide de `PAS_MINIMAL_METRES` n'est pas la
+   * finesse à laquelle l'IGN publie, c'est **la finesse à laquelle le service
+   * nous répond**. Un modèle publié au mètre mais reéchantillonné en chemin
+   * ne nous donnerait pas le mètre, et c'est le nôtre qui compte.
+   *
+   * ## Comment on la lit sans se tromper
+   *
+   * Un profil demandé le long d'une droite rend un escalier : l'altitude ne
+   * change qu'en franchissant une cellule. La longueur d'une marche est donc
+   * le pas — **à condition que ce ne soit pas notre échantillonnage qu'on
+   * mesure**. D'où le contrôle : la même portion de terrain est demandée avec
+   * quatre densités de points. Si le nombre d'altitudes distinctes ne bouge
+   * pas, la marche est dans le sol ; s'il suit le nombre de points demandés,
+   * elle est dans la requête et la mesure ne vaut rien.
+   *
+   * C'est le §1bis appliqué à une sonde : une mesure qui pourrait donner ce
+   * chiffre-là pour une raison qu'on n'a pas voulue n'est pas une mesure.
+   *
+   * Le terrain plat ne sert à rien ici : deux cellules voisines y portent
+   * légitimement la même altitude, et les marches se confondent. On mesure
+   * donc sur des versants.
+   */
+  it('8 — le pas réel du modèle de terrain (#316)', { timeout: 600_000 }, async () => {
+    titre('#316 — à quelle finesse le service altimétrique répond-il')
+
+    const PORTEE_METRES = 30
+    const VERSANTS = [
+      { nom: 'Chartreuse', lon: 5.83, lat: 45.35 },
+      { nom: 'Belledonne', lon: 6.0, lat: 45.18 },
+      { nom: 'Pilat', lon: 4.61, lat: 45.4 },
+    ] as const
+
+    /** Les altitudes le long d'une droite, en `points` relevés. */
+    async function altitudes(
+      lon: number,
+      lat: number,
+      points: number,
+      vers: 'est' | 'nord',
+    ): Promise<number[]> {
+      const span =
+        vers === 'est'
+          ? PORTEE_METRES / (111_320 * Math.cos((lat * Math.PI) / 180))
+          : PORTEE_METRES / 110_540
+      const lons: string[] = []
+      const lats: string[] = []
+      for (let i = 0; i < points; i += 1) {
+        const t = (span * i) / (points - 1)
+        lons.push((vers === 'est' ? lon + t : lon).toFixed(9))
+        lats.push((vers === 'nord' ? lat + t : lat).toFixed(9))
+      }
+      const adresse =
+        'https://data.geopf.fr/altimetrie/1.0/calcul/alti/rest/elevationLine.json' +
+        `?lon=${lons.join('|')}&lat=${lats.join('|')}` +
+        '&resource=ign_rge_alti_wld&delimiter=|&indent=false&measures=false&zonly=false'
+      /*
+        Un refus du proxy rend « Host not in allowlist », qui n'est pas du
+        JSON : la première version tombait dessus et emportait toute la
+        mesure. Une colonne vide se lit, une exception ne se lit pas.
+      */
+      try {
+        const reponse = await fetch(adresse)
+        const corps = (await reponse.json()) as {
+          elevations?: { z?: number }[]
+        }
+        return (corps.elevations ?? [])
+          .map((e) => e.z)
+          .filter((z): z is number => z !== undefined && z > -9000)
+      } catch {
+        return []
+      }
+    }
+
+    ligne('Contrôle : la même portion de terrain, demandée quatre fois avec')
+    ligne('des densités différentes. Si les altitudes distinctes ne bougent')
+    ligne('pas, l’escalier est dans le sol et non dans la requête.')
+    ligne('')
+    ligne('versant          sens   16 pts  31 pts  61 pts  121 pts   → pas')
+
+    for (const versant of VERSANTS) {
+      for (const vers of ['est', 'nord'] as const) {
+        const comptes: string[] = []
+        let dernier = 0
+        for (const points of [16, 31, 61, 121]) {
+          const zs = await altitudes(versant.lon, versant.lat, points, vers)
+          dernier = new Set(zs).size
+          comptes.push(zs.length === 0 ? '—' : String(dernier))
+          await patienter(REPOS_ENTRE_POINTS_IGN_MS)
+        }
+        const pas =
+          dernier > 0 ? `${(PORTEE_METRES / dernier).toFixed(2)} m` : '—'
+        ligne(
+          `${versant.nom.padEnd(16)} ${vers.padEnd(6)} ` +
+            comptes.map((c) => c.padStart(6)).join('  ') +
+            `   ${pas.padStart(7)}`,
+        )
+      }
+    }
+
+    ligne('')
+    ligne('À lire : les quatre colonnes doivent porter le même nombre. C’est')
+    ligne('ce qui distingue une résolution du sol d’un artefact de sonde — et')
+    ligne('sans cette colonne-là, le chiffre de droite ne prouverait rien.')
+    ligne('')
+    ligne('Ce que la mesure du 29/08 a donné : dix altitudes distinctes sur')
+    ligne('30 m vers l’est et sept vers le nord, aux trois versants et pour')
+    ligne('les quatre densités — soit 3,00 m et 4,29 m. L’écart entre les deux')
+    ligne('sens est constant d’un site à l’autre et ne dépend pas de la pente')
+    ligne('(mesurée de 10 % à 86 %).')
+    ligne('')
+    ligne('Ces deux nombres sous-estiment la marche, et il faut le dire : les')
+    ligne('cellules des deux bouts sont tronquées par la portée, donc diviser')
+    ligne('30 m par le compte donne moins que le pas réel. Une seconde façon')
+    ligne('de le mesurer — relever les paliers un par un à 0,25 m — a rendu')
+    ligne('3,25 à 3,50 m vers l’est et 4,75 m vers le nord. Les deux')
+    ligne('estimateurs encadrent : le pas est de 3,0–3,5 m vers l’est et de')
+    ligne('4,3–4,8 m vers le nord.')
+    ligne('')
+    ligne('Ce que ça règle pour `PAS_MINIMAL_METRES` (src/core/pente.ts) : une')
+    ligne('pente calculée sous 4,8 m lit l’escalier du modèle et non le')
+    ligne('terrain. Le plancher de 5 m tombe juste au-dessus de la plus longue')
+    ligne('marche des deux estimateurs. Il tient — et 1 m, l’autre candidat de')
+    ligne('l’issue, aurait été faux d’un facteur quatre.')
+    ligne('')
+    ligne('Ce que ça ne dit pas : à quel pas l’IGN **publie** RGE ALTI. On a')
+    ligne('mesuré ce que le service rend, ce qui est la question utile ici, et')
+    ligne('c’est la seule que ces chiffres autorisent à trancher (§2).')
   })
 })
