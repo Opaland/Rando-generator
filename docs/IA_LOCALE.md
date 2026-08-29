@@ -163,10 +163,11 @@ modèle arrivera, la question ne sera pas « est-ce que ça marche ? » mais
 
 Points d'attention, tous déjà rencontrés dans ce dépôt :
 
-- **le modèle se télécharge à la demande**, exactement comme « Emporter cette
-  randonnée » : un bouton, un poids annoncé, un cache de service worker, et
-  ça marche hors ligne ensuite. Le vocabulaire existe déjà, il n'y a rien à
-  inventer ;
+- **le modèle se télécharge à la demande**, comme « Emporter cette
+  randonnée » : un bouton, une taille annoncée, un cache de service worker,
+  et ça marche hors ligne ensuite. Le vocabulaire existe déjà, il n'y a rien
+  à inventer. Ce que le bouton annonce est un **compte de tuiles**, pas des
+  mégaoctets — voir la section 6 pour ce qui sépare les deux cas ;
 - **le plongement tourne dans un `WebWorker`**. Le fil principal peint une
   carte ; le bloquer trois secondes pour une recherche est un défaut avant
   d'être une lenteur ;
@@ -227,7 +228,15 @@ un sentier, on suit ce que l'écran dit.
   qualité du modèle. C'est la promesse de l'en-tête.
 - **Aucune fonctionnalité existante ne dépendra du modèle.** Il s'ajoute, il
   ne remplace rien.
-- **Le poids s'annonce avant le téléchargement**, en mégaoctets mesurés — la
-  règle du bouton « Emporter », et la même raison.
+- **Le poids s'annonce avant le téléchargement**, en mégaoctets — la taille du
+  fichier ONNX est connue d'avance, ce n'est pas une estimation de terrain.
+  C'est le **complément** de la règle du bouton « Emporter », qui refuse au
+  contraire d'annoncer des mégaoctets avant et affiche un compte de tuiles :
+  le poids d'un corridor dépend du terrain, et personne ne l'avait mesuré
+  quand ce bouton a été écrit (§2).
+
+  La règle commune n'est donc pas « annoncer le poids », c'est **« ne rien
+  annoncer qu'on n'ait mesuré »**. Elle donne un chiffre ici et un compte de
+  tuiles là, et c'est cohérent (issue #373).
 - **La génération est écartée** tant que le rapport entre ce qu'elle coûte
   (2,1 Go) et ce qu'elle apporte n'a pas changé d'un ordre de grandeur.
