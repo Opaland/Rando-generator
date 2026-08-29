@@ -30,11 +30,11 @@ export interface Pente {
 /**
  * La longueur en deçà de laquelle une pente n'est pas calculée (issue #316).
  *
- * **Ce nombre est emprunté, pas choisi** — c'est le pas annoncé du modèle
- * numérique de terrain que la Géoplateforme sert sous la ressource
+ * **Ce nombre est mesuré, pas choisi** — c'est le pas auquel le service
+ * altimétrique de la Géoplateforme répond réellement sous la ressource
  * `ign_rge_alti_wld`, appelée par `src/core/elevation.ts`. Le §2 distingue un
- * seuil inventé d'un seuil pris à une source publiée ; celui-ci est de la
- * seconde espèce, comme les 24 px de WCAG 2.5.8 ailleurs dans ce dépôt.
+ * seuil inventé d'un seuil établi ; celui-ci est de la seconde espèce, comme
+ * les 24 px de WCAG 2.5.8 ailleurs dans ce dépôt.
  *
  * ## Ce que le service dit de lui-même, mesuré
  *
@@ -59,17 +59,35 @@ export interface Pente {
  * histoire plausible ; les trois `-99999` la réfutent. Une justification
  * vieillit comme le reste, et celle-là était fausse dès l'écriture (§4bis).
  *
- * ## Ce qui reste à établir, et pourquoi le nombre ne bouge pas
+ * ## Ce qui l'établit, mesuré le 29/08
  *
- * Que RGE ALTI soit publié au pas de 1 m **ou** 5 m selon les zones n'a pas
- * été reconfirmé sur une source publiée : la fiche produit de l'IGN est
- * rendue par script et ne se lit pas ainsi. Tant que ce n'est pas établi,
- * `PAS_MINIMAL_METRES` ne bouge pas : il décide de **ce qui est calculé**, et
- * le §2 interdit d'inventer un tel seuil — ou d'en changer sur une
- * justification qu'on vient de trouver fausse.
+ * La question était restée ouverte parce qu'on la posait au mauvais endroit :
+ * on cherchait la finesse à laquelle l'IGN **publie**, dans une fiche produit
+ * rendue par script et illisible autrement. Or ce qui décide ici est la
+ * finesse à laquelle le service **nous répond** — un modèle publié au mètre
+ * mais reéchantillonné en chemin ne nous donnerait pas le mètre.
  *
- * Ce qui trancherait : la spécification produit RGE ALTI, qui donne le pas de
- * la grille par zone. Suivi en #316.
+ * Elle se mesure. Un profil demandé le long d'une droite rend un escalier :
+ * l'altitude ne change qu'en changeant de cellule. La mesure 8 de
+ * `tests/unit/mesuresReseau.test.ts` relève, sur trois versants distants de
+ * plus de cent kilomètres — Chartreuse, Belledonne, Pilat :
+ *
+ * - **3,0 à 3,5 m** vers l'est, **4,3 à 4,8 m** vers le nord ;
+ * - la même chose aux trois sites, et **indépendamment de la pente**, relevée
+ *   de 10 % à 86 %.
+ *
+ * Le contrôle est ce qui rend la mesure valable : la même portion de terrain
+ * est demandée avec 16, 31, 61 puis 121 points, et le nombre d'altitudes
+ * distinctes ne bouge pas. L'escalier est donc dans le sol, pas dans la
+ * requête. Sans cette colonne-là, on aurait mesuré sa propre sonde — §1bis.
+ *
+ * **Le plancher de 5 m tombe juste au-dessus de la plus longue marche.** Il
+ * tient, et 1 m — l'autre candidat de l'issue — aurait été faux d'un facteur
+ * quatre.
+ *
+ * Ce que la mesure ne dit pas : à quel pas RGE ALTI est publié. On n'a mesuré
+ * que ce qui nous est servi, et c'est la seule chose que ces chiffres
+ * autorisent à affirmer.
  *
  * Ce que ce plancher change concrètement, et qui ne dépend pas de ce débat :
  * une dénivelée de 3 m sur 40 cm — deux nœuds OSM d'une courbe serrée —
