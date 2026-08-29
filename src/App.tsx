@@ -332,7 +332,19 @@ function App() {
 
   return (
     <div className={styles.app}>
-      <header className={styles.header}>
+      {/*
+        `data-testid` plutôt qu'un sélecteur de structure (issue #385).
+
+        La feuille d'impression le masquait par `body > header` — qui ne
+        désigne **rien** : React monte dans `#root`, cet en-tête n'est donc
+        pas un enfant direct de `body`. La règle ne s'appliquait pas, et le
+        bandeau de confidentialité sortait sur la fiche de route.
+
+        Un sélecteur qui dépend de l'endroit où React monte est fragile par
+        construction ; les six autres lignes du même bloc CSS visent déjà un
+        testid.
+      */}
+      <header className={styles.header} data-testid="en-tete">
         <div className={styles.brand}>
           <span className="balise" aria-hidden="true">
             <span />
