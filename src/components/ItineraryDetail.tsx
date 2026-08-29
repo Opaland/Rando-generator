@@ -17,6 +17,7 @@ import {
 } from '../lib/poiDisplay.ts'
 import { NETWORK_BADGES } from '../lib/networkDisplay.ts'
 import { decrireBalisage } from '../core/balisage.ts'
+import { BalisePeinte } from './BalisePeinte.tsx'
 import { partsDeRevetement } from '../core/revetement.ts'
 import { dateDeReleve, declareQuelqueChose } from '../core/releveOsm.ts'
 import { lienSortant } from '../core/lienSortant.ts'
@@ -298,6 +299,21 @@ export function ItineraryDetail() {
             */}
             {balisage && (
               <p className={styles.balisage} data-testid="detail-balisage">
+                {/*
+                  Et dessinée quand on sait la dessiner (issue #381).
+
+                  Mesuré : trois figures — les deux moitiés, le rectangle, la
+                  crête — couvrent 17 des 18 balises rencontrées sur 26
+                  relations réelles. Le reste garde la phrase seule, parce
+                  qu'un dessin approximatif affirme plus fort qu'une
+                  description prudente.
+
+                  Le dessin ne remplace jamais les mots : `BalisePeinte` est
+                  `aria-hidden`, et la phrase qui suit reste ce que lisent un
+                  lecteur d'écran, une imprimante noir et blanc et un
+                  daltonien (#360).
+                */}
+                <BalisePeinte tag={itin.osmcSymbol ?? undefined} />
                 Balisé&nbsp;: {balisage}
                 {itin.operator ? ` — ${itin.operator}` : ''}
               </p>
