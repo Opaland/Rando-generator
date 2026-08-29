@@ -321,11 +321,11 @@ L'application s'installe et se relance **sans réseau** une fois visitée
 - ce qu'on a **emporté exprès** : la fiche d'un itinéraire porte un bouton
   « Emporter cette randonnée » qui met de côté le fond de carte d'un corridor
   de 500 m autour du tracé (zooms 12 à 16) et son profil altimétrique. Le
-  nombre de tuiles est annoncé avant, les octets reçus sont comptés pendant —
-  aucun poids n'est estimé avant, bien que le poids d'un corridor soit
-  mesuré (`docs/MESURE_TUILES.md`) : dire une fourchette qui va du simple au
-  double est une décision de rédaction, pas une mesure. Fermer la fiche
-  arrête le téléchargement.
+  nombre de tuiles est annoncé avant et il est exact ; le poids annoncé à
+  côté est une **estimation**, tirée du poids moyen d'une tuile mesuré par
+  zoom (`docs/MESURE_TUILES.md`) et volontairement majorante. Les octets
+  réellement reçus sont comptés pendant et après. Fermer la fiche arrête le
+  téléchargement.
 
   Ce qui est emporté **n'est pas rogné** : le cache de navigation, lui, est
   borné à 600 tuiles et taillé du plus ancien, et y ranger un
