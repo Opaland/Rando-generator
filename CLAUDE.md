@@ -348,6 +348,29 @@ avait raison au moment où il a répondu. La seule parade est de tenir une
 porte pour indivisible : tant qu'elle tourne, l'arbre ne bouge pas. Un
 résultat obtenu autrement se jette, il ne se discute pas.
 
+**Et le 29/08, la même famille sur le serveur de prévisualisation.** J'avais
+réinjecté un défaut dans `deploy/csp.conf` — les deux miroirs Overpass
+retirés — vérifié que le test rougissait, restauré le fichier, reconstruit :
+**toujours rouge**.
+
+`npm run preview` sert `dist/` depuis le disque à chaque requête, et le
+§6quater le dit. Mais l'**en-tête** de politique ne vient pas de `dist/` :
+`politiqueDeSecurite()` lit `deploy/csp.conf` au chargement de la
+configuration, une fois, au démarrage du serveur. La balise dans la page
+était restaurée, l'en-tête envoyé ne l'était pas, et un navigateur applique
+l'**intersection** des deux. Overpass restait bloqué par un fichier que
+j'avais sous les yeux, correct.
+
+Ce qui a tranché est d'avoir comparé les deux porteurs plutôt que de
+supposer — `curl -D-` d'un côté, `grep` sur la page de l'autre — au lieu de
+relancer au hasard.
+
+La leçon n'est pas propre à la CSP : **un même serveur peut servir une
+partie de sa réponse depuis le disque et une autre depuis un instantané pris
+au démarrage.** « Le serveur relit tout à chaque requête » était une
+justification qui affirme, et le §4bis dit ce qu'elles valent. Après avoir
+touché un fichier lu par `vite.config.ts`, on redémarre.
+
 ## 6quinquies. Un test qui ne regarde qu'un écran ne garde qu'un écran
 
 Les règles d'écran (`tests/e2e/regles-d-ecran.spec.ts`) posent cinq
