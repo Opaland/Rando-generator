@@ -214,22 +214,37 @@ describe('le poids estimé du corridor (#397)', () => {
   })
 
   /*
-    Le corridor de « Les Vallons de la Beffe » pèse 4,6 Mo mesurés
-    (docs/MESURE_TUILES.md). L'estimation doit être au-dessus, et pas de
-    beaucoup : trop haute, elle décourage pour rien.
+    Les deux corridors de `docs/MESURE_TUILES.md`, avec leur poids réellement
+    pesé. Le commentaire de POIDS_MOYEN_PAR_ZOOM affirme de combien
+    l'estimation les majore ; ces deux nombres sont donc **assertés** et non
+    racontés.
+
+    La revue du 30/08 est ce qui l'a rendu nécessaire : j'avais écrit « 27 % »
+    à trois endroits pour une majoration qui en fait 25. Personne ne relit un
+    pourcentage dans un commentaire — c'est exactement le mode d'échec du
+    §4bis, et le remède qu'il indique est de le faire vérifier par un test.
   */
-  it('majore la mesure réelle sans l’exagérer', () => {
-    const MESURE_REELLE = 4_600_000
-    const corridor = [
-      ...Array.from({ length: 9 }, (_, i) => ({ z: 12, x: i, y: 0 })),
-      ...Array.from({ length: 9 }, (_, i) => ({ z: 13, x: i, y: 0 })),
-      ...Array.from({ length: 9 }, (_, i) => ({ z: 14, x: i, y: 0 })),
-      ...Array.from({ length: 12 }, (_, i) => ({ z: 15, x: i, y: 0 })),
-      ...Array.from({ length: 30 }, (_, i) => ({ z: 16, x: i, y: 0 })),
-    ]
-    const estime = poidsEstimeDesTuiles(corridor)
-    expect(estime).toBeGreaterThan(MESURE_REELLE)
-    expect(estime).toBeLessThan(MESURE_REELLE * 1.3)
+  const corridor = (mix: Record<number, number>) =>
+    Object.entries(mix).flatMap(([z, n]) =>
+      Array.from({ length: n }, (_, i) => ({ z: Number(z), x: i, y: 0 })),
+    )
+
+  it('majore de 5,5 % le corridor sur lequel elle est calibrée', () => {
+    const estime = poidsEstimeDesTuiles(
+      corridor({ 12: 9, 13: 9, 14: 9, 15: 12, 16: 30 }),
+    )
+    const PESE_REELLEMENT = 4_847_163
+    expect(estime).toBeGreaterThan(PESE_REELLEMENT)
+    expect(estime / PESE_REELLEMENT - 1).toBeCloseTo(0.055, 3)
+  })
+
+  it('majore de 25 % le même corridor en montagne', () => {
+    const estime = poidsEstimeDesTuiles(
+      corridor({ 12: 9, 13: 9, 14: 9, 15: 9, 16: 30 }),
+    )
+    const PESE_REELLEMENT = 3_911_541
+    expect(estime).toBeGreaterThan(PESE_REELLEMENT)
+    expect(estime / PESE_REELLEMENT - 1).toBeCloseTo(0.251, 3)
   })
 
   it('accompagne les adresses de son estimation', () => {
