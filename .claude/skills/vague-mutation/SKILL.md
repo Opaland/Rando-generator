@@ -13,7 +13,7 @@ module neuf, et surtout à *lire*.
 ## Lancer
 
 ```bash
-npm run mutation          # ciblage dans stryker.config.json
+npm run mutation          # ciblage dans stryker.config.mjs
 ```
 
 Cibler les modules du lot, pas tout `src/core` — une vague de sept modules

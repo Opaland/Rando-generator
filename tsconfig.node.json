@@ -23,6 +23,7 @@
   },
   "include": [
     "vite.config.ts",
+    "vitest.mutation.config.ts",
     "playwright.config.ts",
     "src/lib/baliseDePolitique.ts",
     "tests/e2e",
