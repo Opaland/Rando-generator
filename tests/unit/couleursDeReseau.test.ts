@@ -216,6 +216,12 @@ describe('la couleur de l’itinéraire international (#335)', () => {
     const distances = autres.map((r) =>
       ecart(inter, deuteranope(enRvb(NETWORK_COLORS[r]))),
     )
+    /*
+      Quarante, et non vingt : ce n'est pas le repère de lisibilité, c'est une
+      borne posée ici pour séparer le bleu retenu (55,0) des deux pistes
+      écartées (25,3 et 27,0). Elle est tranchée au jugement, et le §2 veut
+      qu'on le dise plutôt que de la faire passer pour un seuil emprunté.
+    */
     expect(Math.min(...distances)).toBeGreaterThan(40)
   })
 

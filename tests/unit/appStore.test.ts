@@ -530,6 +530,88 @@ describe('loadZone', () => {
     expect(etat.zoneLoading).toBe(false)
   })
 
+  /**
+   * Le troisième chemin de #404, trouvé à la revue du lot du 30/08.
+   *
+   * La PR de #404 affirmait avoir couvert « les deux chemins de `loadZone` —
+   * la réponse fraîche et le cache ». **Il y en a trois.** Quand les miroirs
+   * sont injoignables, l'application retombe sur le cache même périmé, et
+   * n'annonçait que l'injoignabilité : une zone tronquée y repassait muette,
+   * avec ses pourcentages surestimés.
+   *
+   * C'est le §4 pour la cinquième fois dans ce dépôt — trois gardes de
+   * démonstration écrites à la main, une quatrième oubliée, et la PR qui
+   * déclarait l'exhaustivité. La garde nommée existait pourtant déjà : je ne
+   * l'ai simplement pas appelée ici.
+   */
+  it('redit ce qui manque même quand les serveurs sont injoignables', async () => {
+    fetchMock.mockImplementation((url: string) =>
+      Promise.resolve(
+        url.includes('interpreter')
+          ? reponseOverpass({ ...pilat, remark: 'Please note: ...' })
+          : new Response('{}', { status: 200 }),
+      ),
+    )
+    await useAppStore.getState().init()
+    await useAppStore.getState().loadZone('pilat')
+
+    const db = useAppStore.getState().db
+    const cache = await db?.getZone('pilat')
+    if (cache) {
+      await db?.saveZone({ ...cache, fetchedAt: '2020-01-01T00:00:00Z' })
+    }
+    fetchMock.mockImplementation(() =>
+      Promise.reject(new Error('réseau coupé')),
+    )
+    await useAppStore.getState().loadZone('pilat')
+
+    const etat = useAppStore.getState()
+    expect(etat.itineraries).toHaveLength(3)
+    expect(
+      etat.zoneError,
+      'la panne des miroirs est dite, mais pas que la zone est tronquée',
+    ).toMatch(/injoignables/i)
+    expect(
+      etat.zoneError,
+      'les pourcentages sont surestimés et plus rien ne le dit',
+    ).toMatch(/surestim/i)
+  })
+
+  /**
+   * L'autre bout, et il tient à un mot : « Réessayez avec “Actualiser les
+   * tracés” » est le conseil de la zone vide, et c'est un **mauvais** conseil
+   * quand les serveurs sont justement injoignables — il enverrait quelqu'un
+   * refaire ce qui vient d'échouer.
+   *
+   * Sur ce chemin, on ne redit donc que ce que le cache porte sur sa
+   * complétude. Le vide se voit à l'écran ; il n'a pas besoin d'être annoncé
+   * avec une marche à suivre qui ne marchera pas.
+   */
+  it('ne conseille pas d’actualiser pendant que les serveurs sont à terre', async () => {
+    fetchMock.mockImplementation((url: string) =>
+      Promise.resolve(
+        url.includes('interpreter')
+          ? reponseOverpass({ elements: [] })
+          : new Response('{}', { status: 200 }),
+      ),
+    )
+    await useAppStore.getState().init()
+    await useAppStore.getState().loadZone('pilat')
+
+    const db = useAppStore.getState().db
+    const cache = await db?.getZone('pilat')
+    if (cache) {
+      await db?.saveZone({ ...cache, fetchedAt: '2020-01-01T00:00:00Z' })
+    }
+    fetchMock.mockImplementation(() =>
+      Promise.reject(new Error('réseau coupé')),
+    )
+    await useAppStore.getState().loadZone('pilat')
+
+    expect(useAppStore.getState().zoneError).toMatch(/injoignables/i)
+    expect(useAppStore.getState().zoneError).not.toMatch(/Actualiser/i)
+  })
+
   it('explique l’échec quand il n’y a rien en cache', async () => {
     await useAppStore.getState().init()
     fetchMock.mockImplementation(() =>
