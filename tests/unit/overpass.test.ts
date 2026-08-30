@@ -951,6 +951,120 @@ describe('libelleDeZone', () => {
   dérivent. Ici, une relation écartée pour un motif qu'on n'a pas prévu est
   attrapée quand même.
 */
+/*
+  Quatre trous trouvés en injectant un par un les survivants d'`overpass.ts`
+  signalés par la vague du 30/08 (#406). Deux autres se sont révélés
+  équivalents à l'injection, et sont dits comme tels plus bas.
+*/
+describe('les questions que la vague a posées (#406)', () => {
+  /*
+    `buildZoneQuery('zone-qui-nexiste-pas')` n'était appelé nulle part.
+    Retirer la garde, ou vider son message, ne faisait rougir personne — et
+    le type de l'erreur compte : `OverpassError` porte un message affichable
+    tel quel, un `TypeError` sur `zone.areaSelectors` n'en porte pas.
+  */
+  it('refuse une zone inconnue, avec un message qui la nomme', () => {
+    expect(() => buildZoneQuery('zone-qui-nexiste-pas')).toThrow(OverpassError)
+    expect(() => buildZoneQuery('zone-qui-nexiste-pas')).toThrow(
+      /zone-qui-nexiste-pas/,
+    )
+  })
+
+  /*
+    Le commentaire de `buildRefQuery` promet une recherche « tolérante sur les
+    espaces ». `\s+` remplacé par `\s` survivait : la promesse n'était tenue
+    que pour un espace unique, et personne ne l'aurait su.
+  */
+  it('cherche une ref à espaces multiples comme une ref à espace simple', () => {
+    expect(buildRefQuery('GR  7')).toBe(buildRefQuery('GR 7'))
+  })
+
+  /*
+    Les identifiants d'OSM ne partagent pas d'espace de noms : une relation et
+    un chemin peuvent porter le même nombre. Le premier passage indexe les
+    tags **des chemins seulement** ; sans ce filtre, les tags d'une relation
+    iraient se ranger sous l'identifiant d'un chemin homonyme, et ressortiraient
+    attachés à lui.
+
+    Aucune fixture n'avait cette collision, donc rien ne gardait le filtre.
+  */
+  it('n’attribue pas à un chemin les tags d’une relation de même identifiant', () => {
+    const MEME_ID = 777
+    const data = {
+      elements: [
+        {
+          type: 'relation',
+          id: MEME_ID,
+          tags: { route: 'hiking', surface: 'asphalt' },
+          members: [
+            {
+              type: 'way',
+              ref: MEME_ID,
+              geometry: [
+                { lat: 45.4, lon: 4.5 },
+                { lat: 45.4, lon: 4.51 },
+              ],
+            },
+          ],
+        },
+        { type: 'way', id: MEME_ID },
+      ],
+    }
+    const [itineraire] = parseOverpassResponse(data, FETCHED_AT)
+    expect(
+      itineraire!.ways[0]!.tags,
+      'le chemin n’a aucun tag : ceux de la relation ne doivent pas lui échoir',
+    ).toBeUndefined()
+  })
+
+  /*
+    Le balisage peint (#286) : `osmc:symbol` remplacé par une clé vide
+    survivait, donc rien n'assurait qu'il traverse le parseur. C'est le champ
+    dont #377 a montré qu'il disparaissait en silence.
+  */
+  it('emporte osmc:symbol et operator quand la relation les porte', () => {
+    const data = {
+      elements: [
+        {
+          type: 'relation',
+          id: 800,
+          tags: {
+            route: 'hiking',
+            'osmc:symbol': 'red:red:white_bar',
+            operator: 'FFRandonnée',
+          },
+          members: [
+            {
+              type: 'way',
+              ref: 801,
+              geometry: [
+                { lat: 45.4, lon: 4.5 },
+                { lat: 45.4, lon: 4.51 },
+              ],
+            },
+          ],
+        },
+      ],
+    }
+    const [itineraire] = parseOverpassResponse(data, FETCHED_AT)
+    expect(itineraire!.osmcSymbol).toBe('red:red:white_bar')
+    expect(itineraire!.operator).toBe('FFRandonnée')
+  })
+
+  /*
+    Deux survivants qu'on ne rechassera pas, injectés et vérifiés sans effet :
+
+    - retirer `element.type !== 'relation'` du second passage laisse les
+      chemins entrer, mais un chemin n'a pas de membres, donc `ways.length`
+      vaut zéro et il ressort une ligne plus bas ;
+    - remplacer `if (utiles)` par `true` range `undefined` dans la table des
+      tags, et `tagsParWay.get()` rendait déjà `undefined` pour une clé
+      absente.
+
+    Dire d'un survivant qu'il n'en est pas un fait partie de la lecture (§6bis).
+  */
+})
+
 describe('relationsPerdues', () => {
   const enfantPresent = {
     type: 'relation',
