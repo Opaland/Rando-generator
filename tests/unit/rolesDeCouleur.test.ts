@@ -57,7 +57,11 @@ const FEUILLES: Record<string, string> = import.meta.glob(
 /** Les jetons de carte, et le rôle d'interface qui leur correspond. */
 const ROLES: { carte: string; role: string; quoi: string }[] = [
   { carte: '--blanc-papier', role: '--papier', quoi: 'la surface' },
-  { carte: '--vert-noir', role: '--encre', quoi: 'l’encre' },
+  {
+    carte: '--vert-noir',
+    role: '--encre pour l’interface, --encre-balisage sur un aplat de réseau',
+    quoi: 'l’encre',
+  },
   { carte: '--gris-vert', role: '--encre-douce', quoi: 'le texte secondaire' },
 ]
 

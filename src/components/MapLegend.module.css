@@ -19,7 +19,7 @@
   display: grid;
   gap: var(--espace-3);
   padding: var(--espace-4) var(--espace-5);
-  background: rgba(250, 247, 242, 0.92);
+  background: rgba(var(--papier-rvb), 0.92);
   border: 1px solid var(--gris-vert-clair);
   border-radius: var(--rayon-lg);
   font-size: var(--texte-appui);

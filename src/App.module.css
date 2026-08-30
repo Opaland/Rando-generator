@@ -9,8 +9,8 @@
   align-items: baseline;
   gap: var(--espace-7);
   padding: var(--espace-5) var(--espace-7);
-  background: var(--encre);
-  color: var(--papier);
+  background: var(--panneau-inverse);
+  color: var(--encre-inverse);
   flex-wrap: wrap;
 }
 
@@ -41,9 +41,9 @@
      l'en-tête : les rater renvoie sur la carte, qui prend le geste pour un
      déplacement. */
   min-height: var(--cible-mini);
-  border: 1px solid rgba(250, 247, 242, 0.4);
+  border: 1px solid rgba(var(--encre-inverse-rvb), 0.4);
   background: none;
-  color: var(--papier);
+  color: var(--encre-inverse);
   border-radius: var(--rayon-md);
   padding: var(--espace-2) var(--espace-6);
   font-size: var(--texte-secondaire);
@@ -55,7 +55,7 @@
 }
 
 .aboutLink:hover {
-  background: rgba(250, 247, 242, 0.12);
+  background: rgba(var(--encre-inverse-rvb), 0.12);
 }
 
 /* Même allure que le bouton « À propos » voisin, mais c'est un lien. */
@@ -287,7 +287,7 @@
     display: block;
     margin-bottom: var(--espace-4);
     font-size: var(--texte-secondaire);
-    color: var(--rouge-balisage);
+    color: var(--rouge-balisage-lisible);
   }
 
   .privacyLong {

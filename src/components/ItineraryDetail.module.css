@@ -66,8 +66,8 @@
     dégradé fixe n'aurait pas su faire.
   */
   background-image:
-    linear-gradient(var(--papier) 30%, rgba(250, 247, 242, 0)),
-    linear-gradient(rgba(250, 247, 242, 0), var(--papier) 70%),
+    linear-gradient(var(--papier) 30%, rgba(var(--papier-rvb), 0)),
+    linear-gradient(rgba(var(--papier-rvb), 0), var(--papier) 70%),
     linear-gradient(rgba(30, 43, 35, 0.16), rgba(30, 43, 35, 0)),
     linear-gradient(rgba(30, 43, 35, 0), rgba(30, 43, 35, 0.16));
   background-position:
@@ -125,7 +125,17 @@
 
 .PR {
   background: var(--jaune-pr);
-  color: var(--encre);
+  /*
+    L'encre **du balisage**, et non celle de l'interface (#361).
+
+    Ce texte est posé sur un aplat de balisage, qui ne change pas avec le
+    thème : un aplat jaune de PR reste jaune la nuit. Son texte ne peut donc
+    pas suivre l'interface — en sombre, `--encre` devient clair et le couple
+    tombe à 1,92:1. Mesuré par `couleurs.test.ts`, qui éprouve les quatre
+    modes depuis ce lot ; le renommage du volet 1 l'avait emporté ici par
+    excès de zèle.
+  */
+  color: var(--encre-balisage);
 }
 
 .INTERNATIONAL {
@@ -192,8 +202,8 @@
 }
 
 .view3dActive {
-  background: var(--encre);
-  color: var(--texte-sur-couleur);
+  background: var(--panneau-inverse);
+  color: var(--encre-inverse);
 }
 
 .stats {
@@ -257,7 +267,7 @@
 .localLink {
   justify-self: start;
   font-size: var(--texte-secondaire);
-  color: var(--rouge-balisage);
+  color: var(--rouge-balisage-lisible);
 }
 
 .localSource {
@@ -303,7 +313,7 @@
 }
 
 .poiFacts a {
-  color: var(--rouge-balisage);
+  color: var(--rouge-balisage-lisible);
 }
 
 .poiCaveat {

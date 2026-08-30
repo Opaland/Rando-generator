@@ -18,7 +18,7 @@
 
 .row input[type='range'] {
   flex: 1;
-  accent-color: var(--rouge-balisage);
+  accent-color: var(--rouge-balisage-lisible);
   /*
     Seize pixels de haut, mesurés le 24/08.
 

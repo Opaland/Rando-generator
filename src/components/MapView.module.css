@@ -16,5 +16,26 @@
   /* En rem : l'attribution doit grossir avec le reste quand on a du mal à
      lire, sans quoi le seul texte de la carte reste illisible. */
   font-size: var(--texte-micro);
-  background: rgba(250, 247, 242, 0.85);
+  background: rgba(var(--papier-rvb), 0.85);
+}
+
+/*
+  Le crédit des sources, en thème sombre (#361 volet 2).
+
+  MapLibre peint ce texte lui-même, en `rgba(0, 0, 0, 0.75)` codé dans sa
+  propre feuille — un noir prévu pour le fond blanc qu'il pose d'ordinaire.
+  Le fond, lui, est le nôtre depuis toujours : en le faisant suivre le thème,
+  on a mis du noir sur du sombre. **1,13:1, mesuré**, sur les quatre
+  combinaisons sombres.
+
+  C'est la forme locale du §4bis : ce fond était à nous, ce texte ne l'est
+  pas, et rien ne disait que les deux venaient d'endroits différents. Une
+  moitié d'un couple ne se change pas sans regarder l'autre.
+
+  Les liens sont visés en plus du conteneur : MapLibre les recolore
+  nommément, et hériter ne suffirait pas.
+*/
+.map :global(.maplibregl-ctrl-attrib),
+.map :global(.maplibregl-ctrl-attrib a) {
+  color: var(--encre);
 }
