@@ -120,6 +120,32 @@ test('la page porte la politique, et pas seulement le serveur', async ({
   ).toBe(true)
 })
 
+/**
+ * Une seule balise, et pas trois (#420).
+ *
+ * Le greffon ajoutait la balise sans regarder si elle était là. Deux
+ * constructions qui se chevauchent ont produit **trois** balises identiques
+ * dans `dist/pourquoi.html` — et ce test-ci n'existait pas : c'est le
+ * sélecteur du test suivant qui a rougi, en résolvant trois éléments là où il
+ * en attendait un. Un échec qui dit « la page ne porte pas de politique »
+ * alors qu'elle en porte trois n'aide personne.
+ *
+ * Trois copies d'une même politique n'ont rien cassé. Deux politiques
+ * **différentes** empilées, si : le navigateur applique leur intersection,
+ * donc la plus stricte, et une politique trop stricte rend la carte grise.
+ */
+for (const page_ of ['/', '/pourquoi.html'] as const) {
+  test(`${page_} ne porte qu’une politique`, async ({ page }) => {
+    await page.goto(page_)
+    await expect(
+      page.locator('meta[http-equiv="Content-Security-Policy"]'),
+      'Plusieurs balises de politique sur la même page : le navigateur en' +
+        ' appliquerait l’intersection, c’est-à-dire la plus stricte, sans que' +
+        ' rien ne le dise (#420).',
+    ).toHaveCount(1)
+  })
+}
+
 test('la page « pourquoi » la porte aussi', async ({ page }) => {
   /*
     Elle est servie telle quelle, hors du bundle — donc hors de tout ce que

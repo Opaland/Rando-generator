@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
+import { poserLaPolitique } from './src/lib/baliseDePolitique.ts'
 
 /**
  * Inscrit la liste des fichiers construits dans public/sw.js, dont les noms
@@ -178,17 +179,14 @@ function baliseDeLaPolitique(): string {
   return `<meta http-equiv="Content-Security-Policy" content="${politiquePourBalise()}" />`
 }
 
-/** Le point d'ancrage : première balise de chaque `<head>` du dépôt. */
-const APRES = '<meta charset="UTF-8" />'
-
+/*
+  La pose vit dans `src/lib/baliseDePolitique.ts` : c'est une fonction pure,
+  donc éprouvable, et elle **remplace** au lieu d'ajouter depuis #420. Ce qui
+  reste ici est ce qui ne se teste pas ainsi — la lecture de `deploy/csp.conf`
+  et la composition de la balise.
+*/
 function poser(html: string, quoi: string): string {
-  if (!html.includes(APRES)) {
-    throw new Error(
-      `sentiers-csp-balise : « ${APRES} » introuvable dans ${quoi}. La page` +
-        ' serait servie sans politique de sécurité, et rien ne le dirait.',
-    )
-  }
-  return html.replace(APRES, `${APRES}\n    ${baliseDeLaPolitique()}`)
+  return poserLaPolitique(html, baliseDeLaPolitique(), quoi)
 }
 
 function politiqueDansLaPage(): Plugin {
