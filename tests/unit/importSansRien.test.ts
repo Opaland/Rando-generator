@@ -8,13 +8,8 @@
   c'est le second test de ce fichier qui l'a dit avant que je le devine.
 */
 import { describe, it, expect } from 'vitest'
-import {
-  IMPORT_AU_REPOS,
-  trancheImport,
-  type DependancesImport,
-  type EtatImport,
-  type EtatPartage,
-} from '../../src/store/trancheImport.ts'
+import { trancheImport } from '../../src/store/trancheImport.ts'
+import { espionner } from './harnaisImport.ts'
 
 /**
  * Un import qui ne rapporte rien ne dépense pas la demande de persistance.
@@ -44,48 +39,6 @@ import {
  * Le code est juste ; c'est le test qui manquait. Aucune ligne de `src/` ne
  * change ici.
  */
-
-interface Espion {
-  deps: DependancesImport
-  appels: { protegerLeStockage: number; recompute: number }
-  etat: () => EtatImport & EtatPartage
-}
-
-/** Une tranche d'import branchée sur des dépendances qu'on peut observer. */
-function espionner(): Espion {
-  let etat: EtatImport & EtatPartage = {
-    ...IMPORT_AU_REPOS,
-    tracks: [],
-    zoneLabel: null,
-    customItineraries: [],
-    selectedItineraryId: null,
-  }
-  const appels = { protegerLeStockage: 0, recompute: 0 }
-  return {
-    appels,
-    etat: () => etat,
-    deps: {
-      set: (partiel) => {
-        const suite = typeof partiel === 'function' ? partiel(etat) : partiel
-        etat = { ...etat, ...suite }
-      },
-      etat: () => etat,
-      // La base ne s'ouvre pas : ce test ne parle que de ce qui est lu, et
-      // une trace illisible n'atteint jamais l'enregistrement de toute façon.
-      baseOuverte: () => Promise.resolve(null),
-      recompute: () => {
-        appels.recompute += 1
-        return Promise.resolve()
-      },
-      protegerLeStockage: () => {
-        appels.protegerLeStockage += 1
-        return Promise.resolve()
-      },
-      sortirDeLaDemonstration: () => Promise.resolve(),
-      fermerLaFicheSi: () => {},
-    },
-  }
-}
 
 /**
  * Un GPX que le lecteur accepte — même forme que `buildGpx` des tests de
