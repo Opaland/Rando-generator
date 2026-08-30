@@ -20,7 +20,19 @@ export const PAPIER = '#faf7f2'
 /** `--vert-noir` : l'encre. Aussi la couleur du réseau PERSO. */
 export const ENCRE = '#1e2b23'
 
-/** `--gris-vert` : le texte secondaire, et les tracés sans réseau connu. */
+/**
+ * `--gris-vert` : le texte secondaire.
+ *
+ * Cette phrase disait aussi « et les tracés sans réseau connu ». C'était vrai
+ * quand elle a été écrite, et faux depuis #412 : un tracé sans réseau déclaré
+ * se peint désormais de sa propre couleur, `--prune-inconnu`, comme son badge
+ * et son entrée de légende. Le gris ne reste ici que comme repli d'un `match`
+ * MapLibre, pour une valeur qui ne serait pas un réseau — c'est-à-dire pour
+ * rien de ce que l'application produit.
+ *
+ * C'est le §4bis : une justification vieillit comme le reste, et celle-ci
+ * décrivait le défaut plutôt que l'intention.
+ */
 export const GRIS_VERT = '#5a6b5d'
 
 /**
