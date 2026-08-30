@@ -49,7 +49,10 @@ export function ItineraryCard() {
       data-testid="itinerary-card"
     >
       <header className={styles.header}>
-        <span className={`${styles.badge} ${styles[itin.network]}`}>
+        <span
+          className={`${styles.badge} ${styles[itin.network]}`}
+          data-reseau={itin.network}
+        >
           {NETWORK_BADGES[itin.network]}
         </span>
         <h3 className={styles.name}>{displayName(itin)}</h3>

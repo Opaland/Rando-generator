@@ -64,9 +64,42 @@
   background: var(--bleu-local);
 }
 
+/*
+  Le noir vert **de la carte**, et non l'encre de l'interface (#361).
+
+  Les deux valent le même hexadécimal, et `src/index.css` dit pourquoi : le
+  jeton portait deux rôles. Ce badge est du premier — c'est la couleur que
+  MapLibre trace pour un tracé perso —, et il ne suit donc pas le thème de
+  l'interface. Trois feuilles écrivaient `--encre` ici, deux autres
+  `--gris-vert` ; la carte, elle, n'a jamais tracé qu'en `--vert-noir`.
+*/
 .PERSO {
-  background: var(--encre-douce);
+  background: var(--vert-noir);
 }
+/*
+  `INTERNATIONAL` et `INCONNU` manquaient ici, et seulement ici (#422).
+
+  Le composant fait `styles[itin.network]` : sans classe, la valeur est
+  `undefined`, la chaîne de classes contient le mot « undefined », et le badge
+  n'a aucun fond. Son texte est blanc — `--texte-sur-couleur`, pour être lu
+  sur un aplat de balisage. Blanc sur la surface blanche de la ligne : 1,00:1.
+  Le badge existait, occupait sa place, et ne montrait rien.
+
+  `tests/unit/badgesDeReseau.test.ts` ne lisait que `Itinerary*.module.css`.
+
+  Mesuré au navigateur, pas déduit de la feuille : le badge rend
+  `background-color: rgba(0, 0, 0, 0)`, et ce qu'on voit au travers est le
+  `rgb(250, 247, 242)` du papier — la ligne d'un objectif n'a pas de fond à
+  elle. Du blanc sur le papier crème, ce qui ne se lit pas davantage.
+*/
+.INTERNATIONAL {
+  background: var(--bleu-international);
+}
+
+.INCONNU {
+  background: var(--prune-inconnu);
+}
+
 
 .nom {
   flex: 1;
