@@ -928,16 +928,93 @@ describe('relationsPerdues', () => {
     expect(perdues).toEqual([])
   })
 
+  /*
+    Ce test passait pour la mauvaise raison. La limite administrative n'avait
+    **aucun membre**, donc la garde « sans fille, on ne sait pas que le tracé
+    existe » l'écartait avant qu'on ait regardé son tag — et retirer le
+    contrôle du tag ne faisait rougir personne. La vague de mutation du 30/08
+    l'a montré en remplaçant la condition par `false`.
+
+    Elle porte maintenant des relations filles, comme une vraie super-relation
+    en porterait : seule l'absence de `route` peut désormais l'écarter.
+  */
   it('ignore les relations qui ne sont pas des itinéraires', () => {
     const data = {
       elements: [
-        { type: 'relation', id: 30, tags: { type: 'boundary' }, members: [] },
+        {
+          type: 'relation',
+          id: 30,
+          tags: { type: 'boundary' },
+          members: [{ type: 'relation', ref: 97 }],
+        },
         enfantPresent,
       ],
     }
     const perdues = relationsPerdues(data, parseOverpassResponse(data, FETCHED_AT))
     expect(perdues).toEqual([])
   })
+
+  /*
+    `out ids` ne rend aucun tag, et une relation sans tags n'a rien
+    d'exotique dans une réponse Overpass. Le code lit `element.tags?.route` ;
+    sans ce test, l'optionnel pouvait sauter sans que rien ne bronche — et la
+    fonction lèverait alors sur une réponse parfaitement ordinaire.
+  */
+  it('ne lève pas sur une relation dépourvue de tags', () => {
+    const data = {
+      elements: [
+        { type: 'relation', id: 40, members: [{ type: 'relation', ref: 96 }] },
+        enfantPresent,
+      ],
+    }
+    expect(() =>
+      relationsPerdues(data, parseOverpassResponse(data, FETCHED_AT)),
+    ).not.toThrow()
+    expect(relationsPerdues(data, parseOverpassResponse(data, FETCHED_AT))).toEqual(
+      [],
+    )
+  })
+
+  /*
+    Une relation peut porter **à la fois** des chemins et des relations
+    filles — un itinéraire dont une partie est tracée directement et l'autre
+    déléguée à un tronçon. Elle rend donc un itinéraire, et ne doit pas être
+    comptée perdue sous prétexte que sa fille est absente : son tracé est à
+    l'écran.
+
+    Sans ce cas, la garde `rendus.has(element.id)` pouvait disparaître sans
+    rougir, parce qu'aucune relation des tests n'avait les deux sortes de
+    membres.
+  */
+  it('ne compte pas perdue une relation qui a rendu son tracé', () => {
+    const mixte = {
+      type: 'relation',
+      id: 50,
+      tags: { route: 'hiking', name: 'moitié tracée, moitié déléguée' },
+      members: [
+        {
+          type: 'way',
+          ref: 500,
+          geometry: [
+            { lat: 45.4, lon: 4.5 },
+            { lat: 45.4, lon: 4.51 },
+          ],
+        },
+        { type: 'relation', ref: 95 },
+      ],
+    }
+    const data = { elements: [mixte] }
+    const itineraires = parseOverpassResponse(data, FETCHED_AT)
+    expect(itineraires.map((i) => i.osmRelationId)).toEqual([50])
+    expect(relationsPerdues(data, itineraires)).toEqual([])
+  })
+
+  /*
+    Un survivant qu'on ne rechassera pas : retirer `element.type !== 'relation'`
+    ne change aucun résultat. Un chemin ou un nœud n'a pas de membre
+    `relation`, donc `filles.length === 0` l'écarte une ligne plus bas. Le
+    contrôle du type reste pour dire l'intention, pas parce qu'il décide.
+  */
 
   /*
     Ce test dit l'inverse de ce que j'avais écrit d'abord. La fixture du Pilat
