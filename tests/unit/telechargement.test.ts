@@ -57,6 +57,56 @@ describe('reconnaître ce qui vient du terrain', () => {
     expect(estAltimetrie(url)).toBe(true)
   })
 
+  /*
+    Les trois questions ci-dessous viennent de la vague de mutation du 30/08,
+    où cinq mutants ont survécu sur ces deux fonctions. Aucun n'était visible
+    en relisant : les tests d'origine posaient bien la question dans un sens
+    — « l'altimétrie est-elle reconnue » — et jamais dans l'autre.
+  */
+  it('ne prend pas une tuile pour de l’altimétrie', () => {
+    /*
+      Le sens inverse du test précédent, et il coûte plus cher à manquer :
+      `estAltimetrie` sert au service worker à ranger ce qu'il reçoit. Si une
+      tuile passait pour un profil, chaque image du fond de carte irait dans
+      le cache de l'altimétrie au lieu du cache borné prévu pour elle — le
+      contraire exact de ce que le commentaire d'`estAltimetrie` promet.
+
+      La mutation `startsWith('/altimetrie')` → `startsWith('')` survivait,
+      faute que quiconque ait posé cette question-là.
+    */
+    const tuile = new URL(IGN_TILES.replace(/\{[zxy]\}/g, '1'))
+    expect(estAltimetrie(tuile)).toBe(false)
+  })
+
+  it('exige l’hôte de la Géoplateforme, et pas seulement le chemin', () => {
+    /*
+      Un tiers qui sert `/altimetrie/...` n'est pas le service de l'IGN. Sans
+      cette question, `hostname === 'data.geopf.fr' && …` pouvait devenir
+      `true && …` ou un `||` sans que rien ne bronche : la moitié du test
+      d'origine ne servait à rien.
+    */
+    expect(
+      estAltimetrie(new URL('https://exemple.test/altimetrie/1.0/calcul')),
+    ).toBe(false)
+    expect(estTuileCarte(new URL('https://exemple.test/wmts?LAYER=x'))).toBe(
+      false,
+    )
+  })
+
+  it('veut le chemin au début, pas n’importe où', () => {
+    /*
+      `/wmts` est le chemin entier des tuiles IGN : `startsWith` et `endsWith`
+      y répondent pareil, et la mutation de l'un vers l'autre survivait. Un
+      chemin qui *finit* par `/wmts` sans commencer par lui les sépare.
+    */
+    expect(
+      estTuileCarte(new URL('https://data.geopf.fr/ailleurs/wmts')),
+    ).toBe(false)
+    expect(
+      estAltimetrie(new URL('https://data.geopf.fr/ailleurs/altimetrie')),
+    ).toBe(false)
+  })
+
   it('ne reconnaît ni l’application elle-même ni un tiers quelconque', () => {
     for (const brut of [
       'https://opaland.github.io/Rando-generator/index.html',

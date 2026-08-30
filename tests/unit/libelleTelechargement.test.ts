@@ -110,6 +110,14 @@ describe('après', () => {
     ).toBe('Emportée · 5,9 Mo · 3 manquantes')
   })
 
+  /*
+    `toContain('1 manquante')` était satisfait par « 1 manquantes » — le
+    pluriel contient le singulier. La vague de mutation du 30/08 l'a montré en
+    remplaçant la condition d'accord par `false` sans que ce test bronche.
+
+    C'est le §1bis dans sa forme la plus banale : une assertion qui peut
+    passer pour une raison qu'on n'a pas voulue n'est pas une assertion.
+  */
   it('accorde le singulier', () => {
     expect(
       libelleTelechargement(
@@ -117,7 +125,7 @@ describe('après', () => {
         10,
         0,
       ),
-    ).toContain('1 manquante')
+    ).toBe('Emportée · 1000 o · 1 manquante')
   })
 })
 
