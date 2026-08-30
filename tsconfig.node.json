@@ -24,6 +24,7 @@
   "include": [
     "vite.config.ts",
     "playwright.config.ts",
+    "src/lib/baliseDePolitique.ts",
     "tests/e2e",
     "tests/fixtures/gpx.ts",
     "tests/fixtures/verdictReseau.ts",
