@@ -8,7 +8,8 @@ import {
 import { chainWays } from '../../src/core/chainage.ts'
 import { itineraryCoords, interruptionsDuTrace } from '../../src/core/mapdata.ts'
 import { polylineLengthMeters } from '../../src/core/sampling.ts'
-import { decrireBalisage } from '../../src/core/balisage.ts'
+import { decrireBalisage, lireBalisage } from '../../src/core/balisage.ts'
+import { classifyNetwork } from '../../src/core/network.ts'
 
 /**
  * Les mesures qui demandent un réseau (issue #331).
@@ -173,6 +174,156 @@ async function mesurer(requete: string): Promise<OverpassResponse> {
  * `maps.mail.ru`. Le nombre bougera avec la donnée OSM ; ce qui compte est
  * l'ordre de grandeur, pas l'égalité stricte.
  */
+/**
+ * Mesurer **sans** Overpass, quand Overpass ne répond plus.
+ *
+ * ## Pourquoi cette seconde voie existe
+ *
+ * Le 30/08, les trois miroirs Overpass coupaient la connexion à 6–9 secondes,
+ * `/api/status` compris — quatre issues attendaient une mesure qu'aucune
+ * requête ne pouvait plus prendre (#290, #321, #20, #333). `api.openstreetmap.org`
+ * répondait, lui, en une seconde.
+ *
+ * `GET /api/0.6/map.json?bbox=…` rend **tout** ce qui est dans une emprise,
+ * relations comprises, avec leurs tags. C'est assez pour compter des
+ * proportions — pas pour interroger un département : le serveur refuse
+ * au-delà de 50 000 nœuds, et les fenêtres se comptent donc en centièmes de
+ * degré.
+ *
+ * ## Ce que cette voie ne peut pas faire, et qu'il faut dire
+ *
+ * **Un échantillon de fenêtres n'est pas un inventaire.** Il rend des
+ * proportions à quelques points près, sur ce que ces fenêtres-là traversent,
+ * et rien d'autre. Il sur-représente aussi les longs itinéraires : un GR
+ * traverse plusieurs fenêtres, une boucle communale une seule. Le
+ * dédoublonnage par identifiant corrige le double comptage, pas le biais de
+ * sélection.
+ *
+ * Une proportion mesurée ainsi ne se cite donc jamais comme « la part en
+ * France », mais comme « la part dans ces fenêtres » (§2).
+ */
+const API_OSM = 'https://api.openstreetmap.org/api/0.6/map.json'
+
+/** Les types de relation que l'application charge, et eux seuls. */
+const ROUTES_PEDESTRES = new Set(['hiking', 'foot', 'walking'])
+
+/**
+ * Le repos entre deux fenêtres, et le rattrapage d'un 429.
+ *
+ * L'API OSM est le serveur principal du projet, pas un miroir de calcul :
+ * chaque fenêtre lui coûte plusieurs mégaoctets. Mesuré le 30/08 : à quatre
+ * secondes d'intervalle, une requête sur deux revient en 429, et repart après
+ * une vingtaine de secondes. Ce n'est pas un contournement — c'est le tarif,
+ * et une mesure qui martèle finit par ne plus rien mesurer.
+ */
+const REPOS_ENTRE_FENETRES_MS = 4_000
+const REPOS_APRES_429_MS = 20_000
+
+/** Une emprise, nommée pour que le rapport dise où l'on a regardé. */
+interface Fenetre {
+  nom: string
+  bbox: string
+}
+
+/**
+ * Les fenêtres de mesure, choisies pour **contraster les massifs**.
+ *
+ * Le Club Vosgien balise depuis 1872 et déclare tout ; d'autres massifs
+ * n'ont presque rien de tagué. Un échantillon pris dans un seul d'entre eux
+ * rendrait un chiffre vrai et inutilisable — c'est précisément l'écart entre
+ * régions qui décide de ce qu'on peut peindre (#290).
+ */
+const FENETRES_BALISAGE: readonly Fenetre[] = [
+  { nom: 'Munster (Vosges)', bbox: '7.12,48.03,7.14,48.05' },
+  { nom: 'Hohneck (Vosges)', bbox: '7.00,48.03,7.02,48.05' },
+  { nom: 'Ballon d’Alsace (Vosges)', bbox: '6.83,47.81,6.85,47.83' },
+  { nom: 'Donon (Vosges)', bbox: '7.10,48.50,7.12,48.52' },
+  { nom: 'Pilat (Loire)', bbox: '4.60,45.38,4.62,45.40' },
+  { nom: 'Monts d’Or (Rhône)', bbox: '4.75,45.83,4.77,45.85' },
+  { nom: 'Chartreuse (Isère)', bbox: '5.80,45.35,5.82,45.37' },
+  { nom: 'Vercors (Drôme)', bbox: '5.45,44.92,5.47,44.94' },
+  { nom: 'Bauges (Savoie)', bbox: '6.15,45.65,6.17,45.67' },
+  { nom: 'Cévennes (Lozère)', bbox: '3.55,44.25,3.57,44.27' },
+  { nom: 'Cantal', bbox: '2.68,45.07,2.70,45.09' },
+  { nom: 'Luberon (Vaucluse)', bbox: '5.40,43.83,5.42,43.85' },
+  { nom: 'Brocéliande (Morbihan)', bbox: '-2.20,47.98,-2.18,48.00' },
+  { nom: 'Fontainebleau (Seine-et-Marne)', bbox: '2.60,48.40,2.62,48.42' },
+]
+
+/** Une relation pédestre échantillonnée, avec la fenêtre où on l'a vue. */
+interface RelationVue {
+  fenetre: string
+  id: number
+  tags: Record<string, string>
+}
+
+/**
+ * Les relations pédestres de ces fenêtres, dédoublonnées par identifiant.
+ *
+ * Chaque échec est **dit et compté** plutôt que tu : une fenêtre qui n'a pas
+ * répondu ne rend pas zéro relation, elle rend rien du tout, et confondre les
+ * deux ferait passer une panne pour une donnée. C'est la leçon du témoin du
+ * Pilat, appliquée ici.
+ */
+async function relationsDesFenetres(
+  fenetres: readonly Fenetre[],
+): Promise<{ relations: RelationVue[]; trous: string[] }> {
+  const vues = new Map<number, RelationVue>()
+  const trous: string[] = []
+  let premiere = true
+  for (const fenetre of fenetres) {
+    if (!premiere) await patienter(REPOS_ENTRE_FENETRES_MS)
+    premiere = false
+    let servie = false
+    for (let essai = 1; essai <= 3 && !servie; essai += 1) {
+      let reponse: Response
+      try {
+        reponse = await fetch(`${API_OSM}?bbox=${fenetre.bbox}`)
+      } catch (erreur) {
+        ligne(`  ${fenetre.nom} : échec réseau — ${(erreur as Error).message}`)
+        await patienter(REPOS_APRES_429_MS)
+        continue
+      }
+      if (reponse.status === 429) {
+        await patienter(REPOS_APRES_429_MS)
+        continue
+      }
+      if (!reponse.ok) {
+        ligne(`  ${fenetre.nom} : HTTP ${String(reponse.status)}`)
+        break
+      }
+      const data = (await reponse.json()) as { elements?: ElementTague[] }
+      let neuves = 0
+      for (const element of data.elements ?? []) {
+        if (element.type !== 'relation') continue
+        const tags = element.tags ?? {}
+        const route = tags['route']
+        if (route === undefined || !ROUTES_PEDESTRES.has(route)) continue
+        if (element.id === undefined || vues.has(element.id)) continue
+        vues.set(element.id, { fenetre: fenetre.nom, id: element.id, tags })
+        neuves += 1
+      }
+      ligne(`  ${fenetre.nom.padEnd(32)} ${String(neuves).padStart(3)} relations neuves`)
+      servie = true
+    }
+    if (!servie) trous.push(fenetre.nom)
+  }
+  return { relations: [...vues.values()], trous }
+}
+
+/**
+ * La couleur de référence d'une famille fédérale, quand elle en a **une**.
+ *
+ * GR est balisé blanc et rouge, PR jaune : une couleur dominante chacun. GRP
+ * est balisé jaune **et** rouge — aucune couleur unique ne le représente, et
+ * le comparer à une seule gonflerait le compte quel que soit le choix. Il est
+ * donc écarté de la comparaison, et compté à part.
+ */
+const COULEUR_DE_FAMILLE: Record<string, string | undefined> = {
+  GR: 'red',
+  PR: 'yellow',
+}
+
 const TEMOIN_PILAT = {
   bbox: '45.20,4.30,45.60,4.90',
   attendu: 56,
@@ -785,4 +936,97 @@ out ids;`
     ligne('sur ce chemin. Si elles sont rendues, elle le peut — et le §1')
     ligne('demande alors qu’on l’ait vue rougir sur une vraie réponse.')
   })
+
+  it(
+    '10 — le balisage réel, mesuré sans Overpass (#290)',
+    { timeout: 900_000 },
+    async () => {
+      titre('#290 — ce que la carte peint contre ce qui est peint sur l’arbre')
+      ligne('Par `api.openstreetmap.org`, Overpass étant coupé (voir plus haut).')
+      ligne('')
+      const { relations, trous } = await relationsDesFenetres(FENETRES_BALISAGE)
+      ligne('')
+      if (trous.length > 0) {
+        ligne(`fenêtres sans réponse : ${trous.join(', ')}`)
+        ligne('(elles ne comptent pour zéro nulle part — elles manquent.)')
+        ligne('')
+      }
+      if (relations.length === 0) {
+        ligne('Aucune fenêtre n’a répondu : la question reste ouverte.')
+        return
+      }
+
+      const avec = relations.filter((r) => r.tags['osmc:symbol'] !== undefined)
+      const lisibles = avec.filter(
+        (r) => decrireBalisage(r.tags['osmc:symbol']) !== null,
+      )
+      const deuxPlans = avec.filter(
+        (r) => lireBalisage(r.tags['osmc:symbol'])?.secondPlan != null,
+      )
+      ligne(`relations pédestres distinctes : ${String(relations.length)}`)
+      ligne(`portent osmc:symbol            : ${part(avec.length, relations.length)}`)
+      ligne(`que nous savons lire           : ${part(lisibles.length, relations.length)}`)
+      ligne(`   …parmi celles taguées       : ${part(lisibles.length, avec.length)}`)
+      ligne(`portent un second symbole      : ${part(deuxPlans.length, avec.length)}`)
+
+      /*
+        La question de fond, et elle n'a rien d'abstrait : Anne-Marie lit
+        « rectangle rouge » dans la fiche et voit une ligne jaune sur la
+        carte. On compte ici combien de fois la couleur peinte par la
+        taxonomie fédérale contredit la couleur peinte sur l'arbre.
+      */
+      let comparables = 0
+      let contredits = 0
+      let grpEcartes = 0
+      const exemples: string[] = []
+      for (const relation of lisibles) {
+        const reseau = classifyNetwork(relation.tags)
+        if (reseau === 'GRP') {
+          grpEcartes += 1
+          continue
+        }
+        const attendue = COULEUR_DE_FAMILLE[reseau]
+        const teinte = lireBalisage(relation.tags['osmc:symbol'])?.premierPlan.split(
+          '_',
+        )[0]
+        if (attendue === undefined || teinte === undefined) continue
+        comparables += 1
+        if (teinte === attendue) continue
+        contredits += 1
+        if (exemples.length < 6) {
+          exemples.push(
+            `   r${String(relation.id)} ${reseau.padEnd(4)} ${relation.tags['osmc:symbol'] ?? ''} ${(relation.tags['name'] ?? '').slice(0, 30)}`,
+          )
+        }
+      }
+      ligne('')
+      ligne('la couleur de la carte contre celle de l’arbre :')
+      ligne(`  GRP écartés (balisage bicolore, pas de référence unique) : ${String(grpEcartes)}`)
+      ligne(`  comparables                                             : ${String(comparables)}`)
+      ligne(`  la carte contredit l’arbre                              : ${part(contredits, comparables)}`)
+      for (const exemple of exemples) ligne(exemple)
+
+      ligne('')
+      ligne('couverture par fenêtre (lisibles / relations) :')
+      const parFenetre = new Map<string, [number, number]>()
+      for (const relation of relations) {
+        const [total, lu] = parFenetre.get(relation.fenetre) ?? [0, 0]
+        const symbole = relation.tags['osmc:symbol']
+        parFenetre.set(relation.fenetre, [
+          total + 1,
+          lu + (symbole !== undefined && decrireBalisage(symbole) !== null ? 1 : 0),
+        ])
+      }
+      for (const [nom, [total, lu]] of parFenetre) {
+        ligne(`  ${nom.padEnd(32)} ${String(lu).padStart(3)} / ${String(total).padStart(3)}`)
+      }
+
+      ligne('')
+      ligne('À lire : c’est la **dispersion** entre fenêtres qui décide, pas la')
+      ligne('moyenne. Si un massif rend 100 % et un autre 0 %, peindre au')
+      ligne('balisage donne une carte juste là où le Club Vosgien a travaillé et')
+      ligne('muette ailleurs — une carte à deux régimes, ce que #290 voulait')
+      ligne('précisément éviter. La moyenne, elle, cacherait cet écart.')
+    },
+  )
 })
