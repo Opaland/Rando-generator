@@ -11,7 +11,7 @@
   font-size: var(--texte-titre-fort);
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--vert-noir);
+  color: var(--encre);
   display: flex;
   align-items: center;
   gap: var(--espace-5);
@@ -28,9 +28,9 @@
   display: grid;
   gap: var(--espace-3);
   padding: var(--espace-6);
-  background: var(--vert-noir);
+  background: var(--encre);
   border-radius: var(--rayon-lg);
-  color: var(--blanc-papier);
+  color: var(--papier);
 }
 
 .bigPct {
@@ -78,7 +78,7 @@
 
 .networkDetail {
   font-size: var(--texte-appui);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .subtitle {
@@ -164,7 +164,7 @@
   font-size: var(--texte-titre-fort);
   line-height: 1;
   cursor: pointer;
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 /*
@@ -189,7 +189,7 @@
 .declare {
   margin: 0;
   font-size: var(--texte-secondaire);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
   border-left: 3px solid var(--gris-vert-clair);
   padding-left: var(--espace-4);
 }

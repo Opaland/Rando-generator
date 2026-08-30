@@ -6,8 +6,8 @@
   z-index: var(--z-overlay-draw);
   max-height: min(60vh, 460px);
   overflow-y: auto;
-  background: var(--blanc-papier);
-  border-top: 5px solid var(--vert-noir);
+  background: var(--papier);
+  border-top: 5px solid var(--encre);
   box-shadow: var(--ombre-feuille);
   padding: var(--espace-7) var(--espace-7) var(--espace-7);
   display: grid;
@@ -28,7 +28,7 @@
 .hint {
   margin: 0;
   font-size: var(--texte-secondaire);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .stats {
@@ -53,7 +53,7 @@
 
 .nameLabel {
   font-size: var(--texte-secondaire);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .saveRow {
@@ -65,7 +65,7 @@
   flex: 1;
   min-width: 0;
   padding: var(--espace-4) var(--espace-5);
-  border: 1px solid var(--gris-vert);
+  border: 1px solid var(--encre-douce);
   border-radius: var(--rayon-md);
   background: var(--blanc-carte);
 }
@@ -73,7 +73,7 @@
 .note {
   margin: 0;
   font-size: var(--texte-appui);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 @media (min-width: 801px) {
@@ -84,6 +84,6 @@
     width: min(340px, calc(100% - 24px));
     border-radius: var(--rayon-lg);
     border-top-width: 1px;
-    border-left: 5px solid var(--vert-noir);
+    border-left: 5px solid var(--encre);
   }
 }

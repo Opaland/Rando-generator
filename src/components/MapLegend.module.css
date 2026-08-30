@@ -23,7 +23,7 @@
   border: 1px solid var(--gris-vert-clair);
   border-radius: var(--rayon-lg);
   font-size: var(--texte-appui);
-  color: var(--vert-noir);
+  color: var(--encre);
   box-shadow: var(--ombre-flottante);
 }
 
@@ -76,7 +76,7 @@
 }
 
 .lineTodo {
-  background: var(--gris-vert);
+  background: var(--encre-douce);
   opacity: 0.55;
 }
 

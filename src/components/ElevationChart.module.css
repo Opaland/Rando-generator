@@ -25,13 +25,13 @@
 }
 
 .area {
-  fill: color-mix(in srgb, var(--vert-noir) 12%, transparent);
+  fill: color-mix(in srgb, var(--encre) 12%, transparent);
   stroke: none;
 }
 
 .line {
   fill: none;
-  stroke: var(--vert-noir);
+  stroke: var(--encre);
   stroke-width: 1.5;
   vector-effect: non-scaling-stroke;
 }
@@ -62,7 +62,7 @@
 .readout {
   margin: 0;
   font-size: var(--texte-appui);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
   font-variant-numeric: tabular-nums;
   min-height: 1.1em;
 }
@@ -70,14 +70,14 @@
 /* Repères du profil : cols, sommets et refuges traversés. Un trait fin, pas
    un marqueur — la courbe reste le sujet, ils la jalonnent. */
 .repere line {
-  stroke: var(--gris-vert);
+  stroke: var(--encre-douce);
   stroke-width: 0.6;
   stroke-dasharray: 2 2;
   opacity: 0.7;
 }
 
 .repere circle {
-  fill: var(--gris-vert);
+  fill: var(--encre-douce);
 }
 
 .reperes {
@@ -87,7 +87,7 @@
   display: grid;
   gap: var(--espace-1);
   font-size: var(--texte-appui);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .reperes li {
@@ -97,7 +97,7 @@
 }
 
 .repereNom {
-  color: var(--vert-noir);
+  color: var(--encre);
 }
 
 .repereDetail {
@@ -135,7 +135,7 @@
 /* L'inconnu est hachuré, jamais coloré : une couleur pleine se lirait comme
    une valeur, et deux tiers du parcours n'en ont pas. */
 .hachure {
-  stroke: var(--gris-vert);
+  stroke: var(--encre-douce);
   stroke-width: 1;
   opacity: 0.45;
 }
@@ -164,7 +164,7 @@
   padding: 0 var(--espace-3);
   border: 1px solid var(--gris-vert-clair);
   border-radius: var(--rayon-sm);
-  background: var(--blanc-papier);
+  background: var(--papier);
   color: inherit;
   font-size: var(--texte-secondaire);
   cursor: pointer;
@@ -181,14 +181,14 @@
 
 .etendue {
   font-size: var(--texte-appui);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
   font-variant-numeric: tabular-nums;
 }
 
 .couverture {
   margin: var(--espace-3) 0 0;
   font-size: var(--texte-appui);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 /* La déduction se voit comme une déduction : même teinte, moins affirmée.
@@ -220,11 +220,11 @@
 }
 
 .pastille[data-origine='renseigne'] {
-  background: var(--gris-vert);
+  background: var(--encre-douce);
 }
 
 .pastille[data-origine='deduit'] {
-  background: var(--gris-vert);
+  background: var(--encre-douce);
   opacity: 0.42;
 }
 
@@ -233,8 +233,8 @@
     45deg,
     var(--gris-vert-clair),
     var(--gris-vert-clair) 2px,
-    var(--blanc-papier) 2px,
-    var(--blanc-papier) 4px
+    var(--papier) 2px,
+    var(--papier) 4px
   );
   border: 1px solid var(--gris-vert-clair);
 }
@@ -244,7 +244,7 @@
    se fier à ce qui est dessiné. */
 .resolution {
   margin: var(--espace-3) 0 0;
-  color: var(--gris-vert);
+  color: var(--encre-douce);
   font-size: var(--texte-appui);
   line-height: 1.4;
 }

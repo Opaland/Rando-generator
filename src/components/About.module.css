@@ -5,8 +5,8 @@
   max-width: 560px;
   width: calc(100% - 32px);
   max-height: 85vh;
-  background: var(--blanc-papier);
-  color: var(--vert-noir);
+  background: var(--papier);
+  color: var(--encre);
 }
 
 .dialog::backdrop {

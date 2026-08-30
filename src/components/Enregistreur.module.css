@@ -7,7 +7,7 @@
   font-size: var(--texte-titre);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .demarrer {
@@ -18,7 +18,7 @@
 .aide {
   margin: 0;
   font-size: var(--texte-appui);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .reprise,
@@ -27,8 +27,8 @@
   font-size: var(--texte-secondaire);
   padding: var(--espace-3) var(--espace-4);
   border-radius: var(--rayon-md);
-  border-left: 4px solid var(--gris-vert);
-  background: var(--blanc-papier);
+  border-left: 4px solid var(--encre-douce);
+  background: var(--papier);
 }
 
 .erreur {
@@ -50,7 +50,7 @@
 
 .chiffre dt {
   font-size: var(--texte-appui);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 /* Le chiffre se lit à bout de bras, en marchant, au soleil. */
@@ -74,7 +74,7 @@
   cursor: pointer;
   background: none;
   border: none;
-  color: var(--gris-vert);
+  color: var(--encre-douce);
   text-decoration: underline;
   padding: var(--espace-3);
 }

@@ -7,13 +7,13 @@
   font-size: var(--texte-titre);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .hint {
   margin: 0;
   font-size: var(--texte-secondaire);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
   line-height: 1.45;
 }
 
@@ -27,14 +27,14 @@
   flex: 1 1 auto;
   min-height: 44px;
   padding: var(--espace-4) var(--espace-6);
-  border: 1px solid var(--gris-vert);
+  border: 1px solid var(--encre-douce);
   border-radius: var(--rayon-sm);
-  background: var(--blanc-papier);
+  background: var(--papier);
   /* `--vert-foret` était utilisé ici et défini nulle part : la déclaration
      était invalide, et le bouton héritait sa couleur au lieu de la choisir.
      Trouvé au ratissage des jetons. `--vert-noir` est l'encre du produit,
      et c'est ce que le bouton aurait dû demander. */
-  color: var(--vert-noir);
+  color: var(--encre);
   font: inherit;
   cursor: pointer;
 }
@@ -62,7 +62,7 @@
 .stockage {
   margin: 0;
   font-size: var(--texte-appui);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .avertissement {

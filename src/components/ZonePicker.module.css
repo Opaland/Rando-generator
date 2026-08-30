@@ -7,7 +7,7 @@
   font-size: var(--texte-titre);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 /*
@@ -41,9 +41,9 @@
   min-height: var(--cible-mini);
   padding: var(--espace-4) var(--espace-5);
   border-radius: var(--rayon-md);
-  border: 1px solid var(--gris-vert);
+  border: 1px solid var(--encre-douce);
   background: var(--blanc-carte);
-  color: var(--vert-noir);
+  color: var(--encre);
   text-align: left;
 }
 
@@ -65,7 +65,7 @@
   font-size: var(--texte-appui);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .featured {
@@ -95,7 +95,7 @@
 
 .refLabel {
   font-size: var(--texte-secondaire);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .refRow {
@@ -107,7 +107,7 @@
   flex: 1;
   min-width: 0;
   padding: var(--espace-4) var(--espace-5);
-  border: 1px solid var(--gris-vert);
+  border: 1px solid var(--encre-douce);
   border-radius: var(--rayon-md);
   background: var(--blanc-carte);
 }
@@ -129,7 +129,7 @@
 .received {
   display: block;
   font-variant-numeric: tabular-nums;
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 /* Le rechargement est la réaction naturelle devant une attente longue, et
@@ -138,7 +138,7 @@
 .dontReload {
   flex-basis: 100%;
   font-size: var(--texte-appui);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .spinner {
@@ -162,7 +162,7 @@
 }
 
 .elapsed {
-  color: var(--gris-vert);
+  color: var(--encre-douce);
   font-variant-numeric: tabular-nums;
 }
 
@@ -181,7 +181,7 @@
   gap: var(--espace-5);
   flex-wrap: wrap;
   font-size: var(--texte-secondaire);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 /* Une fois la section repliée, le nom de la zone active reste lisible :
@@ -190,7 +190,7 @@
   font-weight: 400;
   text-transform: none;
   letter-spacing: 0;
-  color: var(--vert-noir);
+  color: var(--encre);
 }
 
 /* Le choix de la zone est repliable ; l'état de la zone chargée (nombre
@@ -211,7 +211,7 @@
 
 .lieuLabel {
   font-size: var(--texte-secondaire);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .lieuHint,
@@ -240,9 +240,9 @@
   min-height: 44px;
   padding: var(--espace-3) var(--espace-5);
   text-align: left;
-  border: 1px solid var(--gris-vert);
+  border: 1px solid var(--encre-douce);
   border-radius: var(--rayon-sm);
-  background: var(--blanc-papier);
+  background: var(--papier);
   color: inherit;
   font: inherit;
   cursor: pointer;
@@ -258,5 +258,5 @@
 
 .lieuContexte {
   font-size: var(--texte-secondaire);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }

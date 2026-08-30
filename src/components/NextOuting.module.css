@@ -7,13 +7,13 @@
   font-size: var(--texte-titre);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .hint {
   margin: 0;
   font-size: var(--texte-appui);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .list {
@@ -62,7 +62,7 @@
 
 .PR {
   background: var(--jaune-pr);
-  color: var(--vert-noir);
+  color: var(--encre);
 }
 
 .LOCAL {
@@ -70,7 +70,7 @@
 }
 
 .PERSO {
-  background: var(--gris-vert);
+  background: var(--encre-douce);
 }
 
 .main {
@@ -86,6 +86,6 @@
 
 .facts {
   font-size: var(--texte-appui);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
   font-variant-numeric: tabular-nums;
 }

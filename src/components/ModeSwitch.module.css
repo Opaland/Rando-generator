@@ -19,7 +19,7 @@
 .legend {
   padding: 0;
   font-size: var(--texte-secondaire);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .modes {
@@ -47,7 +47,7 @@
 
 .mode:has(input:checked),
 .bascule:has(input:checked) {
-  border-color: var(--vert-noir);
+  border-color: var(--encre);
   background: var(--gris-vert-clair);
 }
 
@@ -59,5 +59,5 @@
 .modeTexte {
   display: block;
   font-size: var(--texte-secondaire);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }

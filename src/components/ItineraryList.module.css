@@ -7,7 +7,7 @@
   font-size: var(--texte-titre);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .filters {
@@ -17,7 +17,7 @@
 
 .search {
   padding: var(--espace-4) var(--espace-5);
-  border: 1px solid var(--gris-vert);
+  border: 1px solid var(--encre-douce);
   border-radius: var(--rayon-md);
   background: var(--blanc-carte);
 }
@@ -56,15 +56,15 @@
 
 .sort {
   font-size: var(--texte-courant);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .sort select {
   padding: var(--espace-2) var(--espace-3);
   border-radius: var(--rayon-sm);
-  border: 1px solid var(--gris-vert);
+  border: 1px solid var(--encre-douce);
   background: var(--blanc-carte);
-  color: var(--vert-noir);
+  color: var(--encre);
 }
 
 .list {
@@ -117,7 +117,7 @@
 
 .PR {
   background: var(--jaune-pr);
-  color: var(--vert-noir);
+  color: var(--encre);
 }
 
 .INTERNATIONAL {
@@ -142,7 +142,7 @@
   Trouvé par `tests/unit/badgesDeReseau.test.ts` à son premier passage.
 */
 .PERSO {
-  background: var(--vert-noir);
+  background: var(--encre);
 }
 
 .rowMain {
@@ -158,7 +158,7 @@
 
 .rowSub {
   font-size: var(--texte-appui);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -178,7 +178,7 @@
 
 .rowKm {
   font-size: var(--texte-appui);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .discovery {
@@ -191,7 +191,7 @@
 .discoverySummary {
   cursor: pointer;
   font-size: var(--texte-secondaire);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
   letter-spacing: 0.02em;
   /* Vingt pixels avant le 24/08 : ce `summary` ne portait pas la classe
      commune `.acc-summary` et avait échappé au plancher. Nommer la règle
@@ -222,7 +222,7 @@
 
 .hint {
   font-size: var(--texte-appui);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
   margin: var(--espace-4) 0 0;
 }
 
@@ -230,16 +230,16 @@
   margin-top: var(--espace-4);
   padding: var(--espace-2) var(--espace-4);
   font-size: var(--texte-appui);
-  border: 1px solid var(--gris-vert);
+  border: 1px solid var(--encre-douce);
   border-radius: var(--rayon-sm);
   background: var(--blanc-carte);
-  color: var(--vert-noir);
+  color: var(--encre);
   cursor: pointer;
 }
 
 .rowFacts {
   font-size: var(--texte-appui);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
   font-variant-numeric: tabular-nums;
 }
 
@@ -254,7 +254,7 @@
 
 /* Le mot est posé à côté des chiffres, pas à leur place (issue #156). */
 .effort {
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 /*
@@ -294,7 +294,7 @@
 .masques {
   margin: 0 0 0.5rem;
   font-size: var(--texte-secondaire);
-  color: var(--vert-noir);
+  color: var(--encre);
 }
 
 /*
@@ -311,7 +311,7 @@
   background: none;
   border: none;
   padding: 0.25rem;
-  color: var(--vert-noir);
+  color: var(--encre);
   text-decoration: underline;
   cursor: pointer;
   font: inherit;

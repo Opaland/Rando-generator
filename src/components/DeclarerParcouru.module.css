@@ -7,7 +7,7 @@
 .aide {
   margin: 0;
   font-size: var(--texte-appui);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .fait {
@@ -17,7 +17,7 @@
 
 .champ {
   font-size: var(--texte-appui);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .date {
@@ -25,7 +25,7 @@
   padding: var(--espace-3);
   border: 1px solid var(--gris-vert-clair);
   border-radius: var(--rayon-sm);
-  background: var(--blanc-papier);
+  background: var(--papier);
 }
 
 .actions {

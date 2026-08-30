@@ -17,7 +17,7 @@
   justify-self: start;
   min-height: 44px;
   padding: var(--espace-2) var(--espace-7);
-  border: 1px solid var(--vert-noir);
+  border: 1px solid var(--encre);
   border-radius: var(--rayon-sm);
   background: var(--blanc-carte);
   font: inherit;
