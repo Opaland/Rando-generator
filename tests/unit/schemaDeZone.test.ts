@@ -1,10 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import {
+  CHAMPS_DE_ZONE,
   CHAMPS_MIS_EN_CACHE,
   SCHEMA_ZONE,
   zoneUtilisable,
   type CachedZone,
 } from '../../src/db/database.ts'
+import { messageDeZone } from '../../src/core/messageDeZone.ts'
 import { parseOverpassResponse } from '../../src/core/overpass.ts'
 
 /**
@@ -181,5 +183,87 @@ describe('le schéma de zone et ce qu’il décrit (#371)', () => {
     expect(
       zoneUtilisable({ ...zone, schema: SCHEMA_ZONE }, uneMinutePlusTard),
     ).toBe(true)
+  })
+})
+
+/** Le source du store, tel que le build le résout. */
+const trancheZone = import.meta.glob('../../src/store/trancheZone.ts', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+})['../../src/store/trancheZone.ts'] as string
+
+/**
+ * L'enregistrement de zone lui-même — le niveau au-dessus (#404).
+ *
+ * `CHAMPS_MIS_EN_CACHE` décrit un itinéraire, `CHAMPS_DE_ZONE` l'objet qui
+ * les contient. Deux listes, parce que ce sont deux questions ; et deux
+ * gardes, parce que le §4ter dit qu'une règle écrite à deux endroits a le
+ * même trou des deux côtés tant que rien ne les compare.
+ */
+describe('ce qu’une zone garde d’elle-même (#404)', () => {
+  it('épingle exactement les champs que le store écrit', () => {
+    /*
+      Lu par `import.meta.glob` plutôt que par `node:fs`, comme
+      `jetons.test.ts` : pas de types Node à installer, et une seule façon de
+      résoudre les chemins — celle du build.
+
+      Lu dans le source plutôt que reconstruit ici : un objet littéral écrit
+      dans ce test serait la troisième copie de la liste, donc le défaut
+      qu'on prétend garder. Le motif est vérifié avant d'être exploité —
+      s'il cesse de correspondre, ce test le dit au lieu de rendre vert sur
+      une lecture vide (§1).
+    */
+    const source = trancheZone
+    const bloc = /await db\.saveZone\(\{([^}]*)\}\)/.exec(source)
+    expect(
+      bloc,
+      'le motif `await db.saveZone({ … })` ne correspond plus à' +
+        ' src/store/trancheZone.ts : cette garde ne garde donc plus rien.',
+    ).not.toBeNull()
+
+    const ecrits = [...(bloc?.[1] ?? '').matchAll(/^\s*(\w+)[,:]/gm)]
+      .map((m) => m[1] ?? '')
+      .sort()
+    const epingles = [...CHAMPS_DE_ZONE].sort()
+    expect(
+      ecrits,
+      `Ce que le store écrit dans le cache de zone ne correspond plus à` +
+        ` CHAMPS_DE_ZONE.\n` +
+        `En trop : ${ecrits.filter((c) => !epingles.includes(c)).join(', ') || '—'}\n` +
+        `Manquants : ${epingles.filter((c) => !ecrits.includes(c)).join(', ') || '—'}\n` +
+        `\nUn champ neuf demande une question : son absence rend-elle une` +
+        ` vieille copie fausse — alors SCHEMA_ZONE bouge — ou seulement` +
+        ` muette ? Voir le commentaire de CHAMPS_DE_ZONE.`,
+    ).toEqual(epingles)
+  })
+
+  /**
+   * Le choix du 30/08, épinglé pour qu'on le relise plutôt qu'on le refasse.
+   *
+   * `partielle` et `perdues` sont **additifs** : leur absence veut dire « on
+   * ne sait pas », et une zone qui ne les porte pas se comporte exactement
+   * comme avant #404 — elle se tait. Périmer ces copies aurait fermé
+   * l'angle mort tout de suite, au prix d'une interrogation Overpass
+   * complète pour tout le monde, y compris ceux dont la zone n'a jamais
+   * rien eu de travers. L'angle mort se referme seul en trente jours.
+   *
+   * Qui incrémentera `SCHEMA_ZONE` verra ce test rougir, et lira ce
+   * paragraphe avant de décider. C'est tout ce qu'on lui demande.
+   */
+  it('une copie écrite avant #404 reste utilisable, et muette', () => {
+    const avant: CachedZone = {
+      zoneKey: 'pilat',
+      label: 'PNR du Pilat',
+      itineraries: [],
+      fetchedAt: '2026-08-30T00:00:00Z',
+      schema: SCHEMA_ZONE,
+    }
+    expect(
+      zoneUtilisable(avant, '2026-08-30T00:01:00Z'),
+      'incrémenter SCHEMA_ZONE jette le cache de tout le monde : lire le' +
+        ' commentaire de CHAMPS_DE_ZONE avant de le faire.',
+    ).toBe(true)
+    expect(messageDeZone({ itineraires: 12 })).toBeNull()
   })
 })
