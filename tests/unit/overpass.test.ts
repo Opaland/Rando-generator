@@ -483,6 +483,70 @@ describe('fetchOverpass', () => {
     )
   })
 
+  /*
+    L'image inverse de #283, et elle n'était gardée par rien.
+
+    Une zone qui n'a réellement aucun sentier balisé rend un 200 parfaitement
+    formé : `elements: []`, **et pas de `remark`**. C'est une réponse, pas un
+    échec. La confondre avec un miroir en panne enverrait chercher un second
+    miroir, puis un troisième, pour finir sur « les serveurs sont
+    injoignables » — sur une zone qui a répondu du premier coup.
+
+    Trouvé par la vague de mutation du 30/08 : `data.remark !== undefined`
+    remplacé par `true` survivait aux soixante-neuf tests du fichier. La
+    moitié qui compte de cette condition n'était éprouvée dans aucun sens.
+  */
+  it('ne prend pas une zone honnêtement vide pour un miroir en panne', async () => {
+    const videEtHonnete = () =>
+      new Response(JSON.stringify({ version: 0.6, elements: [] }), {
+        status: 200,
+      })
+    const fetchFn = vi.fn().mockResolvedValue(videEtHonnete())
+    const data = await fetchOverpass('QUERY', { fetchFn })
+    expect(
+      fetchFn,
+      'un miroir qui répond « rien ici » a répondu : on ne redemande pas',
+    ).toHaveBeenCalledTimes(1)
+    expect((data as { elements: unknown[] }).elements).toHaveLength(0)
+  })
+
+  /*
+    Ce que ce test garde, et ce qu'il ne peut pas garder.
+
+    Il garde le comportement : un corps qui n'a pas la forme attendue ne doit
+    pas être cru, et le miroir suivant doit être essayé. `null`, une chaîne,
+    un tableau, un `elements` qui n'en est pas un.
+
+    Il **ne tue pas** les mutants de `isOverpassResponse` que la vague du
+    30/08 a signalés, et j'ai vérifié pourquoi plutôt que de le supposer :
+    retirer `data !== null` fait lever `null.elements`, et retirer
+    `typeof data === 'object'` laisse `Array.isArray(undefined)` rendre faux.
+    Dans les deux cas le miroir suivant est essayé — parce que le `try/catch`
+    de `fetchOverpass` rend « rendre faux » et « lever » indiscernables. Son
+    propre commentaire le dit : « miroir injoignable ou réponse illisible ».
+
+    Ces mutants sont donc **équivalents au comportement observable**. Les
+    tuer demanderait d'exporter une fonction privée pour elle seule, c'est-à-
+    dire de chasser le score — ce que le §6bis nomme comme la mauvaise
+    réaction à une vague.
+  */
+  it('écarte une réponse qui n’a pas la forme attendue, sans la croire', async () => {
+    for (const corps of ['null', '"texte"', '[]', '{"elements":"pas un tableau"}']) {
+      const fetchFn = vi
+        .fn()
+        .mockResolvedValueOnce(new Response(corps, { status: 200 }))
+        .mockResolvedValueOnce(okResponse())
+      const data = await fetchOverpass('QUERY', { fetchFn })
+      expect(
+        fetchFn,
+        `corps « ${corps} » : le miroir suivant doit être essayé`,
+      ).toHaveBeenCalledTimes(2)
+      expect((data as { elements: unknown[] }).elements).toHaveLength(
+        pilatFixture.elements.length,
+      )
+    }
+  })
+
   it('rapporte le motif d’Overpass quand tous les miroirs échouent ainsi', async () => {
     const fetchFn = vi
       .fn()
