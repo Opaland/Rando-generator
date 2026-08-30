@@ -61,6 +61,7 @@ export function Objectifs() {
                 <div className={styles.entete}>
                   <span
                     className={`${styles.badge} ${styles[itineraire.network]}`}
+                    data-reseau={itineraire.network}
                   >
                     {NETWORK_BADGES[itineraire.network]}
                   </span>

@@ -286,6 +286,55 @@ export function pilatGrOnly(): unknown {
   return { ...data, elements: data.elements.filter((e) => e.id === 1001) }
 }
 
+/**
+ * La fixture du Pilat, son GR 7 requalifié en itinéraire international.
+ *
+ * Passage par `unknown` : la fixture est typée par son propre littéral JSON,
+ * dont chaque tag optionnel vaut `undefined` plutôt que d'être absent.
+ * TypeScript refuse la conversion directe vers `Record<string, string>`, et
+ * il a raison — c'est bien une réinterprétation, pas un sous-typage.
+ */
+export function pilatInternational(): unknown {
+  const data = pilatFixture as unknown as {
+    elements: { id: number; tags?: Record<string, string> }[]
+  }
+  return {
+    ...data,
+    elements: data.elements.map((element) =>
+      element.id === 1001 && element.tags
+        ? { ...element, tags: { ...element.tags, network: 'iwn', name: 'Via Lugdunum' } }
+        : element,
+    ),
+  }
+}
+
+/**
+ * La même, plus un itinéraire dont le réseau n'est pas déclarable.
+ *
+ * Le Tour du Pilat (1003) n'a pas de `network` : c'est son `ref`, « GRP Tour
+ * du Pilat », qui le range en GRP. Privé des deux, il ressort `INCONNU`.
+ *
+ * Ces deux réseaux-là sont ceux qu'aucune fixture ne produisait, et c'est
+ * exactement pourquoi #422 a tenu : `INTERNATIONAL` et `INCONNU` n'avaient de
+ * classe nulle part dans « Prochaine sortie » ni dans « Objectifs », et aucun
+ * test ne pouvait le voir puisqu'aucun test ne les faisait apparaître.
+ */
+export function pilatInternationalEtInconnu(): unknown {
+  const data = pilatInternational() as {
+    elements: { id: number; tags?: Record<string, string> }[]
+  }
+  return {
+    ...data,
+    elements: data.elements.map((element) => {
+      if (element.id !== 1003 || element.tags === undefined) return element
+      const reste = { ...element.tags }
+      delete reste['ref']
+      delete reste['network']
+      return { ...element, tags: reste }
+    }),
+  }
+}
+
 export async function mockExternalNetwork(page: Page): Promise<OverpassMock> {
   await mockTiles(page)
   return mockOverpass(page)
@@ -390,6 +439,58 @@ export async function estAlEcran(page: Page, testId: string): Promise<boolean> {
     }
     const peint = document.elementFromPoint(x, y)
     return peint !== null && (element === peint || element.contains(peint))
+  })
+}
+
+/** Ce qu'un badge de réseau peint vraiment, à l'écran. */
+export interface BadgePeint {
+  reseau: string
+  /** Le fond du badge lui-même, tel que le navigateur le calcule. */
+  fond: string
+  /** Le fond effectif de ce qu'il y a derrière, composé jusqu'à l'opaque. */
+  derriere: string
+}
+
+/**
+ * Les badges de réseau peints dans un panneau, avec ce qu'il y a dessous.
+ *
+ * Un badge sans classe de réseau n'a pas de fond du tout : `styles[network]`
+ * rend `undefined`, la chaîne de classes contient le mot « undefined », et
+ * le navigateur ne s'en plaint pas. Le badge occupe sa place, son texte
+ * blanc est là, et il n'y a rien à voir — c'est le défaut #422, resté deux
+ * mois dans « Prochaine sortie » et « Objectifs ».
+ *
+ * On ne demande donc pas « le badge est-il visible ? » — `toBeVisible`
+ * répondrait oui, il a un rectangle (§1bis) — mais **quelle couleur est
+ * peinte ici, et laquelle est peinte dessous**. Deux couleurs égales,
+ * c'est un badge qui n'existe pas.
+ */
+export async function badgesPeints(
+  page: Page,
+  testId: string,
+): Promise<BadgePeint[]> {
+  return page.getByTestId(testId).evaluate((panneau) => {
+    /* Le fond d'un élément peut être transparent : c'est alors celui de son
+       ancêtre qu'on voit. On remonte donc jusqu'au premier opaque, comme le
+       navigateur le fait en peignant. */
+    function fondEffectif(depart: Element | null): string {
+      let courant: Element | null = depart
+      while (courant !== null) {
+        const fond = getComputedStyle(courant).backgroundColor
+        const alpha = /rgba?\(([^)]+)\)/.exec(fond)?.[1]?.split(',')[3]
+        if (fond !== 'transparent' && (alpha === undefined || Number(alpha) > 0)) {
+          return fond
+        }
+        courant = courant.parentElement
+      }
+      return 'rgb(255, 255, 255)'
+    }
+
+    return [...panneau.querySelectorAll('[data-reseau]')].map((badge) => ({
+      reseau: badge.getAttribute('data-reseau') ?? '?',
+      fond: getComputedStyle(badge).backgroundColor,
+      derriere: fondEffectif(badge.parentElement),
+    }))
   })
 }
 

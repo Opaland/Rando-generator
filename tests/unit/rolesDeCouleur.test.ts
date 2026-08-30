@@ -1,10 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import indexCss from '../../src/index.css?raw'
-import {
-  ENCRE,
-  GRIS_VERT,
-  PAPIER,
-} from '../../src/lib/couleursPartagees.ts'
+import { ENCRE, GRIS_VERT, PAPIER } from '../../src/lib/couleursPartagees.ts'
+import { NETWORK_COLOR_VARS } from '../../src/lib/networkDisplay.ts'
 
 /**
  * Les rôles d'interface ne se servent plus dans les couleurs de carte (#361).
@@ -33,6 +30,23 @@ import {
  *
  * Il garde aussi qu'elles le sont : ce lot ne devait déplacer aucune couleur,
  * et c'est la seule façon de le prouver autrement qu'en relisant.
+ *
+ * ## Ce qu'il ne garde pas, et pourquoi (#422)
+ *
+ * Une règle nommée d'après un réseau — `.PERSO`, `.GR`, `.INCONNU` — ne peint
+ * pas l'interface : elle peint **le balisage**, et doit donc employer le
+ * jeton de carte, comme `ProgressBalise.tsx` le fait déjà plus bas dans ce
+ * fichier. Interdire `--vert-noir` partout aurait forcé le badge PERSO sur
+ * `--encre`, c'est-à-dire à s'éclaircir en thème sombre pendant que la carte
+ * continue de tracer le même trait sombre.
+ *
+ * L'interdiction saute donc ces règles-là, et seulement elles. La liste vient
+ * de `NETWORK_COLOR_VARS` : une exception écrite à la main aurait été la
+ * jumelle du §4ter, et se serait périmée au réseau suivant.
+ *
+ * C'est `tests/unit/badgesDeReseau.test.ts` qui prend le relais dans ce
+ * périmètre — il exige la couleur exacte du réseau, pour chaque feuille de
+ * badge. Un trou ici est donc couvert là, et pas laissé ouvert.
  */
 
 const FEUILLES: Record<string, string> = import.meta.glob(
@@ -47,6 +61,19 @@ const ROLES: { carte: string; role: string; quoi: string }[] = [
   { carte: '--gris-vert', role: '--encre-douce', quoi: 'le texte secondaire' },
 ]
 
+/**
+ * La feuille privée de ses règles de balisage — celles dont le sélecteur est
+ * un nom de réseau. C'est là, et là seulement, qu'un jeton de carte est à sa
+ * place (#422).
+ */
+function horsBalisage(source: string): string {
+  let reste = source
+  for (const reseau of Object.keys(NETWORK_COLOR_VARS)) {
+    reste = reste.replace(new RegExp(`^\\.${reseau}\\s*\\{[^}]*\\}`, 'gm'), '')
+  }
+  return reste
+}
+
 describe('les rôles d’interface ont leur propre nom (#361)', () => {
   it.each(ROLES)(
     'aucune feuille ne peint $quoi avec $carte',
@@ -56,7 +83,9 @@ describe('les rôles d’interface ont leur propre nom (#361)', () => {
         // `var(--gris-vert-clair)` contient `--gris-vert` : c'est la
         // parenthèse fermante qui distingue les deux, et l'oublier ferait
         // rougir ce test sur un jeton qui n'a rien à voir.
-        if (source.includes(`var(${carte})`)) coupables.push(chemin)
+        if (horsBalisage(source).includes(`var(${carte})`)) {
+          coupables.push(chemin)
+        }
       }
       expect(
         coupables,

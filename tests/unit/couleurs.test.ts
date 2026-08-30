@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import indexCss from '../../src/index.css?raw'
-import { NETWORK_COLORS, POSITION_COLOR } from '../../src/lib/networkDisplay.ts'
+import {
+  NETWORK_COLOR_VARS,
+  NETWORK_COLORS,
+  POSITION_COLOR,
+} from '../../src/lib/networkDisplay.ts'
 import {
   BLANC_BALISAGE,
   ENCRE,
@@ -18,15 +22,7 @@ import type { Network } from '../../src/core/types.ts'
  * décalage entre la couleur d'un badge et celle du tracé sur la carte ne se
  * voit qu'au moment où l'on compare, c'est-à-dire jamais.
  */
-const VARIABLES: Record<Network, string> = {
-  GR: '--rouge-balisage',
-  GRP: '--orange-grp',
-  PR: '--jaune-pr',
-  INTERNATIONAL: '--bleu-international',
-  LOCAL: '--bleu-local',
-  PERSO: '--vert-noir',
-  INCONNU: '--prune-inconnu',
-}
+const VARIABLES = NETWORK_COLOR_VARS
 
 describe('couleurs de réseau', () => {
   it('couvre tous les réseaux', () => {

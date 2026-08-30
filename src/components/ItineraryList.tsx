@@ -841,7 +841,10 @@ export function ItineraryList() {
                   selectItinerary(selected ? null : itin.osmRelationId)
                 }}
               >
-                <span className={`${styles.badge} ${styles[itin.network]}`}>
+                <span
+                  className={`${styles.badge} ${styles[itin.network]}`}
+                  data-reseau={itin.network}
+                >
                   {NETWORK_BADGES[itin.network]}
                 </span>
                 <span className={styles.rowMain}>

@@ -136,8 +136,17 @@
   background: var(--bleu-local);
 }
 
+/*
+  Le noir vert **de la carte**, et non l'encre de l'interface (#361).
+
+  Les deux valent le même hexadécimal, et `src/index.css` dit pourquoi : le
+  jeton portait deux rôles. Ce badge est du premier — c'est la couleur que
+  MapLibre trace pour un tracé perso —, et il ne suit donc pas le thème de
+  l'interface. Trois feuilles écrivaient `--encre` ici, deux autres
+  `--gris-vert` ; la carte, elle, n'a jamais tracé qu'en `--vert-noir`.
+*/
 .PERSO {
-  background: var(--encre);
+  background: var(--vert-noir);
 }
 
 .INCONNU {

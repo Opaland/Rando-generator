@@ -73,7 +73,10 @@ export function NextOuting() {
                   focusOn(suggestion.bestRun.start)
                 }}
               >
-                <span className={`${styles.badge} ${styles[itin.network]}`}>
+                <span
+                  className={`${styles.badge} ${styles[itin.network]}`}
+                  data-reseau={itin.network}
+                >
                   {NETWORK_BADGES[itin.network]}
                 </span>
                 <span className={styles.main}>

@@ -281,7 +281,10 @@ export function ItineraryDetail() {
       */}
       <header className={styles.header}>
         <div className={styles.identite}>
-          <span className={`${styles.badge} ${styles[itin.network]}`}>
+          <span
+            className={`${styles.badge} ${styles[itin.network]}`}
+            data-reseau={itin.network}
+          >
             {NETWORK_BADGES[itin.network]}
           </span>
           <div className={styles.titleBlock}>

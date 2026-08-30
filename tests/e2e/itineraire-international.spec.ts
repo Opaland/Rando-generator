@@ -1,6 +1,9 @@
 import { test, expect } from '@playwright/test'
-import { afficherTousLesReseaux, mockExternalNetwork } from './helpers.ts'
-import pilat from '../fixtures/overpass/pilat.json' with { type: 'json' }
+import {
+  afficherTousLesReseaux,
+  mockExternalNetwork,
+  pilatInternational,
+} from './helpers.ts'
 
 /**
  * Un itinéraire international ne s'annonce plus « réseau non déclaré » (#335).
@@ -21,35 +24,6 @@ import pilat from '../fixtures/overpass/pilat.json' with { type: 'json' }
  * gardée par `tests/unit/network.test.ts` : ce qui manquait était la preuve
  * qu'elle arrive jusqu'à l'écran.
  */
-
-/** La fixture du Pilat, son GR 7 requalifié en itinéraire international. */
-function pilatInternational(): unknown {
-  /*
-    Passage par `unknown` : la fixture est typée par son propre littéral
-    JSON, dont chaque tag optionnel vaut `undefined` plutôt que d'être
-    absent. TypeScript refuse la conversion directe vers `Record<string,
-    string>`, et il a raison — c'est bien une réinterprétation, pas un
-    sous-typage.
-  */
-  const data = pilat as unknown as {
-    elements: { id: number; tags?: Record<string, string> }[]
-  }
-  return {
-    ...data,
-    elements: data.elements.map((element) =>
-      element.id === 1001 && element.tags
-        ? {
-            ...element,
-            tags: {
-              ...element.tags,
-              network: 'iwn',
-              name: 'Via Lugdunum',
-            },
-          }
-        : element,
-    ),
-  }
-}
 
 async function chargerLeSecteur(page: import('@playwright/test').Page) {
   const overpass = await mockExternalNetwork(page)

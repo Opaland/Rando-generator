@@ -91,6 +91,29 @@ export const NETWORK_COLORS: Record<Network, string> = {
   INCONNU: '#882a5a',
 }
 
+/**
+ * Le nom de la propriété CSS qui porte la couleur de chaque réseau.
+ *
+ * `NETWORK_COLORS` donne la valeur ; ceci donne le **jeton**, c'est-à-dire ce
+ * qu'une feuille de style écrit. Les deux ne peuvent pas être fusionnés :
+ * MapLibre veut un hexadécimal, une feuille veut un `var(--…)`, et aucun des
+ * deux ne sait lire l'autre.
+ *
+ * Cette table vivait dans `tests/unit/couleurs.test.ts`, pour lui seul. Elle
+ * remonte ici parce qu'un deuxième test en a eu besoin — celui qui vérifie
+ * que les cinq feuilles de badge peignent la bonne couleur — et que deux
+ * copies de la même correspondance auraient eu le même trou (§4ter).
+ */
+export const NETWORK_COLOR_VARS: Record<Network, string> = {
+  GR: '--rouge-balisage',
+  GRP: '--orange-grp',
+  PR: '--jaune-pr',
+  INTERNATIONAL: '--bleu-international',
+  LOCAL: '--bleu-local',
+  PERSO: '--vert-noir',
+  INCONNU: '--prune-inconnu',
+}
+
 export const NETWORK_LABELS: Record<Network, string> = {
   GR: 'GR',
   GRP: 'GR de Pays',
