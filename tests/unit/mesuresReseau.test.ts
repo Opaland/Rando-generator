@@ -255,6 +255,8 @@ interface RelationVue {
   fenetre: string
   id: number
   tags: Record<string, string>
+  /** Les membres, pour distinguer une relation plate d'une super-relation. */
+  membres: { type?: string; ref?: number }[]
 }
 
 /**
@@ -267,8 +269,13 @@ interface RelationVue {
  */
 async function relationsDesFenetres(
   fenetres: readonly Fenetre[],
-): Promise<{ relations: RelationVue[]; trous: string[] }> {
+): Promise<{
+  relations: RelationVue[]
+  chemins: ElementTague[]
+  trous: string[]
+}> {
   const vues = new Map<number, RelationVue>()
+  const cheminsVus = new Map<number, ElementTague>()
   const trous: string[] = []
   let premiere = true
   for (const fenetre of fenetres) {
@@ -295,20 +302,47 @@ async function relationsDesFenetres(
       const data = (await reponse.json()) as { elements?: ElementTague[] }
       let neuves = 0
       for (const element of data.elements ?? []) {
+        if (element.type === 'way' && element.id !== undefined) {
+          if (!cheminsVus.has(element.id)) cheminsVus.set(element.id, element)
+        }
         if (element.type !== 'relation') continue
+        /*
+          **Toutes** les relations, pas seulement les pédestres.
+
+          La première version filtrait ici, et la mesure 11 en héritait une
+          question sans réponse possible : « quelles autres valeurs de `route`
+          y a-t-il ? » ne pouvait rendre que « aucune », puisque le filtre les
+          avait déjà retirées. Elle rendait donc « — » quoi qu'il arrive —
+          l'assertion qui passe pour une raison qu'on n'a pas voulue, §1bis.
+
+          Le tri appartient à chaque mesure, pas au ramassage.
+        */
         const tags = element.tags ?? {}
-        const route = tags['route']
-        if (route === undefined || !ROUTES_PEDESTRES.has(route)) continue
         if (element.id === undefined || vues.has(element.id)) continue
-        vues.set(element.id, { fenetre: fenetre.nom, id: element.id, tags })
+        vues.set(element.id, {
+          fenetre: fenetre.nom,
+          id: element.id,
+          tags,
+          membres: (element as { members?: { type?: string; ref?: number }[] })
+            .members ?? [],
+        })
         neuves += 1
       }
-      ligne(`  ${fenetre.nom.padEnd(32)} ${String(neuves).padStart(3)} relations neuves`)
+      // « tous types » et non « pédestres » : le ramassage ne trie plus, et
+      // laisser « relations neuves » ferait lire ces nombres comme des
+      // itinéraires alors qu'ils comptent aussi les lignes de bus.
+      ligne(
+        `  ${fenetre.nom.padEnd(32)} ${String(neuves).padStart(3)} relations neuves (tous types)`,
+      )
       servie = true
     }
     if (!servie) trous.push(fenetre.nom)
   }
-  return { relations: [...vues.values()], trous }
+  return {
+    relations: [...vues.values()],
+    chemins: [...cheminsVus.values()],
+    trous,
+  }
 }
 
 /**
@@ -944,18 +978,23 @@ out ids;`
       titre('#290 — ce que la carte peint contre ce qui est peint sur l’arbre')
       ligne('Par `api.openstreetmap.org`, Overpass étant coupé (voir plus haut).')
       ligne('')
-      const { relations, trous } = await relationsDesFenetres(FENETRES_BALISAGE)
+      const { relations: toutes, trous } =
+        await relationsDesFenetres(FENETRES_BALISAGE)
       ligne('')
       if (trous.length > 0) {
         ligne(`fenêtres sans réponse : ${trous.join(', ')}`)
         ligne('(elles ne comptent pour zéro nulle part — elles manquent.)')
         ligne('')
       }
-      if (relations.length === 0) {
+      if (toutes.length === 0) {
         ligne('Aucune fenêtre n’a répondu : la question reste ouverte.')
         return
       }
 
+      // Le ramassage rend toutes les relations : c'est ici qu'on trie.
+      const relations = toutes.filter((r) =>
+        ROUTES_PEDESTRES.has(r.tags['route'] ?? ''),
+      )
       const avec = relations.filter((r) => r.tags['osmc:symbol'] !== undefined)
       const lisibles = avec.filter(
         (r) => decrireBalisage(r.tags['osmc:symbol']) !== null,
@@ -1027,6 +1066,108 @@ out ids;`
       ligne('balisage donne une carte juste là où le Club Vosgien a travaillé et')
       ligne('muette ailleurs — une carte à deux régimes, ce que #290 voulait')
       ligne('précisément éviter. La moyenne, elle, cacherait cet écart.')
+    },
+  )
+
+  /**
+   * Les fenêtres de Porcelette (Moselle), pour #321.
+   *
+   * Le nord et le sud du village dépassent les 50 000 nœuds de l'API OSM —
+   * mesuré le 30/08, HTTP 400 sur les deux. Trois fenêtres est-ouest les
+   * remplacent : le géocodeur place Porcelette à 49,1634 / 6,6596, et le
+   * rayon de la recherche « autour » est de douze kilomètres, donc elles
+   * tombent toutes dans ce que l'application aurait interrogé.
+   */
+  const FENETRES_PORCELETTE: readonly Fenetre[] = [
+    { nom: 'Porcelette centre', bbox: '6.69,49.11,6.75,49.15' },
+    { nom: 'Porcelette ouest', bbox: '6.63,49.11,6.69,49.15' },
+    { nom: 'Porcelette est', bbox: '6.75,49.11,6.81,49.15' },
+  ]
+
+  it(
+    '11 — Porcelette : les trois hypothèses de #321, éprouvées (#321)',
+    { timeout: 900_000 },
+    async () => {
+      titre('#321 — trois PR au village, zéro proposée : pourquoi ?')
+      const { relations, chemins, trous } =
+        await relationsDesFenetres(FENETRES_PORCELETTE)
+      ligne('')
+      if (trous.length > 0) ligne(`fenêtres sans réponse : ${trous.join(', ')}`)
+      if (relations.length === 0) {
+        ligne('Aucune fenêtre n’a répondu : la question reste ouverte.')
+        return
+      }
+
+      /*
+        Hypothèse 1 de l'issue : « les PR ne sont pas des relations, mais des
+        chemins balisés que rien ne rassemble ». Elle décidait de tout — si
+        elle est vraie, il faut savoir assembler un itinéraire sans relation
+        pour dire l'ordre, et c'est un chantier.
+      */
+      const pedestres = relations.filter((r) =>
+        ROUTES_PEDESTRES.has(r.tags['route'] ?? ''),
+      )
+      const membresChemins = new Set<number>()
+      for (const relation of pedestres) {
+        for (const membre of relation.membres) {
+          if (membre.type === 'way' && membre.ref !== undefined) {
+            membresChemins.add(membre.ref)
+          }
+        }
+      }
+      const balises = chemins.filter((c) => {
+        const tags = c.tags ?? {}
+        return (
+          tags['osmc:symbol'] !== undefined ||
+          /^[lrni]wn$/.test(tags['network'] ?? '')
+        )
+      })
+      const orphelins = balises.filter(
+        (c) => c.id !== undefined && !membresChemins.has(c.id),
+      )
+
+      /*
+        Hypothèse 2 : « des relations sans tag `route` reconnu ». On liste donc
+        les valeurs de `route` réellement présentes, plutôt que de supposer.
+      */
+      const autresRoutes = new Set(
+        relations
+          .map((r) => r.tags['route'])
+          .filter(
+            (route): route is string =>
+              route !== undefined && !ROUTES_PEDESTRES.has(route),
+          ),
+      )
+
+      ligne(`relations collectées          : ${String(relations.length)}`)
+      ligne(`   dont pédestres             : ${String(pedestres.length)}`)
+      ligne(`chemins collectés             : ${String(chemins.length)}`)
+      ligne(`   portant un balisage        : ${String(balises.length)}`)
+      ligne(`   …hors de toute relation    : ${String(orphelins.length)}`)
+      ligne(`autres valeurs de route       : ${[...autresRoutes].join(', ') || '—'}`)
+      ligne('')
+      for (const relation of pedestres) {
+        const chemin = relation.membres.filter((m) => m.type === 'way').length
+        const filles = relation.membres.filter((m) => m.type === 'relation').length
+        ligne(
+          `  r${String(relation.id).padEnd(9)} chemins:${String(chemin).padStart(4)}` +
+            ` filles:${String(filles).padStart(2)}  ${(relation.tags['name'] ?? '').slice(0, 42)}`,
+        )
+      }
+      ligne('')
+      ligne('À lire, hypothèse par hypothèse :')
+      ligne('  1. « des chemins balisés sans relation » — c’est la ligne')
+      ligne('     « hors de toute relation ». À zéro, l’hypothèse tombe, et')
+      ligne('     avec elle le chantier d’assemblage qu’elle impliquait.')
+      ligne('  2. « des relations sans route reconnu » — c’est la ligne des')
+      ligne('     autres valeurs. Si elle ne porte que du routier et du')
+      ligne('     ferroviaire, il n’y a rien de pédestre à récupérer.')
+      ligne('  3. « le géocodage tombe trop loin » — le géocodeur place')
+      ligne('     Porcelette à 49,1634 / 6,6596, et ces fenêtres sont à moins')
+      ligne('     de six kilomètres. Elles sont donc dans le rayon de douze.')
+      ligne('')
+      ligne('Si les trois tombent, la donnée n’est pas en cause : c’est notre')
+      ligne('chemin de code qu’il faut rejouer sur cette commune.')
     },
   )
 })
