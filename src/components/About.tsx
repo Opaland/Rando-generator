@@ -235,7 +235,7 @@ export function About({
           </ul>
           <p>
             S’y ajoutent les <strong>itinéraires internationaux</strong> —
-            Compostelle, Via Alpina, sentiers européens —, que OpenStreetMap
+            Compostelle, Via Alpina, sentiers européens — qu’OpenStreetMap
             déclare à part&nbsp;: ils traversent plusieurs pays, et leur
             balisage change avec eux, donc Sentiers n’en promet aucun. Puis les{' '}
             <strong>boucles locales</strong> publiées en données ouvertes par

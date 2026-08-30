@@ -104,7 +104,7 @@ existant via `PW_CHROMIUM_PATH=/chemin/vers/chrome npm run e2e`.
    par réseau, top 5), liste triable/filtrable.
 
    **Les grands itinéraires sont repliés par défaut** — les GR et les
-   itinéraires internationaux —, sur la carte comme dans la liste. Un tel
+   itinéraires internationaux — sur la carte comme dans la liste. Un tel
    itinéraire traverse la zone de part en part : mesuré sur des fiches
    réelles, une boucle communale fait 8,6 km quand la Via Lugdunum en fait
    153, et le tracé long **barre l'écran** au lieu de l'informer. Une
