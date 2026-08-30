@@ -8,6 +8,7 @@ import {
   mockElevation,
   mockExternalNetwork,
   mockTilesOk,
+  pilatInternationalEtInconnu,
 } from "./helpers.ts";
 
 /**
@@ -285,7 +286,40 @@ async function atteindre(
   compact: boolean,
   sombre = false,
 ): Promise<void> {
-  await mockExternalNetwork(page);
+  /*
+    Une fixture qui met la sonde à l'épreuve (#422).
+
+    La fixture Pilat ordinaire ne produit que `GR`, `PR` et `GRP` — trois
+    réseaux qui ont leur classe dans les cinq feuilles de badge. La sonde
+    passait donc devant les badges sans rien avoir à voir, et c'est
+    exactement ainsi que #422 a tenu deux mois : `INTERNATIONAL` et `INCONNU`
+    n'étaient peints nulle part dans deux panneaux, en blanc sur blanc, et
+    aucun test ne les faisait apparaître.
+
+    Une sonde bien placée devant une donnée trop docile reste verte pour
+    rien. Celle-ci voit désormais les sept réseaux.
+
+    ## Ce qu'elle en attrape, et ce qu'elle n'en attrape pas
+
+    Défaut de #422 réinjecté, les deux classes retirées des deux feuilles :
+    elle rougit sur les quatre combinaisons **claires**, en nommant
+    « INTER » à 1:1, `rgb(255, 255, 255)` sur `rgb(255, 255, 255)`. Sans ce
+    branchement elle restait verte sur les huit.
+
+    Elle reste verte sur les quatre **sombres**, et ce n'est pas un défaut
+    d'elle : sans classe, le badge est transparent et laisse voir la ligne,
+    qui en sombre vaut #1f2723. Du blanc dessus se lit très bien. Le badge
+    est tout aussi faux — il ne porte plus l'identité de son réseau — mais ce
+    n'est plus un défaut *de contraste*, et une sonde de contraste ne peut
+    pas le voir.
+
+    C'est pourquoi `tests/unit/badgesDeReseau.test.ts` existe à côté : il
+    demande « cette règle peint-elle la couleur que la carte trace ? », une
+    question à laquelle le thème ne change rien. Les deux gardes ne se
+    remplacent pas.
+  */
+  const overpass = await mockExternalNetwork(page);
+  overpass.setFixture(pilatInternationalEtInconnu());
   await mockTilesOk(page);
   await mockElevation(page);
   await page.emulateMedia({
