@@ -21,6 +21,7 @@ import {
   OSM,
   OSM_FOND_ET_TRACES,
 } from '../../lib/attribution.ts'
+import { ORDRE_DES_RESEAUX } from '../../core/reseaux.ts'
 import type { Itinerary, PointOfInterest } from '../../core/types.ts'
 import { segmentsDeRevetement } from '../../core/revetement.ts'
 import {
@@ -49,23 +50,43 @@ export const OSM_TILES = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
 export const ATTRIBUTION = attributionHtml(IGN, OSM, METROPOLE)
 export const ATTRIBUTION_OSM = attributionHtml(OSM_FOND_ET_TRACES, METROPOLE)
 
-const NETWORK_COLOR_MATCH: ExpressionSpecification = [
+/**
+ * La couleur d'un tracé, par réseau — **dérivée**, jamais énumérée (#412).
+ *
+ * Elle l'était, et il en manquait un : `INCONNU` n'était pas dans la liste et
+ * tombait donc dans le repli. La carte peignait `#5a6b5d` là où le badge, la
+ * légende et la barre de progression peignaient `#882a5a` — ΔE 56,2. Pire, ce
+ * gris est à ΔE 13,9 du « dur » et 12,2 de l'« autre » des bandes de terrain,
+ * soit **plus proche** que le gris neutre que #284 avait mesuré puis refusé
+ * pour cette raison exacte.
+ *
+ * Cette table était la quatrième copie de la palette, à côté des trois que
+ * `scripts/listes-jumelles.mjs` tient d'accord. Elle n'en est plus une : le
+ * §4ter préfère une dérivation à une garde, parce qu'une dérivation ne peut
+ * pas oublier.
+ *
+ * Le repli reste, parce que `match` en exige un — il ne couvre qu'une valeur
+ * qui ne serait pas un réseau, ce que `mapdata` ne produit pas.
+ */
+const NETWORK_COLOR_MATCH = [
   'match',
   ['get', 'network'],
-  'GR',
-  NETWORK_COLORS.GR,
-  'GRP',
-  NETWORK_COLORS.GRP,
-  'PR',
-  NETWORK_COLORS.PR,
-  'INTERNATIONAL',
-  NETWORK_COLORS.INTERNATIONAL,
-  'LOCAL',
-  NETWORK_COLORS.LOCAL,
-  'PERSO',
-  NETWORK_COLORS.PERSO,
+  ...ORDRE_DES_RESEAUX.flatMap((reseau) => [reseau, NETWORK_COLORS[reseau]]),
   GRIS_VERT,
-]
+  /*
+    La conversion large, et ce qui la rachète.
+
+    Le type de `match` chez MapLibre est un n-uplet : il exige nommément ses
+    deux premières branches, et une liste construite par `flatMap` ne peut pas
+    lui prouver qu'elle en contient au moins une. TypeScript refuse donc la
+    conversion directe, et il a raison — c'est bien une réinterprétation.
+
+    Ce que le compilateur ne vérifie plus, `tests/unit/reseauxSurLaCarte.test.ts`
+    le vérifie à l'exécution : que la table est bien un `match`, que chaque
+    réseau y est, avec sa couleur, et que le style entier passe le validateur
+    officiel du style-spec. Une garde perdue se remplace, elle ne se raye pas.
+  */
+] as unknown as ExpressionSpecification
 
 export function baseStyle(tiles: string, attribution: string): StyleSpecification {
   return {
