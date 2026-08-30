@@ -74,6 +74,20 @@ const IGNORES = [
   'coverage',
   'test-results',
   'playwright-report',
+  /*
+    Les deux répertoires de la vague de mutation. `.stryker-tmp` contient une
+    **copie instrumentée de tout l'arbre source** : sans cette ligne, le
+    script la parcourt et compte chaque citation deux fois. Mesuré le 30/08,
+    juste après une vague : 782 occurrences au lieu de 259.
+
+    Le verdict, lui, restait juste — ce sont les mêmes fichiers, donc les
+    mêmes chemins. Mais le script *annonce un nombre*, et un nombre qui
+    dépend de ce qui traîne sur le disque n'est pas une mesure. `dist` et
+    `coverage` étaient déjà ignorés pour cette raison ; ceux-ci manquaient
+    parce qu'ils n'existent qu'après une commande qu'on lance rarement.
+  */
+  '.stryker-tmp',
+  'reports',
 ]
 
 /**
