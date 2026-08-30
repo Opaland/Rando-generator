@@ -186,7 +186,13 @@ function jeton(nom: string, mode: 'normal' | 'gros'): string {
  * échec dit qu'un ratio est trop bas sans dire où regarder.
  */
 const COUPLES: { ou: string; texte: string; fond: string }[] = [
-  { ou: 'badge PR (liste, fiche)', texte: '--vert-noir', fond: '--jaune-pr' },
+  /*
+    Les jetons de **rôle** et non ceux de carte, depuis #361 : ces couples
+    disent ce qui se lit dans l'interface, et l'interface est ce qui changera
+    de fond au premier thème sombre. Les employer ici, c'est faire mesurer à
+    ce test le mode qu'on aura, pas seulement celui qu'on a.
+  */
+  { ou: 'badge PR (liste, fiche)', texte: '--encre', fond: '--jaune-pr' },
   { ou: 'badge GR', texte: '--blanc-balisage', fond: '--rouge-balisage' },
   { ou: 'badge GRP', texte: '--blanc-balisage', fond: '--orange-grp' },
   {
@@ -197,11 +203,11 @@ const COUPLES: { ou: string; texte: string; fond: string }[] = [
   {
     ou: 'étoiles de qualité',
     texte: '--jaune-pr-lisible',
-    fond: '--blanc-papier',
+    fond: '--papier',
   },
-  { ou: 'écart de progression', texte: '--orange-grp', fond: '--blanc-papier' },
-  { ou: 'texte courant', texte: '--vert-noir', fond: '--blanc-papier' },
-  { ou: 'texte secondaire', texte: '--gris-vert', fond: '--blanc-papier' },
+  { ou: 'écart de progression', texte: '--orange-grp', fond: '--papier' },
+  { ou: 'texte courant', texte: '--encre', fond: '--papier' },
+  { ou: 'texte secondaire', texte: '--encre-douce', fond: '--papier' },
 ]
 
 describe('les couples texte / fond tiennent WCAG 1.4.3 AA', () => {

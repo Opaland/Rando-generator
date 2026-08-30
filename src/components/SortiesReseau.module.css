@@ -14,7 +14,7 @@
 
 .rien {
   margin: 0;
-  color: var(--gris-vert);
+  color: var(--encre-douce);
   font-size: var(--texte-secondaire);
 }
 
@@ -48,7 +48,7 @@
 
 .hotes {
   grid-column: 1 / -1;
-  color: var(--gris-vert);
+  color: var(--encre-douce);
   font-size: var(--texte-appui);
   min-width: 0;
   overflow-wrap: anywhere;
@@ -68,6 +68,6 @@
 
 .note {
   margin: var(--espace-4) 0 0;
-  color: var(--gris-vert);
+  color: var(--encre-douce);
   font-size: var(--texte-appui);
 }

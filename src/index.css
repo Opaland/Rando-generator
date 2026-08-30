@@ -59,6 +59,33 @@
   --vert-noir: #1e2b23;
   --gris-vert: #5a6b5d;
   --gris-vert-clair: #e7e9e4;
+
+  /* ---- Les rôles, et pourquoi ils ne sont pas les couleurs (issue #361) ----
+
+     Trois jetons ci-dessus servent **deux choses chacun** :
+
+       --blanc-papier   la surface de l'interface   ET le fond de la carte
+       --vert-noir      l'encre de l'interface      ET la couleur du réseau PERSO
+       --gris-vert      le texte secondaire         ET un repli de la carte
+
+     Tant que l'application n'a qu'un thème clair, les deux rôles ont la même
+     valeur et la confusion ne coûte rien. Elle coûte au premier thème sombre :
+     **le fond de carte de l'IGN reste clair**, donc la carte garde ses
+     couleurs pendant que l'interface inverse les siennes. Un seul jeton ne
+     peut pas suivre les deux.
+
+     C'est le §4ter avant qu'il ne morde : une règle écrite à un endroit pour
+     deux usages, qui paraît juste tant qu'un seul des deux bouge. Les rôles
+     d'interface prennent donc leur nom **maintenant**, pendant que le
+     renommage ne déplace rien d'un pixel — et les jetons d'origine restent
+     ce qu'ils sont, des couleurs de carte que `tests/unit/couleurs.test.ts`
+     tient d'accord avec leurs constantes JavaScript.
+
+     Ce commit ne change aucune couleur. Il rend seulement possible d'en
+     changer une sans changer l'autre. */
+  --papier: #faf7f2;
+  --encre: #1e2b23;
+  --encre-douce: #5a6b5d;
   --erreur-fond: #fdecec;
   --erreur-bord: #c8102e;
   /* « À vous de voir » : ni une erreur ni une réussite. Le rouge de l'erreur
@@ -298,8 +325,8 @@ body {
      défaut : l'affichage habituel ne bouge pas d'un pixel. */
   font-size: var(--texte-corps);
   line-height: 1.45;
-  background: var(--blanc-papier);
-  color: var(--vert-noir);
+  background: var(--papier);
+  color: var(--encre);
 }
 
 h1,
@@ -331,7 +358,7 @@ a:focus-visible,
      puis un cerne sombre le détache — la séquence clair / rouge / sombre reste
      visible sur un fond de carte comme sur un panneau blanc. */
   box-shadow:
-    0 0 0 2px var(--blanc-papier),
+    0 0 0 2px var(--papier),
     0 0 0 8px rgba(30, 43, 35, 0.4);
 }
 
@@ -381,8 +408,8 @@ a:focus-visible,
 
 .btn-secondary {
   background: var(--blanc-carte);
-  border-color: var(--vert-noir);
-  color: var(--vert-noir);
+  border-color: var(--encre);
+  color: var(--encre);
 }
 
 .btn-secondary:hover:not(:disabled) {
@@ -421,7 +448,7 @@ a:focus-visible,
 .btn-link:disabled {
   background: var(--gris-vert-clair);
   border-color: var(--gris-vert-clair);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
   cursor: not-allowed;
 }
 
@@ -442,11 +469,11 @@ a:focus-visible,
   border-radius: var(--rayon-md);
   font-size: var(--texte-vedette);
   line-height: 1;
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .btn-icon-close:hover {
-  color: var(--vert-noir);
+  color: var(--encre);
   background: var(--gris-vert-clair);
 }
 
@@ -607,7 +634,7 @@ label:has(> input[type="radio"]) {
   content: "▾";
   flex: none;
   font-size: var(--texte-mention);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
   transition: transform 0.15s;
 }
 
@@ -782,8 +809,15 @@ aside :is(button, label, p, li, h2, h3, span, output) {
 
   /* Contrastes renforcés. Le gris-vert passait tout juste le seuil AA sur du
      papier blanc ; ici il ne suffit plus, puisque c'est précisément une
-     difficulté de lecture qu'on cherche à compenser. */
-  --gris-vert: #3d4a40;
+     difficulté de lecture qu'on cherche à compenser.
+
+     C'est `--encre-douce` qu'on renforce, et non `--gris-vert` : depuis #361,
+     le texte secondaire de l'interface a son propre nom, et c'est celui-là
+     que les feuilles lisent. Renforcer l'autre ne renforçait plus rien — le
+     premier jet du renommage l'a fait, et `contraste-rendu.spec.ts` l'a dit
+     sur deux largeurs en gros texte. Le jeton de carte, lui, n'a aucune
+     raison de changer avec une préférence de taille de texte. */
+  --encre-douce: #3d4a40;
   --gris-vert-clair: #d6dad2;
   --orange-grp: #8f3a06;
   /*

@@ -7,13 +7,13 @@
   font-size: var(--texte-titre);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .hint {
   margin: 0;
   font-size: var(--texte-secondaire);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .addRow {
@@ -33,7 +33,7 @@
 .success {
   margin: 0;
   padding: var(--espace-3) var(--espace-5);
-  border-left: 4px solid var(--vert-noir);
+  border-left: 4px solid var(--encre);
   background: var(--gris-vert-clair);
   font-size: var(--texte-secondaire);
 }
@@ -62,7 +62,7 @@
   align-items: center;
   padding: var(--espace-4) var(--espace-5);
   border: 1px solid var(--gris-vert-clair);
-  border-left: 4px solid var(--vert-noir);
+  border-left: 4px solid var(--encre);
   border-radius: var(--rayon-md);
   background: var(--blanc-carte);
   text-align: left;
@@ -99,5 +99,5 @@
 
 .km {
   font-size: var(--texte-appui);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }

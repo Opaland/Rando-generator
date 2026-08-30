@@ -7,7 +7,7 @@
   font-size: var(--texte-titre);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .totals {
@@ -38,11 +38,11 @@
   /* Les mois sous l'histogramme sont du texte qu'on lit, pas une étiquette
      contrainte en largeur : ils suivent le plancher commun. */
   font-size: var(--texte-appui);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .hint {
   margin: 0;
   font-size: var(--texte-appui);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }

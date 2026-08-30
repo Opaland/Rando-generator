@@ -4,7 +4,7 @@
   right: 0;
   bottom: 0;
   z-index: var(--z-overlay-card);
-  background: var(--blanc-papier);
+  background: var(--papier);
   border: 1px solid var(--gris-vert-clair);
   border-top: 5px solid var(--rouge-balisage);
   box-shadow: var(--ombre-feuille);
@@ -92,7 +92,7 @@
 
 .PR {
   background: var(--jaune-pr);
-  color: var(--vert-noir);
+  color: var(--encre);
 }
 
 .INTERNATIONAL {
@@ -104,7 +104,7 @@
 }
 
 .PERSO {
-  background: var(--vert-noir);
+  background: var(--encre);
 }
 
 .INCONNU {
@@ -114,7 +114,7 @@
 .sub {
   margin: 0;
   font-size: var(--texte-secondaire);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .pct {
@@ -128,7 +128,7 @@
 .detail {
   margin: 0;
   font-size: var(--texte-secondaire);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .detailLink {
@@ -146,7 +146,7 @@
 .milestone {
   margin: var(--espace-2) 0 0;
   font-size: var(--texte-appui);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
   font-variant-numeric: tabular-nums;
   min-height: 1.1em;
 }
@@ -169,7 +169,7 @@
 }
 
 .objectif {
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .objectifActif {

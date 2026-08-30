@@ -7,12 +7,12 @@
   font-size: var(--texte-titre);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .dropzone,
 .dropzoneActive {
-  border: 2px dashed var(--gris-vert);
+  border: 2px dashed var(--encre-douce);
   border-radius: var(--rayon-lg);
   padding: var(--espace-7);
   text-align: center;
@@ -50,7 +50,7 @@
 .dropHint {
   margin: var(--espace-3) 0 0;
   font-size: var(--texte-appui);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .importing {
@@ -64,7 +64,7 @@
 .success {
   margin: 0;
   padding: var(--espace-3) var(--espace-5);
-  border-left: 4px solid var(--vert-noir);
+  border-left: 4px solid var(--encre);
   background: var(--gris-vert-clair);
   font-size: var(--texte-secondaire);
 }
@@ -82,7 +82,7 @@
 }
 
 .errors button {
-  border: 1px solid var(--vert-noir);
+  border: 1px solid var(--encre);
   background: var(--blanc-carte);
   border-radius: var(--rayon-sm);
   padding: var(--espace-1) var(--espace-5);
@@ -122,7 +122,7 @@
 }
 
 .doublonActions button {
-  border: 1px solid var(--vert-noir);
+  border: 1px solid var(--encre);
   background: var(--blanc-carte);
   border-radius: var(--rayon-sm);
   /* 44 px de haut : la cible se touche en marchant, avec des gants. */
@@ -133,7 +133,7 @@
 .empty {
   margin: 0;
   font-size: var(--texte-courant);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .list {
@@ -176,7 +176,7 @@
 
 .itemMeta {
   font-size: var(--texte-appui);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .outing {
@@ -197,7 +197,7 @@
 .outingHint {
   margin: 0;
   font-size: var(--texte-appui);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .outingList {
@@ -246,7 +246,7 @@
 .compte {
   margin: 0;
   font-size: var(--texte-appui);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
   text-align: right;
   justify-self: end;
 }
@@ -277,7 +277,7 @@
 .anneeCompte {
   font-weight: 400;
   font-size: var(--texte-appui);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .plus {
@@ -309,13 +309,13 @@
 .declarationsTitre {
   margin: 0;
   font-size: var(--texte-secondaire);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .declarationsAide {
   margin: 0;
   font-size: var(--texte-appui);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .declarationsListe {

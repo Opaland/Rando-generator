@@ -9,8 +9,8 @@
   align-items: baseline;
   gap: var(--espace-7);
   padding: var(--espace-5) var(--espace-7);
-  background: var(--vert-noir);
-  color: var(--blanc-papier);
+  background: var(--encre);
+  color: var(--papier);
   flex-wrap: wrap;
 }
 
@@ -43,7 +43,7 @@
   min-height: var(--cible-mini);
   border: 1px solid rgba(250, 247, 242, 0.4);
   background: none;
-  color: var(--blanc-papier);
+  color: var(--papier);
   border-radius: var(--rayon-md);
   padding: var(--espace-2) var(--espace-6);
   font-size: var(--texte-secondaire);
@@ -81,7 +81,7 @@
 
 .footer {
   font-size: var(--texte-appui);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
   border-top: 1px solid var(--gris-vert-clair);
   padding-top: var(--espace-5);
 }
@@ -126,7 +126,7 @@
   gap: var(--espace-8);
   align-content: start;
   border-right: 1px solid var(--gris-vert-clair);
-  background: var(--blanc-papier);
+  background: var(--papier);
 }
 
 .main {
@@ -172,12 +172,12 @@
   border-radius: var(--rayon-md);
   font-size: var(--texte-vedette);
   line-height: 1;
-  color: var(--gris-vert);
+  color: var(--encre-douce);
   cursor: pointer;
 }
 
 .replier:hover {
-  color: var(--vert-noir);
+  color: var(--encre);
   background: var(--gris-vert-clair);
 }
 
@@ -205,7 +205,7 @@
   border-left: none;
   border-radius: 0 var(--rayon-md) var(--rayon-md) 0;
   background: var(--blanc-carte);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
   font-size: var(--texte-titre);
   line-height: 1;
   cursor: pointer;
@@ -220,8 +220,8 @@
 }
 
 .rendrePanneau:hover {
-  color: var(--vert-noir);
-  border-color: var(--vert-noir);
+  color: var(--encre);
+  border-color: var(--encre);
 }
 
 /*
@@ -240,19 +240,19 @@
   border: 1px solid var(--gris-vert-clair);
   border-radius: var(--rayon-md);
   background: var(--blanc-carte);
-  color: var(--vert-noir);
+  color: var(--encre);
   font-size: var(--texte-appui);
   cursor: pointer;
   box-shadow: var(--ombre-panneau);
 }
 
 .rappelGuide:hover {
-  border-color: var(--vert-noir);
+  border-color: var(--encre);
 }
 
 .mapLoading {
   margin: var(--espace-8);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 /* Entre 800 et 1100 px — fenêtre réduite, tablette en paysage, écran
@@ -387,9 +387,9 @@
     padding: var(--espace-3) var(--espace-7) var(--espace-5);
     min-height: 52px;
     border: none;
-    background: var(--blanc-papier);
+    background: var(--papier);
     border-radius: 14px 14px 0 0;
-    color: var(--vert-noir);
+    color: var(--encre);
     font-weight: 600;
     font-size: var(--texte-secondaire);
   }

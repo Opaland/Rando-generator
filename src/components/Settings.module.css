@@ -7,7 +7,7 @@
   font-size: var(--texte-titre);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .row {
@@ -41,7 +41,7 @@
 .hint {
   margin: 0;
   font-size: var(--texte-secondaire);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 /* Seuil « bouclé » : un réglage à trois valeurs, pas un curseur — entre 90 et
@@ -95,7 +95,7 @@
 }
 
 .niveau:has(input:checked) {
-  border-color: var(--vert-noir);
+  border-color: var(--encre);
   background: var(--gris-vert-clair);
 }
 
@@ -107,7 +107,7 @@
 .niveauTexte {
   display: block;
   font-size: var(--texte-secondaire);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .detail {
@@ -119,6 +119,6 @@
   display: flex;
   align-items: center;
   font-size: var(--texte-secondaire);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
   cursor: pointer;
 }

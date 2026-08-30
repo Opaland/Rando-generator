@@ -7,13 +7,13 @@
   font-size: var(--texte-titre);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .hint {
   margin: 0;
   font-size: var(--texte-secondaire);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
   line-height: 1.45;
 }
 
@@ -57,7 +57,7 @@
 
 .PR {
   background: var(--jaune-pr);
-  color: var(--vert-noir);
+  color: var(--encre);
 }
 
 .LOCAL {
@@ -65,7 +65,7 @@
 }
 
 .PERSO {
-  background: var(--gris-vert);
+  background: var(--encre-douce);
 }
 
 .nom {
@@ -92,7 +92,7 @@
   border: none;
   border-radius: var(--rayon-sm);
   background: transparent;
-  color: var(--gris-vert);
+  color: var(--encre-douce);
   font-size: var(--texte-titre-fort);
   line-height: 1;
   cursor: pointer;
@@ -111,7 +111,7 @@
 .fini {
   margin: 0;
   font-size: var(--texte-secondaire);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .troncons {
@@ -129,7 +129,7 @@
   text-align: left;
   border: 1px solid var(--gris-vert-clair);
   border-radius: var(--rayon-sm);
-  background: var(--blanc-papier);
+  background: var(--papier);
   font: inherit;
   font-size: var(--texte-secondaire);
   font-variant-numeric: tabular-nums;
@@ -142,5 +142,5 @@
 }
 
 .aller {
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }

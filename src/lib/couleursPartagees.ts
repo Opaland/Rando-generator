@@ -14,14 +14,29 @@
  * jeton CSS : la duplication reste, la divergence non.
  */
 
-/** `--blanc-papier` : le fond de l'application, et le liseré des pastilles. */
+/**
+ * `--blanc-papier` : le fond **de la carte**, et le liseré des pastilles.
+ *
+ * C'était aussi le fond de l'interface, jusqu'à #361. Les deux rôles ont
+ * maintenant deux noms : l'interface peint avec `--papier`, qui vaut la même
+ * chose en thème clair et changera en sombre — le fond de l'IGN, lui, reste
+ * clair quoi qu'il arrive.
+ */
 export const PAPIER = '#faf7f2'
 
-/** `--vert-noir` : l'encre. Aussi la couleur du réseau PERSO. */
+/**
+ * `--vert-noir` : la couleur du réseau PERSO sur la carte.
+ *
+ * C'était aussi l'encre de l'interface, jusqu'à #361 — un jeton pour deux
+ * rôles, ce qui tient tant qu'un seul des deux bouge. L'interface écrit
+ * maintenant avec `--encre`.
+ */
 export const ENCRE = '#1e2b23'
 
 /**
- * `--gris-vert` : le texte secondaire.
+ * `--gris-vert` : le repli de MapLibre pour une valeur qui n'est pas un
+ * réseau. Le texte secondaire de l'interface, lui, s'écrit en `--encre-douce`
+ * depuis #361.
  *
  * Cette phrase disait aussi « et les tracés sans réseau connu ». C'était vrai
  * quand elle a été écrite, et faux depuis #412 : un tracé sans réseau déclaré

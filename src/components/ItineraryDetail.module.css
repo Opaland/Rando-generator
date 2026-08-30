@@ -66,8 +66,8 @@
     dégradé fixe n'aurait pas su faire.
   */
   background-image:
-    linear-gradient(var(--blanc-papier) 30%, rgba(250, 247, 242, 0)),
-    linear-gradient(rgba(250, 247, 242, 0), var(--blanc-papier) 70%),
+    linear-gradient(var(--papier) 30%, rgba(250, 247, 242, 0)),
+    linear-gradient(rgba(250, 247, 242, 0), var(--papier) 70%),
     linear-gradient(rgba(30, 43, 35, 0.16), rgba(30, 43, 35, 0)),
     linear-gradient(rgba(30, 43, 35, 0), rgba(30, 43, 35, 0.16));
   background-position:
@@ -82,7 +82,7 @@
     100% 10px,
     100% 10px;
   background-attachment: local, local, scroll, scroll;
-  background: var(--blanc-papier);
+  background: var(--papier);
   border-top: 1px solid var(--gris-vert-clair);
   border-top: 5px solid var(--rouge-balisage);
   box-shadow: var(--ombre-feuille);
@@ -125,7 +125,7 @@
 
 .PR {
   background: var(--jaune-pr);
-  color: var(--vert-noir);
+  color: var(--encre);
 }
 
 .INTERNATIONAL {
@@ -137,7 +137,7 @@
 }
 
 .PERSO {
-  background: var(--vert-noir);
+  background: var(--encre);
 }
 
 .INCONNU {
@@ -159,7 +159,7 @@
 .sub {
   margin: var(--espace-1) 0 0;
   font-size: var(--texte-secondaire);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
   /* Le sous-titre est le seul endroit qui nomme l'itinéraire en toutes
      lettres : deux lignes lui sont laissées, au-delà on coupe plutôt que
      d'empiler (AUDIT_UX.md, constat U10). */
@@ -172,18 +172,18 @@
 .view3d,
 .view3dActive {
   flex: none;
-  border: 1px solid var(--vert-noir);
+  border: 1px solid var(--encre);
   border-radius: var(--rayon-md);
   padding: var(--espace-5) var(--espace-6);
   min-height: 44px;
   background: var(--blanc-carte);
-  color: var(--vert-noir);
+  color: var(--encre);
   font-size: var(--texte-secondaire);
   font-weight: 600;
 }
 
 .view3dActive {
-  background: var(--vert-noir);
+  background: var(--encre);
   color: var(--texte-sur-couleur);
 }
 
@@ -204,7 +204,7 @@
 .km {
   margin: 0;
   font-size: var(--texte-secondaire);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .section {
@@ -218,26 +218,26 @@
   font-size: var(--texte-secondaire);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--gris-vert);
+  color: var(--encre-douce);
   margin: 0;
 }
 
 .hint {
   margin: 0;
   font-size: var(--texte-secondaire);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .elevationStats {
   margin: 0;
   font-size: var(--texte-secondaire);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .localMeta {
   margin: 0;
   font-size: var(--texte-secondaire);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .localDescription {
@@ -254,7 +254,7 @@
 .localSource {
   margin: 0;
   font-size: var(--texte-appui);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .poiList {
@@ -279,7 +279,7 @@
 }
 
 .poiItem:hover {
-  border-color: var(--vert-noir);
+  border-color: var(--encre);
 }
 
 .poiEntry {
@@ -290,7 +290,7 @@
 .poiFacts {
   margin: 0 0 0 var(--espace-5);
   font-size: var(--texte-appui);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .poiFacts a {
@@ -313,14 +313,14 @@
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  border: 2px solid var(--blanc-papier);
+  border: 2px solid var(--papier);
   box-shadow: 0 0 0 1px var(--gris-vert-clair);
 }
 
 .poiKind {
   flex: none;
   font-size: var(--texte-appui);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 .poiName {
@@ -395,7 +395,7 @@
 
 .stageRange {
   font-weight: 400;
-  color: var(--gris-vert);
+  color: var(--encre-douce);
   font-variant-numeric: tabular-nums;
 }
 
@@ -411,7 +411,7 @@
   display: grid;
   gap: var(--espace-2);
   font-size: var(--texte-appui);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
   border-left: 3px solid var(--jaune-pr);
   padding-left: var(--espace-4);
 }
@@ -422,14 +422,14 @@
 .pente {
   margin: var(--espace-2) 0 0;
   font-size: var(--texte-secondaire);
-  color: var(--vert-noir);
+  color: var(--encre);
 }
 
 /* L'effort qualifié (issue #156) : une appréciation, pas un chiffre. */
 .effort {
   margin: 0;
   font-size: var(--texte-appui);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
 
 /*
@@ -441,7 +441,7 @@
 */
 .balisage {
   font-size: var(--texte-appui);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
   margin: var(--espace-1) 0 0;
 }
 
@@ -456,7 +456,7 @@
   background: none;
   border: none;
   padding: 0.25rem 0;
-  color: var(--vert-noir);
+  color: var(--encre);
   text-decoration: underline;
   cursor: pointer;
   font: inherit;

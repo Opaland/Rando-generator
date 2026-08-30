@@ -31,7 +31,7 @@
      (docs/AUDIT_MOBILE.md, constat M5). */
   max-height: 100%;
   overflow-y: auto;
-  background: var(--blanc-papier);
+  background: var(--papier);
   border: 1px solid var(--gris-vert-clair);
   border-top: 6px solid var(--rouge-balisage);
   border-radius: var(--rayon-lg);
@@ -96,7 +96,7 @@
 .privacy {
   margin: 0;
   font-size: var(--texte-secondaire);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
   border-top: 1px solid var(--gris-vert-clair);
   padding-top: var(--espace-4);
 }
@@ -127,5 +127,5 @@
 .demoAide {
   margin: 0;
   font-size: var(--texte-appui);
-  color: var(--gris-vert);
+  color: var(--encre-douce);
 }
