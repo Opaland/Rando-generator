@@ -1,6 +1,17 @@
 import { describe, it, expect } from 'vitest'
-import { NETWORK_COLORS } from '../../src/lib/networkDisplay.ts'
+import {
+  NETWORK_COLORS,
+  POSITION_COLOR,
+} from '../../src/lib/networkDisplay.ts'
 import { ORDRE_DES_RESEAUX } from '../../src/core/reseaux.ts'
+import { POI_COLORS } from '../../src/lib/poiDisplay.ts'
+import { TERRAIN_COLORS } from '../../src/lib/revetementDisplay.ts'
+import {
+  BLANC_BALISAGE,
+  ENCRE,
+  GRIS_VERT,
+  PAPIER,
+} from '../../src/lib/couleursPartagees.ts'
 
 /**
  * La lisibilité des couleurs de réseau en vision deutéranope (issue #360).
@@ -120,5 +131,97 @@ describe('lisibilité en vision deutéranope (#360)', () => {
     const gr = enRvb(NETWORK_COLORS.GR)
     const grp = enRvb(NETWORK_COLORS.GRP)
     expect(ecart(gr, grp)).toBeGreaterThan(ECART_LISIBLE)
+  })
+})
+
+/* ---------- contraste, pour le badge et le fond ---------- */
+
+function luminance(rgb: [number, number, number]): number {
+  const [r, v, b] = rgb.map(canal) as [number, number, number]
+  return 0.2126 * r + 0.7152 * v + 0.0722 * b
+}
+function contraste(a: string, b: string): number {
+  const [clair, sombre] = [luminance(enRvb(a)), luminance(enRvb(b))].sort(
+    (x, y) => y - x,
+  ) as [number, number]
+  return (clair + 0.05) / (sombre + 0.05)
+}
+
+/**
+ * Toutes les couleurs que l'application **peint**, réunies une fois.
+ *
+ * Le commentaire de `INCONNU` disait « les vingt et une couleurs déjà
+ * prises » — un compte relevé à la main en août, et qui a vieilli sans que
+ * rien ne le dise : les points d'intérêt en ont gagné depuis. Le §4bis vaut
+ * aussi pour un nombre. Ici la liste se construit depuis les tables
+ * elles-mêmes, donc elle ne peut pas dériver.
+ */
+function couleursPeintes(sauf: string): string[] {
+  const toutes = [
+    ...Object.values(NETWORK_COLORS),
+    ...Object.values(TERRAIN_COLORS).filter((c): c is string => c !== null),
+    ...Object.values(POI_COLORS),
+    PAPIER,
+    ENCRE,
+    GRIS_VERT,
+    // `#fff` s'écrit en trois chiffres dans la palette ; `enRvb` en lit six.
+    BLANC_BALISAGE.length === 4 ? '#ffffff' : BLANC_BALISAGE,
+    POSITION_COLOR,
+  ]
+  return toutes.filter((c) => c.toLowerCase() !== sauf.toLowerCase())
+}
+
+/**
+ * La couleur du réseau international, mesurée (#335).
+ *
+ * Le §2 range le choix d'une teinte du côté de ce qui se **décide** — elle
+ * ne change rien à ce qui est calculé. Ce qui est mesurable, et donc gardé
+ * ici, c'est qu'elle se distingue : de tout ce qui est peint, en vision
+ * normale comme en vision deutéranope, et qu'elle porte du texte blanc.
+ *
+ * Les nombres sont ceux écrits dans `src/lib/networkDisplay.ts`. Les tenir
+ * ici évite qu'ils vieillissent : une couleur ajoutée ailleurs dans la
+ * palette fera rougir ce test, ce qu'aucune relecture ne ferait.
+ */
+describe('la couleur de l’itinéraire international (#335)', () => {
+  const INTER = NETWORK_COLORS.INTERNATIONAL
+
+  it('se distingue de tout ce que l’application peint', () => {
+    const voisines = couleursPeintes(INTER)
+      .map((c) => [c, ecart(enRvb(INTER), enRvb(c))] as const)
+      .sort((a, b) => a[1] - b[1])
+    const [plusProche, distance] = voisines[0] as readonly [string, number]
+    expect(
+      distance,
+      `${INTER} est à ΔE ${distance.toFixed(1)} de ${plusProche}, sous le` +
+        ` repère de ${String(ECART_LISIBLE)} : les deux se confondent sur la carte.`,
+    ).toBeGreaterThanOrEqual(ECART_LISIBLE)
+    // 26,2 au relevé du 30/08, contre le bleu des points d'eau. La borne
+    // haute dit que la mesure est bien celle qu'on croit : un écart devenu
+    // énorme signalerait qu'on ne compare plus les mêmes couleurs.
+    expect(distance).toBeLessThan(40)
+  })
+
+  it('reste séparable pour un deutéranope, et largement', () => {
+    /*
+      C'est ce qui a écarté le vert (#00833f, ΔE deutéranope 25,3) et le rose
+      (#cb3b63, 27,0) au profit du bleu. #360 dit que la paire GR/GRP
+      s'effondre déjà pour un homme sur douze : ajouter une couleur qui ne
+      tient que de justesse aurait été empiler sur un défaut ouvert.
+    */
+    const inter = deuteranope(enRvb(INTER))
+    const autres = ORDRE_DES_RESEAUX.filter(
+      (r) => r !== 'PERSO' && r !== 'INTERNATIONAL',
+    )
+    const distances = autres.map((r) =>
+      ecart(inter, deuteranope(enRvb(NETWORK_COLORS[r]))),
+    )
+    expect(Math.min(...distances)).toBeGreaterThan(40)
+  })
+
+  it('porte du texte blanc, et se pose sur le papier', () => {
+    // WCAG 1.4.3 niveau AA, 4,5:1 — un seuil emprunté, pas inventé (§6sexies).
+    expect(contraste('#ffffff', INTER)).toBeGreaterThanOrEqual(4.5)
+    expect(contraste(INTER, PAPIER)).toBeGreaterThanOrEqual(4.5)
   })
 })

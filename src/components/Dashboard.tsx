@@ -20,6 +20,8 @@ const NETWORK_LABELS: Record<Network, string> = {
   GR: 'GR',
   GRP: 'GR de Pays',
   PR: 'PR',
+  // Au pluriel comme ses voisins : le tableau de bord agrège des kilomètres.
+  INTERNATIONAL: 'Itinéraires internationaux',
   LOCAL: 'Boucles locales',
   // Les itinéraires persos ont leur propre section : jamais affichés ici
   // (leur total reste à 0 dans le matching des réseaux OSM).

@@ -22,6 +22,7 @@ changement de palette.
 | `--rouge-balisage` | `#c8102e` | GR |
 | `--orange-grp` | `#b34a08` | GR de Pays — foncé pour tenir 4,5:1 avec du texte blanc |
 | `--jaune-pr` | `#d9a400` | PR |
+| `--bleu-international` | `#1747b8` | Itinéraire international, `network=iwn` (#335) |
 | `--prune-inconnu` | `#882a5a` | Réseau non déclaré (#284) |
 | `--bleu-local` | `#1d7a8c` | Boucles locales open data |
 

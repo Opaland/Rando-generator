@@ -22,16 +22,36 @@
   background: var(--blanc-carte);
 }
 
+/*
+  La rangée passe à la ligne, et chaque case garde sa taille (#335).
+
+  Six cases tenaient sur une ligne de panneau ; la septième — l'itinéraire
+  international — ne tient plus, et sans `flex-wrap` la rangée débordait :
+  359 px de contenu dans un cadre de 319 sur tablette en paysage, mesuré par
+  `regles-d-ecran.spec.ts` sur cinq états.
+
+  `flex-shrink: 0` est la moitié qui compte vraiment. Sans lui, une rangée
+  trop large ne déborde pas : elle **écrase ses enfants**. Les cases à cocher
+  passaient de 24 px à 16 de large au doigt, sous le plancher de WCAG 2.5.8,
+  alors que la règle qui leur donne 24 px était bien appliquée — un
+  `width` déclaré ne survit pas à la compression d'un conteneur flex.
+*/
 .networkFilters {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--espace-6);
 }
 
 .networkToggle {
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
   gap: var(--espace-3);
   font-size: var(--texte-courant);
+}
+
+.networkToggle input {
+  flex: 0 0 auto;
 }
 
 .sort {
@@ -98,6 +118,10 @@
 .PR {
   background: var(--jaune-pr);
   color: var(--vert-noir);
+}
+
+.INTERNATIONAL {
+  background: var(--bleu-international);
 }
 
 .LOCAL {

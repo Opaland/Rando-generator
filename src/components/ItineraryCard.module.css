@@ -95,6 +95,10 @@
   color: var(--vert-noir);
 }
 
+.INTERNATIONAL {
+  background: var(--bleu-international);
+}
+
 .LOCAL {
   background: var(--bleu-local);
 }

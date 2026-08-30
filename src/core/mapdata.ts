@@ -158,18 +158,24 @@ export interface LineCollection<P> {
 }
 
 const NETWORK_PRIORITY: Record<Network, number> = {
-  GR: 0,
-  GRP: 1,
-  PR: 2,
-  LOCAL: 3,
+  /*
+    L'international passe devant le GR (#335) : un tronçon partagé par les
+    deux est *aussi* un GR, mais c'est le fait le plus structurant qui
+    décide de la couleur — c'est déjà la règle qui met le GR devant le PR.
+  */
+  INTERNATIONAL: 0,
+  GR: 1,
+  GRP: 2,
+  PR: 3,
+  LOCAL: 4,
   /*
     Le plus petit nombre gagne la couleur d'un chemin partagé. `INCONNU`
     ferme donc la marche : un tronçon emprunté à la fois par un GR et par une
     relation sans réseau déclaré se peint en GR. Le contraire ferait perdre
     une information certaine au profit d'une absence d'information.
   */
-  PERSO: 4,
-  INCONNU: 5,
+  PERSO: 5,
+  INCONNU: 6,
 }
 
 function lineFeature<P>(coordinates: LonLat[], properties: P): LineFeature<P> {

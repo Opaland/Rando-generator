@@ -33,6 +33,11 @@
   --jaune-pr-lisible: #8a6800;
   /* Orange foncé : garde un ratio de contraste ≥ 4,5:1 avec du texte blanc. */
   --orange-grp: #b34a08;
+  /* Itinéraire international (issue #335) : un bleu profond. Les chemins
+     européens se balisent en bleu, et aucune fédération française ne le fait
+     — la couleur ne prétend donc à aucune famille. Mesures et pistes écartées
+     dans src/lib/networkDisplay.ts. */
+  --bleu-international: #1747b8;
   /* Boucles locales open data (Métropole de Lyon…) : bleu-vert distinct du
      jaune PR pour ne pas confondre deux sources sur la carte. */
   --bleu-local: #1d7a8c;

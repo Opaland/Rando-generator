@@ -171,13 +171,22 @@ describe('le GPX exporté crédite les mêmes gens que l’écran', () => {
  * qui empêche ce test d'être vert parce qu'il ne regarde plus rien.
  */
 describe('chaque provenance du cœur trouve son habillage', () => {
-  const TOUS: Network[] = ['GR', 'GRP', 'PR', 'LOCAL', 'PERSO', 'INCONNU']
+  const TOUS: Network[] = [
+    'GR',
+    'GRP',
+    'PR',
+    'INTERNATIONAL',
+    'LOCAL',
+    'PERSO',
+    'INCONNU',
+  ]
 
   it('la liste des réseaux est complète', () => {
     const attendus: Record<Network, true> = {
       GR: true,
       GRP: true,
       PR: true,
+      INTERNATIONAL: true,
       LOCAL: true,
       PERSO: true,
       INCONNU: true,

@@ -126,11 +126,17 @@ test('ce qui est masqué est annoncé, et se rend d’un clic', async ({
 test('la case du réseau rend le GR aux deux surfaces', async ({ page }) => {
   await chargerLePilat(page)
 
+  /*
+    La case est désignée par son nom, pas par sa position. Elle l'était par
+    `.first()` — ce qui a marché tant que `GR` ouvrait la liste, et a cessé
+    le jour où un réseau plus structurant est passé devant (#335). Le test
+    ne rougissait pas parce qu'il visait autre chose : il rougissait parce
+    qu'il visait *une place*, ce que le §1bis proscrit.
+  */
   await cocher(
     page
       .getByRole('group', { name: 'Filtrer par réseau' })
-      .getByRole('checkbox')
-      .first(),
+      .getByRole('checkbox', { name: 'GR', exact: true }),
   )
 
   await expect(page.getByTestId('itinerary-list')).toContainText('GR 7')

@@ -13,7 +13,14 @@ export type LonLat = [number, number]
  * dit pas de quel réseau il s'agit. Il existe parce que `PR` servait de
  * corbeille et affirmait un balisage jamais constaté (issue #284).
  */
-export type Network = 'GR' | 'GRP' | 'PR' | 'LOCAL' | 'PERSO' | 'INCONNU'
+export type Network =
+  | 'GR'
+  | 'GRP'
+  | 'PR'
+  | 'INTERNATIONAL'
+  | 'LOCAL'
+  | 'PERSO'
+  | 'INCONNU'
 
 export interface TrailWay {
   osmWayId: number

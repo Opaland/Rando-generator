@@ -3,7 +3,8 @@
 **Mesurez votre progression sur les itinéraires de randonnée balisés français.**
 
 Sentiers **enregistre votre sortie** — ou lit vos traces GPX — puis les
-compare aux tracés d'itinéraires (GR, GR de Pays, PR) issus d'OpenStreetMap
+compare aux tracés d'itinéraires (itinéraires internationaux, GR, GR de Pays,
+PR) issus d'OpenStreetMap
 et affiche votre complétion sur une carte et en statistiques : « j'ai
 parcouru 34 % du GR 7, 61 % des sentiers du Pilat ».
 
@@ -100,12 +101,13 @@ existant via `PW_CHROMIUM_PATH=/chemin/vers/chrome npm run e2e`.
 6. **Lire sa progression** : carte colorée (gris = non parcouru, couleur du
    balisage = parcouru — une légende compacte rappelle le code couleur par
    réseau), tableau de bord (% global, km faits/restants, répartition
-   GR/GRP/PR, top 5), liste triable/filtrable.
+   par réseau, top 5), liste triable/filtrable.
 
-   **Les grands itinéraires sont repliés par défaut**, sur la carte comme
-   dans la liste. Un GR traverse la zone de part en part : mesuré sur des
-   fiches réelles, une boucle communale fait 8,6 km quand la Via Lugdunum en
-   fait 153, et le tracé long **barre l'écran** au lieu de l'informer. Une
+   **Les grands itinéraires sont repliés par défaut** — les GR et les
+   itinéraires internationaux —, sur la carte comme dans la liste. Un tel
+   itinéraire traverse la zone de part en part : mesuré sur des fiches
+   réelles, une boucle communale fait 8,6 km quand la Via Lugdunum en fait
+   153, et le tracé long **barre l'écran** au lieu de l'informer. Une
    ligne au-dessus de la liste dit combien sont ainsi **masqués** et les
    rend d'un clic — un itinéraire absent sans que rien ne le signale serait
    un mensonge par omission. Sur une fiche, la liste des points
@@ -369,7 +371,7 @@ src/
 │  ├─ matching.ts  # index spatial, complétion par itinéraire/réseau/global
 │  ├─ overpass.ts  # requêtes zones/ref (hiking + foot/walking), parsing, miroirs
 │  ├─ gpx.ts       # parsing GPX (trkpt et rtept, DOMParser injecté)
-│  ├─ network.ts   # classement GR/GRP/PR depuis les tags OSM
+│  ├─ network.ts   # classement international/GR/GRP/PR depuis les tags OSM
 │  ├─ elevation.ts # profil altimétrique (service IGN), D+/D-, comblement de trous
 │  ├─ poi.ts       # POI le long d'un tracé (Overpass, bbox découpées)
 │  ├─ boucles.ts   # boucles communales open data (Métropole de Lyon, LO 2.0)

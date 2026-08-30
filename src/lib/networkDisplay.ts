@@ -13,6 +13,47 @@ export const NETWORK_COLORS: Record<Network, string> = {
   GR: '#c8102e',
   GRP: '#b34a08',
   PR: '#d9a400',
+  /*
+    Itinéraire international (issue #335) : un bleu profond.
+
+    C'est un seuil de **présentation** — il ne change rien à ce qui est
+    calculé — donc il se tranche au jugement, à condition d'écrire les pistes
+    envisagées et écartées (CLAUDE.md §2) :
+
+    - **ranger `iwn` dans `GR`** : la piste évidente, et interdite. Le texte
+      du GR promet « balisés blanc et rouge » — vrai pour un GR de
+      Compostelle en France, faux pour un tronçon de Via Alpina en Slovénie.
+      Nous affirmerions un balisage que nous n'avons pas lu, ce qui est
+      l'erreur du #284 refaite dans l'autre sens ;
+    - **une famille de rouge** : le meilleur candidat mesuré hors du bleu
+      (#cb3b63, ΔE 26,8). Écarté au jugement : le rouge est la famille du GR
+      sur le terrain, et deux rouges voisins diraient une parenté qui
+      n'existe pas dans la taxonomie ;
+    - **un vert** (#00833f, ΔE 25,0) : tenable, mais son écart en vision
+      deutéranope tombe à 25,3 là où le bleu tient 55,0. #360 dit que la
+      paire GR/GRP s'effondre déjà pour un homme sur douze ; ajouter une
+      couleur qui ne tient que de justesse aurait été empiler.
+
+    **Le bleu, lui, a un référent réel** : les chemins européens se balisent
+    en bleu — la coquille de Compostelle est jaune sur fond bleu, et les deux
+    relations `iwn` mesurées le 29/08 portent `blue:blue:shell_modern` et
+    `red:red:white_crest`. Aucune fédération française ne balise en bleu :
+    la couleur ne prétend donc à aucune famille.
+
+    Ce qu'elle coûte, dit franchement : c'est le quatrième bleu de la carte,
+    après le bleu-vert des boucles locales, le bleu de la position et le
+    bleu des points d'eau. Les trois sont à ΔE 26 ou plus, et seul le
+    premier est un trait — les deux autres sont des points. Mais une famille
+    chargée reste une famille chargée, et ça ne se mesure pas.
+
+    La valeur est mesurée, pas choisie à l'œil :
+
+      blanc sur #1747b8 → 7,99:1   (WCAG 1.4.3 AA en demande 4,5)
+      #1747b8 sur le papier → 7,47:1
+      ΔE le plus court contre **les vingt-sept** couleurs peintes → 26,2
+      ΔE le plus court contre les réseaux **en vision deutéranope** → 55,0
+  */
+  INTERNATIONAL: '#1747b8',
   // Boucles locales open data : bleu-vert, volontairement distinct du jaune
   // PR pour ne pas confondre deux sources différentes sur la carte.
   LOCAL: '#1d7a8c',
@@ -54,6 +95,7 @@ export const NETWORK_LABELS: Record<Network, string> = {
   GR: 'GR',
   GRP: 'GR de Pays',
   PR: 'PR',
+  INTERNATIONAL: 'Itinéraire international',
   LOCAL: 'Boucle locale',
   PERSO: 'Itinéraire perso',
   INCONNU: 'Réseau non déclaré',
@@ -64,6 +106,15 @@ export const NETWORK_BADGES: Record<Network, string> = {
   GR: 'GR',
   GRP: 'GRP',
   PR: 'PR',
+  /*
+    Pas de sigle peint sur les arbres pour cette famille — contrairement à
+    GR, GRP et PR, qui sont les mots du terrain. Les trois autres écritures
+    envisagées : « INTL », un anglicisme ; « iwn », le jargon d'OSM, que
+    personne ne lit ; « Europe », qui affirme un continent que le tag ne dit
+    pas — `iwn` veut dire international, et un chemin transfrontalier hors
+    d'Europe porterait le même.
+  */
+  INTERNATIONAL: 'INTER',
   LOCAL: 'Boucle',
   PERSO: 'PERSO',
   // « ? » plutôt que « NC » ou « Autre » : le point d'interrogation dit
@@ -84,6 +135,14 @@ export const NETWORK_EXPLANATIONS: Record<Network, string> = {
   GR: 'Grande Randonnée : les grands itinéraires balisés blanc et rouge, souvent sur plusieurs jours.',
   GRP: 'GR de Pays : une boucle régionale balisée jaune et rouge, de quelques jours.',
   PR: 'Promenade et Randonnée : un circuit local balisé jaune, en général de deux à six heures.',
+  /*
+    Cette phrase ne promet aucun balisage, et c'est délibéré : le balisage
+    d'un chemin international change d'un pays à l'autre, et nous ne l'avons
+    pas lu. Ce que la fiche montre, quand OpenStreetMap le donne, c'est le
+    symbole peint lui-même (#290, #381) — une mesure, pas une famille.
+  */
+  INTERNATIONAL:
+    'Itinéraire international déclaré par OpenStreetMap : un chemin qui traverse plusieurs pays — Compostelle, Via Alpina, sentiers européens. Son balisage change selon le pays ; la fiche montre le symbole peint quand OpenStreetMap le renseigne.',
   LOCAL:
     'Boucle communale publiée en open data par une collectivité (Métropole de Lyon, par exemple).',
   PERSO: 'Itinéraire que vous avez importé ou tracé vous-même.',

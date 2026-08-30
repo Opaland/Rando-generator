@@ -2,7 +2,8 @@ import type { Network } from './types.ts'
 
 /**
  * Classe un itinéraire depuis ses tags OSM :
- * network=nwn → GR ; network=rwn → GRP ; network=lwn → PR.
+ * network=iwn → INTERNATIONAL ; network=nwn → GR ; network=rwn → GRP ;
+ * network=lwn → PR.
  * Sinon, repli sur le préfixe du ref (GRP avant GR, préfixe commun).
  *
  * **Ce qui ne se déclare pas ressort `INCONNU`, et non `PR`** (issue #284).
@@ -23,6 +24,13 @@ export function classifyNetwork(
   tags: Record<string, string | undefined>,
 ): Network {
   switch (tags.network) {
+    // OpenStreetMap en emploie quatre, et nous n'en lisions que trois
+    // (issue #335) : `iwn` tombait dans le repli par le ref, et sans ref
+    // exploitable l'itinéraire ressortait `INCONNU` — c'est-à-dire que
+    // l'application affirmait qu'aucun réseau n'était déclaré là où OSM en
+    // déclarait le plus structurant qui soit.
+    case 'iwn':
+      return 'INTERNATIONAL'
     case 'nwn':
       return 'GR'
     case 'rwn':
