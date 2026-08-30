@@ -123,7 +123,7 @@ qui retient **le plus lourd des deux terrains, zoom par zoom** :
 Ce n'est le profil d'aucun terrain réel, et c'est délibéré : l'écart entre
 ville et montagne change de signe avec le zoom, donc aucun des deux ne majore
 l'autre. Sur le corridor mesuré, la règle donne 4,9 Mo pour 4,6 Mo réels —
-elle majore de 6 % là où elle a été calibrée, de 27 % en Chartreuse. Une
+elle majore de 5,5 % là où elle a été calibrée, de 25 % en Chartreuse. Une
 annonce trop basse est une promesse rompue au moment où quelqu'un regarde son
 forfait ; une annonce trop haute est une bonne surprise.
 

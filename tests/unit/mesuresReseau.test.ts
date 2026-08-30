@@ -724,4 +724,65 @@ out tags;`)
     ligne('mesuré ce que le service rend, ce qui est la question utile ici, et')
     ligne('c’est la seule que ces chiffres autorisent à trancher (§2).')
   })
+
+  /**
+   * La garde de #400 peut-elle seulement se déclencher ?
+   *
+   * `relationsPerdues` signale une super-relation — une relation dont les
+   * membres sont des relations — dont aucune fille n'est revenue. La revue
+   * du 30/08 a posé la question que la PR n'avait pas posée : **Overpass
+   * rend-il jamais une telle relation** ?
+   *
+   * Elle n'est pas rhétorique. Les deux super-relations de Porcelette ont
+   * été trouvées par l'API OpenStreetMap (`/api/0.6/map`), qui rend les
+   * relations parentes d'un élément de la boîte. Un filtre Overpass
+   * `(area)` ou `(around)` ne sélectionne pas forcément de la même façon une
+   * relation qui n'a ni nœud ni chemin en propre.
+   *
+   * Si la réponse est non, la garde livrée est **correcte et inatteignable**
+   * par ce chemin-là — ce qui ne la rend pas inutile (le cache de zone et un
+   * import peuvent porter d'autres formes) mais change ce qu'on peut en
+   * dire. Une garde dont on ignore si elle peut rougir n'est pas une garde,
+   * c'est une intention.
+   */
+  it('9 — Overpass rend-il une super-relation ? (#400)', { timeout: 300_000 }, async () => {
+    titre('#400 — une relation sans chemin propre est-elle sélectionnée ?')
+
+    /* Les trois relations mesurées le 29/08 autour de Porcelette. */
+    const SUPER_GR5G = 11_888_292
+    const SUPER_VIA_REGIA = 19_412_943
+    const PLATE_GR5G = 11_894_631
+
+    const requete = `[out:json][timeout:60];
+relation["route"~"^(hiking|foot|walking|pilgrimage)$"](49.10,6.60,49.25,6.85);
+out ids;`
+
+    let rendues: number[]
+    try {
+      const data = await fetchOverpass(requete)
+      rendues = data.elements.map((e) => e.id)
+    } catch (erreur) {
+      ligne(`échec : ${(erreur as Error).message.split('\n')[0]}`)
+      ligne('Overpass n’a pas répondu — la question reste ouverte.')
+      return
+    }
+
+    ligne(`relations rendues dans la boîte : ${String(rendues.length)}`)
+    ligne('')
+    for (const [id, quoi] of [
+      [SUPER_GR5G, 'GR 5G, super-relation (3 relations, 0 chemin)'],
+      [SUPER_VIA_REGIA, 'Via Regia, super-relation (3 relations, 0 chemin)'],
+      [PLATE_GR5G, 'GR 5G, relation plate (387 chemins)'],
+    ] as const) {
+      ligne(
+        `${rendues.includes(id) ? 'rendue ' : 'absente'} — r${String(id)} : ${quoi}`,
+      )
+    }
+    ligne('')
+    ligne('À lire : si les deux super-relations sont absentes alors que la')
+    ligne('plate est là, Overpass ne sélectionne pas une relation dépourvue')
+    ligne('de membre propre, et la garde de #400 ne peut pas se déclencher')
+    ligne('sur ce chemin. Si elles sont rendues, elle le peut — et le §1')
+    ligne('demande alors qu’on l’ait vue rougir sur une vraie réponse.')
+  })
 })

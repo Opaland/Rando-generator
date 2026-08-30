@@ -157,7 +157,7 @@ export const RAYON_CORRIDOR_METRES = 500
  * annonce trop haute est une bonne surprise.
  *
  * Sur le corridor mesuré, cette règle donne 4,9 Mo pour 4,6 Mo réels : elle
- * majore de 6 % là où elle a été calibrée, et de 27 % en Chartreuse.
+ * majore de 5,5 % là où elle a été calibrée, et de 25 % en Chartreuse.
  */
 export const POIDS_MOYEN_PAR_ZOOM: Record<number, number> = {
   12: 89_838,
@@ -221,8 +221,8 @@ export function poidsEstimeDesTuiles(tuiles: Tuile[]): number {
  * ## Ce qui rend le chiffre affichable
  *
  * Il **majore**. `POIDS_MOYEN_PAR_ZOOM` retient, zoom par zoom, le plus
- * lourd des deux terrains mesurés : l'annonce est haute de 6 % là où elle a
- * été calibrée et de 27 % en Chartreuse. Une annonce trop basse est une
+ * lourd des deux terrains mesurés : l'annonce est haute de 5,5 % là où elle a
+ * été calibrée et de 25 % en Chartreuse. Une annonce trop basse est une
  * promesse rompue au moment où quelqu'un regarde son forfait ; une annonce
  * trop haute est une bonne surprise, et c'est le seul sens dans lequel une
  * estimation a le droit de se tromper.
