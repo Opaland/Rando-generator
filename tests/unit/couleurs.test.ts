@@ -159,22 +159,53 @@ function contraste(a: string, b: string): number {
  * couvrir un mode qu'il ne regarde jamais. C'est ainsi que le badge « PR »
  * est resté sous le seuil sans que rien ne le dise.
  */
-function jeton(nom: string, mode: 'normal' | 'gros'): string {
-  const bloc =
-    mode === 'gros'
-      ? (/:root\[data-gros-texte='oui'\]\s*\{([\s\S]*?)\n\}/.exec(
-          indexCss,
-        )?.[1] ?? '')
-      : ''
-  const dansLeBloc = new RegExp(`${nom}:\\s*(#[0-9a-f]{3,8})\\s*;`, 'i').exec(
-    bloc,
-  )
-  if (dansLeBloc?.[1]) return dansLeBloc[1]
-  const base = new RegExp(`${nom}:\\s*(#[0-9a-f]{3,8})\\s*;`, 'i').exec(
+type Taille = 'normal' | 'gros'
+type Lumiere = 'clair' | 'sombre'
+
+/** Le bloc `@media (prefers-color-scheme: dark)`, entier. */
+const BLOC_SOMBRE =
+  /@media \(prefers-color-scheme: dark\)\s*\{([\s\S]*?)\n\}\n/.exec(
     indexCss,
-  )
-  if (!base?.[1]) throw new Error(`jeton ${nom} introuvable`)
-  return base[1]
+  )?.[1] ?? ''
+
+/**
+ * Les déclarations à consulter, **de la plus spécifique à la plus générale**.
+ *
+ * C'est l'ordre du navigateur, pas un ordre de commodité : sous
+ * `prefers-color-scheme: dark` avec le gros texte, quatre déclarations de
+ * `--encre-douce` existent, et c'est celle du bloc sombre + gros texte qui
+ * gagne. Un test qui lirait la première trouvée affirmerait couvrir un mode
+ * qu'il ne regarde jamais — c'est ainsi que le badge « PR » est resté sous
+ * le seuil (#343), et le §6quinquies dit que le mode oublié est celui qui
+ * mord.
+ */
+function declarations(taille: Taille, lumiere: Lumiere): string[] {
+  const grosClair =
+    /:root\[data-gros-texte='oui'\]\s*\{([\s\S]*?)\n\}/.exec(
+      indexCss,
+    )?.[1] ?? ''
+  const grosSombre =
+    /:root\[data-gros-texte="oui"\]\s*\{([\s\S]*?)\n {2}\}/.exec(
+      BLOC_SOMBRE,
+    )?.[1] ?? ''
+  const racineSombre =
+    /:root\s*\{([\s\S]*?)\n {2}\}/.exec(BLOC_SOMBRE)?.[1] ?? ''
+  const blocs: string[] = []
+  if (taille === 'gros' && lumiere === 'sombre') blocs.push(grosSombre)
+  if (lumiere === 'sombre') blocs.push(racineSombre)
+  if (taille === 'gros') blocs.push(grosClair)
+  blocs.push(indexCss)
+  return blocs
+}
+
+function jeton(nom: string, taille: Taille, lumiere: Lumiere): string {
+  for (const bloc of declarations(taille, lumiere)) {
+    const trouve = new RegExp(`${nom}:\\s*(#[0-9a-f]{3,8})\\s*;`, 'i').exec(
+      bloc,
+    )
+    if (trouve?.[1]) return trouve[1]
+  }
+  throw new Error(`jeton ${nom} introuvable`)
 }
 
 /**
@@ -188,7 +219,11 @@ const COUPLES: { ou: string; texte: string; fond: string }[] = [
     de fond au premier thème sombre. Les employer ici, c'est faire mesurer à
     ce test le mode qu'on aura, pas seulement celui qu'on a.
   */
-  { ou: 'badge PR (liste, fiche)', texte: '--encre', fond: '--jaune-pr' },
+  {
+    ou: 'badge PR (liste, fiche)',
+    texte: '--encre-balisage',
+    fond: '--jaune-pr',
+  },
   { ou: 'badge GR', texte: '--blanc-balisage', fond: '--rouge-balisage' },
   { ou: 'badge GRP', texte: '--blanc-balisage', fond: '--orange-grp' },
   {
@@ -201,25 +236,38 @@ const COUPLES: { ou: string; texte: string; fond: string }[] = [
     texte: '--jaune-pr-lisible',
     fond: '--papier',
   },
-  { ou: 'écart de progression', texte: '--orange-grp', fond: '--papier' },
+  {
+    ou: 'écart de progression',
+    texte: '--orange-grp-lisible',
+    fond: '--papier',
+  },
   { ou: 'texte courant', texte: '--encre', fond: '--papier' },
   { ou: 'texte secondaire', texte: '--encre-douce', fond: '--papier' },
 ]
 
 describe('les couples texte / fond tiennent WCAG 1.4.3 AA', () => {
-  for (const mode of ['normal', 'gros'] as const) {
-    it.each(COUPLES)(
-      `en taille ${mode === 'gros' ? 'agrandie' : 'normale'} : $ou`,
-      ({ ou, texte, fond }) => {
-        const ct = jeton(texte, mode)
-        const cf = jeton(fond, mode)
-        const mesure = contraste(ct, cf)
-        expect(
-          Math.round(mesure * 100) / 100,
-          `${ou} : ${ct} sur ${cf}`,
-        ).toBeGreaterThanOrEqual(4.5)
-      },
-    )
+  /*
+    Quatre modes et non deux depuis #361. Le thème sombre ne se contente pas
+    d'inverser : les valeurs du gros texte **assombrissent** pour renforcer le
+    contraste sur du papier, ce qui va dans le mauvais sens sur fond sombre.
+    Le mode « sombre + gros texte » est celui qu'on oublie, et c'est celui où
+    le texte secondaire tomberait à 2,5:1.
+  */
+  for (const lumiere of ['clair', 'sombre'] as const) {
+    for (const taille of ['normal', 'gros'] as const) {
+      it.each(COUPLES)(
+        `en ${lumiere}, taille ${taille === 'gros' ? 'agrandie' : 'normale'} : $ou`,
+        ({ ou, texte, fond }) => {
+          const ct = jeton(texte, taille, lumiere)
+          const cf = jeton(fond, taille, lumiere)
+          const mesure = contraste(ct, cf)
+          expect(
+            Math.round(mesure * 100) / 100,
+            `${ou} en ${lumiere} : ${ct} sur ${cf}`,
+          ).toBeGreaterThanOrEqual(4.5)
+        },
+      )
+    }
   }
 
   /**

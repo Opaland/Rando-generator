@@ -1,7 +1,7 @@
 .delete {
   border: none;
   background: none;
-  color: var(--rouge-balisage);
+  color: var(--rouge-balisage-lisible);
   text-decoration: underline;
   padding: 0 var(--espace-2);
   min-height: 44px;

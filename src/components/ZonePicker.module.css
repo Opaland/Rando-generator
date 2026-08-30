@@ -222,7 +222,7 @@
 }
 
 .lieuError {
-  color: var(--rouge-balisage);
+  color: var(--rouge-balisage-lisible);
 }
 
 .lieux {

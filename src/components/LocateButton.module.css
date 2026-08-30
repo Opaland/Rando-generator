@@ -83,7 +83,7 @@
   margin: 0;
   padding: var(--espace-2) var(--espace-4);
   border-radius: var(--rayon-md);
-  background: rgba(250, 247, 242, 0.92);
+  background: rgba(var(--papier-rvb), 0.92);
   font-size: var(--texte-appui);
   font-variant-numeric: tabular-nums;
   color: var(--encre-douce);

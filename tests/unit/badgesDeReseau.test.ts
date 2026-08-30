@@ -47,6 +47,18 @@ import {
  * `--gris-vert` dans les deux autres, pendant que la carte le trace en
  * `--vert-noir`. Un badge et son tracé de couleurs différentes ne se
  * remarquent qu'au moment où l'on compare, c'est-à-dire jamais.
+ *
+ * ## Et le texte posé dessus
+ *
+ * Le badge PR est le seul dont le texte n'est pas blanc : du jaune ne porte
+ * pas de blanc. Il doit prendre `--encre-balisage` — l'encre **du balisage**,
+ * qui ne suit pas le thème parce que son fond n'en dépend pas : un aplat
+ * jaune de PR reste jaune la nuit.
+ *
+ * `--encre` y tomberait à 1,92:1 en thème sombre. La correction du volet 1 de
+ * #361 avait atteint trois feuilles et oublié les deux mêmes que #422 — le
+ * même trou, deux fois de suite, parce que rien ne regardait la couleur du
+ * texte. C'est ce que fait la seconde assertion ci-dessous.
  */
 
 const feuilles: Record<string, string> = import.meta.glob<string>(
@@ -101,6 +113,21 @@ describe('chaque feuille de badge connaît chaque réseau', () => {
         corps ?? '',
         `le badge ${reseau} ne prend pas la couleur que la carte trace`,
       ).toContain(`background: var(${NETWORK_COLOR_VARS[reseau]});`)
+      /*
+        Un badge n'a pas à redéclarer sa couleur de texte — `.badge` la pose
+        en `--texte-sur-couleur`. S'il le fait quand même, c'est que son aplat
+        ne porte pas de blanc, et alors c'est l'encre du **balisage** qu'il
+        lui faut : celle de l'interface s'éclaircirait la nuit sur un fond
+        qui, lui, ne change pas.
+      */
+      const texte = /\bcolor:\s*var\((--[a-z-]+)\)/.exec(corps ?? '')?.[1]
+      if (texte !== undefined) {
+        expect(
+          texte,
+          `le badge ${reseau} pose son texte en \`${texte}\` : sur un aplat de` +
+            ` balisage, qui ne suit pas le thème, il faut \`--encre-balisage\``,
+        ).toBe('--encre-balisage')
+      }
     })
   }
 })

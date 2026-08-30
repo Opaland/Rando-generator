@@ -37,7 +37,7 @@
 }
 
 .content a {
-  color: var(--rouge-balisage);
+  color: var(--rouge-balisage-lisible);
 }
 
 .header {

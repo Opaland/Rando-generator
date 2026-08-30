@@ -92,7 +92,17 @@
 
 .PR {
   background: var(--jaune-pr);
-  color: var(--encre);
+  /*
+    L'encre **du balisage**, et non celle de l'interface (#361).
+
+    Ce texte est posé sur un aplat de balisage, qui ne change pas avec le
+    thème : un aplat jaune de PR reste jaune la nuit. Son texte ne peut donc
+    pas suivre l'interface — en sombre, `--encre` devient clair et le couple
+    tombe à 1,92:1. Mesuré par `couleurs.test.ts`, qui éprouve les quatre
+    modes depuis ce lot ; le renommage du volet 1 l'avait emporté ici par
+    excès de zèle.
+  */
+  color: var(--encre-balisage);
 }
 
 .INTERNATIONAL {
@@ -146,7 +156,7 @@
   background: none;
   padding: 0;
   min-height: 44px;
-  color: var(--rouge-balisage);
+  color: var(--rouge-balisage-lisible);
   font-size: var(--texte-secondaire);
   font-weight: 600;
   text-decoration: underline;
@@ -182,8 +192,10 @@
 }
 
 .objectifActif {
-  color: var(--rouge-balisage);
-  border-color: var(--rouge-balisage);
+  color: var(--rouge-balisage-lisible);
+  /* Le trait accompagne ce texte-là : il le suit, plutôt que de rester sur le
+     rouge de balisage et de s'en écarter la nuit. */
+  border-color: var(--rouge-balisage-lisible);
   font-weight: 600;
 }
 

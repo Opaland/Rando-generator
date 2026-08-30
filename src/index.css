@@ -1,6 +1,20 @@
 :root {
   /* Palette « balisage » */
   --rouge-balisage: #c8102e;
+  /* Le même rouge, mais **lisible en tant que texte** — le troisième frère de
+     `--jaune-pr-lisible` et `--orange-grp-lisible`.
+
+     C'est la **quatrième** instance du double rôle que le volet 1 de #361 a
+     nommé pour trois jetons : le rouge du GR sur la carte et le rouge de
+     l'action dans l'interface sont le même hexadécimal, et treize
+     déclarations l'emploient comme couleur de texte. Le volet 1 ne l'a pas
+     vu parce qu'il partait d'une liste de trois, écrite à la main.
+
+     En clair les deux valeurs coïncident (5,51:1 sur le papier, 5,88:1 sur
+     une surface) ; en sombre le rouge de balisage tombe à **2,94:1**, sous le
+     seuil AA de WCAG 1.4.3. La valeur sombre est un éclaircissement, pas un
+     assombrissement — 7,16:1 sur le fond, 6,33:1 sur une surface surélevée. */
+  --rouge-balisage-lisible: #c8102e;
   /* Le blanc du balisage, apparié au rouge ci-dessus. Troisième rôle du
      blanc, et le seul qui bougerait si la marque changeait : il appartient
      à la balise, pas aux surfaces. */
@@ -33,6 +47,17 @@
   --jaune-pr-lisible: #8a6800;
   /* Orange foncé : garde un ratio de contraste ≥ 4,5:1 avec du texte blanc. */
   --orange-grp: #b34a08;
+  /* Le même orange, mais **lisible en tant que texte** — le frère de
+     `--jaune-pr-lisible`, et pour la même raison.
+
+     Un seul endroit l'emploie ainsi : l'écart de progression dans la liste.
+     En thème clair les deux valeurs coïncident (5,04:1 sur le papier) et le
+     jeton ne sert à rien ; en sombre, l'orange de balisage tombe à **3,21:1**
+     sur le fond, et à 2,29:1 en gros texte. #361 l'avait prédit : « il faudra
+     son symétrique, et rien ne dit que le même écart marche dans l'autre
+     sens ». Il ne marche pas — c'est un éclaircissement, pas un
+     assombrissement. */
+  --orange-grp-lisible: #b34a08;
   /* Itinéraire international (issue #335) : un bleu profond. Les chemins
      européens se balisent en bleu, et aucune fédération française ne le fait
      — la couleur ne prétend donc à aucune famille. Mesures et pistes écartées
@@ -84,8 +109,54 @@
      Ce commit ne change aucune couleur. Il rend seulement possible d'en
      changer une sans changer l'autre. */
   --papier: #faf7f2;
+  /* Le même papier, en composantes, pour les fonds translucides.
+
+     Cinq déclarations écrivaient `rgba(250, 247, 242, …)` à la main — la
+     valeur du papier recopiée, hors de portée du renommage du volet 1 et de
+     tout thème (§4ter). Trois d'entre elles sont des panneaux qui flottent
+     au-dessus de la carte : leur texte est de l'encre, donc ils doivent
+     suivre le thème, sinon l'encre s'éclaircit la nuit sur un fond resté
+     crème. */
+  --papier-rvb: 250, 247, 242;
   --encre: #1e2b23;
   --encre-douce: #5a6b5d;
+  /*
+    L'encre **du balisage** : le texte posé sur un aplat de couleur de
+    réseau, comme le « PR » noir sur son jaune.
+    
+    Elle vaut l'encre d'interface aujourd'hui et ne changera jamais avec le
+    thème, parce que son fond ne change pas : un aplat jaune de PR reste jaune
+    la nuit. Le volet 1 de #361 l'avait emportée dans le renommage par excès
+    de zèle, et le couple tombait à 1,92:1 en sombre — mesuré, pas relu.
+
+    Un troisième rôle sous le même hexadécimal, donc, et c'est ce qui permet à
+    `rolesDeCouleur.test.ts` de rester sans exception : aucune feuille
+    n'emploie un jeton de carte, aucune n'a besoin d'être exemptée.
+  */
+  --encre-balisage: #1e2b23;
+  /*
+    Le panneau inversé : un bloc sombre à texte clair, dans les deux thèmes.
+
+    Trois endroits le dessinent — le bandeau de l'en-tête, le bilan du
+    tableau de bord, le bouton de vue 3D quand il est actif. Tous trois
+    posaient `--encre` en fond et `--papier` en texte, c'est-à-dire les deux
+    rôles **à l'envers**. Sous un thème sombre les deux s'inversent
+    ensemble : le bloc devient clair, son texte aussi, et il ne reste rien —
+    mesuré à 1,18:1 sur le bilan. Ce n'est pas un défaut de valeur mais de
+    rôle : un fond n'est pas de l'encre parce qu'il en a la couleur.
+
+    Ces jetons ne sont donc redéfinis dans aucun bloc de thème. Le bloc garde
+    son registre la nuit comme le jour, et son texte y tient 13,79:1. Contre
+    le papier sombre il ne rend que 1,17:1 — comme la surface surélevée, il
+    se lit à son bord et à son arrondi, pas à son contraste ; en clair il
+    tranche à 13,79:1, et c'est là qu'il doit trancher.
+
+    `--encre-inverse-rvb` sert aux deux marques translucides posées sur le
+    bandeau : elles suivent son texte, pas le papier de la page.
+  */
+  --panneau-inverse: #1e2b23;
+  --encre-inverse: #faf7f2;
+  --encre-inverse-rvb: 250, 247, 242;
   --erreur-fond: #fdecec;
   --erreur-bord: #c8102e;
   /* « À vous de voir » : ni une erreur ni une réussite. Le rouge de l'erreur
@@ -211,7 +282,27 @@
   --blanc-carte: #fff; /* surfaces posées sur le papier */
   --texte-sur-couleur: #fff; /* texte sur un aplat de couleur */
 
-  color-scheme: light;
+  /*
+    Les contrôles natifs — cases à cocher, listes déroulantes, barres de
+    défilement — et les couleurs système comme `buttontext` suivent la
+    préférence de la personne dès que les deux modes sont déclarés ici. Sans
+    `dark`, un thème sombre laisse des menus blancs au milieu de l'interface,
+    et aucune règle CSS ne peut les rattraper.
+
+    Ça vaut aussi pour du texte qu'on croirait à soi : `button` ne **hérite
+    pas** de `color`, l'agent utilisateur lui donne `buttontext`, et sous
+    `light` c'est du noir. Le nom d'un itinéraire dans la liste tombait donc
+    à 1,37:1 sur la surface sombre — mesuré, et trouvé par la sonde et non
+    par la relecture.
+
+    Une deuxième déclaration `color-scheme: light dark` avait été écrite en
+    tête de ce bloc pendant ce lot, sans voir celle-ci. Deux déclarations de
+    la même propriété dans la même règle : l'ordre du fichier tranche, la
+    seconde gagnait, et la première ne servait à rien tout en ayant l'air de
+    tout régler. C'est le §4ter à l'échelle d'un fichier — et c'est moi qui
+    l'ai écrit, en connaissant la règle.
+  */
+  color-scheme: light dark;
 
   /* Paliers d'empilement des overlays de carte (du plus bas au plus haut).
      Un seul endroit à consulter avant d'ajouter un nouvel overlay. */
@@ -421,7 +512,7 @@ a:focus-visible,
   border: none;
   padding: 0 var(--espace-2);
   min-width: 44px;
-  color: var(--rouge-balisage);
+  color: var(--rouge-balisage-lisible);
   text-decoration: underline;
 }
 
@@ -820,6 +911,7 @@ aside :is(button, label, p, li, h2, h3, span, output) {
   --encre-douce: #3d4a40;
   --gris-vert-clair: #d6dad2;
   --orange-grp: #8f3a06;
+  --orange-grp-lisible: #8f3a06;
   /*
     `--jaune-pr` n'est plus assombri ici. Il l'a été, et cela **cassait** le
     badge « PR » : un aplat de balisage porte un texte sombre, et
@@ -834,6 +926,99 @@ aside :is(button, label, p, li, h2, h3, span, output) {
 :root[data-gros-texte="oui"]
   :is(button, input, select, textarea, summary):focus-visible {
   outline-width: 3px;
+}
+
+/*
+  Le thème sombre (issue #361).
+
+  ## Ce qu'il suit, et ce qu'il ne décide pas
+
+  Il suit `prefers-color-scheme`, c'est-à-dire une préférence que la personne
+  a déjà exprimée à son système — exactement comme le dépôt suit déjà
+  `prefers-reduced-motion`. L'issue notait l'asymétrie : « la préférence
+  système est consultée pour le mouvement et ignorée pour la lumière ».
+
+  Elle laissait ouverte une autre question — faut-il **en plus** un réglage
+  dans le panneau « Affichage » ? — et disait qu'elle demande une personne,
+  pas une mesure. Elle reste ouverte : ce bloc n'ajoute aucune commande.
+
+  ## Ce qui change, et ce qui ne change surtout pas
+
+  **Les couleurs de balisage ne bougent pas.** Le rouge et blanc d'un GR ne
+  devient pas autre chose la nuit ; elles sont peintes sur des rochers. Seuls
+  changent les rôles d'interface — le papier, l'encre, les fonds d'état — et
+  les deux jetons qui existent précisément parce qu'une couleur de balisage
+  ne se lit pas en tant que texte.
+
+  **Le fond de carte de l'IGN reste clair.** Une interface sombre autour d'une
+  carte claire est un choix de dessin, et l'issue le dit : « c'en est un ».
+  C'est aussi ce qui a rendu #361 volet 1 nécessaire — la carte et l'interface
+  ne peuvent pas partager leurs jetons si l'une inverse et l'autre non.
+
+  ## Comment les valeurs ont été choisies
+
+  Au jugement pour la teinte — un noir vert plutôt qu'un gris neutre, pour
+  garder le registre de l'application —, à la mesure pour le reste : chaque
+  couple texte/fond est éprouvé par `tests/unit/couleurs.test.ts` dans les
+  **quatre** modes (clair/sombre × normal/gros), et par
+  `tests/e2e/contraste-rendu.spec.ts` sur ce que l'écran rend vraiment.
+
+  Le gros texte a son propre bloc ici : ses valeurs claires **assombrissent**
+  pour renforcer le contraste sur du papier, ce qui va exactement dans le
+  mauvais sens sur fond sombre. C'est le quatrième mode, et c'est celui qu'on
+  oublie — le §6quinquies vaut aussi pour un thème.
+*/
+@media (prefers-color-scheme: dark) {
+  :root {
+    --papier: #161c18;
+    --encre: #e9ede8;
+    --encre-douce: #a9b4a9;
+    /* Filet et petites surfaces. À 1,59:1 du fond, c'est-à-dire **plus
+       marqué** que le 1,14:1 du thème clair : ce n'est pas du texte, et le
+       tenir à un seuil que le clair ne tient pas serait une exigence
+       inventée. */
+    --gris-vert-clair: #33403a;
+    /* Les deux couleurs qui doivent s'éclaircir, et non s'assombrir. */
+    --jaune-pr-lisible: #e5c14e;
+    --orange-grp-lisible: #eba063;
+    /* Le rouge d'action : 2,94:1 en balisage sur ce fond, 7,16:1 ici. */
+    --rouge-balisage-lisible: #ff8087;
+    /* Le papier, en composantes, pour les fonds translucides : les panneaux
+       qui flottent au-dessus de la carte portent de l'encre, et l'encre
+       s'éclaircit ici. Un panneau resté crème les rendrait illisibles —
+       c'est le seul endroit du thème où la carte, qui reste claire, et
+       l'interface, qui ne l'est plus, se touchent vraiment. */
+    --papier-rvb: 22, 28, 24;
+    /* Surface surélevée : 1,13:1 contre le papier, soit **plus marqué** que
+       le 1,07:1 du thème clair. Une surface se lit à son bord, pas à son
+       contraste ; lui imposer un seuil que le clair ne tient pas serait une
+       exigence inventée. L'encre y tient 12,93:1, l'encre douce 7,13:1. */
+    --blanc-carte: #1f2723;
+    --danger-texte: #ffb3b8;
+    /* Fonds d'état : les mêmes teintes, ramenées sous l'encre. */
+    --erreur-fond: #3a1e20;
+    --attention-fond: #332c16;
+    --danger-fond: #2e1a1d;
+    --danger-fond-fort: #4a2228;
+    /* Une ombre portée par de l'encre verte ne se voit pas sur du noir. */
+    --ombre-flottante: 0 2px 10px rgba(0, 0, 0, 0.55);
+    --ombre-panneau: 0 4px 18px rgba(0, 0, 0, 0.6);
+    --ombre-feuille: 0 -3px 16px rgba(0, 0, 0, 0.55);
+  }
+
+  /*
+    Le quatrième mode. Les valeurs du gros texte en clair assombrissent —
+    `--encre-douce` passe de #5a6b5d à #3d4a40 — et appliquées telles quelles
+    sur fond sombre elles rendraient le texte secondaire **moins** lisible,
+    à 2,5:1. Ici on éclaircit, pour le même motif : compenser une difficulté
+    de lecture.
+  */
+  :root[data-gros-texte="oui"] {
+    --encre-douce: #c6cfc5;
+    --gris-vert-clair: #46554e;
+    --orange-grp-lisible: #f2b07a;
+    --rouge-balisage-lisible: #ffa0a6;
+  }
 }
 
 /*
