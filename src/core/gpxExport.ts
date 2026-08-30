@@ -38,6 +38,7 @@ export function gpxAttributionFor(network: Network): GpxAttribution | null {
     case 'GR':
     case 'GRP':
     case 'PR':
+    case 'INTERNATIONAL':
     case 'INCONNU':
       return OSM_ATTRIBUTION
     case 'LOCAL':

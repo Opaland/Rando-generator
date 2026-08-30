@@ -36,20 +36,27 @@ import { RESEAUX_FILTRABLES } from './reseaux.ts'
  * sur un nombre que rien ne fixe : le §2 l'interdit tant qu'on n'a pas
  * regardé la distribution des longueurs sur une zone réelle.
  *
- * **Et cette classification a un trou connu** : `network=iwn` — les
- * itinéraires internationaux, dont les chemins de Compostelle — n'est pas
- * lu, donc un tel itinéraire sans `ref` exploitable ressort `INCONNU` et
- * **échappe au repli**. C'est l'issue #335, et c'est précisément le cas de
- * la Via Lugdunum citée ci-dessus. Le repli livré ici ne la replie donc pas.
+ * **Ce trou est fermé depuis le 30/08** (#335). `network=iwn` n'était pas
+ * lu : un itinéraire international sans `ref` exploitable ressortait
+ * `INCONNU` et échappait au repli — c'est-à-dire que la Via Lugdunum, citée
+ * ci-dessus comme le motif même du repli, était le seul des trois à ne pas
+ * être replié. Elle ressort maintenant `INTERNATIONAL`, et ce réseau est
+ * replié par défaut au même titre que le GR.
  */
 
 /**
  * Les réseaux qu'on ne dessine pas d'emblée.
  *
- * Un seul aujourd'hui, et la forme reste une liste : le jour où un second
- * s'ajoute, il s'ajoute ici et nulle part ailleurs.
+ * Le second est arrivé le 30/08, et par le chemin que la forme prévoyait :
+ * une liste, un ajout, et rien ailleurs. `INTERNATIONAL` y entre pour la
+ * raison exacte qui y a mis `GR` — la Via Lugdunum est le cas mesuré du
+ * tableau ci-dessus, 153 km et ~330 points d'intérêt, et elle est
+ * internationale, pas nationale.
  */
-export const RESEAUX_REPLIES_PAR_DEFAUT: readonly Network[] = ['GR']
+export const RESEAUX_REPLIES_PAR_DEFAUT: readonly Network[] = [
+  'INTERNATIONAL',
+  'GR',
+]
 
 /** Les réseaux montrés au premier écran. */
 export function reseauxVisiblesParDefaut(): Network[] {

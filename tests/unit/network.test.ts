@@ -58,8 +58,47 @@ describe('classifyNetwork', () => {
     expect(classifyNetwork({ ref: 'PR12' })).toBe('PR')
   })
 
-  it('une valeur network inconnue retombe sur le ref', () => {
-    expect(classifyNetwork({ network: 'iwn', ref: 'GR 65' })).toBe('GR')
-    expect(classifyNetwork({ network: 'iwn' })).toBe('INCONNU')
+  /**
+   * Le quatrième niveau de la hiérarchie OSM (#335).
+   *
+   * OpenStreetMap emploie **quatre** valeurs — `iwn`, `nwn`, `rwn`, `lwn` —
+   * et nous n'en lisions que trois. `iwn` tombait donc dans le repli par le
+   * `ref` ; sans `ref` exploitable, l'itinéraire ressortait `INCONNU`, et sa
+   * fiche affirmait « OpenStreetMap ne déclare aucun réseau pour cet
+   * itinéraire ». C'était **faux** : OSM en déclarait un, et le plus
+   * structurant qui existe.
+   *
+   * Mesuré : 2 relations sur 56 dans le Pilat, dont la Via Lugdunum
+   * (`relation/15659467`, 153 km, sans `ref`) ; 2 sur 26 dans la zone que
+   * l'application propose en premier. Ce sont les plus longues des zones où
+   * elles se trouvent.
+   */
+  it('iwn est un réseau déclaré, pas une absence de réseau (#335)', () => {
+    expect(classifyNetwork({ network: 'iwn' })).toBe('INTERNATIONAL')
+    expect(
+      classifyNetwork({ network: 'iwn', name: 'Via Lugdunum' }),
+      'la Via Lugdunum porte iwn et aucun ref : c’est le cas mesuré',
+    ).toBe('INTERNATIONAL')
+  })
+
+  /*
+    Le tag prime sur le ref, comme pour les trois autres niveaux. Un GR 65
+    tagué `iwn` — c'est le cas du Puy — est international **et** balisé GR ;
+    la fiche montre le symbole peint, elle, quand OSM le donne (#290, #381).
+    Ranger cet itinéraire dans `GR` sur la foi de son ref reviendrait à
+    préférer une chaîne de caractères à une déclaration.
+  */
+  it('le tag prime sur le ref, y compris pour iwn', () => {
+    expect(classifyNetwork({ network: 'iwn', ref: 'GR 65' })).toBe(
+      'INTERNATIONAL',
+    )
+  })
+
+  it('une valeur network vraiment inconnue retombe sur le ref', () => {
+    expect(classifyNetwork({ network: 'lcn', ref: 'GR 65' })).toBe('GR')
+    expect(
+      classifyNetwork({ network: 'lcn' }),
+      'un réseau cyclable sur une relation pédestre ne déclare aucun réseau à pied',
+    ).toBe('INCONNU')
   })
 })

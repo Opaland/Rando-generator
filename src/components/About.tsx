@@ -234,9 +234,13 @@ export function About({
             </li>
           </ul>
           <p>
-            S’y ajoutent les <strong>boucles locales</strong> publiées en
-            données ouvertes par des collectivités, et vos{' '}
-            <strong>itinéraires personnels</strong> — importés ou tracés ici.
+            S’y ajoutent les <strong>itinéraires internationaux</strong> —
+            Compostelle, Via Alpina, sentiers européens —, que OpenStreetMap
+            déclare à part&nbsp;: ils traversent plusieurs pays, et leur
+            balisage change avec eux, donc Sentiers n’en promet aucun. Puis les{' '}
+            <strong>boucles locales</strong> publiées en données ouvertes par
+            des collectivités, et vos <strong>itinéraires personnels</strong> —
+            importés ou tracés ici.
           </p>
           <p>
             Le{' '}

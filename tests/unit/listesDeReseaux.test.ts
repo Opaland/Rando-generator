@@ -51,6 +51,7 @@ describe('la liste des réseaux les connaît tous', () => {
       ce que le §284 a voulu éviter.
     */
     expect(ORDRE_DES_RESEAUX).toEqual([
+      'INTERNATIONAL',
       'GR',
       'GRP',
       'PR',
@@ -63,7 +64,14 @@ describe('la liste des réseaux les connaît tous', () => {
 
 describe('ce que le panneau filtre', () => {
   it('est tout, sauf les itinéraires persos', () => {
-    expect(RESEAUX_FILTRABLES).toEqual(['GR', 'GRP', 'PR', 'LOCAL', 'INCONNU'])
+    expect(RESEAUX_FILTRABLES).toEqual([
+      'INTERNATIONAL',
+      'GR',
+      'GRP',
+      'PR',
+      'LOCAL',
+      'INCONNU',
+    ])
   })
 
   it('garde l’ordre de la charte', () => {

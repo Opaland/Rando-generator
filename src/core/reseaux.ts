@@ -48,6 +48,8 @@ import type { Network } from './types.ts'
  * seule liste dont TypeScript tient l'exhaustivité.
  */
 export const ORDRE_DES_RESEAUX: readonly Network[] = [
+  // Le plus structurant des quatre niveaux d'OpenStreetMap (issue #335).
+  'INTERNATIONAL',
   'GR',
   'GRP',
   'PR',

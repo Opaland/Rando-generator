@@ -22,6 +22,7 @@ const VARIABLES: Record<Network, string> = {
   GR: '--rouge-balisage',
   GRP: '--orange-grp',
   PR: '--jaune-pr',
+  INTERNATIONAL: '--bleu-international',
   LOCAL: '--bleu-local',
   PERSO: '--vert-noir',
   INCONNU: '--prune-inconnu',

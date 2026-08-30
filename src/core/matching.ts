@@ -480,6 +480,7 @@ function computeCompletion(
     GR: emptyStats(),
     GRP: emptyStats(),
     PR: emptyStats(),
+    INTERNATIONAL: emptyStats(),
     LOCAL: emptyStats(),
     PERSO: emptyStats(),
     INCONNU: emptyStats(),

@@ -19,6 +19,11 @@ beforeEach(() => {
 describe('au premier écran', () => {
   it('les grands itinéraires sont repliés', () => {
     expect(useReseauxVisibles.getState().reseauxVisibles).not.toContain('GR')
+    // Et l'international avec eux (#335) : la Via Lugdunum, 153 km, est le
+    // cas mesuré qui a motivé le repli — et le seul à lui échapper jusqu'ici.
+    expect(useReseauxVisibles.getState().reseauxVisibles).not.toContain(
+      'INTERNATIONAL',
+    )
   })
 
   it('et tout le reste est là', () => {
