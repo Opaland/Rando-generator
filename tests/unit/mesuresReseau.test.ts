@@ -1170,4 +1170,99 @@ out ids;`
       ligne('chemin de code qu’il faut rejouer sur cette commune.')
     },
   )
+
+  /**
+   * Le Rhône, cinq fenêtres, pour #20.
+   *
+   * L'issue date du 19/08 : « des boucles PR et des circuits cartoguides du
+   * Rhône n'apparaissent toujours pas ». #321 a posé la même question depuis
+   * la Moselle et conclu que la donnée était là. Une conclusion tirée d'un
+   * seul département reste régionale ; celle-ci la met à l'épreuve là où le
+   * retour a été fait.
+   *
+   * Les fenêtres visent les massifs de randonnée du département — Monts d'Or,
+   * Beaujolais, monts du Lyonnais, Pilat rhodanien — plutôt que la ville, où
+   * l'API OSM refuse au-delà de 50 000 nœuds.
+   */
+  const FENETRES_RHONE: readonly Fenetre[] = [
+    { nom: 'Monts d’Or', bbox: '4.75,45.83,4.79,45.87' },
+    { nom: 'Beaujolais (Vaux)', bbox: '4.55,45.93,4.59,45.97' },
+    { nom: 'Monts du Lyonnais', bbox: '4.55,45.70,4.59,45.74' },
+    // Deux centièmes et non quatre : la vallée du Rhône est dense, et la
+    // fenêtre de quatre centièmes rendait HTTP 400 — plus de 50 000 nœuds.
+    { nom: 'Condrieu', bbox: '4.75,45.45,4.77,45.47' },
+    { nom: 'Azergues', bbox: '4.60,45.88,4.64,45.92' },
+  ]
+
+  it(
+    '12 — le Rhône : la même question qu’à Porcelette (#20)',
+    { timeout: 900_000 },
+    async () => {
+      titre('#20 — des PR du Rhône manquent : la donnée ou le code ?')
+      const { relations, chemins, trous } =
+        await relationsDesFenetres(FENETRES_RHONE)
+      ligne('')
+      if (trous.length > 0) ligne(`fenêtres sans réponse : ${trous.join(', ')}`)
+      if (relations.length === 0) {
+        ligne('Aucune fenêtre n’a répondu : la question reste ouverte.')
+        return
+      }
+
+      const pedestres = relations.filter((r) =>
+        ROUTES_PEDESTRES.has(r.tags['route'] ?? ''),
+      )
+      const membresChemins = new Set<number>()
+      for (const relation of pedestres) {
+        for (const membre of relation.membres) {
+          if (membre.type === 'way' && membre.ref !== undefined) {
+            membresChemins.add(membre.ref)
+          }
+        }
+      }
+      const balises = chemins.filter((c) => {
+        const tags = c.tags ?? {}
+        return (
+          tags['osmc:symbol'] !== undefined ||
+          /^[lrni]wn$/.test(tags['network'] ?? '')
+        )
+      })
+      const orphelins = balises.filter(
+        (c) => c.id !== undefined && !membresChemins.has(c.id),
+      )
+      const autresRoutes = new Set(
+        relations
+          .map((r) => r.tags['route'])
+          .filter(
+            (route): route is string =>
+              route !== undefined && !ROUTES_PEDESTRES.has(route),
+          ),
+      )
+
+      ligne(`relations collectées          : ${String(relations.length)}`)
+      ligne(`   dont pédestres             : ${String(pedestres.length)}`)
+      ligne(`chemins collectés             : ${String(chemins.length)}`)
+      ligne(`   portant un balisage        : ${String(balises.length)}`)
+      ligne(`   …hors de toute relation    : ${String(orphelins.length)}`)
+      ligne(`autres valeurs de route       : ${[...autresRoutes].join(', ') || '—'}`)
+      ligne('')
+      const parFenetre = new Map<string, number>()
+      for (const relation of pedestres) {
+        parFenetre.set(
+          relation.fenetre,
+          (parFenetre.get(relation.fenetre) ?? 0) + 1,
+        )
+      }
+      for (const fenetre of FENETRES_RHONE) {
+        ligne(
+          `  ${fenetre.nom.padEnd(24)} ${String(parFenetre.get(fenetre.nom) ?? 0).padStart(3)} relations pédestres`,
+        )
+      }
+      ligne('')
+      ligne('À lire : si « hors de toute relation » est à zéro ici aussi, la')
+      ligne('réponse de #321 cesse d’être mosellane — c’est la même partout, et')
+      ligne('le chantier d’assemblage sans relation n’a pas lieu d’être. Une')
+      ligne('fenêtre à zéro relation pédestre est une autre réponse : là, il n’y')
+      ligne('a rien dans OpenStreetMap, et c’est à dire plutôt qu’à corriger.')
+    },
+  )
 })
