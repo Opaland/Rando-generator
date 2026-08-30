@@ -41,6 +41,26 @@ export interface CachedZone {
    * l'a jamais demandé », et le cache tient trente jours.
    */
   schema?: number
+  /**
+   * Overpass avait-il interrompu la requête au moment de l'écriture ?
+   *
+   * Ce fait ne se recalcule pas à la relecture : le `remark` d'Overpass
+   * n'est pas dans les itinéraires, il était dans la réponse. Sans lui,
+   * une zone tronquée servie depuis le cache passe pour entière et ses
+   * pourcentages sont surestimés en silence (#404).
+   *
+   * Absent sur tout ce qui a été mis en cache avant #404 — voir
+   * `CHAMPS_DE_ZONE` pour ce que cette absence veut dire, et pourquoi elle
+   * ne périme rien.
+   */
+  partielle?: boolean
+  /**
+   * Combien d'itinéraires découpés n'ont rendu aucun tronçon (#400).
+   *
+   * Même raison que `partielle` : ce compte se lit sur la réponse Overpass,
+   * pas sur ce qu'on en a gardé.
+   */
+  perdues?: number
 }
 
 /**
@@ -104,6 +124,46 @@ export const CHAMPS_MIS_EN_CACHE: readonly {
   { champ: 'osmUpdatedAt', depuis: 1 },
   { champ: 'osmcSymbol', depuis: 2 },
   { champ: 'operator', depuis: 2 },
+]
+
+/**
+ * Les champs que porte l'enregistrement d'une zone — le niveau au-dessus.
+ *
+ * `CHAMPS_MIS_EN_CACHE` décrit un itinéraire ; celle-ci décrit l'objet qui
+ * les contient. Deux listes parce que ce sont deux questions : la première
+ * demande « qu'est-ce que la requête Overpass rapporte », la seconde
+ * « qu'est-ce qu'on a retenu de la réponse ».
+ *
+ * ## Pourquoi pas de `depuis` ici
+ *
+ * Le `depuis` de `CHAMPS_MIS_EN_CACHE` force l'incrément de `SCHEMA_ZONE`,
+ * qui **jette** les copies plus anciennes. C'est le bon remède là-bas : une
+ * relation sans `osmcSymbol` ne se distingue pas d'une relation dont le tag
+ * n'existe pas, et la fiche mentirait.
+ *
+ * Ici, l'absence est lisible telle quelle : une zone sans `partielle` a été
+ * écrite avant #404, et on ne sait donc pas si elle était tronquée. On se
+ * tait alors — ce qui est exactement le comportement d'avant #404 pour
+ * toutes les zones. Ces copies ne se comportent jamais plus mal qu'hier, et
+ * l'angle mort se referme seul en trente jours (`CACHE_TTL_MS`).
+ *
+ * L'alternative écartée : incrémenter `SCHEMA_ZONE`, donc redemander à
+ * Overpass toutes les zones de tout le monde, y compris celles qui n'ont
+ * jamais rien eu de travers. `tests/unit/schemaDeZone.test.ts` épingle ce
+ * choix : qui incrémente verra ce test rougir et lira ce paragraphe.
+ *
+ * **Un champ neuf ici demande donc une question, pas un réflexe :** son
+ * absence rend-elle une vieille copie *fausse* (alors `SCHEMA_ZONE` bouge et
+ * le champ va dans l'autre liste), ou seulement *muette* ?
+ */
+export const CHAMPS_DE_ZONE: readonly string[] = [
+  'zoneKey',
+  'label',
+  'itineraries',
+  'fetchedAt',
+  'schema',
+  'partielle',
+  'perdues',
 ]
 
 export type SettingKey =

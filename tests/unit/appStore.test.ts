@@ -353,6 +353,82 @@ describe('loadZone', () => {
   })
 
   /**
+   * Issue #404 — et c'est le vrai coût du défaut : une zone tient trente
+   * jours en cache, donc l'avertissement ci-dessus n'était dit qu'une fois
+   * sur trente jours de visites. Toutes les autres fois, les mêmes
+   * pourcentages surestimés s'affichaient sans un mot.
+   *
+   * Le second chargement doit venir du cache pour que ce test prouve
+   * quelque chose : s'il repartait sur le réseau, il rejouerait simplement
+   * le test précédent. Le compte d'appels à `fetch` l'asserte — sans lui,
+   * l'assertion passerait pour une raison qu'on n'a pas voulue (§1bis).
+   */
+  it('redit ce qui manque quand la zone revient du cache', async () => {
+    fetchMock.mockImplementation((url: string) =>
+      Promise.resolve(
+        url.includes('interpreter')
+          ? reponseOverpass({ ...pilat, remark: 'Please note: ...' })
+          : new Response('{}', { status: 200 }),
+      ),
+    )
+    await useAppStore.getState().init()
+    await useAppStore.getState().loadZone('pilat')
+    const apresLePremier = fetchMock.mock.calls.filter(([url]) =>
+      url.includes('interpreter'),
+    ).length
+
+    await useAppStore.getState().loadZone('pilat')
+    expect(
+      fetchMock.mock.calls.filter(([url]) => url.includes('interpreter'))
+        .length,
+      'le second chargement a réinterrogé Overpass : il ne dit rien du cache',
+    ).toBe(apresLePremier)
+
+    const etat = useAppStore.getState()
+    expect(etat.itineraries).toHaveLength(3)
+    expect(
+      etat.zoneError,
+      'la zone tronquée sert de nouveau, muette, et les pourcentages restent surestimés',
+    ).toMatch(/en partie|surestim/i)
+  })
+
+  /** Le même, pour l'itinéraire découpé dont aucun tronçon n'est revenu. */
+  it('redit l’itinéraire découpé quand la zone revient du cache', async () => {
+    const orpheline = {
+      type: 'relation',
+      id: 9003,
+      tags: { route: 'hiking', name: 'GR fantôme' },
+      members: [{ type: 'relation', ref: 90_003 }],
+    }
+    fetchMock.mockImplementation((url: string) =>
+      Promise.resolve(
+        url.includes('interpreter')
+          ? reponseOverpass({
+              ...pilat,
+              elements: [...pilat.elements, orpheline],
+            })
+          : new Response('{}', { status: 200 }),
+      ),
+    )
+    await useAppStore.getState().init()
+    await useAppStore.getState().loadZone('pilat')
+    await useAppStore.getState().loadZone('pilat')
+    expect(useAppStore.getState().zoneError).toMatch(/découpé en tronçons/i)
+  })
+
+  /**
+   * L'autre bout : une zone entière ne doit rien dire au second passage non
+   * plus. Sans ce test, `zoneError` posé sur toutes les zones du cache
+   * passerait les deux précédents.
+   */
+  it('ne dit rien d’une zone entière revenue du cache', async () => {
+    await useAppStore.getState().init()
+    await useAppStore.getState().loadZone('pilat')
+    await useAppStore.getState().loadZone('pilat')
+    expect(useAppStore.getState().zoneError).toBeNull()
+  })
+
+  /**
    * Un itinéraire long est souvent découpé en tronçons dans OSM : la relation
    * parente ne porte que des relations filles, aucun chemin. `parseOverpassResponse`
    * l'écarte, et sans ce message elle disparaît **sans un mot** — le pire des

@@ -35,6 +35,7 @@ import {
   ZONES,
   libelleDeZone,
 } from '../core/overpass.ts'
+import { messageDeZone } from '../core/messageDeZone.ts'
 import { chercherLieux, GeocodeError, type Lieu } from '../core/geocode.ts'
 import { fetchPois } from '../core/poi.ts'
 import { reponseTronquee } from '../core/poisDeZone.ts'
@@ -223,6 +224,17 @@ export function trancheZone(deps: DependancesZone): ActionsZone {
           cached.itineraries,
           cached.fetchedAt,
         )
+        // Ce que la zone a de travers se dit à **chaque** affichage, pas
+        // seulement le jour où on l'a interrogée (#404). Une zone tient
+        // trente jours : sans cette ligne, l'avertissement le plus coûteux
+        // des trois — « vos pourcentages sont surestimés » — était tu
+        // pendant tout ce temps.
+        const message = messageDeZone({
+          itineraires: cached.itineraries.length,
+          partielle: cached.partielle,
+          perdues: cached.perdues,
+        })
+        if (message !== null) deps.set({ zoneError: message })
         await deps.persistLastZone(zoneKey)
         await deps.recompute()
         return
@@ -247,6 +259,18 @@ export function trancheZone(deps: DependancesZone): ActionsZone {
         if (!isCurrent()) return
         deps.set({ zoneLoadStage: 'processing' })
         const itineraries = parseOverpassResponse(data, now)
+        /*
+          Les deux faits se lisent sur la **réponse**, pas sur ce qu'on en
+          garde : ils se calculent donc ici, avant l'écriture, et non à la
+          relecture où la réponse n'existe plus (#404).
+
+          `relationsPerdues` ne compte que ce qui est réellement absent —
+          une super-relation dont une fille est là ne perd rien, et prévenir
+          alors serait le faux positif qui apprend à ignorer l'alerte
+          suivante.
+        */
+        const partielle = data.remark !== undefined
+        const perdues = relationsPerdues(data, itineraries).length
         const db = await deps.baseOuverte()
         if (db) {
           try {
@@ -256,6 +280,8 @@ export function trancheZone(deps: DependancesZone): ActionsZone {
               itineraries,
               fetchedAt: now,
               schema: SCHEMA_ZONE,
+              partielle,
+              perdues,
             })
           } catch {
             // Quota de stockage dépassé (grosses zones) : on continue en
@@ -269,41 +295,12 @@ export function trancheZone(deps: DependancesZone): ActionsZone {
         // zone repartait pour une interrogation complète.
         await deps.persistLastZone(zoneKey)
         deps.setItineraries(zoneKey, zoneLabel, itineraries, now)
-        if (itineraries.length === 0) {
-          deps.set({
-            zoneError:
-              'Aucun itinéraire balisé trouvé dans cette zone sur OpenStreetMap. Réessayez avec « Actualiser les tracés », ou choisissez une autre zone.',
-          })
-        } else if (data.remark !== undefined) {
-          // Overpass a rendu des données **et** un motif : il a interrompu la
-          // requête en cours de route. Ce qui est à l'écran est un morceau de
-          // la zone, et rien ne le distingue d'une zone complète — sauf de le
-          // dire. Une complétion calculée là-dessus serait fausse par excès.
-          deps.set({
-            zoneError:
-              'Les serveurs OpenStreetMap ont interrompu la requête : cette zone n’est affichée qu’en partie. Vos pourcentages sont donc surestimés. Essayez un secteur plus petit pour l’avoir en entier.',
-          })
-        } else {
-          /*
-            Un itinéraire découpé en tronçons dont aucun tronçon n'est revenu
-            (#400). Ce cas passe après les deux autres parce qu'il est le
-            moins grave des trois : une zone vide ou tronquée se voit, celui-ci
-            ne se voit pas du tout.
-
-            `relationsPerdues` ne compte que ce qui est réellement absent —
-            une super-relation dont une fille est là ne perd rien, et prévenir
-            alors serait le faux positif qui apprend à ignorer l'alerte
-            suivante.
-          */
-          const perdues = relationsPerdues(data, itineraries)
-          if (perdues.length > 0) {
-            const pluriel = perdues.length > 1
-            deps.set({
-              zoneError:
-                `${String(perdues.length)} itinéraire${pluriel ? 's' : ''} de cette zone ${pluriel ? 'sont découpés' : 'est découpé'} en tronçons qu’OpenStreetMap n’a pas rendus : ${pluriel ? 'ils ne sont donc pas affichés' : 'il n’est donc pas affiché'}. Le reste de la zone est complet.`,
-            })
-          }
-        }
+        const message = messageDeZone({
+          itineraires: itineraries.length,
+          partielle,
+          perdues,
+        })
+        if (message !== null) deps.set({ zoneError: message })
         await deps.recompute()
       } catch (error) {
         if (!isCurrent()) return
