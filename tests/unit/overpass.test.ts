@@ -956,6 +956,123 @@ describe('libelleDeZone', () => {
   signalés par la vague du 30/08 (#406). Deux autres se sont révélés
   équivalents à l'injection, et sont dits comme tels plus bas.
 */
+describe('ce que le chemin de la limitation ne gardait pas (#406)', () => {
+  const limite429 = (retryAfter: string | null) =>
+    new Response('rate limited', {
+      status: 429,
+      ...(retryAfter === null ? {} : { headers: { 'Retry-After': retryAfter } }),
+    })
+
+  const motDeLerreur = async (fetchFn: unknown) => {
+    const erreur: unknown = await fetchOverpass('QUERY', {
+      fetchFn: fetchFn as never,
+    }).catch((e: unknown) => e)
+    return erreur instanceof Error ? erreur.message : String(erreur)
+  }
+
+  /*
+    Trois mutants survivaient sur `/^\s*\d+\s*$/` : chacune de ses deux
+    ancres, et le contrôle entier. Ma première rédaction de ce test ne les
+    tuait pas — « après 42 » et « 42 secondes » donnent `NaN` à `Number`, donc
+    `null` de toute façon, et l'assertion passait des deux côtés. §1bis : une
+    assertion qui peut passer pour une raison qu'on n'a pas voulue n'est pas
+    une assertion.
+
+    Ce qui sépare vraiment, c'est une chaîne que le contrôle rejette **et**
+    que `Number` accepte. Il y en a : `Number('0x10')` vaut 16,
+    `Number('1e3')` vaut mille, et `Number('Infinity')` vaut l'infini. Sans
+    ce contrôle, un serveur qui répondrait `Retry-After: 0x10` ferait
+    afficher « Réessayez dans 16 secondes » sans l'avoir dit.
+  */
+  it('n’accepte un délai que s’il est écrit en chiffres décimaux', () => {
+    expect(delaiDeReessai('42')).toBe(42)
+    expect(delaiDeReessai('  7  '), 'les espaces autour restent tolérés').toBe(7)
+    expect(delaiDeReessai('0x10'), 'Number en ferait 16').toBeNull()
+    expect(delaiDeReessai('1e3'), 'Number en ferait mille').toBeNull()
+    expect(delaiDeReessai('Infinity'), 'Number en ferait l’infini').toBeNull()
+  })
+
+  /*
+    La RFC 9110 autorise `Retry-After` sous deux formes : un nombre de
+    secondes **ou** une date HTTP. La seconde n'était éprouvée nulle part.
+  */
+  it('ne tire pas un délai d’une date HTTP', () => {
+    expect(delaiDeReessai('Wed, 21 Oct 2015 07:28:00 GMT')).toBeNull()
+  })
+
+  /*
+    Soixante secondes font une minute, pas « 1 minutes ». L'accord était
+    écrit et n'était éprouvé par personne — le même défaut que celui trouvé
+    dans le libellé du téléchargement, à quelques heures d'intervalle.
+  */
+  it('accorde la minute au singulier', async () => {
+    const fetchFn = vi.fn().mockResolvedValue(limite429('60'))
+    expect(await motDeLerreur(fetchFn)).toContain('Réessayez dans 1 minute.')
+  })
+
+  /*
+    Deux miroirs qui limitent ne disent pas forcément la même attente. On
+    retient **la plus courte** : c'est celle qui permet de réessayer le plus
+    tôt, et annoncer la plus longue ferait attendre pour rien.
+
+    Cinq mutants survivaient sur cette comparaison — dont un qui la
+    remplaçait par `true`, c'est-à-dire « garde toujours le dernier vu ».
+  */
+  it('annonce la plus courte des attentes, pas la dernière vue', async () => {
+    /*
+      L'ordre compte, et ma première version l'avait manqué : avec 120 puis
+      30, garder « la plus courte » et garder « la dernière vue » donnent le
+      même résultat, et le test passait des deux côtés. Il faut que la plus
+      courte arrive **en premier**.
+
+      Il n'y a que deux miroirs : une troisième réponse ne serait jamais lue,
+      et c'est ce qui rendait le cas inatteignable.
+    */
+    const fetchFn = vi
+      .fn()
+      .mockResolvedValueOnce(limite429('30'))
+      .mockResolvedValueOnce(limite429('120'))
+    expect(await motDeLerreur(fetchFn)).toContain('Réessayez dans 30 secondes.')
+  })
+
+  /*
+    Un miroir qui limite sans dire combien de temps attendre ne doit pas
+    effacer ce qu'un autre a dit. Sans la garde `delai !== null`, le second
+    miroir écrase le délai du premier par « rien », et la personne perd une
+    information qu'on avait.
+
+    Ce cas est le plus probable des deux en vrai : `Retry-After` est un
+    en-tête que le navigateur cache par défaut sur une réponse d'un autre
+    domaine, comme le dit le commentaire de `delaiDeReessai`. Un miroir sur
+    deux qui le laisse passer est déjà une bonne journée.
+  */
+  it('ne laisse pas un miroir muet effacer le délai d’un autre', async () => {
+    const fetchFn = vi
+      .fn()
+      .mockResolvedValueOnce(limite429('45'))
+      .mockResolvedValueOnce(limite429(null))
+    expect(await motDeLerreur(fetchFn)).toContain('Réessayez dans 45 secondes.')
+  })
+
+  /*
+    Un 500 n'est pas un 429. Le premier veut dire « ça va mal chez nous », le
+    second « nous refusons la vôtre » — et le §319 dit tout ce que coûte de
+    confondre les deux : on envoie chercher son réseau quelqu'un dont le
+    réseau va très bien.
+
+    Le test existant sur le non-200 ne comptait que les appels ; rien ne
+    gardait le message.
+  */
+  it('ne prend pas une panne de serveur pour un refus', async () => {
+    const fetchFn = vi
+      .fn()
+      .mockResolvedValue(new Response('boom', { status: 500 }))
+    const message = await motDeLerreur(fetchFn)
+    expect(message).toContain('Impossible de joindre')
+    expect(message, 'aucun refus n’a été signifié').not.toContain('limitent')
+  })
+})
+
 describe('les questions que la vague a posées (#406)', () => {
   /*
     `buildZoneQuery('zone-qui-nexiste-pas')` n'était appelé nulle part.
