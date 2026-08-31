@@ -65,6 +65,10 @@ const PLAFONDS: Record<string, number> = {
   'trancheFiche.ts': 260,
   'lecture.ts': 220,
   'veilleGeo.ts': 130,
+  // 41 lignes dont 28 de commentaire : c'est une règle de quatre lignes et
+  // le récit de ses trois copies fausses (#437). Le plafond laisse la place
+  // d'une deuxième garde du même genre, pas d'une tranche.
+  'oubliDeZone.ts': 60,
   'matchingClient.ts': 110,
 }
 
