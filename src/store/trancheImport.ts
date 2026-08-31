@@ -312,6 +312,29 @@ export function trancheImport(deps: DependancesImport): ActionsImport {
         0,
         ...deps.etat().customItineraries.map((i) => i.osmRelationId),
       )
+      /*
+        Un compteur unique pour les chemins, partagé par tous les tracés et
+        tous les fichiers de l'import (issue #440).
+
+        L'ancienne forme réservait mille identifiants par itinéraire —
+        `nextId * 1_000 - index` — et se recouvrait au mille-et-unième
+        tronçon : un tracé et le suivant partageaient alors un numéro, la
+        carte dessinait l'un avec les coordonnées de l'autre, et la
+        progression se créditait au mauvais itinéraire. Un compteur sans
+        plafond n'a pas ce défaut, et n'oblige plus à choisir un nombre que
+        rien ne justifie (§2).
+
+        `reduce` plutôt qu'un `Math.min(...)` étalé : une bibliothèque déjà
+        fournie peut porter des milliers de chemins, et l'étalement les passe
+        tous en arguments d'un seul appel.
+      */
+      let nextWayId = deps
+        .etat()
+        .customItineraries.reduce(
+          (plancher, itin) =>
+            itin.ways.reduce((bas, way) => Math.min(bas, way.osmWayId), plancher),
+          0,
+        )
       const liste = [...files]
       for (const [index, file] of liste.entries()) {
         try {
@@ -346,10 +369,10 @@ export function trancheImport(deps: DependancesImport): ActionsImport {
             nextId -= 1
             const ways = trail.lines
               .filter((ligne) => ligne.length >= 2)
-              .map((ligne, index) => ({
-                osmWayId: nextId * 1_000 - index,
-                coords: ligne,
-              }))
+              .map((ligne) => {
+                nextWayId -= 1
+                return { osmWayId: nextWayId, coords: ligne }
+              })
             const itinerary: Itinerary = {
               osmRelationId: nextId,
               ref: null,
