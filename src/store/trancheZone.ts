@@ -140,6 +140,13 @@ export interface DependancesZone {
   baseOuverte: () => Promise<SentiersDb | null>
   /** Retient la zone affichée, pour la rouvrir au prochain démarrage. */
   persistLastZone: (zoneKey: string) => Promise<void>
+  /**
+   * Jette la ligne en cache d'une zone, pour qu'un rechargement forcé
+   * reparte vraiment d'Overpass. Les trois chemins forcés la recopiaient, et
+   * deux la recopiaient mal — sur un `db` qui vaut `null` pendant
+   * l'ouverture (#437 ; `tests/unit/oubliDuCacheDeZone.test.ts` garde l'accord).
+   */
+  oublierLaZoneEnCache: (zoneKey: string) => Promise<void>
   /** Recalcule la complétion après un changement d'itinéraires. */
   recompute: () => Promise<void>
   /** Pose les itinéraires d'une zone et remet ce qui en dépend à zéro. */
@@ -386,10 +393,7 @@ export function trancheZone(deps: DependancesZone): ActionsZone {
       const zone = ZONES.find((z) => z.id === zoneId)
       if (!zone) return
       const force = options.force ?? false
-      if (force) {
-        const db = deps.etat().db
-        if (db) await db.deleteZone(zoneId)
-      }
+      if (force) await deps.oublierLaZoneEnCache(zoneId)
       await loadFromOverpass(zoneId, zone.label, buildZoneQuery(zoneId), force)
       await mergeLocalBoucles(zoneId)
     },
@@ -433,10 +437,7 @@ export function trancheZone(deps: DependancesZone): ActionsZone {
       if (!trimmed) return
       const force = options.force ?? false
       const zoneKey = `ref:${trimmed.toUpperCase()}`
-      if (force) {
-        const db = deps.etat().db
-        if (db) await db.deleteZone(zoneKey)
-      }
+      if (force) await deps.oublierLaZoneEnCache(zoneKey)
       await loadFromOverpass(zoneKey, trimmed, buildRefQuery(trimmed), force)
     },
 
@@ -479,10 +480,7 @@ export function trancheZone(deps: DependancesZone): ActionsZone {
       const [lon, lat] = lieu.center
       const zoneKey = `autour:${lon.toFixed(4)},${lat.toFixed(4)}`
       const force = options.force ?? false
-      if (force) {
-        const db = await deps.baseOuverte()
-        if (db) await db.deleteZone(zoneKey)
-      }
+      if (force) await deps.oublierLaZoneEnCache(zoneKey)
       deps.set({ lieux: [], lieuError: null, lieuxVides: false })
       await loadFromOverpass(
         zoneKey,

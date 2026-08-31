@@ -44,6 +44,7 @@ import {
   type ActionsSortie,
   type EtatSortie,
 } from './enregistrementSlice.ts'
+import { creerOubliDeZone } from './oubliDeZone.ts'
 import { creerVeilleGeo } from './veilleGeo.ts'
 import { GEO_OPTIONS, geolocationErrorMessage } from '../core/geolocation.ts'
 import type { Itinerary, LonLat, Track, UserPosition } from '../core/types.ts'
@@ -579,6 +580,14 @@ export const useAppStore = create<AppState>()((set, get) => {
   }
 
   /*
+    L'oubli d'une zone en cache est une fonction nommée, partagée par les
+    trois chemins forcés. Elle vit dans `oubliDeZone.ts` avec le pourquoi :
+    deux des trois copies la faisaient sur `get().db`, encore `null` pendant
+    l'ouverture, et n'effaçaient donc rien au démarrage (§4, issue #437).
+  */
+  const oublierLaZoneEnCache = creerOubliDeZone({ baseOuverte })
+
+  /*
     L'écriture des réglages est une fonction nommée, partagée par les
     objectifs, la tolérance, le seuil de complétion et les quatre réglages
     d'écran. Elle vit dans `reglagesPersistants.ts` avec le registre de ce
@@ -967,6 +976,7 @@ export const useAppStore = create<AppState>()((set, get) => {
       etat: () => get(),
       baseOuverte,
       persistLastZone,
+      oublierLaZoneEnCache,
       recompute,
       setItineraries,
       sortirDeLaDemonstration: () => sortirDeLaDemonstration(get),
