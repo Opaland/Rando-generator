@@ -219,7 +219,12 @@ Trois pièges mesurés sur ce dépôt :
   sources. Un `npm run build` dont on masque la sortie peut échouer en
   silence et laisser tester une version périmée.
 - **`--workers=1`** pour la suite e2e, et
-  `PW_CHROMIUM_PATH=/opt/pw-browsers/chromium`.
+  `PW_CHROMIUM_PATH=/opt/pw-browsers/chromium` pour **toute** commande qui
+  lance Playwright — `e2e`, `monkey`, `mesure`, `reel`. Cette phrase-là a
+  déjà été trop étroite une fois : le 31/08, `npm run monkey` a rendu trois
+  échecs au milieu d'une porte verte, faute de la variable, et la seule
+  commande annoncée avec elle était `e2e` (issue #435). `npm run listes`
+  garde maintenant l'accord entre cette liste et `package.json`.
 
 ## 6bis. La mutation trouve les tests creux que je ne vois pas
 
