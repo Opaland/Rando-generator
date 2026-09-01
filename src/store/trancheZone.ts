@@ -1,9 +1,19 @@
 /**
  * La zone : ce que la carte montre, et comment on y arrive (issue #155).
  *
- * Quatrième tranche, et la plus grosse — trois cent neuf lignes qui
- * partagent un état (`zoneKey`, `zoneLabel`, `zoneError`, le chargement, les
- * lieux cherchés) et une seule préoccupation.
+ * Quatrième tranche, et la plus grosse. Elle porte les trois chemins qui
+ * mènent à une zone — la liste, une ref, un rayon autour d'un lieu —, leur
+ * cache, leurs points d'intérêt, et rien d'autre.
+ *
+ * ## Ce qu'elle ne porte plus
+ *
+ * **La recherche de lieu est partie** dans `rechercheDeLieu.ts` (#454) :
+ * elle interroge un géocodeur, possède ses propres champs et son propre
+ * compteur de course, et ne partageait avec la zone que le fait d'être
+ * arrivée en même temps. `loadAutour` la referme par une dépendance nommée,
+ * `oublierLesLieux`, plutôt qu'en écrivant ses champs à la main — c'est
+ * cette écriture à la main qui laissait la liste des propositions se rouvrir
+ * toute seule.
  *
  * ## Ce que cette tranche n'est pas
  *
@@ -12,15 +22,14 @@
  * **listées une à une** plutôt que masquées derrière « le store » : le
  * couplage devient visible quand il grandit, au lieu de se cacher.
  *
- * ## Les deux numéros de séquence, et pourquoi ils vivent ici
+ * ## Le numéro de séquence, et pourquoi il vit ici
  *
- * `sequenceZone` et `sequenceLieu` sont des compteurs de closure, pas des
- * champs d'état : ils ne se peignent jamais, et les mettre dans le store
- * ferait repeindre l'application à chaque frappe dans le champ de
- * recherche.
+ * `zoneLoadSequence` est un compteur de closure, pas un champ d'état : il ne
+ * se peint jamais, et le mettre dans le store ferait repeindre
+ * l'application à chaque étape d'un chargement.
  *
- * Le premier porte une leçon datée, gardée mot pour mot dans
- * `loadFromOverpass` : **il se prend avant tout `await`, sans exception.**
+ * Il porte une leçon datée, gardée mot pour mot dans `loadFromOverpass` :
+ * **il se prend avant tout `await`, sans exception.**
  */
 
 import {
@@ -36,7 +45,7 @@ import {
   libelleDeZone,
 } from '../core/overpass.ts'
 import { messageDeZone } from '../core/messageDeZone.ts'
-import { chercherLieux, GeocodeError, type Lieu } from '../core/geocode.ts'
+import type { Lieu } from '../core/geocode.ts'
 import { fetchPois } from '../core/poi.ts'
 import { reponseTronquee } from '../core/poisDeZone.ts'
 import { itineraryCoords } from '../core/mapdata.ts'
@@ -97,10 +106,6 @@ export interface EtatZone {
   poisZone: PointOfInterest[]
   poisZoneLoading: boolean
   poisZoneTronque: boolean
-  lieux: Lieu[]
-  lieuxLoading: boolean
-  lieuError: string | null
-  lieuxVides: boolean
 }
 
 /** Les champs du store que la tranche lit sans les posséder. */
@@ -117,8 +122,6 @@ export interface ActionsZone {
   chargerPoisDeLaZone: () => Promise<void>
   cancelZoneLoad: () => void
   rafraichirZone: () => Promise<void>
-  chercherLieu: (query: string) => Promise<void>
-  effacerLieux: () => void
   /**
    * Exposée parce que le démarrage la rappelle sur la dernière zone
    * restaurée, et non parce qu'un test s'en sert — la nuance compte
@@ -147,6 +150,15 @@ export interface DependancesZone {
    * l'ouverture (#437 ; `tests/unit/oubliDuCacheDeZone.test.ts` garde l'accord).
    */
   oublierLaZoneEnCache: (zoneKey: string) => Promise<void>
+  /**
+   * Referme la recherche de lieu, et invalide ce qui est encore en vol.
+   *
+   * Passée en dépendance nommée plutôt qu'écrite ici : `loadAutour` vidait
+   * les quatre champs à la main sans faire avancer le compteur de la
+   * recherche, et la liste des propositions se rouvrait toute seule
+   * par-dessus la zone demandée (#454).
+   */
+  oublierLesLieux: () => void
   /** Recalcule la complétion après un changement d'itinéraires. */
   recompute: () => Promise<void>
   /** Pose les itinéraires d'une zone et remet ce qui en dépend à zéro. */
@@ -168,12 +180,11 @@ export interface DependancesZone {
 
 export function trancheZone(deps: DependancesZone): ActionsZone {
   /*
-    Deux compteurs de closure, jamais des champs d'état : ils ne se peignent
-    pas, et les mettre dans le store ferait repeindre l'application à chaque
-    frappe dans le champ de recherche de lieu.
+    Un compteur de closure, jamais un champ d'état : il ne se peint pas, et
+    le mettre dans le store ferait repeindre l'application à chaque étape
+    d'un chargement de zone.
   */
   let zoneLoadSequence = 0
-  let lieuSequence = 0
 
   async function loadFromOverpass(
     zoneKey: string,
@@ -448,40 +459,12 @@ export function trancheZone(deps: DependancesZone): ActionsZone {
       deps.set({ zoneLoading: false, zoneLoadStage: null, zoneLoadBytes: 0 })
     },
 
-    async chercherLieu(query) {
-      const terme = query.trim()
-      if (terme === '') {
-        deps.set({ lieux: [], lieuError: null, lieuxVides: false })
-        return
-      }
-      const sequence = ++lieuSequence
-      deps.set({ lieuxLoading: true, lieuError: null, lieuxVides: false })
-      try {
-        const lieux = await chercherLieux(terme)
-        // Une recherche plus récente a pris le relais : ses résultats sont
-        // ceux que l'utilisateur attend, pas ceux d'une frappe abandonnée.
-        if (sequence !== lieuSequence) return
-        deps.set({ lieux, lieuxVides: lieux.length === 0 })
-      } catch (error) {
-        if (sequence !== lieuSequence) return
-        deps.set({
-          lieux: [],
-          lieuError:
-            error instanceof GeocodeError
-              ? error.message
-              : 'La recherche de lieu n’a pas abouti. Choisissez une zone dans la liste.',
-        })
-      } finally {
-        if (sequence === lieuSequence) deps.set({ lieuxLoading: false })
-      }
-    },
-
     async loadAutour(lieu, options = {}) {
       const [lon, lat] = lieu.center
       const zoneKey = `autour:${lon.toFixed(4)},${lat.toFixed(4)}`
       const force = options.force ?? false
       if (force) await deps.oublierLaZoneEnCache(zoneKey)
-      deps.set({ lieux: [], lieuError: null, lieuxVides: false })
+      deps.oublierLesLieux()
       await loadFromOverpass(
         zoneKey,
         `Autour de ${lieu.label}`,
@@ -519,16 +502,6 @@ export function trancheZone(deps: DependancesZone): ActionsZone {
         return
       }
       await actions.loadZone(zoneKey, { force: true })
-    },
-
-    effacerLieux() {
-      lieuSequence += 1
-      deps.set({
-        lieux: [],
-        lieuError: null,
-        lieuxVides: false,
-        lieuxLoading: false,
-      })
     },
 
     mergeLocalBoucles,

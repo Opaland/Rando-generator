@@ -53,7 +53,18 @@ const fichiers: Record<string, string> = import.meta.glob<string>(
  */
 const PLAFONDS: Record<string, number> = {
   'appStore.ts': 1_170,
-  'trancheZone.ts': 540,
+  /*
+    Descendu de 540 à 530 le 01/09, quand la recherche de lieu est sortie
+    (#454) : 510 lignes après. Un plafond qu'on ne redescend pas après un
+    découpage autorise à reprendre exactement ce qu'on vient de rendre.
+  */
+  'trancheZone.ts': 530,
+  // 122 lignes dont 70 de commentaire : la recherche de commune, ses quatre
+  // champs et son compteur de course. Sortie de trancheZone parce qu'elle
+  // n'est pas de la logique de zone, et parce que le plafond de celle-ci
+  // refusait le correctif de #454 — c'est la première des deux réponses
+  // honnêtes que ce fichier nomme.
+  'rechercheDeLieu.ts': 140,
   'trancheSauvegarde.ts': 260,
   'trancheDemonstration.ts': 230,
   'reseauxVisibles.ts': 100,

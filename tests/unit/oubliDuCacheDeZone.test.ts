@@ -109,6 +109,9 @@ function harnais({ baseOuverteDansLEtat }: { baseOuverteDansLEtat: boolean }) {
     oublierLaZoneEnCache: creerOubliDeZone({ baseOuverte: () => Promise.resolve(db) }),
     recompute: () => Promise.resolve(),
     setItineraries: () => {},
+    // `loadAutour` referme la recherche de lieu par cette dépendance depuis
+    // que celle-ci a sa propre tranche (#454) ; ici il n'y a rien à fermer.
+    oublierLesLieux: () => {},
     sortirDeLaDemonstration: () => Promise.resolve(),
   } as unknown as DependancesZone
 

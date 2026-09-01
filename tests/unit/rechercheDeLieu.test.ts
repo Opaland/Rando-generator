@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { GeocodeError, type Lieu } from '../../src/core/geocode.ts'
 import { trancheZone, type DependancesZone } from '../../src/store/trancheZone.ts'
+import { trancheRecherche } from '../../src/store/rechercheDeLieu.ts'
 
 /**
  * La recherche de lieu, et les deux compteurs qui doivent rester d'accord.
@@ -92,14 +93,15 @@ function tranche() {
     lieuxVides: false,
     lieuxLoading: false,
   }
+  const poser = (partiel: unknown) => {
+    const bout =
+      typeof partiel === 'function'
+        ? (partiel as (e: unknown) => object)(etat)
+        : partiel
+    Object.assign(etat, bout)
+  }
   const deps = {
-    set: (partiel: unknown) => {
-      const bout =
-        typeof partiel === 'function'
-          ? (partiel as (e: unknown) => object)(etat)
-          : partiel
-      Object.assign(etat, bout)
-    },
+    set: poser,
     etat: () => etat,
     baseOuverte: () => Promise.resolve(null),
     persistLastZone: () => Promise.resolve(),
@@ -107,7 +109,17 @@ function tranche() {
     setItineraries: () => {},
     sortirDeLaDemonstration: () => Promise.resolve(),
   } as unknown as DependancesZone
-  return { actions: trancheZone(deps), etat }
+  /*
+    Les deux tranches ensemble sous un seul nom : la recherche a quitté la
+    zone (#454), mais `loadAutour` la referme toujours — et c'est justement
+    cet accord que ces tests éprouvent.
+  */
+  const recherche = trancheRecherche({ set: poser })
+  const actions = {
+    ...trancheZone({ ...deps, oublierLesLieux: recherche.effacerLieux }),
+    ...recherche,
+  }
+  return { actions, etat }
 }
 
 describe('recherche de lieu : le champ vide', () => {
