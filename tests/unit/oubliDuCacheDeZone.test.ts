@@ -188,3 +188,29 @@ describe('les trois chemins forcés, face à une base pas encore ouverte', () =>
     ).toEqual([cle])
   })
 })
+
+describe('une base qui ne s’ouvrira pas', () => {
+  /*
+    Le survivant de la vague du 01/09, et c'est celui du module lui-même.
+
+    `oubliDeZone.ts` fait quatre lignes dont une garde : `if (db)`. Muter
+    cette garde en `true` ne faisait rougir aucun test — parce que le harnais
+    ci-dessus rend toujours une base, et que « pas encore ouverte » y veut
+    dire « absente de l'état, mais `baseOuverte()` finira par la rendre ».
+
+    Le cas où elle ne s'ouvrira **jamais** est réel : navigation privée,
+    quota refusé, un Safari qui dit non. `baseOuverte()` rend alors `null`, et
+    sans la garde `null.deleteZone` lève. Rien n'attrape cette exception —
+    `loadRef` enchaîne directement dessus —, donc « Actualiser les tracés »
+    ne chargerait plus rien du tout, en silence, chez quelqu'un dont le
+    navigateur refuse déjà de retenir quoi que ce soit.
+
+    Le module a été écrit pour porter cette garde (#437) et elle n'était pas
+    éprouvée : c'est exactement le genre de test creux que la relecture ne
+    voit pas et que la vague trouve (§6bis).
+  */
+  it('ne fait rien, plutôt que de lever', async () => {
+    const oublier = creerOubliDeZone({ baseOuverte: () => Promise.resolve(null) })
+    await expect(oublier('rhone')).resolves.toBeUndefined()
+  })
+})
