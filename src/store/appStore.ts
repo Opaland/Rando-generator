@@ -80,6 +80,12 @@ import {
 } from './trancheFiche.ts'
 import { downloadBlob } from '../lib/download.ts'
 import { fetchLocalBoucles, trancheZone } from './trancheZone.ts'
+import {
+  RECHERCHE_AU_REPOS,
+  trancheRecherche,
+  type ActionsRecherche,
+  type EtatRecherche,
+} from './rechercheDeLieu.ts'
 import { trancheSauvegarde } from './trancheSauvegarde.ts'
 import { trancheDemonstration } from './trancheDemonstration.ts'
 export type { DoublonEnAttente } from './trancheImport.ts'
@@ -148,7 +154,9 @@ export interface AppState
     EtatImport,
     ActionsImport,
     EtatAffichage,
-    ActionsAffichage {
+    ActionsAffichage,
+    EtatRecherche,
+    ActionsRecherche {
   // Persistance
   db: SentiersDb | null
   dbWarning: string | null
@@ -199,12 +207,6 @@ export interface AppState
   /** Compte rendu du dernier import de sauvegarde, à afficher puis effacer. */
   backupMessage: string | null
 
-  // Recherche par nom de lieu (le premier écran ne demande plus une ref)
-  lieux: Lieu[]
-  lieuxLoading: boolean
-  lieuError: string | null
-  /** Vrai quand la dernière recherche n'a rien trouvé — différent de « pas encore cherché ». */
-  lieuxVides: boolean
 
   /**
    * Itinéraires épinglés comme objectifs (issue #13). Le tableau de bord
@@ -305,12 +307,8 @@ export interface AppState
   importerSauvegarde: (file: File) => Promise<void>
   /** Efface le compte rendu du dernier import de sauvegarde. */
   clearBackupMessage: () => void
-  /** Cherche des communes par nom (API Adresse de la BAN). */
-  chercherLieu: (query: string) => Promise<void>
   /** Charge les itinéraires dans un rayon autour d'un lieu trouvé. */
   loadAutour: (lieu: Lieu, options?: { force?: boolean }) => Promise<void>
-  /** Referme la liste des propositions. */
-  effacerLieux: () => void
   /**
    * Ajoute les boucles locales open data à la zone affichée.
    *
@@ -372,7 +370,6 @@ function lireObjectifs(brut: number | string | undefined): number[] {
   }
 }
 
-/** Même garde pour la recherche de lieu : une frappe abandonnée ne gagne pas. */
 /**
  * Ouverture d'IndexedDB en cours, s'il y en a une. Sert à faire patienter les
  * écritures lancées pendant le démarrage plutôt qu'à les perdre (baseOuverte).
@@ -601,6 +598,16 @@ export const useAppStore = create<AppState>()((set, get) => {
   */
   const enregistrerReglage = creerEnregistreurDeReglage({ baseOuverte })
 
+  /*
+    La recherche de lieu, tenue à part pour que la zone puisse la refermer.
+
+    `effacerLieux` est passée à `trancheZone` en dépendance nommée : c'est
+    elle qui invalide une réponse de géocodage encore en vol, et l'écrire à
+    la main dans `loadAutour` laissait la liste se rouvrir toute seule
+    par-dessus la zone demandée (#454).
+  */
+  const recherche = trancheRecherche({ set })
+
   return {
     db: null,
     dbWarning: null,
@@ -646,10 +653,7 @@ export const useAppStore = create<AppState>()((set, get) => {
     stockage: null,
     ...AFFICHAGE_PAR_DEFAUT,
     backupMessage: null,
-    lieux: [],
-    lieuxLoading: false,
-    lieuError: null,
-    lieuxVides: false,
+    ...RECHERCHE_AU_REPOS,
     objectifs: [],
     parcoursDeclares: [],
     customItineraries: [],
@@ -970,6 +974,15 @@ export const useAppStore = create<AppState>()((set, get) => {
     },
 
     /*
+      Chercher une commune par son nom (#454).
+
+      Posée avant la zone, parce que `loadAutour` la referme : c'est
+      `effacerLieux` qui invalide la réponse encore en vol, et l'écrire à la
+      main dans la zone était le défaut.
+    */
+    ...recherche,
+
+    /*
       La zone (issue #155, quatrième tranche).
 
       Elle vient en premier parce que le démarrage l'appelle : `init`
@@ -981,6 +994,7 @@ export const useAppStore = create<AppState>()((set, get) => {
       baseOuverte,
       persistLastZone,
       oublierLaZoneEnCache,
+      oublierLesLieux: recherche.effacerLieux,
       recompute,
       setItineraries,
       sortirDeLaDemonstration: () => sortirDeLaDemonstration(get),
