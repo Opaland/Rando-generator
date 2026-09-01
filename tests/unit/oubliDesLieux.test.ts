@@ -32,6 +32,31 @@ import { trancheRecherche } from '../../src/store/rechercheDeLieu.ts'
  * message d'échec nomme le chemin fautif.
  */
 
+/**
+ * Overpass n'a rien à faire ici, et le laisser joignable a coûté une CI.
+ *
+ * `loadAutour` enchaîne sur un chargement de zone. Sans ce bouchon, ce
+ * chargement part vraiment sur le réseau : localement `fetch` échoue en
+ * quelques millisecondes et les tests passaient ; sur le runner, il résout
+ * et attend, et les deux questions posées sur ce geste dépassaient les cinq
+ * secondes. Le test mesurait donc, sans le dire, ce que le réseau de la
+ * machine veut bien faire (§6ter : une mesure unique d'un état qui met un
+ * temps non nul à s'établir).
+ *
+ * Un rejet immédiat rend l'échec de la zone déterministe. Ce qui est mesuré
+ * ici reste ce qu'il advient des quatre champs de la recherche, et l'échec
+ * de la zone n'y touche pas.
+ *
+ * `oubliDuCacheDeZone.test.ts` porte la même précaution, et son commentaire
+ * la disait déjà : « sans cela, chaque test de garde partirait pour une
+ * vraie requête réseau ». Je l'avais lu une heure plus tôt. Deux fichiers
+ * qui ont besoin de la même neutralisation et ne l'ont écrite qu'une fois,
+ * c'est le §4ter vu depuis les tests — noté en #456.
+ */
+vi.stubGlobal('fetch', () =>
+  Promise.reject(new Error('aucun réseau dans ce test')),
+)
+
 /** Ce que le service de géocodage rendra, décidé test par test. */
 let repondre: (query: string) => Promise<Lieu[]>
 
@@ -90,10 +115,9 @@ function tranche() {
 /**
  * Les trois gestes qui ferment la recherche.
  *
- * `loadAutour` part chercher une zone chez Overpass, que `fetch` n'existe pas
- * pour servir : le chargement échoue, `zoneError` se remplit, et **ce n'est
- * pas ce qu'on mesure ici**. Ce qui est mesuré est ce qu'il advient des
- * quatre champs de la recherche, et l'échec de la zone n'y touche pas.
+ * `loadAutour` part chercher une zone chez Overpass, que le bouchon de
+ * `fetch` ci-dessus fait échouer tout de suite. `zoneError` se remplit, et
+ * **ce n'est pas ce qu'on mesure ici**.
  */
 type Actions = ReturnType<typeof tranche>['actions']
 
