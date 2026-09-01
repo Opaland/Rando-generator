@@ -31,6 +31,20 @@ let rangees: Track[]
 let demonstrationQuittee: number
 let veilleurs: Veilleur[]
 let veilleDisponible: boolean
+/**
+ * Les **demandes** de veille, dans l'ordre — distinctes des veilleurs
+ * ouverts (issue #462).
+ *
+ * `veilleurs` dit qui tient un suivi ; il ne dit pas qui vient de le
+ * demander. La nuance a rendu un test creux : « rouvre la veille en
+ * reprenant » assertait `toContain('sortie')` alors que le veilleur y était
+ * encore faute d'avoir jamais été retiré — la pause ne relâche pas le suivi.
+ * Le test passait la ligne de reprise supprimée.
+ *
+ * Un compteur d'appels répond à la question posée, et y répond quelle que
+ * soit la décision qui sera prise sur la pause.
+ */
+let demandesDeVeille: string[]
 let compteur = 0
 
 function position(i: number, altitude: number | null = 200) {
@@ -61,6 +75,7 @@ function ports(): PortsSortie {
     },
     veille: {
       demarrer: (qui) => {
+        demandesDeVeille.push(qui)
         if (!veilleDisponible) return false
         veilleurs.push(qui)
         return true
@@ -82,6 +97,7 @@ beforeEach(async () => {
   rangees = []
   demonstrationQuittee = 0
   veilleurs = []
+  demandesDeVeille = []
   veilleDisponible = true
   base = await openSentiersDb(`sentiers-tranche-${String(compteur)}`)
   tranche = creerTrancheSortie(ports())
@@ -245,16 +261,50 @@ describe('abandonner', () => {
 })
 
 describe('la pause et la reprise', () => {
-  it('rouvre la veille en reprenant', async () => {
+  it('redemande la veille en reprenant', async () => {
+    /*
+      Ce test s'appelait « rouvre la veille en reprenant » et ne gardait
+      rien : son `toContain('sortie')` passait parce que le veilleur n'avait
+      jamais été retiré — `suspendreSortie` ne relâche pas le suivi (#462).
+      Vérifié en supprimant la ligne de reprise : 22 tests verts.
+
+      La question se pose donc sur les **demandes**, pas sur l'appartenance.
+      Formulée ainsi, elle reste juste le jour où la pause relâchera le
+      suivi, si c'est ce qui est décidé.
+    */
     await marcher(2)
     tranche.actions.suspendreSortie()
     expect(etat.enregistrement.etat).toBe('pause')
+    const avant = demandesDeVeille.length
 
     horloge = T0 + 60_000
     tranche.actions.poursuivreSortie()
+
     expect(etat.enregistrement.etat).toBe('enregistrement')
-    expect(veilleurs).toContain('sortie')
+    expect(demandesDeVeille.slice(avant)).toEqual(['sortie'])
     expect(etat.sortieReprise).toBe(false)
+  })
+
+  it('garde le suivi ouvert pendant la pause, faute d’avoir tranché', () => {
+    /*
+      Ce que le code fait aujourd'hui, écrit pour qu'on le voie plutôt que
+      pour l'approuver. La sonde de #462 a mesuré que `suspendreSortie` ne
+      relâche pas le suivi : une pause d'une heure au sommet garde un
+      `watchPosition` haute précision ouvert à ne rien enregistrer.
+
+      L'arbitrage demande deux nombres que personne n'a — le coût d'une heure
+      de suivi, et le temps qu'une reprise met à retrouver une position
+      correcte. C'est la mesure de batterie de #152, bloquée sur Cédric. Le
+      §2 interdit de l'inventer.
+
+      Ce test **n'approuve pas** ce comportement : il le rend visible, et il
+      rougira le jour où quelqu'un le changera — ce qui est précisément le
+      moment où il faudra relire cette décision.
+    */
+    tranche.actions.demarrerSortie()
+    tranche.actions.suspendreSortie()
+
+    expect(veilleurs).toEqual(['sortie'])
   })
 
   it('ne rouvre pas la veille si la reprise n’a pas eu lieu', () => {
