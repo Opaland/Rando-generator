@@ -78,16 +78,19 @@ export interface ActionsTrace {
 }
 
 /**
- * L'état de départ, et celui auquel on revient.
+ * Ce qu'un changement de zone rend faux, sans refermer le panneau (#451).
  *
- * Une seule table plutôt que trois copies : `toggleDrawMode`,
- * `saveDrawnItinerary` et l'initialisation du store remettaient chacune les
- * sept champs à la main, et il a suffi d'en oublier un pour qu'un dénivelé
- * d'un tracé précédent reste affiché sous le suivant. Une remise à zéro qui
- * se recopie finit par diverger (CLAUDE.md §4).
+ * `drawPath` et `drawWaypoints` alimentent deux sources de la carte : un
+ * tracé posé dans le Pilat restait peint par-dessus la Loire, sur un graphe
+ * où ses nœuds n'existent plus. Le geste, lui, n'a rien de périmé — celui
+ * qui change de zone pour dessiner ailleurs garde son mode ouvert.
+ *
+ * L'autre piste — remettre `TRACE_VIDE` entier et refermer le panneau — a
+ * été écartée pour ça : elle annule un geste au lieu de le vider. Rien n'en
+ * dépend dans ce qui est calculé, c'est donc un seuil de présentation que le
+ * §2 laisse trancher, à condition d'écrire la piste écartée.
  */
-export const TRACE_VIDE: EtatTrace = {
-  drawMode: false,
+export const TRACE_PERIMEE: Omit<EtatTrace, 'drawMode'> = {
   drawWaypointKeys: [],
   drawWaypoints: [],
   drawPath: [],
@@ -95,6 +98,21 @@ export const TRACE_VIDE: EtatTrace = {
   drawGainMeters: null,
   drawGainLoading: false,
 }
+
+/**
+ * L'état de départ, et celui auquel on revient.
+ *
+ * Une seule table plutôt que trois copies : `toggleDrawMode`,
+ * `saveDrawnItinerary` et l'initialisation du store remettaient chacune les
+ * sept champs à la main, et il a suffi d'en oublier un pour qu'un dénivelé
+ * d'un tracé précédent reste affiché sous le suivant. Une remise à zéro qui
+ * se recopie finit par diverger (CLAUDE.md §4).
+ *
+ * Écrite comme une extension de `TRACE_PERIMEE` plutôt qu'en seconde liste,
+ * pour la même raison vue de l'autre bout : deux tables qui disent la même
+ * remise à zéro finissent par avoir le même trou (§4ter).
+ */
+export const TRACE_VIDE: EtatTrace = { drawMode: false, ...TRACE_PERIMEE }
 
 /**
  * Ce que la tranche a besoin de savoir du reste du store.
