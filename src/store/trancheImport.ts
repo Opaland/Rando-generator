@@ -42,6 +42,7 @@ import { polylineLengthMeters } from '../core/sampling.ts'
 import { espacementTropGrand } from '../core/matching.ts'
 import type { Itinerary, Track } from '../core/types.ts'
 import type { SentiersDb } from '../db/database.ts'
+import { deposerLeResultatDeLImport } from './epilogueDImport.ts'
 import {
   developperArchives,
   lireItineraires,
@@ -284,16 +285,9 @@ export function trancheImport(deps: DependancesImport): ActionsImport {
           errors.push(messageDeLecture(file.name, error))
         }
       }
-      deps.set({ importProgress: null })
-      if (imported.length > 0) {
-        deps.set((state) => ({ tracks: [...state.tracks, ...imported] }))
-        await deps.recompute()
-      }
-      if (errors.length > 0) {
-        deps.set((state) => ({
-          importErrors: [...state.importErrors, ...errors],
-        }))
-      }
+      await deposerLeResultatDeLImport(deps, imported, errors, (a, etat) => ({
+        tracks: [...etat.tracks, ...a],
+      }))
       if (doublons.length > 0) {
         deps.set((state) => ({
           importDoublons: [...state.importDoublons, ...doublons],
@@ -411,18 +405,9 @@ export function trancheImport(deps: DependancesImport): ActionsImport {
           errors.push(messageDeLecture(file.name, error))
         }
       }
-      deps.set({ importProgress: null })
-      if (imported.length > 0) {
-        deps.set((state) => ({
-          customItineraries: [...state.customItineraries, ...imported],
-        }))
-        await deps.recompute()
-      }
-      if (errors.length > 0) {
-        deps.set((state) => ({
-          importErrors: [...state.importErrors, ...errors],
-        }))
-      }
+      await deposerLeResultatDeLImport(deps, imported, errors, (a, etat) => ({
+        customItineraries: [...etat.customItineraries, ...a],
+      }))
     },
 
     async removeTrack(id) {
