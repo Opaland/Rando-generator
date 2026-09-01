@@ -67,6 +67,7 @@ import {
 } from './trancheAffichage.ts'
 import {
   TRACE_VIDE,
+  TRACE_PERIMEE,
   trancheTrace,
   type ActionsTrace,
   type EtatTrace,
@@ -537,6 +538,9 @@ export const useAppStore = create<AppState>()((set, get) => {
     set({
       celebration: null,
       outingDetail: null,
+      // Le tracé en cours nomme des nœuds de l'ancienne zone, et il est peint
+      // par la carte tant qu'on ne le retire pas (#451).
+      ...TRACE_PERIMEE,
       zoneKey,
       zoneLabel,
       itineraries,
