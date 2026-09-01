@@ -101,6 +101,17 @@ const ABSENTS_ASSUMES = new Map([
     'le fichier fantôme du §4bis : deux commentaires le nomment pour raconter ' +
       "qu'il n'a jamais existé.",
   ],
+  [
+    // Le même fantôme, cité sans son chemin — la citation nue le fait
+    // apparaître depuis que la racine est regardée (issue #427).
+    'reseauxFiltrables.test.ts',
+    'le même fichier fantôme, nommé sans son dossier.',
+  ],
+  [
+    'transformers.js',
+    "une bibliothèque npm, pas un fichier d'ici : `docs/IA_LOCALE.md` la " +
+      'nomme pour dire ce qu\'elle pèserait.',
+  ],
 ])
 
 function fichiersDuDepot(racine = '.') {
@@ -117,13 +128,74 @@ function fichiersDuDepot(racine = '.') {
 
 const CITATION = /`([^`\s]+)`/g
 
+/**
+ * Combien de citations sans dossier ont été vues.
+ *
+ * Sert d'échec bruyant : ce compte est passé de 0 à plus de cent le 31/08 en
+ * élargissant `citationsDe` (#427). S'il retombe à zéro, c'est que la lecture
+ * a cessé de correspondre — et une garde qui ne trouve plus rien rend « tous
+ * présents » sur un dépôt qu'elle ne regarde plus. Le §6quater : un contrôle
+ * qu'il faut penser à relire ne garde rien.
+ */
+let citationsNues = 0
+
+/**
+ * Tous les fichiers du dépôt, rangés par nom de base.
+ *
+ * Sert aux citations **sans dossier** : `CLAUDE.md` et `appStore.ts` en sont
+ * deux, et jusqu'au 31/08 ni l'une ni l'autre n'était vérifiée — `RACINES` ne
+ * listait que des sous-dossiers, donc une citation sans `/` était écartée en
+ * silence et le script annonçait quand même « tous présents » (issue #427).
+ *
+ * Neuf fichiers de la racine étaient dans ce trou, dont `CLAUDE.md`, cité par
+ * cent treize fichiers.
+ */
+function indexParNom(racine = '.') {
+  const index = new Map()
+  for (const nom of readdirSync(racine)) {
+    if (IGNORES.includes(nom)) continue
+    const chemin = join(racine, nom)
+    if (statSync(chemin).isDirectory()) {
+      for (const [base, liste] of indexParNom(chemin)) {
+        index.set(base, [...(index.get(base) ?? []), ...liste])
+      }
+    } else {
+      index.set(nom, [...(index.get(nom) ?? []), chemin])
+    }
+  }
+  return index
+}
+
+const PAR_NOM = indexParNom()
+
 function citationsDe(texte) {
   const trouvees = []
   for (const trouve of texte.matchAll(CITATION)) {
     const chemin = trouve[1]
     if (chemin.includes('*')) continue
-    if (!RACINES.some((r) => chemin.startsWith(r))) continue
+    /*
+      Un gabarit n'est pas un chemin : `${base}pourquoi.html` désigne une
+      adresse construite à l'exécution, et le fichier qu'elle finit par
+      nommer n'a pas ce nom-là dans le dépôt.
+    */
+    if (chemin.includes('$') || chemin.includes('{')) continue
     if (!EXTENSIONS.some((e) => chemin.endsWith(e))) continue
+    /*
+      Deux formes de citation, et la seconde manquait (#427) :
+      - avec son dossier, `src/store/appStore.ts` — vérifiée telle quelle ;
+      - sans, `CLAUDE.md` ou `appStore.ts` — résolue par son nom de base.
+
+      Une extension nue (`.ts`) n'est pas un nom de fichier : la garde du
+      point en tête l'écarte, sans quoi `vitest.mutation.config.ts` en
+      produirait un fantôme à chaque mention d'un suffixe.
+    */
+    if (!chemin.includes('/')) {
+      if (chemin.startsWith('.')) continue
+      citationsNues += 1
+      trouvees.push(chemin)
+      continue
+    }
+    if (!RACINES.some((r) => chemin.startsWith(r))) continue
     trouvees.push(chemin)
   }
   return trouvees
@@ -145,9 +217,20 @@ for (const fichier of fichiersDuDepot()) {
     total += 1
     citesAuMoinsUneFois.add(chemin)
     if (existsSync(chemin)) continue
+    // Un nom sans dossier est présent s'il désigne un fichier, où qu'il soit.
+    if (!chemin.includes('/') && PAR_NOM.has(chemin)) continue
     if (ABSENTS_ASSUMES.has(chemin)) continue
     fantomes.push({ ou: normalise, chemin })
   }
+}
+
+if (citationsNues === 0) {
+  console.error(
+    'Aucune citation sans dossier trouvée — or `CLAUDE.md` seul en produit\n' +
+      "plus de cent. Le motif de lecture ne correspond plus, et ce script\n" +
+      'rendrait « tous présents » sans regarder la racine du dépôt (#427).',
+  )
+  process.exit(1)
 }
 
 const exceptionsPerimees = [...ABSENTS_ASSUMES.keys()].filter((chemin) =>
