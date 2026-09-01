@@ -235,6 +235,15 @@ export default defineConfig({
   },
   test: {
     include: ['tests/unit/**/*.test.ts'],
+    /*
+      Le réseau coupé pour toute la suite (#456). Un test qui part sur
+      Overpass mesure ce que la machine veut bien faire : localement `fetch`
+      échoue vite et la porte est verte, sur le runner il attend et dépasse
+      le délai. La coupure vaut par défaut, y compris pour les fichiers qu'on
+      n'a pas encore écrits — `tests/unit/reseauCoupe.test.ts` garde cette
+      ligne elle-même.
+    */
+    setupFiles: ['tests/unit/reseauCoupe.ts'],
     passWithNoTests: true,
     // Sans cela, un import `?raw` d'une feuille de style rend une chaîne
     // vide : le test qui compare la palette CSS aux constantes JavaScript
