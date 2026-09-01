@@ -27,7 +27,29 @@ export default {
     // Des déclarations de types : rien à muter, et les mutants y sont tous
     // équivalents par construction.
     '!src/core/types.ts',
-    'src/store/tranche*.ts',
+    /*
+      Le magasin entier, et pas seulement `tranche*` (#458).
+
+      Le motif étroit datait du découpage en tranches, et il a vieilli sans
+      qu'on le voie : dix des dix-sept fichiers de `src/store/` — 2 210
+      lignes — n'avaient jamais été mutés. Parmi eux, **les trois modules
+      sortis pour porter une règle qu'on voulait garder** : `oubliDeZone.ts`
+      (#437), `epilogueDImport.ts` (#442), `rechercheDeLieu.ts` (#454).
+      Chacun est né d'une duplication qui avait divergé, chacun a reçu un
+      test écrit exprès, et aucun de ces tests n'était mis à l'épreuve.
+
+      C'est la deuxième instance de ce qui est raconté douze lignes plus bas
+      pour `src/lib` — un module extrait *parce qu'*il était éprouvable, hors
+      du périmètre de ce qui éprouve les tests. La leçon y était écrite et
+      n'a pas traversé jusqu'ici : le §3 dit ce que vaut une correction qui
+      ne fait qu'une surface.
+
+      Mesuré avant d'élargir : 89 fichiers et 8 294 mutants avec l'ancien
+      motif, 99 et 8 987 avec celui-ci. Les 381 mutants d'`appStore.ts` en
+      forment plus de la moitié — il est gardé quand même, parce que la
+      décision qui demande à être écrite est l'exclusion, pas l'inclusion.
+    */
+    'src/store/**/*.ts',
     'src/db/reglages.ts',
 
     /*

@@ -108,6 +108,25 @@ describe.each(chemins)('l’épilogue de $quoi', ({ lancer }) => {
     expect(espion.etat().importProgress).toBeNull()
   })
 
+  it('ne touche pas à la liste des messages quand rien n’a raté', async () => {
+    /*
+      Le survivant de la vague du 01/09 : `if (errors.length > 0)` muté en
+      `true` ne faisait rougir personne. Ce n'est pas un mutant équivalent —
+      sans la garde, `[...etat.importErrors, ...errors]` construit un
+      **nouveau tableau** au même contenu, et Zustand repeint alors la liste
+      des erreurs à chaque import réussi.
+      
+      La différence n'est pas une valeur mais une identité : c'est donc
+      l'identité qu'on assert.
+    */
+    const espion = espionner()
+    const avant = espion.etat().importErrors
+
+    await lancer(trancheImport(espion.deps), [bon('bonne.gpx')])
+
+    expect(espion.etat().importErrors).toBe(avant)
+  })
+
   it('ne recalcule la complétion que si quelque chose est entré', async () => {
     const rate = espionner()
     await lancer(trancheImport(rate.deps), [illisible('rate.gpx')])
