@@ -1796,3 +1796,72 @@ describe('lire un réglage n’écrit rien (revue du sprint)', () => {
     }
   })
 })
+
+/**
+ * Cocher « j'ai fait celui-là », et ce que ça ne doit pas faire (issue #482).
+ *
+ * `declarerParcours` et `retirerParcoursDeclare` n'étaient éprouvées qu'au
+ * niveau de la base (`db.test.ts`) : la vague de mutation complète a compté
+ * leurs mutants **sans couverture** côté magasin.
+ *
+ * Deux garanties, dont une écrite en commentaire dans `appStore.ts` et tenue
+ * par rien : « le déclaratif n'entre jamais dans `matching`, donc rien de ce
+ * qui suppose une géométrie réelle ne peut s'en nourrir ». C'est l'identité
+ * du produit — Sentiers dit ce qu'on a **marché**, pas ce qu'on a coché.
+ */
+describe('le déclaratif, et la frontière qu’il ne franchit pas', () => {
+  it('remplace une déclaration au lieu de l’empiler', async () => {
+    const etat = useAppStore.getState()
+    await etat.declarerParcours(42, '2026-05-01')
+    await etat.declarerParcours(42, '2026-06-15')
+
+    const declares = useAppStore.getState().parcoursDeclares
+    expect(declares).toHaveLength(1)
+    expect(declares[0]?.date).toBe('2026-06-15')
+  })
+
+  it('retire la bonne déclaration, et laisse les autres', async () => {
+    const etat = useAppStore.getState()
+    await etat.declarerParcours(42, '2026-05-01')
+    await etat.declarerParcours(7, '2026-05-02')
+
+    await useAppStore.getState().retirerParcoursDeclare(42)
+
+    const declares = useAppStore.getState().parcoursDeclares
+    expect(declares.map((d) => d.itineraryId)).toEqual([7])
+  })
+
+  /**
+   * La frontière. Un itinéraire coché ne doit pas bouger d'un mètre ce qui a
+   * été **mesuré** : les deux chiffres vivent côte à côte dans
+   * `chiffresDeCompletion`, jamais l'un dans l'autre.
+   *
+   * Le `matching` est posé non nul exprès : sur un `null`, l'assertion
+   * passerait sans rien discriminer (§1bis).
+   */
+  it('ne touche pas au calcul de ce qui a été mesuré', async () => {
+    const mesure = {
+      samples: [],
+      results: [],
+      global: { doneMeters: 1_234, totalMeters: 10_000, pct: 12.34 },
+      byNetwork: {},
+    } as unknown as NonNullable<ReturnType<typeof useAppStore.getState>['matching']>
+    useAppStore.setState({ matching: mesure })
+
+    await useAppStore.getState().declarerParcours(42, '2026-05-01')
+
+    expect(useAppStore.getState().matching).toBe(mesure)
+  })
+})
+
+describe('basculer un objectif', () => {
+  it('l’ajoute puis le retire, sans toucher aux autres', async () => {
+    await useAppStore.getState().basculerObjectif(42)
+    await useAppStore.getState().basculerObjectif(7)
+    expect(useAppStore.getState().objectifs).toEqual([42, 7])
+
+    await useAppStore.getState().basculerObjectif(42)
+
+    expect(useAppStore.getState().objectifs).toEqual([7])
+  })
+})
