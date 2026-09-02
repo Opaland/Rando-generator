@@ -248,6 +248,46 @@ describe('terminer', () => {
     expect(await base.lireEntete()).toBeUndefined()
   })
 
+  /**
+   * Le magasin `tracks` a pour clé `id` (`src/db/database.ts`) : deux sorties
+   * sous le même identifiant, et la seconde écrase la première sur le disque.
+   * En mémoire les deux restent, donc l'écran en montre deux — la perte
+   * n'apparaît qu'au rechargement suivant, quand plus personne ne fait le
+   * lien (issue #473).
+   */
+  it('range deux sorties sous deux identifiants distincts', async () => {
+    await marcher(3)
+    horloge = T0 + 30_000
+    await tranche.actions.terminerSortie()
+
+    horloge = T0 + 3_600_000
+    await marcher(3)
+    horloge = T0 + 3_630_000
+    await tranche.actions.terminerSortie()
+
+    expect(rangees).toHaveLength(2)
+    expect(rangees[0]?.id).not.toBe(rangees[1]?.id)
+  })
+
+  /**
+   * `sortieReprise` allume la bannière « Sortie retrouvée… l'appli s'est
+   * arrêtée en cours de route ». Restée levée, elle n'est pas visible tout de
+   * suite — l'enregistreur est au repos — mais elle l'est à la sortie
+   * suivante, sur une marche toute neuve (issue #473).
+   */
+  it('ne laisse pas la sortie suivante passer pour une reprise', async () => {
+    await marcher(2)
+    etat = etatSortieInitial()
+    const apres = creerTrancheSortie(ports())
+    await apres.reprendreAuDemarrage(base)
+    expect(etat.sortieReprise).toBe(true)
+
+    horloge = T0 + 30_000
+    await apres.actions.terminerSortie()
+
+    expect(etat.sortieReprise).toBe(false)
+  })
+
   it('se termine aussi depuis la pause : on s’arrête souvent assis', async () => {
     await marcher(2)
     tranche.actions.suspendreSortie()
@@ -265,6 +305,19 @@ describe('abandonner', () => {
     expect(veilleurs).toEqual([])
     expect(await base.compterPointsEnregistres()).toBe(0)
     expect(await base.lireEntete()).toBeUndefined()
+  })
+
+  /** Le pendant du même oubli côté abandon (issue #473). */
+  it('abandonner une reprise ne laisse pas la suivante passer pour une reprise', async () => {
+    await marcher(2)
+    etat = etatSortieInitial()
+    const apres = creerTrancheSortie(ports())
+    await apres.reprendreAuDemarrage(base)
+    expect(etat.sortieReprise).toBe(true)
+
+    await apres.actions.abandonnerSortie()
+
+    expect(etat.sortieReprise).toBe(false)
   })
 })
 
