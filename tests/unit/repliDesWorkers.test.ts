@@ -42,12 +42,16 @@ async function chargerLeClient() {
 /** Doublure qui répond comme le vrai worker : un message par requête. */
 class WorkerQuiRepond {
   static construits = 0
+  static dernierUrl = ''
+  static dernieresOptions: WorkerOptions | undefined
   onmessage: ((event: MessageEvent) => void) | null = null
   onerror: (() => void) | null = null
   terminate = vi.fn()
 
-  constructor() {
+  constructor(url: URL | string, options?: WorkerOptions) {
     WorkerQuiRepond.construits += 1
+    WorkerQuiRepond.dernierUrl = String(url)
+    WorkerQuiRepond.dernieresOptions = options
   }
 
   postMessage(requete: MatchRequest) {
@@ -80,6 +84,8 @@ class WorkerQuiCasse {
 afterEach(() => {
   vi.unstubAllGlobals()
   WorkerQuiRepond.construits = 0
+  WorkerQuiRepond.dernierUrl = ''
+  WorkerQuiRepond.dernieresOptions = undefined
   WorkerQuiCasse.construits = 0
 })
 
@@ -108,6 +114,36 @@ describe('le repli quand le Web Worker manque', () => {
 
     expect(resultat.global.doneMeters).toBe(0)
     expect(resultat.results).toEqual([])
+  })
+
+  it('demande un worker de module, sur le fichier du matching', async () => {
+    vi.stubGlobal('Worker', WorkerQuiRepond)
+    const { computeMatching } = await chargerLeClient()
+
+    await computeMatching(ENTREE)
+
+    // Sans `type: 'module'`, le worker n'arrive pas à charger ses imports :
+    // tout le monde retombe en silence sur le calcul du thread principal,
+    // c'est-à-dire précisément le gel que le worker existe pour éviter. Les
+    // résultats restant justes, rien d'autre ne s'en apercevrait.
+    expect(WorkerQuiRepond.dernieresOptions?.type).toBe('module')
+    expect(WorkerQuiRepond.dernierUrl).toContain('matching.worker.ts')
+  })
+
+  it('ne retente pas un constructeur qui a déjà été refusé', async () => {
+    let tentatives = 0
+    vi.stubGlobal('Worker', function WorkerInterdit() {
+      tentatives += 1
+      throw new DOMException('refusé par la politique', 'SecurityError')
+    })
+    const { computeMatching } = await chargerLeClient()
+
+    await computeMatching(ENTREE)
+    await computeMatching(ENTREE)
+
+    // Le chemin de la CSP mérite la même neutralisation que celui de
+    // l'`onerror` : sans elle, chaque calcul repaie une exception.
+    expect(tentatives).toBe(1)
   })
 
   it('ne reconstruit pas un worker qui a déjà cassé', async () => {
