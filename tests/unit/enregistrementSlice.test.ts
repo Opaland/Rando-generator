@@ -45,6 +45,12 @@ let veilleDisponible: boolean
  * soit la décision qui sera prise sur la pause.
  */
 let demandesDeVeille: string[]
+/**
+ * Combien de fois l'état a été reposé — c'est-à-dire combien de fois React
+ * repeindrait. Sert à mesurer ce qu'une position qui n'apporte rien coûte
+ * (issue #469).
+ */
+let posesEtat: number
 let compteur = 0
 
 function position(i: number, altitude: number | null = 200) {
@@ -63,6 +69,7 @@ function ports(): PortsSortie {
   return {
     lire: () => etat,
     poser: (partiel) => {
+      posesEtat += 1
       etat = { ...etat, ...partiel }
     },
     base: () => base,
@@ -98,6 +105,7 @@ beforeEach(async () => {
   demonstrationQuittee = 0
   veilleurs = []
   demandesDeVeille = []
+  posesEtat = 0
   veilleDisponible = true
   base = await openSentiersDb(`sentiers-tranche-${String(compteur)}`)
   tranche = creerTrancheSortie(ports())
@@ -257,6 +265,83 @@ describe('abandonner', () => {
     expect(veilleurs).toEqual([])
     expect(await base.compterPointsEnregistres()).toBe(0)
     expect(await base.lireEntete()).toBeUndefined()
+  })
+})
+
+describe('une position qui n’apporte rien', () => {
+  it('ne repose pas l’état et n’écrit pas, pendant une pause', async () => {
+    /*
+      `ajouterPoint` rend l'enregistrement **inchangé** quand il n'y a rien
+      à ajouter — en pause, ou pour un point hors du monde
+      (`core/recorder.ts:194`). La garde `suivant === enCours` s'arrête là.
+
+      Ce n'est pas théorique : le suivi de position **reste ouvert pendant
+      la pause** (mesuré en #462). Sylvie s'arrête déjeuner, les positions
+      continuent d'arriver, et sans cette garde chacune reposerait l'état —
+      donc un repeint — et mettrait une écriture en file, pour rien.
+
+      La question porte donc sur le **nombre de poses**, pas sur les points :
+      ceux-ci ne bougent pas de toute façon, et une assertion sur eux
+      passerait avec ou sans la garde (§1bis).
+    */
+    await marcher(2)
+    tranche.actions.suspendreSortie()
+    await tranche.ecrituresTerminees()
+
+    const posesAvant = posesEtat
+    const enBaseAvant = await base.compterPointsEnregistres()
+
+    for (let i = 3; i <= 6; i++) {
+      horloge = T0 + i * 1000
+      tranche.surPosition(position(i))
+    }
+    await tranche.ecrituresTerminees()
+
+    expect(posesEtat).toBe(posesAvant)
+    expect(await base.compterPointsEnregistres()).toBe(enBaseAvant)
+  })
+})
+
+describe('une écriture qui rate', () => {
+  /*
+    Ce que promet le commentaire de `pointsEcrits`, et que rien ne
+    vérifiait : « le prochain point relira le compte et réécrira ce qui
+    manque ».
+
+    C'est le §4bis — une justification qui affirme. Mesurée en muant `??=`
+    en `&&=` : le compteur reste à `null`, `pointsAEcrire(e, null)` fait un
+    `slice(null)` qui rend **tous** les points, et la sortie entière se
+    réécrit par-dessus elle-même. Cinq pas marchés, huit points en base.
+
+    Pour Sylvie, un hoquet de quota au milieu d'une randonnée rendrait une
+    trace qui repasse sur elle-même, avec une distance fausse.
+  */
+  it('ne réécrit que ce qui manque, sans doubler ce qui est déjà là', async () => {
+    let rate = false
+    const vraie = base
+    base = {
+      ...vraie,
+      ajouterPointsEnregistres: (points) => {
+        if (!rate) return vraie.ajouterPointsEnregistres(points)
+        rate = false
+        return Promise.reject(new Error('quota dépassé (test)'))
+      },
+    }
+    tranche = creerTrancheSortie(ports())
+
+    await marcher(3)
+    expect(await vraie.compterPointsEnregistres()).toBe(3)
+
+    // Le quatrième point échoue à s'écrire ; le cinquième doit rattraper.
+    rate = true
+    horloge = T0 + 4000
+    tranche.surPosition(position(4))
+    horloge = T0 + 5000
+    tranche.surPosition(position(5))
+    await tranche.ecrituresTerminees()
+
+    expect(etat.enregistrement.points).toHaveLength(5)
+    expect(await vraie.compterPointsEnregistres()).toBe(5)
   })
 })
 
