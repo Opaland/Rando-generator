@@ -62,8 +62,18 @@ export function creerVeilleGeo({
           // positions haute précision demandées au système, exactement le
           // coût que ce module existe pour éviter.
           //
-          // Le compteur repart de zéro : sans cela la veille se croirait
-          // ouverte et ne rouvrirait jamais.
+          // Le compte des demandeurs repart de zéro.
+          //
+          // Ce commentaire disait « sans cela la veille se croirait ouverte
+          // et ne rouvrirait jamais ». **C'était faux**, et mesuré comme tel
+          // en retirant la ligne (#464) : `identifiant` étant remis à `null`
+          // juste au-dessus, le `??=` de `demarrer` rouvre sans difficulté.
+          //
+          // Ce qui casse est l'inverse, et c'est pire. Le compte garde les
+          // entrées d'avant l'erreur : après une panne subie à deux, si
+          // seule la carte redémarre, l'arrêter laisse le compte à un — et
+          // le suivi haute précision reste ouvert pour personne, jusqu'à la
+          // fermeture de l'onglet.
           if (identifiant !== null) api.clearWatch(identifiant)
           identifiant = null
           veilleurs.clear()

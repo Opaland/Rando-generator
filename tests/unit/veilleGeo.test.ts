@@ -33,6 +33,24 @@ function fausseGeolocalisation() {
       return id
     },
     clearWatch(id) {
+      /*
+        Un vrai navigateur ignore en silence une poignée qu'il ne connaît
+        pas. Ce faux ne l'ignore pas : il **lève** (issue #464).
+
+        Quatre mutants survivaient parce que ce faux acceptait
+        `clearWatch(null)` sans broncher et comptait quand même une
+        fermeture. Fermer un suivi qui n'existe pas devenait indiscernable
+        de fermer le bon — donc les gardes qui l'empêchent n'étaient
+        gardées par rien.
+
+        Un faux plus tolérant que le vrai ne rend pas le test plus souple,
+        il le rend aveugle (§1bis).
+      */
+      if (!suivis.has(id)) {
+        throw new Error(
+          `clearWatch(${String(id)}) : ce suivi n'a jamais été ouvert.`,
+        )
+      }
       suivis.delete(id)
       fermes += 1
     },
@@ -201,5 +219,54 @@ describe('un navigateur sans géolocalisation', () => {
     expect(() => {
       v.arreter('carte')
     }).not.toThrow()
+  })
+})
+
+describe('ce qui ne doit jamais être fermé', () => {
+  it('arrêter sans avoir démarré ne ferme aucun suivi', () => {
+    /*
+      Le faux lève désormais sur une poignée inconnue (#464). Sans cette
+      question, la garde `identifiant !== null && api` n'était éprouvée par
+      rien : muter son `&&` en `||` laissait onze tests verts, parce
+      qu'aucun n'arrêtait une veille jamais ouverte.
+
+      Un vrai navigateur ignore `clearWatch` d'une poignée inconnue, donc le
+      défaut serait silencieux — c'est exactement le genre qu'un test doit
+      attraper à sa place.
+    */
+    const v = veille()
+    v.arreter('carte')
+    expect(geo.fermes).toBe(0)
+  })
+
+  it('après une erreur, un seul demandeur suffit à refermer', () => {
+    /*
+      Ce que garde `veilleurs.clear()` dans le gestionnaire d'erreur, et ce
+      n'est pas ce que son commentaire disait.
+
+      Le commentaire affirmait : « sans cela la veille se croirait ouverte et
+      ne rouvrirait jamais ». **C'est faux** — `identifiant` est remis à
+      `null` juste avant, donc le `??=` de `demarrer` rouvre sans difficulté.
+      Mesuré en retirant la ligne : la réouverture marche.
+
+      Ce qui casse est l'inverse, et c'est pire : le compte des demandeurs
+      garde les entrées d'avant l'erreur. Après une erreur subie à deux, si
+      seule la carte redémarre, l'arrêter laisse le compte à un — et le
+      suivi haute précision reste ouvert pour personne, jusqu'à la fermeture
+      de l'onglet.
+
+      Le §4bis dit ce que vaut une justification que rien ne vérifie ; en
+      voici une qui était fausse dans son détail tout en désignant la bonne
+      ligne.
+    */
+    const v = veille()
+    v.demarrer('carte')
+    v.demarrer('sortie')
+    geo.echouer(ERREUR)
+
+    v.demarrer('carte')
+    v.arreter('carte')
+
+    expect(geo.actifs).toBe(0)
   })
 })
