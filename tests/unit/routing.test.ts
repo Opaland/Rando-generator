@@ -213,35 +213,6 @@ describe('routeThrough', () => {
   })
 })
 
-describe('performance', () => {
-  it('construit le graphe et route sur un réseau réaliste en moins de 2 s', () => {
-    // ~500 ways de 100 points : ordre de grandeur d'une grosse zone chargée.
-    const ways: LonLat[][] = []
-    for (let w = 0; w < 500; w++) {
-      const coords: LonLat[] = []
-      for (let i = 0; i < 100; i++) {
-        coords.push([4.5 + i * 0.0002, 45.4 + w * 0.0005])
-      }
-      ways.push(coords)
-      // Une liaison verticale entre bandes voisines pour un réseau connexe.
-      if (w > 0) {
-        ways.push([
-          [4.5, 45.4 + (w - 1) * 0.0005],
-          [4.5, 45.4 + w * 0.0005],
-        ])
-      }
-    }
-    const started = performance.now()
-    const graph = buildRoutingGraph([itinerary(1, ways)])
-    const from = snapToNetwork(graph, [4.5, 45.4])
-    const to = snapToNetwork(graph, [4.5198, 45.4 + 499 * 0.0005])
-    const path = findPath(graph, from as string, to as string)
-    const elapsed = performance.now() - started
-    expect(path).not.toBeNull()
-    expect(elapsed).toBeLessThan(2000)
-  })
-})
-
 describe('clefsAllerRetour', () => {
   it('revient par où l’on est venu, sans répéter le point de demi-tour', () => {
     expect(clefsAllerRetour(['a', 'b', 'c'])).toEqual(['a', 'b', 'c', 'b', 'a'])

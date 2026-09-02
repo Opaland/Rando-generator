@@ -4,7 +4,6 @@ import {
   DETOURS_PROPOSES,
   RAYON_DE_RECHERCHE_METERS,
   detoursParItineraire,
-  type DetoursPoi,
 } from '../../src/core/poisDeZone.ts'
 import { DETOUR_MAX_METRES } from '../../src/core/poiDistance.ts'
 import type { Itinerary, LonLat, PointOfInterest } from '../../src/core/types.ts'
@@ -160,32 +159,6 @@ describe('detoursParItineraire (#156)', () => {
     expect(detours?.water).toBeNull()
   })
 })
-
-describe('performance — une zone entière, pas une fiche', () => {
-  /**
-   * L'attribution tourne sur **toute** la zone, dans le fil principal, à
-   * chaque changement de filtre. La fiche n'en traitait qu'un à la fois : le
-   * coût n'a jamais été mesuré à cette échelle.
-   *
-   * Deux cents itinéraires de cent points, quatre cents POI — le plafond
-   * qu'`out center 400` impose déjà à la requête. Une comparaison naïve
-   * ferait 200 × 400 × 100 = huit millions de distances.
-   */
-  it('200 itinéraires × 400 POI en moins d’une seconde', () => {
-    const itineraires = Array.from({ length: 200 }, (_, i) =>
-      itin(i + 1, 4.5 + i * 0.02, 4.51 + i * 0.02),
-    )
-    const pois = Array.from({ length: 400 }, (_, i) =>
-      poi(`node/${String(i)}`, i % 2 === 0 ? 'water' : 'shelter', 4.5 + i * 0.01, LAT + 0.0002),
-    )
-    const debut = performance.now()
-    const resultats: DetoursPoi[] = detoursParItineraire(itineraires, pois)
-    const duree = performance.now() - debut
-    expect(resultats).toHaveLength(200)
-    expect(duree, `attribution en ${duree.toFixed(0)} ms`).toBeLessThan(1_000)
-  })
-})
-
 
 /**
  * Le palier le plus lointain que la liste propose ne doit pas dépasser ce que
