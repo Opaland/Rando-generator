@@ -68,6 +68,13 @@ function bilan(partiel: Partial<Summary> = {}): Summary {
   }
 }
 
+/** Tout ce que le canevas s'est vu demander d'écrire. */
+function textesEcrits(bilanDeTest: Summary): string[] {
+  const { ctx, textes } = contexteQuiNoteLesTextes()
+  drawSummaryCard(ctx, bilanDeTest)
+  return textes
+}
+
 /** Les textes écrits, recollés — le crédit est une phrase, pas un mot. */
 function creditEcrit(bilanDeTest: Summary): string {
   const { ctx, textes } = contexteQuiNoteLesTextes()
@@ -159,5 +166,76 @@ describe('la carte de partage crédite ce qu’elle affiche', () => {
         /\d+\.\d{4,}/,
       )
     }
+  })
+})
+
+/**
+ * Les cinq états que l'image n'avait jamais pris (issue #478).
+ *
+ * Les sept questions ci-dessus partent toutes du même `bilan()` : trois
+ * sorties, une période dans une seule année, une zone nommée. La vague de
+ * mutation complète l'a chiffré — 16 mutants de `summaryCard.ts` **sans
+ * aucune couverture**, c'est-à-dire des lignes qu'aucun test n'exécute.
+ *
+ * Ce n'est pas une lacune comme une autre. C'est la seule chose que Sentiers
+ * produise pour être vue par d'autres que son utilisateur, et une phrase
+ * fausse y part chez tout le monde sans pouvoir être reprise.
+ *
+ * Les six états sont corrects aujourd'hui : ce sont les gardes qui
+ * manquaient, pas le code.
+ */
+describe('la carte de partage dans les états qu’on ne lui donnait jamais', () => {
+  /*
+    L'accord au singulier. Le dépôt porte déjà une cicatrice sur l'accord en
+    français (#343), gardée exhaustivement ; celle-ci ne l'était pas.
+  */
+  it('écrit « 1 sortie » au singulier, et « 3 sorties » au pluriel', () => {
+    expect(textesEcrits(bilan({ outings: 1 }))).toContain('1 sortie · 2025')
+    expect(textesEcrits(bilan({ outings: 3 }))).toContain('3 sorties · 2025')
+  })
+
+  /*
+    La fixture historique est datée `2025-01-01 → 2025-06-01` : les deux
+    années sont égales, donc la branche à tiret n'avait **jamais** été
+    produite. C'est pourtant le cas de qui partage un bilan après plus d'un
+    an de marche — le partage le plus probable.
+  */
+  it('porte les deux années d’une période à cheval', () => {
+    expect(
+      textesEcrits(bilan({ period: { from: '2024-11-01', to: '2026-02-01' } })),
+    ).toContain('3 sorties · 2024–2026')
+  })
+
+  it('ne répète pas une année qui ne change pas', () => {
+    expect(
+      textesEcrits(bilan({ period: { from: '2025-01-01', to: '2025-12-31' } })),
+    ).toContain('3 sorties · 2025')
+  })
+
+  it('n’invente aucune année quand la période manque', () => {
+    const ecrits = textesEcrits(bilan({ period: null }))
+    expect(ecrits).toContain('3 sorties')
+    // Un tiret d'années sur un bilan sans période serait une date inventée.
+    expect(ecrits.join(' ')).not.toMatch(/\d{4}/)
+  })
+
+  /*
+    Les deux états vides : ce que voit quelqu'un qui partage avant d'avoir
+    importé quoi que ce soit. C'est la première image que le monde reçoit de
+    l'application.
+  */
+  it('dit qu’aucune trace n’est importée plutôt que « 0 sortie »', () => {
+    const ecrits = textesEcrits(bilan({ outings: 0, period: null }))
+    expect(ecrits).toContain('aucune trace importée')
+    expect(ecrits.join(' ')).not.toContain('0 sortie')
+  })
+
+  it('dit « chargés » quand aucune zone n’est nommée', () => {
+    expect(textesEcrits(bilan({ zoneLabel: null }))).toContain(
+      'des itinéraires balisés chargés',
+    )
+    expect(textesEcrits(bilan())).toContain(
+      'des itinéraires balisés — Métropole de Lyon',
+    )
   })
 })
