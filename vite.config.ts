@@ -251,7 +251,21 @@ export default defineConfig({
     css: true,
     coverage: {
       provider: 'v8',
-      include: ['src/core/**'],
+      /*
+        `src/store/**` et `src/lib/**` s'y ajoutent pour que `npm run ports`
+        ait une carte d'appels à lire (#489) : sans elle, la garde des ports
+        de dépendance n'a rien à interroger. `src/lib` y est parce qu'un port
+        peut désigner une fonction qui y vit — `telecharger: downloadBlob`
+        vient de `src/lib/download.ts`, et la garde l'a signalé plutôt que de
+        le sauter.
+
+        Mesuré avant de l'écrire, parce que #489 affirmait le contraire : les
+        quatre seuils tiennent sur le périmètre élargi — 95,98 %
+        d'instructions, 91,62 % de branches, 95,57 % de fonctions, 97,19 % de
+        lignes. Il n'y avait donc ni seuil à abaisser, ni seconde
+        configuration à tenir.
+      */
+      include: ['src/core/**', 'src/store/**', 'src/lib/**'],
       thresholds: {
         lines: 90,
         functions: 90,

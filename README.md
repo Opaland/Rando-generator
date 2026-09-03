@@ -44,8 +44,12 @@ Vérifications complètes (ce que fait la CI) :
 
 ```bash
 npm run lint       # eslint strict (typed linting)
+npm run listes     # deux listes qui disent la même règle, comparées
+npm run textes     # le README annonce tous les filtres et boutons livrés
+npm run chemins    # un commentaire qui nomme un fichier affirme qu'il existe
 npm run typecheck  # tsc -b
-npm run coverage   # vitest + couverture (seuil 90 % sur src/core)
+npm run coverage   # vitest + couverture (seuil 90 %, src/core + store + lib)
+npm run ports      # aucun port de dépendance du magasin né mort
 npm run build      # tsc -b && vite build
 npm run e2e        # playwright (nécessite un Chromium, voir ci-dessous)
 ```

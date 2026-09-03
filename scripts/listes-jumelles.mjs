@@ -539,7 +539,7 @@ const citeesParLeSix = new Set(
 // `monkey` ne tourne pas en CI — trop lent — mais il fait partie de la porte.
 const commandesDeLaPorte = [
   ...new Set([
-    ...[...readFileSync(CI, 'utf8').matchAll(/npm run ([a-z0-9-]+)/g)].map(
+    ...[...readFileSync(CI, 'utf8').matchAll(/\bnpm run ([a-z0-9-]+)/g)].map(
       (m) => m[1],
     ),
     'monkey',
@@ -1045,13 +1045,126 @@ if (exemptesDisparus.length > 0) {
   )
 }
 
+/*
+  La porte, écrite une troisième fois — dans la skill qui la lance.
+
+  Le §6 de `CLAUDE.md` énumère les commandes, la CI les lance, et
+  `.claude/skills/porte/SKILL.md` en donne le bloc à copier-coller. Les deux
+  premières étaient déjà comparées ; la troisième ne l'était pas, et elle
+  avait dérivé : `npm run chemins`, livré en #357, n'y a jamais figuré.
+  Personne ne l'a vu, parce que c'est le §4ter — deux listes qui disent la
+  même règle ont le même trou, et chacune paraît complète quand on la lit
+  seule.
+
+  Deux commandes y sont volontairement écrites autrement, et l'exemption ne
+  peut pas pourrir : le texte qui les remplace doit être présent, sinon
+  l'exemption échoue elle aussi.
+*/
+const SKILL_PORTE = '.claude/skills/porte/SKILL.md'
+const ECRITES_AUTREMENT = new Map([
+  ['typecheck', 'npx tsc -b --noEmit'],
+  ['e2e', 'npx playwright test --workers=1'],
+])
+
+/*
+  `monkey` est de la porte mais pas de la CI — trop lent. Le bloc du README
+  annonce « ce que fait la CI » : l'y exiger serait lui faire dire faux.
+*/
+const HORS_CI = new Set(['monkey'])
+
+const skillPorte = readFileSync(SKILL_PORTE, 'utf8')
+const citeesParLaSkill = new Set(
+  [...skillPorte.matchAll(/\bnpm run ([a-z0-9-]+)/g)].map((m) => m[1]),
+)
+if (citeesParLaSkill.size === 0) {
+  echouer(
+    `Aucun \`npm run\` lu dans ${SKILL_PORTE} : le motif de lecture ne` +
+      ` correspond plus, et ce contrôle ne garde donc plus rien.`,
+  )
+}
+const absentesDeLaSkill = commandesDeLaPorte.filter(
+  (c) => !citeesParLaSkill.has(c) && !ECRITES_AUTREMENT.has(c),
+)
+if (absentesDeLaSkill.length > 0) {
+  echouer(
+    `${String(absentesDeLaSkill.length)} commande(s) de la porte absente(s) de` +
+      ` ${SKILL_PORTE} : ${absentesDeLaSkill.join(', ')}\n` +
+      `\nLa skill est le bloc qu'on copie pour lancer la porte. Ce qui n'y est` +
+      ` pas ne se lance pas.`,
+  )
+}
+
+/*
+  Et une quatrième fois, dans le README — sous le titre « Vérifications
+  complètes (ce que fait la CI) », qui en fait une affirmation et non une
+  sélection. Elle était fausse : `listes`, `textes` et `chemins` n'y
+  figuraient pas, et le seuil de couverture y était annoncé « sur src/core »
+  alors qu'il porte aussi sur le magasin.
+
+  C'est la première chose que lit quelqu'un qui arrive sur le dépôt (§3).
+*/
+const lisezMoi = readFileSync(LISEZ_MOI, 'utf8')
+const departVerifications = lisezMoi.indexOf(
+  'Vérifications complètes (ce que fait la CI)',
+)
+if (departVerifications === -1) {
+  echouer(
+    `« Vérifications complètes (ce que fait la CI) » est introuvable dans` +
+      ` ${LISEZ_MOI} : l'ancre ne correspond plus, et ce contrôle ne garde` +
+      ` donc plus rien.`,
+  )
+}
+const blocVerifications = lisezMoi.slice(
+  departVerifications,
+  lisezMoi.indexOf('```', lisezMoi.indexOf('```bash', departVerifications) + 7),
+)
+const citeesParLeLisezMoi = new Set(
+  [...blocVerifications.matchAll(/\bnpm run ([a-z0-9-]+)/g)].map((m) => m[1]),
+)
+const absentesDuLisezMoi = commandesDeLaPorte.filter(
+  (c) => !citeesParLeLisezMoi.has(c) && !HORS_CI.has(c),
+)
+if (absentesDuLisezMoi.length > 0) {
+  echouer(
+    `${String(absentesDuLisezMoi.length)} commande(s) de la CI absente(s) du` +
+      ` bloc « Vérifications complètes » de ${LISEZ_MOI} :` +
+      ` ${absentesDuLisezMoi.join(', ')}\n` +
+      `\nCe titre affirme « ce que fait la CI ». Une liste qui l'affirme sans` +
+      ` le faire est pire qu'une liste absente (§5).`,
+  )
+}
+const horsCiPerimees = [...HORS_CI].filter((c) =>
+  commandesDeLaPorte.includes(c) && citeesParLeLisezMoi.has(c),
+)
+if (horsCiPerimees.length > 0) {
+  echouer(
+    `${String(horsCiPerimees.length)} exemption(s) inutile(s) de HORS_CI :` +
+      ` ${horsCiPerimees.join(', ')} figure(nt) désormais dans le bloc du` +
+      ` README, et l'exemption ne sert donc plus à rien.`,
+  )
+}
+const exemptionsMuettes = [...ECRITES_AUTREMENT].filter(
+  ([, texte]) => !skillPorte.includes(texte),
+)
+if (exemptionsMuettes.length > 0) {
+  echouer(
+    `${String(exemptionsMuettes.length)} exemption(s) de ${SKILL_PORTE} qui ne` +
+      ` correspondent plus :\n` +
+      exemptionsMuettes
+        .map(([nom, texte]) => `  ${nom} : « ${texte} » est introuvable`)
+        .join('\n') +
+      `\n\nUne commande dite « écrite autrement » qu'on ne retrouve sous aucune` +
+      ` forme n'est pas écrite du tout.`,
+  )
+}
+
 console.log(
   `Listes jumelles d'accord : ${String(plancherises.size)} genres plancherisés, ` +
     `tous mesurés ; ${String(Object.keys(hexParReseau).length)} couleurs de réseau, ` +
     `les trois listes d'accord ; ` +
     `${String(nommesParLaSkill.length)} personas de la skill, tous avec leur fiche ; ` +
     `${String(largeurs.length)} largeurs et ${String(etats.length)} états, annoncés tels quels ; ` +
-    `${String(commandesDeLaPorte.length)} commandes de porte, toutes citées par le §6 ; ` +
+    `${String(commandesDeLaPorte.length)} commandes de porte, toutes citées par le §6, la skill et le README ; ` +
     `${String(fichesDePersonas)} fiches de personas, annoncées telles quelles ; ` +
     `${String(lanceesParLeHook.length)} commandes du hook, toutes dans son en-tête ; ` +
     `${String(masquees.length)} listes de démonstration, masquées et relues d'accord ; ` +
