@@ -15,15 +15,26 @@ let worker: Worker | null = null
  * Vrai dès qu'une tentative a échoué. Sans lui, `worker = null` invitait le
  * calcul suivant à en reconstruire un : mesuré à deux constructions pour deux
  * calculs alors que le commentaire d'à côté promettait une neutralisation
- * (#471). Les causes possibles — une CSP sans `worker-src`, un build qui n'a
- * pas produit le fichier, un navigateur sans workers de module — sont toutes
- * permanentes. Réessayer à chaque calcul ne coûterait donc qu'une
- * construction et un aller-retour perdus, à chaque changement de tolérance.
+ * (#471). Les trois causes qu'on sait nommer — une CSP sans `worker-src`, un
+ * build qui n'a pas produit le fichier, un navigateur sans workers de module
+ * — sont permanentes ; réessayer ne coûterait qu'une construction et un
+ * aller-retour perdus, à chaque changement de tolérance.
  *
  * Écarté : garder la reconstruction pour survivre à une panne passagère. Le
  * résultat serait le même dans les deux cas, le calcul synchrone rendant
- * exactement ce que rend le worker ; seule la fluidité de l'interface change,
- * et aucune des causes connues ne se répare toute seule.
+ * exactement ce que rend le worker ; seule la fluidité de l'interface change.
+ *
+ * **Ce que ce choix coûte, et qui n'était pas dit.** La première version de
+ * ce commentaire concluait « aucune des causes connues ne se répare toute
+ * seule » — une énumération de trois cas présentée comme exhaustive, et le
+ * §4bis dit ce que deviennent ces phrases-là. Un worker tué par la pression
+ * mémoire sur un très grand réseau n'est dans aucun des trois, et il *est*
+ * passager : la neutralisation définitive renverra alors tous les calculs
+ * suivants dans le fil principal jusqu'au rechargement de la page.
+ *
+ * La décision tient quand même — reconstruire à chaque calcul serait pire
+ * sur une panne qui se répète, et le résultat reste juste dans les deux cas
+ * — mais elle se paie, et le dire vaut mieux que de l'enrober.
  */
 let workerImpossible = false
 let nextRequestId = 1
