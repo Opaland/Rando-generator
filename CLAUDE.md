@@ -218,13 +218,25 @@ Trois pièges mesurés sur ce dépôt :
 - **Rebuild obligatoire avant les e2e** : Playwright sert `dist/`, pas les
   sources. Un `npm run build` dont on masque la sortie peut échouer en
   silence et laisser tester une version périmée.
-- **`--workers=1`** pour la suite e2e, et
-  `PW_CHROMIUM_PATH=/opt/pw-browsers/chromium` pour **toute** commande qui
-  lance Playwright — `e2e`, `monkey`, `mesure`, `reel`. Cette phrase-là a
+- **`PW_CHROMIUM_PATH=/opt/pw-browsers/chromium` pour toute commande qui
+  lance Playwright** — `e2e`, `monkey`, `mesure`, `reel`. Cette phrase-là a
   déjà été trop étroite une fois : le 31/08, `npm run monkey` a rendu trois
   échecs au milieu d'une porte verte, faute de la variable, et la seule
   commande annoncée avec elle était `e2e` (issue #435). `npm run listes`
   garde maintenant l'accord entre cette liste et `package.json`.
+
+  **`--workers=1` n'est plus à taper** : `playwright.config.ts` le pose hors
+  CI (#491). Le drapeau était la deuxième moitié du même raté — un garde-fou
+  qu'il faut penser à taper ne garde rien (§6quater), et l'oublier rendait
+  une suite rouge pour une raison qui n'est pas le code.
+
+  Et la raison qu'on en donnait était fausse. « En parallèle, les tests se
+  marchent dessus » : mesuré le 03/09, rien ne se marche dessus. Trois passes
+  en parallèle ont rendu 3, 4 et 3 échecs — **dix tests distincts, presque
+  jamais les mêmes**, tous sur un `expect.poll` qui expire. Ce sont des
+  budgets de temps calibrés sur une machine au repos, que deux Chromium sur
+  quatre cœurs mettent en défaut. Un test qui échoue au hasard une fois sur
+  trois ne mesure plus rien.
 
 ## 6bis. La mutation trouve les tests creux que je ne vois pas
 

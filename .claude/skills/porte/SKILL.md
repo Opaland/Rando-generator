@@ -23,7 +23,7 @@ npm run coverage           # seuil 90 % de branches, src/core + store + lib
 npm run ports              # aucun port du magasin né mort (§489)
 npm run build              # SANS masquer la sortie
 export PW_CHROMIUM_PATH=/opt/pw-browsers/chromium
-npx playwright test --workers=1
+npx playwright test
 npm run monkey
 ```
 
@@ -37,7 +37,15 @@ passe `tsc --noEmit` et échoue `tsc -b --noEmit`.
 `dist/` dans son état précédent, et Playwright teste alors une version
 périmée — six tests e2e ont ainsi échoué pour rien, le temps de comprendre.
 
-**`--workers=1`.** En parallèle, les tests se marchent dessus.
+**Un seul exécutant, et `playwright.config.ts` s'en charge** — plus besoin
+de penser à `--workers=1`, qui reste sans effet puisqu'il dit la même chose.
+
+La raison n'est pas celle qu'on a longtemps écrite ici. Mesuré le 03/09
+(#491) : les tests ne se marchent pas dessus. Trois passes en parallèle ont
+rendu 3, 4 et 3 échecs, **dix tests distincts, presque jamais les mêmes**,
+tous sur un `expect.poll` qui expire. Ce sont des budgets de temps calibrés
+sur une machine au repos, que deux Chromium sur quatre cœurs mettent en
+défaut. Le gain serait de 39 % pour une suite qui ne discrimine plus.
 
 ## Quand un test e2e échoue
 
