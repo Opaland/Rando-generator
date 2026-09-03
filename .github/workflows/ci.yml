@@ -38,6 +38,11 @@ jobs:
         run: npm run typecheck
       - name: Tests unitaires (couverture ≥ 90 % sur src/core)
         run: npm run coverage
+      - name: Ports du magasin (aucune lambda de câblage jamais appelée)
+        # Après `coverage`, et pas avant : c'est le rapport qu'il vient
+        # d'écrire que ce contrôle lit. Il refuse d'ailleurs un rapport plus
+        # vieux que les sources.
+        run: npm run ports
       - name: Build
         run: npm run build
       - name: Cache des navigateurs Playwright

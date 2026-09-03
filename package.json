@@ -11,6 +11,7 @@
     "listes": "node scripts/listes-jumelles.mjs",
     "textes": "node scripts/commandes-annoncees.mjs",
     "chemins": "node scripts/chemins-cites.mjs",
+  "ports": "node scripts/ports-du-magasin.mjs",
     "couverture-village": "node scripts/couverture-village.mjs",
     "poids-communes": "NODE_USE_ENV_PROXY=1 node scripts/poids-communes.mjs",
     "poids-tuiles": "NODE_USE_ENV_PROXY=1 node --experimental-strip-types scripts/poids-tuiles.mjs",

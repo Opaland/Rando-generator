@@ -206,8 +206,8 @@ commande ou un test derrière, soit la phrase change.
 Un item par PR. TDD sur `src/core`. Commits en français.
 
 **La porte complète avant de committer** — `/porte` la lance :
-`lint`, `listes`, `textes`, `chemins`, `typecheck`, `coverage`, `build`,
-`e2e`, `monkey`.
+`lint`, `listes`, `textes`, `chemins`, `typecheck`, `coverage`, `ports`,
+`build`, `e2e`, `monkey`.
 
 Trois pièges mesurés sur ce dépôt :
 
