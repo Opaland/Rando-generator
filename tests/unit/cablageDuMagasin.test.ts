@@ -284,3 +284,69 @@ describe('un itinéraire tracé à la main atteint la base', () => {
     expect(await db?.listCustomItineraries()).toHaveLength(1)
   })
 })
+
+describe('deux ports dont l’appel ne suffisait pas à dire qu’ils sont tenus', () => {
+  /*
+    Trouvés par la vague de mutation lancée sur `appStore.ts` après les six
+    questions ci-dessus : huit mutants y sont passés de « sans couverture » à
+    « survivant ». Mes questions les exécutaient sans rien en dire — ce qui
+    est exactement le reproche que ce fichier adresse au reste (§6bis).
+  */
+
+  it('donne à chaque tracé un identifiant négatif, et jamais deux fois le même', async () => {
+    /*
+      `nextCustomId` porte un commentaire — « ids négatifs » — et le §4bis dit
+      qu'un commentaire qui justifie est une affirmation. Le signe n'est pas
+      cosmétique : un identifiant perso positif entre en collision avec les
+      identifiants de relation OSM, et deux itinéraires distincts se
+      confondent alors dans `itineraireParId`, dans le matching et dans la
+      sauvegarde.
+
+      Trois mutants survivaient ici, tous parce qu'un seul tracé ne
+      distingue rien : avec la liste vide, `Math.min(0)` et `Math.max(0)`
+      rendent le même zéro.
+    */
+    await useAppStore.getState().init()
+    await useAppStore.getState().loadZone('pilat')
+    const sommets = useAppStore.getState().itineraries[0]?.ways[0]?.coords ?? []
+    expect(sommets.length).toBeGreaterThan(1)
+
+    const dessiner = async (nom: string) => {
+      useAppStore.getState().toggleDrawMode()
+      useAppStore.getState().addDrawPoint(sommets[0] as [number, number])
+      useAppStore.getState().addDrawPoint(sommets[1] as [number, number])
+      await useAppStore.getState().saveDrawnItinerary(nom)
+    }
+    await dessiner('Premier')
+    await dessiner('Second')
+
+    const ids = useAppStore
+      .getState()
+      .customItineraries.map((i) => i.osmRelationId)
+    expect(ids).toHaveLength(2)
+    expect(
+      ids.filter((id) => id < 0),
+      'un identifiant perso positif entrerait en collision avec une relation OSM',
+    ).toEqual(ids)
+    expect(new Set(ids).size).toBe(2)
+  })
+
+  it('ouvre la fiche sur l’itinéraire demandé, et pas sur rien', async () => {
+    /*
+      `itineraireParId` est le port qui dit à la fiche *quoi* montrer. Les
+      questions ci-dessus prouvaient qu'il est appelé ; aucune ne regardait
+      sa réponse, et le mutant qui remplace `===` par `!==` survivait donc.
+
+      Ce qu'on observe : `openItineraryDetail` ne lance le profil altimétrique
+      que s'il a obtenu un tracé d'au moins deux points. Un port qui rend le
+      mauvais itinéraire — ou rien — éteint les deux chargements sur-le-champ.
+      C'est la seule trace synchrone de sa réponse, et elle suffit.
+    */
+    const id = await ficheOuverteSurUnItineraire('Le mien')
+    expect(useAppStore.getState().detailItineraryId).toBe(id)
+    expect(
+      useAppStore.getState().elevationLoading,
+      'sans tracé retrouvé, la fiche renonce au profil sans le dire',
+    ).toBe(true)
+  })
+})
