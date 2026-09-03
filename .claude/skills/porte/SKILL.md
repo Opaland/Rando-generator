@@ -19,7 +19,8 @@ npm run listes             # le CSS et la sonde d'écran, même règle (§4ter)
 npm run textes             # le README annonce tous les filtres (§3)
 npm run chemins            # un commentaire qui nomme un fichier l'affirme
 npx tsc -b --noEmit        # PAS `tsc --noEmit` : voir plus bas
-npm run coverage           # seuil 90 % de branches, src/core + store + lib
+npm run coverage           # un seuil par domaine : 90 % sur src/core,
+                           # un cliquet mesuré sur store et lib (#495)
 npm run ports              # aucun port du magasin né mort (§489)
 npm run build              # SANS masquer la sortie
 export PW_CHROMIUM_PATH=/opt/pw-browsers/chromium
