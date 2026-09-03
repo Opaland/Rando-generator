@@ -43,6 +43,13 @@
  * invraisemblable, un port qu'on ne sait pas relier à une fonction, deux
  * fonctions du même nom : chacun rend un échec nommé, jamais un silence.
  *
+ * Cette règle a été mise à l'épreuve plutôt que crue. `masquer()` ne
+ * comprend pas les expressions régulières : une apostrophe dans l'une
+ * d'elles ouvre une fausse chaîne et fausse tout le découpage. Mesuré, le
+ * script échoue bien — douze ports irrésolus d'un coup — et il le dit
+ * maintenant avec sa cause probable, parce qu'un échec qui désigne le
+ * mauvais endroit coûte une heure.
+ *
  * ## Les exemptions, et pourquoi elles ne peuvent pas pourrir
  *
  * `set` est le paramètre du créateur Zustand, pas une fonction à nous :
@@ -397,6 +404,24 @@ if (irresolus.length > 0) {
       'cinquièmes du sujet. Rendre le port lisible, ou l\'inscrire dans\n' +
       '`HORS_CARTE_ASSUMES` avec son motif.',
   )
+  /*
+    Un seul port irrésolu se lit tout seul. Une douzaine d'un coup, c'est
+    presque toujours le masque qui a déraillé, et le message ci-dessus
+    désigne alors le mauvais endroit.
+
+    Mesuré : une expression régulière contenant une apostrophe — `/d'/` —
+    placée avant les tranches ouvre une fausse chaîne, et treize ports
+    deviennent illisibles d'un coup. La garantie tient (le script échoue au
+    lieu de passer), mais il faut qu'il dise où regarder.
+  */
+  if (irresolus.length >= 5) {
+    console.error(
+      `\n${String(irresolus.length)} d'un coup : c'est probablement le masque\n` +
+        "des commentaires et des chaînes qui a déraillé, et non les ports. La\n" +
+        "cause connue est une expression régulière contenant une apostrophe ou\n" +
+        'un guillemet, que `masquer()` prend pour le début d\'une chaîne.',
+    )
+  }
   process.exit(1)
 }
 
