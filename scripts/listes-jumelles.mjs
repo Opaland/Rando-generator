@@ -983,9 +983,20 @@ const CHRONOMETRES_ASSUMES = new Map([
 const RELEVE = /performance\.now\(\)\s*-\s*/
 const BORNE = /toBeLessThan(?:OrEqual)?\(/
 
-const fichiersUnitaires = readdirSync(DOSSIER_UNITAIRE).filter((nom) =>
-  nom.endsWith('.test.ts'),
-)
+/*
+  Lecture **récursive**, comme le motif qu'elle garde.
+
+  La première version lisait la racine seule alors que l'exclusion de
+  `vitest.mutation.config.ts` s'écrit `tests/unit/(**)/*.perf.test.ts`. Il n'y a
+  pas de sous-dossier aujourd'hui, donc rien ne manquait — mais un
+  chronomètre rangé dans un sous-dossier serait passé sans un mot, et la
+  vague aurait recassé en silence, exactement le défaut que cette garde
+  existe pour fermer. Une garde plus étroite que sa règle est une garde qui
+  attend son cas (#435, §4ter).
+*/
+const fichiersUnitaires = readdirSync(DOSSIER_UNITAIRE, {
+  recursive: true,
+}).filter((nom) => nom.endsWith('.test.ts'))
 if (fichiersUnitaires.length < 50) {
   echouer(
     `Seulement ${String(fichiersUnitaires.length)} fichiers de test lus dans` +
