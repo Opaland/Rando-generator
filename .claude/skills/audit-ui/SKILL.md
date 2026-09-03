@@ -31,7 +31,7 @@ bureau, et il est écrit comme tel dans `src/index.css`.
 ```bash
 npm run build                                   # et vérifier « ✓ built »
 export PW_CHROMIUM_PATH=/opt/pw-browsers/chromium
-npx playwright test tests/e2e/regles-d-ecran.spec.ts --workers=1
+npx playwright test tests/e2e/regles-d-ecran.spec.ts
 ```
 
 `tests/e2e/regles-d-ecran.spec.ts` pose cinq questions mesurables :

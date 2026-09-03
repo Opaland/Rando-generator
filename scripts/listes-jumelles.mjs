@@ -1063,7 +1063,7 @@ if (exemptesDisparus.length > 0) {
 const SKILL_PORTE = '.claude/skills/porte/SKILL.md'
 const ECRITES_AUTREMENT = new Map([
   ['typecheck', 'npx tsc -b --noEmit'],
-  ['e2e', 'npx playwright test --workers=1'],
+  ['e2e', 'npx playwright test'],
 ])
 
 /*
