@@ -19,7 +19,7 @@ import pilat from '../fixtures/overpass/pilat.json' with { type: 'json' }
  *
  * Mesuré plutôt que soupçonné. En remplaçant `fermerLaFicheSi` et
  * `fermerLaFiche` par `throw new Error(…)`, les 2 299 tests restaient verts :
- * aucun ne les exécutait. Puis un recensement des 27 ports par la carte
+ * aucun ne les exécutait. Puis un recensement des ports par la carte
  * d'appels de v8 en a nommé cinq jamais appelés :
  *
  *   trancheImport      fermerLaFicheSi        la fiche d'un itinéraire supprimé
@@ -36,6 +36,21 @@ import pilat from '../fixtures/overpass/pilat.json' with { type: 'json' }
  * à « cette lambda a-t-elle été appelée ». Une sonde se juge sur ce qu'elle
  * trouve quand on remet un défaut connu — ici, sur les deux ports déjà
  * prouvés morts à la main, et elle ne les trouvait pas.
+ *
+ * Il s'est trompé une deuxième fois, sur son propre compte : « 34 ports »
+ * écrit dans #487, puis « 27 » ici et dans la PR. Il y en a 45. Son motif
+ * ne reconnaissait que les formes `nom :` et `nom(` — les dix-huit clés en
+ * raccourci (`baseOuverte,`, `recompute,`, `enregistrerReglage,`…) lui
+ * étaient invisibles — et il découpait sur des virgules prises à
+ * l'intérieur des commentaires, coupant un port en deux pour en inventer un
+ * autre. Remesuré, commentaires retirés d'abord et chaque port suivi
+ * jusqu'au fichier où sa fonction est déclarée : 45 ports, dont sept
+ * occurrences du `set` de Zustand, qui est un paramètre et non une fonction
+ * à nous. Restent 38 ports qui nomment une fonction, et les 38 sont
+ * appelées. La suite d'avant ce sprint appelait déjà les neuf qui
+ * échappaient à l'instrument, de onze à deux cent treize fois : le trou ne
+ * cachait pas un sixième port mort, mais il ne pouvait pas le dire, et
+ * « 0 jamais appelé » affirmait donc plus que ce qui était mesuré (§5).
  *
  * Les six questions ci-dessous passent donc par `useAppStore` et non par
  * `trancheImport(deps)` : c'est le seul moyen d'éprouver le fil lui-même.
