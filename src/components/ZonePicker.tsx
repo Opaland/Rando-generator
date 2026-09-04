@@ -1,4 +1,10 @@
-import { Fragment, useEffect, useState, type FormEvent } from 'react'
+import {
+  Fragment,
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+} from 'react'
 import {
   FEATURED_ROUTES,
   ZONES,
@@ -53,6 +59,23 @@ export function ZonePicker() {
   const cancelZoneLoad = useAppStore((s) => s.cancelZoneLoad)
   const rafraichirZone = useAppStore((s) => s.rafraichirZone)
   const zoneRestoredAtStartup = useAppStore((s) => s.zoneRestoredAtStartup)
+  /*
+    Amener l'alerte sous les yeux quand elle apparaît — et seulement alors.
+
+    `block: 'nearest'` est le cœur du choix : si le message est déjà dans la
+    fenêtre, il **ne bouge rien**. Le défilement ne se produit donc que dans
+    le cas où, sans lui, la personne ne verrait rien — typiquement un bouton
+    de zone pris dans un groupe du bas, où remonter l'alerte ne suffit pas.
+
+    Un défilement qui répond au propre clic de la personne n'est pas une
+    surprise ; un `'center'` ou un `'start'` en serait une, parce qu'il
+    déplacerait la page même quand rien ne le demande.
+  */
+  const alerteZone = useRef<HTMLParagraphElement>(null)
+  useEffect(() => {
+    if (zoneError) alerteZone.current?.scrollIntoView({ block: 'nearest' })
+  }, [zoneError])
+
   const [refInput, setRefInput] = useState('')
   const [lieuInput, setLieuInput] = useState('')
   /**
@@ -151,6 +174,34 @@ export function ZonePicker() {
           </button>
         </div>
       </form>
+
+      {/*
+        La réponse se met là où la personne regarde, pas à la fin du panneau
+        (#497).
+
+        Zoé a essayé Nouméa depuis un portable, et n'a rien vu : le message
+        existait, mais il fallait faire défiler. Mesuré à 1 280 × 800 avant
+        de toucher quoi que ce soit — le bouton cliqué était à 268 px, le
+        panneau descendait jusqu'à 1 264, et le message atterrissait à
+        **1 274 px**, soit 474 sous la ligne de flottaison et 945 sous le
+        bouton qui l'avait provoqué. `elementFromPoint` à son centre ne
+        rendait rien : à cet endroit il n'y a pas d'écran.
+
+        La cause était structurelle : la réponse était ajoutée à la fin d'un
+        panneau de 1 124 px dont les commandes vivent en haut. La déplacer ne
+        suffit pourtant pas pour les groupes du bas, d'où le
+        `scrollIntoView` ci-dessous.
+      */}
+      {zoneError && (
+        <p
+          ref={alerteZone}
+          className={styles.error}
+          role="alert"
+          data-testid="zone-error"
+        >
+          {zoneError}
+        </p>
+      )}
 
       {lieuError && (
         <p className={styles.lieuError} role="alert" data-testid="lieu-error">
@@ -312,12 +363,6 @@ export function ZonePicker() {
             gardée sur votre appareil — les fois suivantes sont immédiates.
           </span>
         </div>
-      )}
-
-      {zoneError && (
-        <p className={styles.error} role="alert" data-testid="zone-error">
-          {zoneError}
-        </p>
       )}
 
       {!zoneLoading && zoneKey && (
