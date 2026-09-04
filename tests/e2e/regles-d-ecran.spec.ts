@@ -477,6 +477,70 @@ for (const vue of LARGEURS) {
       })
 
       /**
+       * Question 6. **Ce qui répond à une action est-il là où la personne
+       * regarde ?**
+       *
+       * Zoé a essayé Nouméa depuis un portable et n'a rien vu (#497). Le
+       * message « aucun itinéraire trouvé » existait, il était même assertée
+       * ici — mais 474 px sous la ligne de flottaison, et 945 px sous le
+       * bouton qui l'avait provoqué.
+       *
+       * Cette sonde était **verte dessus**, et pour la raison exacte que le
+       * §1bis décrit : l'état « zone sans itinéraire » se contentait d'un
+       * `toBeVisible()`, qui répond « oui » pour un élément parfaitement hors
+       * de l'écran. Le commentaire qui l'accompagnait disait « met le message
+       * à l'écran » — un §4bis, une justification qui affirme et qui était
+       * fausse.
+       *
+       * La règle porte sur **tout `role="alert"`**, pas sur ce message-là :
+       * une alerte est par définition ce qu'on montre à quelqu'un qui n'a
+       * rien demandé de plus, et une alerte hors cadre n'alerte personne.
+       */
+      test('une alerte est dans la fenêtre, et peinte', async ({ page }) => {
+        await atteindre(page, etat, vue.tactile)
+        /*
+          `expect.poll` parce qu'un `scrollIntoView` court après le rendu :
+          une mesure unique lirait la position d'avant le défilement (§6ter).
+          Une alerte réellement hors cadre, elle, y reste.
+        */
+        await expect
+          .poll(
+            async () =>
+              await page.evaluate(() =>
+                Array.from(document.querySelectorAll('[role="alert"]'))
+                  .filter((el) => {
+                    const r = el.getBoundingClientRect()
+                    return r.width > 0 && r.height > 0
+                  })
+                  .map((el) => {
+                    const r = el.getBoundingClientRect()
+                    const x = r.left + r.width / 2
+                    const y = r.top + r.height / 2
+                    const peint = document.elementFromPoint(x, y)
+                    return {
+                      quoi:
+                        el.getAttribute('data-testid') ??
+                        el.textContent.slice(0, 40),
+                      haut: Math.round(r.top),
+                      bas: Math.round(r.bottom),
+                      fenetre: window.innerHeight,
+                      peinte: peint !== null && el.contains(peint),
+                    }
+                  })
+                  .filter(
+                    (m) =>
+                      m.haut < 0 || m.bas > m.fenetre || !m.peinte,
+                  ),
+              ),
+            {
+              message:
+                'alertes hors de la fenêtre ou non peintes — personne ne les voit',
+            },
+          )
+          .toEqual([])
+      })
+
+      /**
        * Question 5. Un débordement horizontal de la page entière n'est jamais
        * voulu : il vient d'un mot trop long, d'un tableau, d'une largeur en
        * dur. Il donne un défilement latéral que personne ne cherche et qui
