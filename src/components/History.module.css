@@ -20,6 +20,14 @@
   gap: var(--espace-1);
 }
 
+.legende {
+  margin: 0;
+  /* Même famille que les mois sous l'histogramme : c'est la même fonction —
+     dire ce qu'on regarde — et deux tailles diraient qu'il y en a deux. */
+  font-size: var(--texte-appui);
+  color: var(--encre-douce);
+}
+
 .svg {
   width: 100%;
   height: 70px;

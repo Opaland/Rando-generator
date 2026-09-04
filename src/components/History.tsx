@@ -5,6 +5,7 @@ import {
   historyStats,
   monthLabel,
   monthlyBuckets,
+  reperesHistogramme,
 } from '../core/history.ts'
 import { formatKm } from '../lib/format.ts'
 import styles from './History.module.css'
@@ -42,6 +43,16 @@ export function History() {
   if (stats.count === 0) return null
 
   const maxDistance = Math.max(...buckets.map((b) => b.distanceMeters), 1)
+  // La légende écrite : ce que l'histogramme compte, et de quoi lire une
+  // barre. Le formulation change à un seul mois parce que « plus haut »
+  // n'a pas de sens quand il n'y a rien à dépasser (issue #503).
+  const reperes = reperesHistogramme(buckets)
+  const echelle =
+    reperes.moisLePlusHaut === null
+      ? null
+      : reperes.moisRenseignes > 1
+        ? `plus haut : ${monthLabel(reperes.moisLePlusHaut)}, ${formatKm(reperes.metresLePlusHaut)}`
+        : `${monthLabel(reperes.moisLePlusHaut)} : ${formatKm(reperes.metresLePlusHaut)}`
   const resume = buckets
     .filter((b) => b.count > 0)
     .map((b) => `${monthLabel(b.month)} : ${formatKm(b.distanceMeters)}`)
@@ -73,6 +84,9 @@ export function History() {
 
       {buckets.length > 0 && (
         <div className={styles.chart} data-testid="history-chart">
+          <p className={styles.legende} data-testid="history-chart-legende">
+            Distance par mois{echelle === null ? '' : ` · ${echelle}`}
+          </p>
           <svg
             viewBox={`0 0 ${buckets.length * 10} ${CHART_HEIGHT}`}
             preserveAspectRatio="none"

@@ -4,6 +4,7 @@ import {
   historyStats,
   monthLabel,
   monthlyBuckets,
+  reperesHistogramme,
   trackDistanceMeters,
 } from '../../src/core/history.ts'
 import type { LonLat, Track } from '../../src/core/types.ts'
@@ -175,5 +176,59 @@ describe('monthLabel', () => {
 
   it('retourne la valeur brute si elle est inattendue', () => {
     expect(monthLabel('n’importe quoi')).toBe('n’importe quoi')
+  })
+})
+
+describe('reperesHistogramme', () => {
+  // Retour de Cédric, 04/09 : « j'ai une barre rouge qui apparaît, je ne
+  // sais pas ce que ça veut dire ». Le seul texte qui l'expliquait était un
+  // aria-label, qui n'est pas peint. Ce que la légende visible doit dire se
+  // calcule ici, hors du navigateur, et s'éprouve sans lui.
+  const bucket = (month: string, distanceMeters: number, count = 1) => ({
+    month,
+    count,
+    distanceMeters,
+    elevationGain: 0,
+  })
+
+  it('désigne le mois le plus haut, et sa distance', () => {
+    const reperes = reperesHistogramme([
+      bucket('2026-06', 12_000),
+      bucket('2026-07', 41_500),
+      bucket('2026-08', 8_000),
+    ])
+    expect(reperes.moisLePlusHaut).toBe('2026-07')
+    expect(reperes.metresLePlusHaut).toBe(41_500)
+    expect(reperes.moisRenseignes).toBe(3)
+  })
+
+  it('ignore les mois creux, qui sont là pour montrer l’interruption', () => {
+    const reperes = reperesHistogramme([
+      bucket('2026-06', 12_000),
+      bucket('2026-07', 0, 0),
+      bucket('2026-08', 8_000),
+    ])
+    expect(reperes.moisLePlusHaut).toBe('2026-06')
+    expect(reperes.moisRenseignes).toBe(2)
+  })
+
+  // Le cas de tout nouvel arrivant, et le moins lisible aujourd'hui : une
+  // barre, un mois écrit, rien qui relie les deux.
+  it('tient le cas d’un seul mois', () => {
+    const reperes = reperesHistogramme([bucket('2026-09', 5_400)])
+    expect(reperes.moisLePlusHaut).toBe('2026-09')
+    expect(reperes.metresLePlusHaut).toBe(5_400)
+    expect(reperes.moisRenseignes).toBe(1)
+  })
+
+  it('ne désigne rien quand il n’y a rien à désigner', () => {
+    expect(reperesHistogramme([])).toEqual({
+      moisLePlusHaut: null,
+      metresLePlusHaut: 0,
+      moisRenseignes: 0,
+    })
+    expect(reperesHistogramme([bucket('2026-09', 0, 0)]).moisLePlusHaut).toBe(
+      null,
+    )
   })
 })

@@ -153,3 +153,51 @@ export function monthLabel(month: string): string {
   if (Number.isNaN(date.getTime())) return month
   return MOIS_FORMAT.format(date)
 }
+
+/** Ce qu'il faut pour qu'une barre se lise : le sommet, et son échelle. */
+export interface ReperesHistogramme {
+  /** Le mois le plus haut, ou `null` si aucun mois ne porte de sortie. */
+  moisLePlusHaut: string | null
+  /** Sa distance, en mètres. Zéro quand il n'y a rien à désigner. */
+  metresLePlusHaut: number
+  /** Combien de mois portent au moins une sortie. */
+  moisRenseignes: number
+}
+
+/**
+ * Les repères que l'histogramme de « Mes sorties » doit annoncer par écrit.
+ *
+ * Retour de Cédric, 04/09 : « j'ai une barre rouge qui apparaît, je ne sais
+ * pas ce que ça veut dire. Est-ce que c'est la distance ? Est-ce que c'est
+ * des tours ? » Le seul texte qui l'expliquait était un `aria-label` — et un
+ * `aria-label` n'est pas peint. Pour qui regarde l'écran, il n'existe pas.
+ *
+ * Sans échelle, une barre ne dit rien non plus : haute ou basse, on ne sait
+ * pas si elle vaut trois kilomètres ou trois cents. D'où le sommet chiffré
+ * plutôt qu'un axe gradué — écarté délibérément, parce que l'histogramme fait
+ * 70 px de haut et que des graduations lisibles y prendraient plus de place
+ * que les barres elles-mêmes, sous le plancher typographique du dépôt.
+ *
+ * Les mois creux sont ignorés ici alors que `monthlyBuckets` les conserve :
+ * là-bas ils montrent l'interruption, ce qui est une information ; ici ils
+ * ne peuvent pas être le sommet, et les compter comme « renseignés » ferait
+ * annoncer douze mois de pratique à qui n'en a qu'un.
+ */
+export function reperesHistogramme(
+  buckets: MonthBucket[],
+): ReperesHistogramme {
+  const avecSortie = buckets.filter((bucket) => bucket.count > 0)
+  let moisLePlusHaut: string | null = null
+  let metresLePlusHaut = 0
+  for (const bucket of avecSortie) {
+    if (moisLePlusHaut === null || bucket.distanceMeters > metresLePlusHaut) {
+      moisLePlusHaut = bucket.month
+      metresLePlusHaut = bucket.distanceMeters
+    }
+  }
+  return {
+    moisLePlusHaut,
+    metresLePlusHaut,
+    moisRenseignes: avecSortie.length,
+  }
+}
