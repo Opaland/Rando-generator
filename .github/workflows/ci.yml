@@ -36,7 +36,7 @@ jobs:
         run: npm run chemins
       - name: Typecheck
         run: npm run typecheck
-      - name: Tests unitaires (couverture ≥ 90 % sur src/core)
+      - name: Tests unitaires (un seuil de couverture par domaine)
         run: npm run coverage
       - name: Ports du magasin (aucune lambda de câblage jamais appelée)
         # Après `coverage`, et pas avant : c'est le rapport qu'il vient

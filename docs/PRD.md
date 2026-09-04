@@ -133,6 +133,7 @@ La méthode existe déjà et fonctionne ; elle n'est pas à réinventer :
 1. test unitaire d'abord sur `src/core`, avec le chiffre avant/après quand il
    s'agit du calcul ;
 2. test e2e Playwright sur le comportement visible ;
-3. `lint`, `typecheck`, `coverage` (≥ 90 % sur `src/core`), `build`, e2e,
+3. `lint`, `typecheck`, `coverage` (90 % sur `src/core`, un cliquet mesuré
+   sur `src/store` et `src/lib`), `build`, e2e,
    monkey — **tous verts avant** le commit ;
 4. une PR par sujet, rien de mergé sans CI verte, déploiement vérifié.

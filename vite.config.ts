@@ -258,19 +258,54 @@ export default defineConfig({
         peut désigner une fonction qui y vit — `telecharger: downloadBlob`
         vient de `src/lib/download.ts`, et la garde l'a signalé plutôt que de
         le sauter.
-
-        Mesuré avant de l'écrire, parce que #489 affirmait le contraire : les
-        quatre seuils tiennent sur le périmètre élargi — 95,98 %
-        d'instructions, 91,62 % de branches, 95,57 % de fonctions, 97,19 % de
-        lignes. Il n'y avait donc ni seuil à abaisser, ni seconde
-        configuration à tenir.
       */
       include: ['src/core/**', 'src/store/**', 'src/lib/**'],
+      /*
+        Un seuil par domaine, et non un seul sur leur moyenne (#495).
+
+        L'élargissement ci-dessus a d'abord gardé les quatre seuils globaux.
+        Je les avais mesurés — 95,98 % d'instructions, 91,62 % de branches,
+        95,57 % de fonctions, 97,19 % de lignes — et j'en avais conclu qu'il
+        n'y avait rien à décider. C'était mesurer la bonne chose et en tirer
+        la mauvaise conclusion : la revue du lot a montré que la moyenne
+        cachait **quatre métriques sur douze sous 90 %**, dont les fonctions
+        de `src/lib` à 73,91 %, noyées dans les 3 219 instructions de
+        `src/core`. Et `src/core`, lui, n'était plus tenu séparément : il
+        pouvait tomber de cinq points sans que rien ne bouge.
+
+        Ce que chaque barre vaut, et pourquoi :
+
+        - **`src/core` retrouve ses 90 %**, qui n'ont jamais été discutés et
+          que ses quatre chiffres dépassent largement ;
+        - **`src/store` et `src/lib` reçoivent un cliquet posé à leur mesure
+          du 03/09**, arrondie au dixième inférieur. Ce ne sont pas des
+          seuils inventés — le §2 l'interdirait — mais l'état constaté, figé
+          pour qu'il ne recule pas. Poser 90 % les rendrait rouges le jour
+          même, ce qui reviendrait à livrer une porte cassée ou à désactiver
+          la mesure ; un cliquet est vrai tout de suite et se relève.
+
+        Le cliquet n'est pas une cible. Chaque sprint qui touche ces deux
+        domaines doit le remonter, et le jour où il atteint 90 il disparaît.
+      */
       thresholds: {
-        lines: 90,
-        functions: 90,
-        branches: 90,
-        statements: 90,
+        'src/core/**': {
+          lines: 90,
+          functions: 90,
+          branches: 90,
+          statements: 90,
+        },
+        'src/store/**': {
+          lines: 94,
+          functions: 91,
+          branches: 86.5,
+          statements: 93,
+        },
+        'src/lib/**': {
+          lines: 85.9,
+          functions: 73.9,
+          branches: 89,
+          statements: 86.8,
+        },
       },
     },
   },
