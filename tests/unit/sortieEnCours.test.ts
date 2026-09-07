@@ -4,6 +4,7 @@ import {
   chiffresDeLaSortie,
   deniveleParcouru,
   distanceParcourue,
+  expliqueLesChiffres,
   temoinDeSortie,
   traceProvisoire,
   versTrace,
@@ -345,5 +346,80 @@ describe('le témoin de sortie', () => {
     expect(temoinDeSortie(demarrer(enregistreurVide(), T0))).toBe(
       'enregistrement',
     )
+  })
+})
+
+describe('expliqueLesChiffres', () => {
+  /**
+   * Retour de Cédric, 04/09 (issue #500) : « j'ai bien la durée qui
+   * s'affiche ; par contre la distance et le dénivelé ne sont pas
+   * affichés ». Ils l'étaient — à `0 m` et `—`. Un chiffre vide qu'on
+   * n'explique pas se lit comme une panne, et les deux causes possibles
+   * (aucune altitude fournie / aucun déplacement) ne se distinguaient
+   * d'aucune façon à l'écran.
+   *
+   * Ce qui est dit ici n'invente aucun seuil : ce sont des faits sur ce
+   * qu'on a reçu, pas un jugement sur ce qui serait « assez ».
+   */
+  const chiffres = (
+    partiel: Partial<ReturnType<typeof chiffresDeLaSortie>>,
+  ) => ({
+    distanceMetres: 0,
+    dureeTotaleMs: 0,
+    dureeEnMarcheMs: 0,
+    deniveleMetres: null as number | null,
+    vitesseMetresParSeconde: null as number | null,
+    points: 0,
+    ...partiel,
+  })
+
+  it('ne dit rien avant la première position : un autre message tient déjà ce cas', () => {
+    expect(expliqueLesChiffres(chiffres({ points: 0 }))).toEqual({
+      distance: null,
+      denivele: null,
+    })
+  })
+
+  it('dit que rien n’a bougé quand des positions arrivent sans déplacement', () => {
+    const dit = expliqueLesChiffres(
+      chiffres({ points: 4, distanceMetres: 0, deniveleMetres: 12 }),
+    )
+    expect(dit.distance).toMatch(/déplacement/)
+    expect(dit.denivele).toBe(null)
+  })
+
+  it('dit que l’appareil ne fournit pas d’altitude, plutôt qu’un tiret', () => {
+    const dit = expliqueLesChiffres(
+      chiffres({ points: 4, distanceMetres: 300, deniveleMetres: null }),
+    )
+    expect(dit.denivele).toMatch(/altitude/)
+    expect(dit.distance).toBe(null)
+  })
+
+  // Un dénivelé de zéro n'est pas un dénivelé absent : le terrain était
+  // plat, et c'est une mesure. La confondre avec l'absence de donnée
+  // dirait faux sur l'appareil.
+  it('ne confond pas un dénivelé nul avec une altitude absente', () => {
+    expect(
+      expliqueLesChiffres(
+        chiffres({ points: 4, distanceMetres: 300, deniveleMetres: 0 }),
+      ).denivele,
+    ).toBe(null)
+  })
+
+  it('dit les deux quand les deux manquent', () => {
+    const dit = expliqueLesChiffres(
+      chiffres({ points: 2, distanceMetres: 0, deniveleMetres: null }),
+    )
+    expect(dit.distance).toMatch(/déplacement/)
+    expect(dit.denivele).toMatch(/altitude/)
+  })
+
+  it('se tait quand les deux chiffres disent quelque chose', () => {
+    expect(
+      expliqueLesChiffres(
+        chiffres({ points: 40, distanceMetres: 4200, deniveleMetres: 180 }),
+      ),
+    ).toEqual({ distance: null, denivele: null })
   })
 })

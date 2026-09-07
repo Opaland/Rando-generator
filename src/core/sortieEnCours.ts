@@ -217,3 +217,47 @@ export function traceProvisoire(e: Enregistrement): Track | null {
     precisionsMetres: e.points.map((point) => point.precisionMetres),
   }
 }
+
+/** Ce qu'il y a à dire sur un chiffre vide, ou `null` s'il n'y a rien à dire. */
+export interface ExplicationsSortie {
+  distance: string | null
+  denivele: string | null
+}
+
+/**
+ * Pourquoi la distance ou le dénivelé restent vides (issue #500).
+ *
+ * Retour de Cédric, 04/09 : « j'ai bien la durée qui s'affiche ; par contre
+ * la distance et le dénivelé ne sont pas affichés ». Ils l'étaient — à
+ * `0 m` et `—`. La durée, elle, avance parce qu'elle vient de l'horloge et
+ * non des positions. **Un chiffre vide qu'on n'explique pas se lit comme
+ * une panne**, et les deux causes possibles ne se distinguaient d'aucune
+ * façon à l'écran : aucune altitude reçue, ou aucun déplacement mesuré.
+ *
+ * Ce qui est dit ici n'invente aucun seuil. Ce sont des faits sur ce qu'on
+ * a reçu — « l'appareil n'a envoyé aucune altitude », « les positions
+ * reçues ne s'écartent pas » — et non un jugement sur ce qui serait assez.
+ * Décider qu'une position est trop imprécise pour compter changerait ce qui
+ * est compté comme parcouru, et demande une mesure sur des sorties réelles
+ * (CLAUDE.md §2) ; c'est le sujet du filtre de bruit, pas celui-ci.
+ *
+ * Avant la première position, on se tait : `sortie-attente` tient déjà ce
+ * cas, et deux messages pour le même moment se contrediraient un jour.
+ */
+export function expliqueLesChiffres(
+  chiffres: ChiffresSortie,
+): ExplicationsSortie {
+  if (chiffres.points === 0) return { distance: null, denivele: null }
+  return {
+    distance:
+      chiffres.distanceMetres > 0
+        ? null
+        : 'Aucun déplacement mesuré pour l’instant — les positions reçues ne s’écartent pas.',
+    // Un dénivelé nul n'est pas un dénivelé absent : le terrain était plat,
+    // et c'est une mesure. Seul `null` dit que rien ne portait d'altitude.
+    denivele:
+      chiffres.deniveleMetres === null
+        ? 'Votre appareil ne fournit pas d’altitude — le dénivelé ne peut pas être calculé.'
+        : null,
+  }
+}
