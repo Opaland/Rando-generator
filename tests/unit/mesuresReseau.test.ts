@@ -683,6 +683,18 @@ out tags;`)
    * avoir chiffrées. Les deux premières se lisent dans les tags ; la
    * troisième — la part de géométrie commune — demande de télécharger les
    * tracés, et c'est dit plutôt que supposé.
+   *
+   * Rejoué le 07/09 hors vitest (même caveat curl-vs-fetch que le test 2,
+   * documenté dans l'en-tête de ce fichier) : sur le Rhône (FR-69, 157
+   * relations), les 2 refs dérivées trouvées (`GR 76A`, `GR 76D`) ont toutes
+   * les deux une ref parente (`GR 76`) présente dans la même zone — 0 faux
+   * positif, mais sur un échantillon de 2. Sur les Vosges (FR-88, 1034
+   * relations, le massif le mieux tagué du dépôt), **zéro** ref dérivée : la
+   * convention `GR 7A` n'y est simplement pas utilisée. La question posée le
+   * 27/08 — « combien de refs se ressemblent sans être parentes » — reste
+   * donc sans réponse statistiquement solide : la déduction textuelle se
+   * déclenche trop rarement (2 fois sur 1191 relations mesurées, deux
+   * départements) pour que son taux d'erreur se mesure ici.
    */
   it('6 — les variantes d’itinéraires (#333)', { timeout: 900_000 }, async () => {
     titre('#333 — variantes : superroutes et refs dérivées')
@@ -724,6 +736,29 @@ out tags;`)
     }
 
     /*
+      Le faux positif de la déduction textuelle (posé dans le commentaire du
+      27/08, jamais chiffré) : parmi les refs qui *ressemblent* à une variante
+      (« GR 76A »), combien ont une ref parente (« GR 76 ») réellement présente
+      dans la même zone ? Une ref dérivée sans parent visible n'est pas
+      forcément une fausse variante — son tronc peut être hors zone — mais
+      c'est la seule chose que ces données permettent de dire sans deviner.
+    */
+    const refsExistantes = new Set(
+      itineraires.map((r) => (r.tags?.['ref'] ?? '').trim()).filter(Boolean),
+    )
+    const sansParentVisible = derivees.filter((r) => {
+      const correspondance = REF_DERIVEE.exec((r.tags?.['ref'] ?? '').trim())
+      const base = correspondance?.[1]?.trim()
+      return base === undefined || !refsExistantes.has(base)
+    })
+    ligne(
+      `   dont sans ref parente dans la zone : ${part(sansParentVisible.length, derivees.length)}`,
+    )
+    for (const r of sansParentVisible.slice(0, 10)) {
+      ligne(`      ${(r.tags?.['ref'] ?? '').padEnd(10)} ${r.tags?.['name'] ?? ''}`)
+    }
+
+    /*
       La question qui décide, et qu'aucun des deux comptes ne répond seul :
       **les variantes elles-mêmes sont-elles rattachées ?**
 
@@ -753,7 +788,10 @@ out tags;`)
     ligne('variantes à rattacher dans cette zone, et l’issue attend une zone où')
     ligne('il y en a. Des superroutes → le rattachement se lit dans la donnée,')
     ligne('sans deviner. Des refs dérivées sans superroute → le rattachement se')
-    ligne('déduirait du texte, ce qui est moins sûr et doit être pesé.')
+    ligne('déduirait du texte, ce qui est moins sûr et doit être pesé — et une')
+    ligne('part élevée de refs « dont sans ref parente » dit que cette')
+    ligne('déduction se tromperait souvent, même en ignorant les parents hors')
+    ligne('zone.')
     ligne('')
     ligne('La troisième question de l’issue — quelle part de géométrie deux')
     ligne('variantes partagent — n’est pas ici : elle demande `out geom` sur')
