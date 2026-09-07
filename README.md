@@ -57,8 +57,8 @@ npm run e2e        # playwright (nécessite un Chromium, voir ci-dessous)
 Pour Playwright : `npx playwright install chromium`, ou pointez un Chromium
 existant via `PW_CHROMIUM_PATH=/chemin/vers/chrome`. La variable vaut pour
 **toutes** les commandes qui lancent Playwright — `npm run e2e`,
-`npm run monkey`, `npm run mesure` et `npm run reel` —, pas seulement la
-première : `playwright.config.ts` la lit pour chacune.
+`npm run monkey`, `npm run mesure`, `npm run reel` et `npm run chargement` —,
+pas seulement la première : `playwright.config.ts` la lit pour chacune.
 
 ## Utilisation
 
