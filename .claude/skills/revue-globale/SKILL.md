@@ -53,6 +53,15 @@ C'est là qu'était le README oublié. Chercher les formules, pas les fichiers :
 grep -rn "100 % local\|ne quitte\|aucune donnée\|rien ne sort" README.md docs/ src/ public/
 ```
 
+### Personas contre le livré
+
+`docs/PERSONAS.md` sert à décider où regarder : un manque qu'il décrit
+comme ouvert alors qu'il a été comblé oriente vers du travail déjà fait, et
+masque les vrais blocages restants (#447). Une garde mécanique n'existe
+pas — le §2 interdit de prétendre mesurer ce qu'on décide — donc relire à
+la main chaque fiche datée depuis la dernière revue globale, contre ce qui
+a été livré depuis.
+
 ### Poids livré
 
 ```bash
