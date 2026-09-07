@@ -20,8 +20,12 @@
  *
  * ```
  * node scripts/couverture-village.mjs
- * node scripts/couverture-village.mjs --villages "Bourg-d'Oisans,Le Bourg-d'Arud"
+ * node scripts/couverture-village.mjs --villages "Chamonix:110788"
  * ```
+ *
+ * `--villages` prend des paires `Nom:identifiant`, l'identifiant étant une
+ * relation OSM (trouvée sur nominatim.openstreetmap.org/search?q=<nom>) —
+ * jamais un nom seul : voir pourquoi sous `VILLAGES_PAR_DEFAUT`.
  *
  * ## Ce qu'il mesure, et ce qu'il ne mesure pas
  *
@@ -32,6 +36,13 @@
  * et c'est précisément ce que la fermeture saisonnière rend faux.
  *
  * Il ne dit pas si un commerce est ouvert. Rien ne le dit.
+ *
+ * ## Ce que la mesure du 07/09 a rendu
+ *
+ * `opening_hours` : 62–100 % sur ravitaillement/mairie/dépannage, 8 % sur le
+ * dodo (attendu : ce tag décrit un horaire d'ouverture, pas une disponibilité
+ * de lit). Âge médian du relevé : 0,5 à 1,8 an partout, jamais les six ans
+ * redoutés. Détail et chiffres complets : `docs/MESURE_VILLAGE_07_09.md`.
  */
 import { argv } from 'node:process'
 
@@ -42,16 +53,32 @@ import { argv } from 'node:process'
  * Ce ne sont pas des données de production : c'est l'échantillon d'une
  * mesure, et il est écrit ici pour qu'on puisse discuter de sa
  * représentativité plutôt que de la deviner.
+ *
+ * ## Pourquoi un identifiant de relation, et pas seulement un nom
+ *
+ * La première exécution (07/09) interrogeait `area["name"="Munster"]` sans
+ * autre filtre : Overpass unit **toutes** les zones administratives qui
+ * portent ce nom avant d'y chercher des commerces. Il en existe sept dans le
+ * monde — dont un `admin_level=5` (une province) — et la mesure comptait
+ * donc leurs commerces additionnés, pas ceux du seul village vosgien visé.
+ * C'est le §1bis appliqué à un nom de lieu plutôt qu'à une bbox : une zone
+ * non vérifiée rend un résultat indiscernable d'une zone correcte tant qu'on
+ * ne l'a pas nommée par son identifiant.
+ *
+ * Chaque identifiant est une relation OSM, résolue par Nominatim le 07/09
+ * (`nominatim.openstreetmap.org/search?q=<village>, France`) puis vérifiée
+ * une à une : Munster en portait deux (Moselle et Haut-Rhin), c'est le
+ * second qui longe le GR 5.
  */
 const VILLAGES_PAR_DEFAUT = [
-  'Le Bourg-d’Oisans', // Oisans, GR 54
-  'Chalmazel', // Forez, GR 3
-  'Saint-Julien-Molin-Molette', // Pilat, GR 65
-  'Munster', // Vosges, GR 5
-  'Barèges', // Pyrénées, GR 10
-  'Le Monêtier-les-Bains', // Écrins, GR 50
-  'Saint-Rémy-de-Provence', // Alpilles, GR 6
-  'Chaudes-Aigues', // Aubrac, GR 65
+  { nom: 'Le Bourg-d’Oisans', id: 1_347_500 }, // Oisans, GR 54
+  { nom: 'Chalmazel', id: 1_043_076 }, // Forez, GR 3
+  { nom: 'Saint-Julien-Molin-Molette', id: 445_336 }, // Pilat, GR 65
+  { nom: 'Munster (Haut-Rhin)', id: 905_906 }, // Vosges, GR 5
+  { nom: 'Barèges', id: 2_327_992 }, // Pyrénées, GR 10
+  { nom: 'Le Monêtier-les-Bains', id: 972_052 }, // Écrins, GR 50
+  { nom: 'Saint-Rémy-de-Provence', id: 103_755 }, // Alpilles, GR 6
+  { nom: 'Chaudes-Aigues', id: 2_658_224 }, // Aubrac, GR 65
 ]
 
 const CATEGORIES = {
@@ -62,44 +89,86 @@ const CATEGORIES = {
   manger: '"amenity"~"^(restaurant|cafe|bar)$"',
 }
 
+/**
+ * `maps.mail.ru` en tête : les deux miroirs de l'application coupaient la
+ * connexion depuis cet environnement (mesuré le 27/08, voir
+ * `tests/unit/mesuresReseau.test.ts`), pas ce troisième. Vérifié par un
+ * témoin avant la première exécution réelle (07/09) : une requête sur
+ * Munster y rend de vrais commerces, pas une réponse vide de miroir.
+ */
 const MIROIRS = [
+  'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
   'https://overpass-api.de/api/interpreter',
   'https://overpass.kumi.systems/api/interpreter',
 ]
 
-function requete(village) {
+/**
+ * Le délai de courtoisie entre deux villages (issue #285, mesure du 07/09).
+ *
+ * Chaque village est une requête `area[name=...]` suivie de cinq filtres
+ * `nwr` : plus léger qu'un département, mais huit villages coup sur coup
+ * ont le même effet que deux Overpass lourds en #331 — le miroir coupe.
+ */
+const REPOS_ENTRE_VILLAGES_MS = 5_000
+
+function patienter(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function requete(id) {
   const clauses = Object.values(CATEGORIES)
     .map((filtre) => `  nwr[${filtre}](area.v);`)
     .join('\n')
+  // 3600000000 + id : la conversion documentée d'un identifiant de relation
+  // OSM en identifiant d'aire Overpass — pas une zone nommée, qu'Overpass
+  // unirait avec toute autre zone administrative portant le même nom.
   return `[out:json][timeout:120];
-area["name"="${village.replace(/"/g, '\\"')}"]["boundary"="administrative"]->.v;
+area(${String(3_600_000_000 + id)})->.v;
 (
 ${clauses}
 );
 out meta center 500;`
 }
 
+/**
+ * Le rattrapage d'un 429, mesuré le 07/09 : malgré les cinq secondes entre
+ * villages, un miroir sur huit répond « trop de requêtes » à chaque
+ * exécution — jamais le même. Ce n'est pas un échec à consigner, c'est le
+ * tarif du service public le jour où on le sollicite ; il se rattrape comme
+ * `REPOS_APRES_429_MS` le fait déjà pour l'API OSM dans #331.
+ */
+const REPOS_APRES_429_MS = 20_000
+const ESSAIS_PAR_MIROIR = 2
+
 async function interroger(village) {
   let derniere
   for (const miroir of MIROIRS) {
-    try {
-      const reponse = await fetch(miroir, {
-        method: 'POST',
-        body: `data=${encodeURIComponent(requete(village))}`,
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      })
-      if (!reponse.ok) throw new Error(`HTTP ${String(reponse.status)}`)
-      const data = await reponse.json()
-      /*
-        Overpass signale ses échecs en HTTP 200, avec un corps bien formé et
-        la raison dans `remark` (issue #283). Sans cette lecture, un
-        dépassement de délai se lirait comme « ce village n'a aucun commerce »
-        — et la mesure conclurait à une couverture de zéro pour cent.
-      */
-      if (data.remark) throw new Error(`remark : ${data.remark}`)
-      return data.elements ?? []
-    } catch (erreur) {
-      derniere = erreur
+    for (let essai = 1; essai <= ESSAIS_PAR_MIROIR; essai += 1) {
+      try {
+        const reponse = await fetch(miroir, {
+          method: 'POST',
+          body: `data=${encodeURIComponent(requete(village.id))}`,
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        })
+        if (reponse.status === 429) {
+          derniere = new Error('HTTP 429')
+          if (essai < ESSAIS_PAR_MIROIR) await patienter(REPOS_APRES_429_MS)
+          continue
+        }
+        if (!reponse.ok) throw new Error(`HTTP ${String(reponse.status)}`)
+        const data = await reponse.json()
+        /*
+          Overpass signale ses échecs en HTTP 200, avec un corps bien formé et
+          la raison dans `remark` (issue #283). Sans cette lecture, un
+          dépassement de délai se lirait comme « ce village n'a aucun commerce »
+          — et la mesure conclurait à une couverture de zéro pour cent.
+        */
+        if (data.remark) throw new Error(`remark : ${data.remark}`)
+        return data.elements ?? []
+      } catch (erreur) {
+        derniere = erreur
+        break
+      }
     }
   }
   throw derniere ?? new Error('aucun miroir joignable')
@@ -129,10 +198,19 @@ function medianeAns(horodatages, maintenant) {
   return `${milieu.toFixed(1)} ans`
 }
 
+/*
+  Un nom seul ne suffit pas à désigner une zone administrative — Munster en
+  porte deux rien qu'en France, et sept dans le monde (voir le commentaire de
+  VILLAGES_PAR_DEFAUT). L'option prend donc des paires « Nom:identifiant »,
+  l'identifiant se trouvant via nominatim.openstreetmap.org/search?q=<nom>.
+*/
 const arg = argv.indexOf('--villages')
 const villages =
   arg >= 0 && argv[arg + 1]
-    ? argv[arg + 1].split(',').map((v) => v.trim())
+    ? argv[arg + 1].split(',').map((entree) => {
+        const [nom, id] = entree.split(':').map((v) => v.trim())
+        return { nom, id: Number(id) }
+      })
     : VILLAGES_PAR_DEFAUT
 
 const compte = {}
@@ -142,13 +220,16 @@ for (const nom of Object.keys(CATEGORIES)) {
 const echecs = []
 const maintenant = Date.now()
 
+let premier = true
 for (const village of villages) {
-  process.stderr.write(`… ${village}\n`)
+  if (!premier) await patienter(REPOS_ENTRE_VILLAGES_MS)
+  premier = false
+  process.stderr.write(`… ${village.nom}\n`)
   let elements
   try {
     elements = await interroger(village)
   } catch (erreur) {
-    echecs.push(`${village} : ${erreur.message}`)
+    echecs.push(`${village.nom} : ${erreur.message}`)
     continue
   }
   for (const el of elements) {
@@ -162,6 +243,21 @@ for (const village of villages) {
     if (tags.website || tags['contact:website']) c.site += 1
     if (el.timestamp) c.dates.push(el.timestamp)
   }
+}
+
+if (argv.includes('--json')) {
+  console.log(
+    JSON.stringify({
+      mesures: Object.fromEntries(
+        Object.entries(compte).map(([nom, c]) => [
+          nom,
+          { total: c.total, horaires: c.horaires, phone: c.phone, site: c.site, dates: c.dates },
+        ]),
+      ),
+      echecs,
+    }),
+  )
+  process.exit(0)
 }
 
 console.log(`\n# Couverture OSM des commerces de village (issue #285)\n`)
