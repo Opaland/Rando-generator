@@ -448,3 +448,49 @@ test("des positions qui ne s'écartent pas le disent, plutôt qu'un zéro nu (#5
     })
     .toBe(true);
 });
+
+/**
+ * Issue #502 — un profil altimétrique pour la sortie en cours.
+ *
+ * Deux causes possibles pour un profil absent, et elles ne se corrigent
+ * pas pareil : aucune altitude reçue (dénivelé déjà expliqué par #500), ou
+ * simplement pas encore deux positions. Ce test vise le cas positif — un
+ * profil qui existe et s'allonge — et le cas où l'altitude manque, pour
+ * vérifier qu'on ne dessine pas une ligne plate à zéro à sa place.
+ */
+test("un profil apparaît à la deuxième position, et s'allonge avec la marche (#502)", async ({
+  page,
+}) => {
+  await ouvrir(page);
+  await page.getByTestId("sortie-demarrer").click();
+
+  await emettrePosition(page, pas(1));
+  await expect(page.getByTestId("sortie-profil")).toHaveCount(0);
+
+  await emettrePosition(page, pas(2));
+  const profil = page.getByTestId("sortie-profil");
+  await expect(profil).toBeVisible();
+  const chart = profil.getByTestId("elevation-chart");
+  await expect(chart).toBeVisible();
+  const premiereEtiquette = await chart.getAttribute("aria-label");
+
+  await marcher(page, 10, 3);
+  await expect
+    .poll(async () => chart.getAttribute("aria-label"))
+    .not.toBe(premiereEtiquette);
+});
+
+test("aucune altitude reçue : pas de profil, plutôt qu'une ligne plate à zéro (#502)", async ({
+  page,
+}) => {
+  await ouvrir(page);
+  await page.getByTestId("sortie-demarrer").click();
+
+  await emettrePosition(page, { lon: 4.505, lat: 45.4, altitude: null });
+  await emettrePosition(page, { lon: 4.506, lat: 45.4, altitude: null });
+
+  await expect(page.getByTestId("sortie-denivele-pourquoi")).toContainText(
+    "altitude",
+  );
+  await expect(page.getByTestId("sortie-profil")).toHaveCount(0);
+});
