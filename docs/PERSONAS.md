@@ -11,6 +11,8 @@ où il s'arrête, et on ne compte comme problème que ce qu'on peut montrer.
 
 ## Bernard, 62 ans, retraité, Saint-Chamond
 
+*Constats du 20/08/2026, non relus depuis (issue #447).*
+
 Marche deux fois par semaine dans le Pilat. GPS Garmin de 2016, un PC portable
 à la maison, un téléphone Android qu'il utilise « pour les photos ». Veut
 savoir combien de PR du massif il a déjà faits.
@@ -32,6 +34,10 @@ elle est tenue en trois gestes.
 
 ## Sylvie, 29 ans, débute la randonnée, téléphone uniquement
 
+*Constats du 20/08/2026 — deux des trois s'étaient comblés au 31/08 sans
+que cette fiche soit relue (issue #447) ; à revérifier avant de s'en servir
+pour prioriser.*
+
 A marché trois fois cette année. Ne sait pas ce qu'est un GR. Cherche
 « des balades autour de Saint-Étienne ».
 
@@ -50,6 +56,8 @@ A marché trois fois cette année. Ne sait pas ce qu'est un GR. Cherche
   main — il n'y a pas de « j'ai fait celui-là ».
 
 ## Camille, 34 ans, prépare la Grande Traversée des Alpes
+
+*Constats du 20/08/2026, non relus depuis (issue #447).*
 
 Trois semaines de marche l'été prochain. Veut découper, repérer les refuges,
 savoir où boire.
@@ -75,6 +83,8 @@ qu'elle ignore — c'est rare.
 
 ## Karim, 41 ans, rentre de sortie, montre Garmin
 
+*Constats du 20/08/2026, non relus depuis (issue #447).*
+
 Ouvre l'application le dimanche soir avec l'export de sa montre.
 
 **Ce qui marche.** GPX, FIT, TCX et l'archive ZIP complète de Strava ou Garmin
@@ -95,6 +105,8 @@ aux connecteurs OAuth.
 
 ## Marc, 55 ans, baliseur bénévole
 
+*Constats du 20/08/2026, non relus depuis (issue #447).*
+
 Connaît le terrain mieux qu'OpenStreetMap. Veut voir ce qui manque.
 
 **Ce qui marche, et personne d'autre ne le fait.** Les relations trouées sont
@@ -109,6 +121,8 @@ sa donnée au lieu de la maquiller.
   « ouvrir dans l'éditeur OSM » transformerait un signalement en contribution.
 
 ## Léa, 38 ans, chargée de mission dans une collectivité
+
+*Constats du 20/08/2026, non relus depuis (issue #447).*
 
 Son département vient d'ouvrir son PDIPR. Veut voir ce que ça donne.
 
