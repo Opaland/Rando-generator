@@ -1,8 +1,13 @@
 import { useAppStore } from '../store/appStore.ts'
 import { actionsPossibles } from '../core/recorder.ts'
-import { chiffresDeLaSortie, expliqueLesChiffres } from '../core/sortieEnCours.ts'
+import {
+  chiffresDeLaSortie,
+  expliqueLesChiffres,
+  profilDeSortie,
+} from '../core/sortieEnCours.ts'
 import { formatChrono, formatDistance } from '../lib/format.ts'
 import { useHorloge } from '../lib/useHorloge.ts'
+import { ElevationChart } from './ElevationChart.tsx'
 import styles from './Enregistreur.module.css'
 
 /**
@@ -52,6 +57,11 @@ export function Enregistreur() {
   // Ce que valent les tirets et les zéros. Un chiffre vide qu'on
   // n'explique pas se lit comme une panne (issue #500).
   const pourquoi = expliqueLesChiffres(chiffres)
+  // Recalculé à chaque rendu : c'est voulu, le profil s'allonge avec les
+  // positions qui arrivent (issue #502). `ElevationChart` suit déjà une
+  // fenêtre qui grandit avec `profile.distances` tant que personne n'a
+  // zoomé — pas de logique de suivi à écrire ici.
+  const profil = profilDeSortie(enregistrement)
 
   return (
     <section className={styles.section} data-testid="enregistreur">
@@ -125,6 +135,19 @@ export function Enregistreur() {
             <p className={styles.aide} data-testid="sortie-attente">
               En attente de la première position…
             </p>
+          )}
+          {/*
+            Le dénivelé porte déjà l'explication d'une altitude absente
+            (`pourquoi.denivele`, issue #500) : afficher un profil ici serait
+            soit vide, soit — pire — une ligne plate à zéro. `fillElevationGaps`
+            comble un trou entre deux relevés connus, pas l'absence totale de
+            donnée, et un aplat à zéro se lirait comme un terrain plat plutôt
+            que comme un chiffre qu'on n'a pas.
+          */}
+          {profil !== null && chiffres.deniveleMetres !== null && (
+            <div data-testid="sortie-profil">
+              <ElevationChart profile={profil} />
+            </div>
           )}
 
           <div className={styles.actions}>

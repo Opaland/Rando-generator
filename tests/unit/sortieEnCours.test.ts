@@ -5,6 +5,7 @@ import {
   deniveleParcouru,
   distanceParcourue,
   expliqueLesChiffres,
+  profilDeSortie,
   temoinDeSortie,
   traceProvisoire,
   versTrace,
@@ -20,6 +21,7 @@ import {
   type PointBrut,
 } from '../../src/core/recorder.ts'
 import { distanceMeters } from '../../src/core/geo.ts'
+import type { LonLat } from '../../src/core/types.ts'
 
 /**
  * Issue #152, pierre 3 — ce que l'écran de marche a le droit d'afficher.
@@ -48,6 +50,11 @@ function point(
     precisionMetres: 8,
     altitude,
   }
+}
+
+/** Les coordonnées qu'un `point(iLon, …)` porte, pour comparer au profil. */
+function pointLonLat(iLon: number): LonLat {
+  return [4.8 + iLon / 1000, 45.75]
 }
 
 function sortieDeTroisPoints(): Enregistrement {
@@ -421,5 +428,59 @@ describe('expliqueLesChiffres', () => {
         chiffres({ points: 40, distanceMetres: 4200, deniveleMetres: 180 }),
       ),
     ).toEqual({ distance: null, denivele: null })
+  })
+})
+
+describe('profilDeSortie', () => {
+  /**
+   * Le profil altimétrique de la sortie en cours (issue #502). Même choix
+   * que le reste de cet écran : le GPS brut, avec la même règle de segment
+   * que `distanceParcourue` — un pas qui enjambe une pause n'allonge pas
+   * l'axe des distances, exactement pour la raison déjà écrite plus haut
+   * dans ce fichier (on ne compte que ce qu'on a vu marcher).
+   */
+  it('rend null avant la deuxième position — rien à profiler', () => {
+    let e = demarrer(enregistreurVide(), T0)
+    expect(profilDeSortie(e)).toBe(null)
+    e = ajouterPoint(e, point(0, T0, 200))
+    expect(profilDeSortie(e)).toBe(null)
+  })
+
+  it('aligne distances, altitudes et coordonnées, dans l’ordre des points', () => {
+    let e = demarrer(enregistreurVide(), T0)
+    e = ajouterPoint(e, point(0, T0, 200))
+    e = ajouterPoint(e, point(1, T0 + 10_000, 210))
+    e = ajouterPoint(e, point(2, T0 + 20_000, 205))
+
+    const profil = profilDeSortie(e)
+    expect(profil).not.toBe(null)
+    expect(profil?.elevations).toEqual([200, 210, 205])
+    expect(profil?.distances).toHaveLength(3)
+    expect(profil?.distances[0]).toBe(0)
+    expect(profil?.distances[1]).toBeCloseTo(distanceMeters(pointLonLat(0), pointLonLat(1)), 3)
+    expect(profil?.coords).toEqual([pointLonLat(0), pointLonLat(1), pointLonLat(2)])
+  })
+
+  it('n’allonge pas l’axe des distances sur le segment d’une pause, comme distanceParcourue', () => {
+    let e = demarrer(enregistreurVide(), T0)
+    e = ajouterPoint(e, point(0, T0, 200))
+    e = suspendre(e, T0 + 5_000)
+    e = reprendre(e, T0 + 3_600_000)
+    e = ajouterPoint(e, point(40, T0 + 3_600_000, 400))
+
+    const profil = profilDeSortie(e)
+    // Le deuxième point est bien là — le profil ne perd aucun relevé — mais
+    // sa distance cumulée reste à zéro : le grand saut de la pause n'est
+    // pas un pas qu'on a marché.
+    expect(profil?.elevations).toEqual([200, 400])
+    expect(profil?.distances).toEqual([0, 0])
+  })
+
+  it('garde les altitudes manquantes telles quelles, sans les inventer', () => {
+    let e = demarrer(enregistreurVide(), T0)
+    e = ajouterPoint(e, point(0, T0, null))
+    e = ajouterPoint(e, point(1, T0 + 10_000, null))
+
+    expect(profilDeSortie(e)?.elevations).toEqual([null, null])
   })
 })

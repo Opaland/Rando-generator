@@ -7,7 +7,7 @@ import {
   type Intervalle,
   type PointBrut,
 } from './recorder.ts'
-import type { LonLat, Track } from './types.ts'
+import type { ElevationProfile, LonLat, Track } from './types.ts'
 
 /**
  * Ce que l'écran de marche a le droit d'afficher (issue #152, pierre 3).
@@ -54,16 +54,31 @@ export function distanceParcourue(e: Enregistrement): number {
   let total = 0
   let avant: PointBrut | null = null
   for (const apres of e.points) {
-    if (
-      avant !== null &&
-      intervalleDe(avant.instant, e.intervalles) ===
-        intervalleDe(apres.instant, e.intervalles)
-    ) {
+    if (avant !== null && segmentCompte(avant, apres, e.intervalles)) {
       total += distanceMeters([avant.lon, avant.lat], [apres.lon, apres.lat])
     }
     avant = apres
   }
   return total
+}
+
+/**
+ * Un pas entre deux relevés consécutifs a-t-il été vraiment marché ?
+ *
+ * Nommée pour que `distanceParcourue` et `profilDeSortie` la consultent
+ * toutes les deux plutôt que de la recopier — le même segment qui enjambe
+ * une pause ne doit pas allonger la distance affichée d'un côté et l'axe du
+ * profil de l'autre (CLAUDE.md §4).
+ */
+function segmentCompte(
+  avant: PointBrut,
+  apres: PointBrut,
+  intervalles: Intervalle[],
+): boolean {
+  return (
+    intervalleDe(avant.instant, intervalles) ===
+    intervalleDe(apres.instant, intervalles)
+  )
 }
 
 /**
@@ -260,4 +275,43 @@ export function expliqueLesChiffres(
         ? 'Votre appareil ne fournit pas d’altitude — le dénivelé ne peut pas être calculé.'
         : null,
   }
+}
+
+/**
+ * Le profil altimétrique de la sortie en cours, ou `null` avant la
+ * deuxième position (issue #502) — même seuil que `traceProvisoire`,
+ * puisqu'un profil à un seul point n'en est pas un.
+ *
+ * Le choix du GPS brut plutôt que d'un rééchantillonnage sur le MNT IGN
+ * n'est pas neutre, et il est assumé : une requête réseau par sortie irait
+ * contre le « 100 % local », et le MNT ne couvre pas le monde (#355) — une
+ * sortie hors de France n'aurait alors aucun profil. Le GPS, lui, reste
+ * cohérent avec le dénivelé déjà affiché (`deniveleParcouru`), qui vient
+ * de la même donnée.
+ *
+ * L'axe des distances suit `segmentCompte` : le même pas qui n'allonge pas
+ * `distanceParcourue` sur une pause n'allonge pas non plus le profil — les
+ * deux se lisent l'un à côté de l'autre, ils ne peuvent pas diverger.
+ *
+ * Les altitudes manquantes restent `null`, jamais comblées : `ElevationChart`
+ * sait déjà les traverser (`fillElevationGaps`), et une valeur inventée ici
+ * mentirait sur ce que l'appareil a vraiment mesuré.
+ */
+export function profilDeSortie(e: Enregistrement): ElevationProfile | null {
+  if (e.points.length < 2) return null
+  const distances: number[] = []
+  const elevations: (number | null)[] = []
+  const coords: LonLat[] = []
+  let total = 0
+  let avant: PointBrut | null = null
+  for (const apres of e.points) {
+    if (avant !== null && segmentCompte(avant, apres, e.intervalles)) {
+      total += distanceMeters([avant.lon, avant.lat], [apres.lon, apres.lat])
+    }
+    distances.push(total)
+    elevations.push(apres.altitude)
+    coords.push([apres.lon, apres.lat])
+    avant = apres
+  }
+  return { distances, elevations, coords }
 }
