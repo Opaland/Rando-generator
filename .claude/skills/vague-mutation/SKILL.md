@@ -68,9 +68,24 @@ ancre : `/^https?:\/\//` privée de son `^` accepte
 Une regex de validation sans ancre passe toutes les relectures. La mutation
 la trouve en une fois.
 
+## Un chiffre de vague porte toujours son périmètre
+
+`npm run mutation` ne couvre que le motif du jour dans `stryker.config.mjs` —
+sept modules, un dossier. « Le score de mutation est de 80 % » sans le dire
+laisse croire à une mesure du dépôt entier, et c'est précisément le défaut
+que #448 a débusqué : un chiffre du magasin cité comme s'il parlait de tout,
+juste par accident plutôt que par garantie.
+
+La règle, décidée dans #448 : **un chiffre de vague nomme toujours son
+périmètre**, y compris quand c'est le périmètre complet — « 80,8 % sur
+`src/store` », jamais « 80,8 % de couverture de mutation » tout court. Le
+périmètre complet ne se relance que quand quelqu'un a le temps d'une vague
+complète (environ une heure, `docs/MUTATION_02_09.md`) ; la vague ciblée
+reste l'outil courant après un module neuf.
+
 ## Rendre
 
-- le score, mais après les survivants, pas avant ;
+- le score, mais après les survivants, pas avant, **et avec son périmètre** ;
 - chaque survivant qui change un résultat, avec le test ajouté ;
 - chaque équivalent, avec la raison écrite dans le test ;
 - et ce qu'on n'a **pas** couvert, s'il reste des modules hors de la vague.
