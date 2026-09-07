@@ -233,7 +233,7 @@ export async function readZipEntry(
     : contenu
 }
 
-const EXTENSIONS_TRACE = ['.gpx', '.fit', '.tcx', '.gpx.gz', '.tcx.gz']
+const EXTENSIONS_TRACE = ['.gpx', '.fit', '.tcx', '.gpx.gz', '.tcx.gz', '.fit.gz']
 
 /**
  * Ne garde que ce qui peut contenir une trace.

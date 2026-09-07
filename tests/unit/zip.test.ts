@@ -110,6 +110,21 @@ describe('entreesDeTrace', () => {
     ])
   })
 
+  /*
+    Issue #329 : une archive Strava contient les fichiers **tels qu'ils ont
+    été téléversés**. Pour qui enregistre avec une montre (Garmin, Wahoo…) —
+    le cas ordinaire, pas l'export GPX manuel — c'est un `.fit.gz`. Absent de
+    la liste, il était filtré ici, silencieusement : ni erreur, ni sortie
+    manquante signalée, juste une activité qui n'apparaissait jamais.
+  */
+  it('garde un .fit.gz, comme en produisent les montres qui téléversent sur Strava', async () => {
+    const archive = await buildZip([
+      { nom: 'activities/12.fit.gz', contenu: 'x', methode: 0 },
+    ])
+    const noms = entreesDeTrace(listZipEntries(archive)).map((e) => e.name)
+    expect(noms).toEqual(['activities/12.fit.gz'])
+  })
+
   it('ignore les dossiers et les métadonnées d’archivage', async () => {
     const archive = await buildZip([
       { nom: 'activities/', contenu: '', methode: 0 },
