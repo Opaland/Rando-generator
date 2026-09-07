@@ -78,3 +78,12 @@
   text-decoration: underline;
   padding: var(--espace-3);
 }
+
+/* L'explication d'un chiffre vide : elle accompagne le chiffre, elle ne
+   prend pas sa place — d'où le retrait typographique, jamais une taille
+   sous le plancher du dépôt (issue #500). */
+.pourquoi {
+  margin: var(--espace-1) 0 0;
+  font-size: var(--texte-appui);
+  color: var(--encre-douce);
+}

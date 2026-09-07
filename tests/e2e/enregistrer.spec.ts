@@ -6,6 +6,7 @@ import {
   emettrePosition,
   suivisDePosition,
   pointsEnBase,
+  estAlEcran,
 } from "./helpers.ts";
 
 /**
@@ -386,3 +387,64 @@ test('démarrer une sortie quitte la démonstration', async ({ page }) => {
   await expect.poll(() => listeDesTraces.count(), { timeout: 15_000 }).toBe(1)
   await expect(listeDesTraces.first()).toContainText('Sortie enregistrée')
 })
+
+/**
+ * Issue #500 — un chiffre vide dit pourquoi il est vide.
+ *
+ * Retour de Cédric, 04/09, sur son téléphone : « j'ai bien la durée qui
+ * s'affiche ; par contre la distance et le dénivelé ne sont pas affichés ».
+ * Ils l'étaient — à `0 m` et `—`. Les deux causes possibles (l'appareil ne
+ * donne aucune altitude / rien n'a bougé) ne se distinguaient d'aucune
+ * façon à l'écran, et un tiret muet se lit comme une panne.
+ *
+ * On mesure ce qui est **peint**, pas ce qui est dans le DOM (§1bis).
+ */
+test("un appareil sans altitude le dit, au lieu d'un tiret muet (#500)", async ({
+  page,
+}) => {
+  await ouvrir(page);
+  await page.getByTestId("sortie-demarrer").click();
+
+  // Deux positions qui s'écartent, sans aucune altitude : c'est le cas du
+  // téléphone qui géolocalise par le réseau plutôt que par le GNSS.
+  await emettrePosition(page, { lon: 4.505, lat: 45.4, altitude: null });
+  await emettrePosition(page, { lon: 4.506, lat: 45.4, altitude: null });
+
+  // La distance, elle, est mesurée : on ne doit donc rien expliquer d'elle.
+  await expect(page.getByTestId("sortie-distance")).not.toHaveText("0 m");
+  await expect(page.getByTestId("sortie-distance-pourquoi")).toHaveCount(0);
+
+  const dit = page.getByTestId("sortie-denivele-pourquoi");
+  await expect(dit).toContainText("altitude");
+  await dit.scrollIntoViewIfNeeded();
+  await expect
+    .poll(() => estAlEcran(page, "sortie-denivele-pourquoi"), {
+      timeout: 5_000,
+    })
+    .toBe(true);
+});
+
+test("des positions qui ne s'écartent pas le disent, plutôt qu'un zéro nu (#500)", async ({
+  page,
+}) => {
+  await ouvrir(page);
+  await page.getByTestId("sortie-demarrer").click();
+
+  // Trois relevés au même endroit, avec altitude : le GPS parle, mais on
+  // n'a pas marché. Le dénivelé est mesuré (plat), donc rien à en dire.
+  for (let n = 0; n < 3; n++) {
+    await emettrePosition(page, { lon: 4.505, lat: 45.4, altitude: 200 });
+  }
+
+  await expect(page.getByTestId("sortie-distance")).toHaveText("0 m");
+  const dit = page.getByTestId("sortie-distance-pourquoi");
+  await expect(dit).toContainText("déplacement");
+  await expect(page.getByTestId("sortie-denivele-pourquoi")).toHaveCount(0);
+
+  await dit.scrollIntoViewIfNeeded();
+  await expect
+    .poll(() => estAlEcran(page, "sortie-distance-pourquoi"), {
+      timeout: 5_000,
+    })
+    .toBe(true);
+});

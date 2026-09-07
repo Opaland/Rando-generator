@@ -1,6 +1,6 @@
 import { useAppStore } from '../store/appStore.ts'
 import { actionsPossibles } from '../core/recorder.ts'
-import { chiffresDeLaSortie } from '../core/sortieEnCours.ts'
+import { chiffresDeLaSortie, expliqueLesChiffres } from '../core/sortieEnCours.ts'
 import { formatChrono, formatDistance } from '../lib/format.ts'
 import { useHorloge } from '../lib/useHorloge.ts'
 import styles from './Enregistreur.module.css'
@@ -49,6 +49,9 @@ export function Enregistreur() {
   const actions = actionsPossibles(enregistrement)
   const chiffres = chiffresDeLaSortie(enregistrement, maintenant)
   const auRepos = enregistrement.etat === 'repos'
+  // Ce que valent les tirets et les zéros. Un chiffre vide qu'on
+  // n'explique pas se lit comme une panne (issue #500).
+  const pourquoi = expliqueLesChiffres(chiffres)
 
   return (
     <section className={styles.section} data-testid="enregistreur">
@@ -92,6 +95,11 @@ export function Enregistreur() {
               <dd data-testid="sortie-distance">
                 {formatDistance(chiffres.distanceMetres)}
               </dd>
+              {pourquoi.distance !== null && (
+                <dd className={styles.pourquoi} data-testid="sortie-distance-pourquoi">
+                  {pourquoi.distance}
+                </dd>
+              )}
             </div>
             <div className={styles.chiffre}>
               <dt>Durée</dt>
@@ -106,6 +114,11 @@ export function Enregistreur() {
                   ? '—'
                   : `${String(Math.round(chiffres.deniveleMetres))} m`}
               </dd>
+              {pourquoi.denivele !== null && (
+                <dd className={styles.pourquoi} data-testid="sortie-denivele-pourquoi">
+                  {pourquoi.denivele}
+                </dd>
+              )}
             </div>
           </dl>
           {chiffres.points === 0 && (
