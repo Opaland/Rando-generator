@@ -85,7 +85,7 @@ export function About({
           </p>
         </section>
 
-        <SortiesReseau />
+        <SortiesReseau ouvert={open} />
 
         <section data-testid="about-sortant">
           <h3>Ce qui sort de votre appareil, et pour qui</h3>

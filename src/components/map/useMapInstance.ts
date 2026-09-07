@@ -64,6 +64,17 @@ export function useMapInstance(
       })
     } catch {
       // WebGL indisponible : l'application reste utilisable sans carte.
+      //
+      // MapLibre pose son `<canvas>` dans le conteneur avant de tenter d'en
+      // tirer un contexte WebGL, et ne le retire pas quand cette tentative
+      // échoue : le conteneur garde donc un canevas vide, sans dimensions
+      // déclarées mais occupant toute sa boîte, peint **par-dessus** le
+      // message qu'on s'apprête à rendre à sa place — mesuré le 07/09 en
+      // vérifiant que la sonde de #499 découvrait vraiment ce cas plutôt que
+      // de le supposer résolu (CLAUDE.md §1). On reprend donc la main sur ce
+      // conteneur : plus rien n'y sera géré par MapLibre, qui n'a jamais
+      // terminé sa construction.
+      containerRef.current.replaceChildren()
       // (asynchrone pour ne pas déclencher un re-rendu en cascade dans l'effet)
       queueMicrotask(() => {
         setMapError(true)

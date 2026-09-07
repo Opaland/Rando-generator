@@ -4,6 +4,7 @@ import { etoilesDeSortie } from '../core/affichage.ts'
 import { formatKm, importProgressLabel } from '../lib/format.ts'
 import { outingLabel } from '../core/outing.ts'
 import { listerDeclarations } from '../core/declaratif.ts'
+import { useDefilerVersAlerte } from '../lib/useDefilerVersAlerte.ts'
 import {
   preparerHistorique,
   chercherHistorique,
@@ -26,6 +27,12 @@ export function TrackManager() {
   const parcoursDeclares = useAppStore((s) => s.parcoursDeclares)
   const retirerParcoursDeclare = useAppStore((s) => s.retirerParcoursDeclare)
   const importErrors = useAppStore((s) => s.importErrors)
+  // Ce panneau vit loin dans un côté déroulant plus long que l'écran :
+  // sans ceci, une erreur d'import a un rectangle valide et reste hors
+  // champ (issue #499, même famille que #497).
+  const alerteImport = useDefilerVersAlerte<HTMLDivElement>(
+    importErrors.length > 0,
+  )
   const importGpxFiles = useAppStore((s) => s.importGpxFiles)
   const importProgress = useAppStore((s) => s.importProgress)
   const outingDetail = useAppStore((s) => s.outingDetail)
@@ -199,7 +206,12 @@ export function TrackManager() {
       )}
 
       {importErrors.length > 0 && (
-        <div className={styles.errors} role="alert" data-testid="gpx-errors">
+        <div
+          ref={alerteImport}
+          className={styles.errors}
+          role="alert"
+          data-testid="gpx-errors"
+        >
           <ul>
             {importErrors.map((err) => (
               <li key={err}>{err}</li>

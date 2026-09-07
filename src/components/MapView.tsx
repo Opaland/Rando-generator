@@ -133,7 +133,7 @@ export function MapView() {
       aria-label="Carte des itinéraires de randonnée"
     >
       {mapError && (
-        <p className={styles.mapError} role="alert">
+        <p className={styles.mapError} role="alert" data-testid="map-error">
           La carte ne peut pas s’afficher (accélération graphique
           indisponible). Les statistiques et les listes restent utilisables ;
           essayez un autre navigateur pour voir la carte.
