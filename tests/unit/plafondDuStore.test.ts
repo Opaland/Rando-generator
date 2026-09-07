@@ -52,13 +52,36 @@ const fichiers: Record<string, string> = import.meta.glob<string>(
  * reprendre exactement ce qu'on vient de rendre.
  */
 const PLAFONDS: Record<string, number> = {
-  'appStore.ts': 1_170,
+  /*
+    Descendu de 1 170 à 1 130 le 07/09, quand `noterSortieReseau` est sorti
+    dans `trancheSortiesReseau.ts` (#445) : 1 106 lignes après. La marge
+    était tombée à 13 avant ce découpage — la deuxième fois en deux semaines,
+    après `trancheZone.ts` en #454, que « ça finira par casser » se
+    vérifiait. Un plafond qu'on ne redescend pas après un découpage autorise
+    à reprendre exactement ce qu'on vient de rendre.
+
+    Ce qui reste au-delà de 1 106 est la composition elle-même : `init()`
+    ouvre la base et fusionne huit réglages persistés, et sept fabriques de
+    tranches (`trancheZone`, `trancheRecherche`, `trancheAffichage`…) sont
+    instanciées et câblées ici, nulle part ailleurs. Ni l'un ni l'autre ne
+    se réduit à une neuvième tranche sans déplacer le problème plutôt que le
+    résoudre — c'est la seconde réponse honnête que ce fichier nomme,
+    appliquée cette fois au fichier qui reste après la première.
+  */
+  'appStore.ts': 1_130,
   /*
     Descendu de 540 à 530 le 01/09, quand la recherche de lieu est sortie
     (#454) : 510 lignes après. Un plafond qu'on ne redescend pas après un
     découpage autorise à reprendre exactement ce qu'on vient de rendre.
   */
   'trancheZone.ts': 530,
+  /*
+    Le journal des sorties réseau (issue #178), sorti d'`appStore.ts` le
+    07/09 (#445) : 113 lignes, la seule action qui était encore écrite en
+    ligne plutôt que déléguée. Le plafond laisse la place d'un commentaire
+    ou d'une garde de plus, pas d'une fonctionnalité.
+  */
+  'trancheSortiesReseau.ts': 130,
   // 122 lignes dont 70 de commentaire : la recherche de commune, ses quatre
   // champs et son compteur de course. Sortie de trancheZone parce qu'elle
   // n'est pas de la logique de zone, et parce que le plafond de celle-ci
