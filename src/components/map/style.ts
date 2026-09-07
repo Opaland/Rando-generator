@@ -24,6 +24,7 @@ import {
 import { ORDRE_DES_RESEAUX } from '../../core/reseaux.ts'
 import type { Itinerary, PointOfInterest } from '../../core/types.ts'
 import { segmentsDeRevetement } from '../../core/revetement.ts'
+import { ID_TRACE_PROVISOIRE } from '../../core/sortieEnCours.ts'
 import {
   TERRAIN_COLORS,
   TERRAIN_TIRETS,
@@ -249,15 +250,38 @@ export function baseStyle(tiles: string, attribution: string): StyleSpecificatio
         layout: { 'line-cap': 'round', 'line-join': 'round' },
       },
       {
+        // Traces importées, montrées pour mémoire : la sortie en cours
+        // (issue #501) a sa propre couche ci-dessous, plus appuyée — ce
+        // n'est pas une trace de contexte, c'est la seule ligne qu'on suit
+        // en marchant.
         id: 'tracks',
         type: 'line',
         source: 'tracks',
+        filter: ['!=', ['get', 'trackId'], ID_TRACE_PROVISOIRE],
         paint: {
           'line-color': ENCRE,
           'line-width': 1.5,
           'line-opacity': 0.65,
           'line-dasharray': [1, 2],
         },
+      },
+      {
+        // La sortie en cours, dans la couleur du point de position
+        // (`user-position`) juste au-dessus : c'est le même objet vu deux
+        // fois — où je suis, et par où j'y suis venu — et les deux doivent
+        // se lire d'un coup d'œil, gantée et au soleil (persona Sylvie).
+        // Trait plein, pas de tireté : contrairement à une trace importée,
+        // celle-ci n'est pas un repère de fond.
+        id: 'tracks-en-cours',
+        type: 'line',
+        source: 'tracks',
+        filter: ['==', ['get', 'trackId'], ID_TRACE_PROVISOIRE],
+        paint: {
+          'line-color': POSITION_COLOR,
+          'line-width': 5,
+          'line-opacity': 0.9,
+        },
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
       },
       {
         id: 'pois',
