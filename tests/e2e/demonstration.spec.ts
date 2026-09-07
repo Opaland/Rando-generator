@@ -168,3 +168,96 @@ test('un événement d’installation sans méthode n’affiche pas de bouton', 
   })
   await expect(page.getByTestId('installer')).toHaveCount(0)
 })
+
+/**
+ * Issue #506 — trois issues distinctes, trois messages distincts.
+ *
+ * Retour terrain de Cédric, 04/09 : « j'ai eu une pop-up pour l'installer
+ * mais je n'ai rien installé sur mon téléphone ». Les trois cas ci-dessous
+ * — accepté, refusé, échoué après acceptation — étaient rigoureusement
+ * indiscernables avant #506 : le bouton disparaissait dans les trois cas,
+ * sans jamais lire `userChoice`.
+ */
+async function emettreInvite(
+  page: Page,
+  outcome: 'accepted' | 'dismissed',
+  promptEchoue = false,
+): Promise<void> {
+  await page.evaluate(
+    ({ outcome, promptEchoue }) => {
+      const event = new Event('beforeinstallprompt') as Event & {
+        prompt?: () => Promise<void>
+        userChoice?: Promise<{ outcome: string }>
+      }
+      event.prompt = promptEchoue
+        ? () => Promise.reject(new Error('boom'))
+        : () => Promise.resolve()
+      event.userChoice = Promise.resolve({ outcome })
+      window.dispatchEvent(event)
+    },
+    { outcome, promptEchoue },
+  )
+}
+
+test('un choix accepté confirme l’installation', async ({ page }) => {
+  await mockExternalNetwork(page)
+  await page.goto('/')
+  await emettreInvite(page, 'accepted')
+  await page.getByTestId('installer').click()
+
+  await expect(page.getByTestId('installer')).toHaveCount(0)
+  await expect(page.getByTestId('installation-confirmee')).toContainText(
+    'installée',
+  )
+})
+
+test('un choix refusé le dit, sans se lire comme une panne', async ({
+  page,
+}) => {
+  await mockExternalNetwork(page)
+  await page.goto('/')
+  await emettreInvite(page, 'dismissed')
+  await page.getByTestId('installer').click()
+
+  const refus = page.getByTestId('installation-refusee')
+  await expect(refus).toContainText('annulée')
+  // `role="status"`, pas `role="alert"` : un refus est un choix, pas une
+  // panne — la distinction visuelle existe pour la même raison.
+  await expect(refus).toHaveAttribute('role', 'status')
+})
+
+test('un prompt() qui échoue après acceptation le dit comme un échec', async ({
+  page,
+}) => {
+  await mockExternalNetwork(page)
+  await page.goto('/')
+  await emettreInvite(page, 'accepted', true)
+  await page.getByTestId('installer').click()
+
+  const echec = page.getByTestId('installation-echec')
+  await expect(echec).toContainText('échoué')
+  await expect(echec).toHaveAttribute('role', 'alert')
+})
+
+test('sans userChoice, le bouton disparaît sans message inventé', async ({
+  page,
+}) => {
+  // Repli du navigateur qui ne porte pas `userChoice` : on ne peut rien
+  // affirmer sur l'issue, et un message inventé serait pire qu'aucun
+  // message (même principe que l'événement sans `prompt`, ci-dessus).
+  await mockExternalNetwork(page)
+  await page.goto('/')
+  await page.evaluate(() => {
+    const event = new Event('beforeinstallprompt') as Event & {
+      prompt?: () => Promise<void>
+    }
+    event.prompt = () => Promise.resolve()
+    window.dispatchEvent(event)
+  })
+  await page.getByTestId('installer').click()
+
+  await expect(page.getByTestId('installer')).toHaveCount(0)
+  await expect(page.getByTestId('installation-confirmee')).toHaveCount(0)
+  await expect(page.getByTestId('installation-refusee')).toHaveCount(0)
+  await expect(page.getByTestId('installation-echec')).toHaveCount(0)
+})

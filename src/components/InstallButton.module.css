@@ -9,3 +9,23 @@
   font-size: var(--texte-secondaire);
   cursor: pointer;
 }
+
+/*
+  Ce que le clic a donné (issue #506), même figuré qu'ailleurs dans le
+  dépôt (`.reprise`/`.erreur` d'Enregistreur.module.css) : un filet neutre
+  pour ce qui est juste inhabituel (installation refusée), un filet rouge
+  réservé à ce qui a vraiment échoué — sinon un refus se lirait comme une
+  panne alors que c'est un choix.
+*/
+.issue {
+  margin: 0;
+  font-size: var(--texte-secondaire);
+  padding: var(--espace-3) var(--espace-4);
+  border-radius: var(--rayon-md);
+  border-left: 4px solid var(--encre-douce);
+  background: var(--papier);
+}
+
+.issueEchec {
+  border-left-color: var(--rouge-balisage);
+}
