@@ -412,7 +412,7 @@ function App() {
       <OfflineBanner />
 
       {dbWarning && (
-        <p className={styles.dbWarning} role="alert">
+        <p className={styles.dbWarning} role="alert" data-testid="db-warning">
           {dbWarning}
         </p>
       )}

@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useAppStore } from '../store/appStore.ts'
 import { resumerJournal, libelleDestination } from '../core/journalSortant.ts'
+import { useDefilerVersAlerte } from '../lib/useDefilerVersAlerte.ts'
 import styles from './SortiesReseau.module.css'
 
 /**
@@ -17,11 +18,28 @@ import styles from './SortiesReseau.module.css'
  * polices — n'y passent pas, et le panneau ne fait pas semblant de les
  * voir.
  */
-export function SortiesReseau() {
+export function SortiesReseau({ ouvert }: { ouvert: boolean }) {
   const sorties = useAppStore((s) => s.sortiesReseau)
   const tracks = useAppStore((s) => s.tracks)
   const avecTrace = useAppStore((s) => s.requetesAvecTrace)
   const resume = useMemo(() => resumerJournal(sorties), [sorties])
+  /*
+    Ce panneau reste monté derrière la boîte de dialogue « À propos »,
+    fermée par défaut : sans ceci, une alerte rendue ici a un rectangle
+    valide et reste hors champ, soit parce que la boîte est haute de
+    3 000 px pour 600 px visibles, soit parce que la donnée est arrivée
+    avant que quelqu'un l'ouvre — `scrollIntoView` n'ayant alors rien
+    ramené, faute d'être affiché (issue #499, même famille que #497 ;
+    `ouvert` est donc passé en second argument, voir useDefilerVersAlerte).
+  */
+  const alerteInconnues = useDefilerVersAlerte<HTMLParagraphElement>(
+    resume.inconnues.length > 0,
+    ouvert,
+  )
+  const alerteFuite = useDefilerVersAlerte<HTMLParagraphElement>(
+    avecTrace > 0,
+    ouvert,
+  )
 
   return (
     <section className={styles.bloc} data-testid="sorties-reseau">
@@ -61,6 +79,7 @@ export function SortiesReseau() {
 
       {resume.inconnues.length > 0 && (
         <p
+          ref={alerteInconnues}
           className={styles.inconnue}
           role="alert"
           data-testid="sorties-inconnues"
@@ -75,7 +94,12 @@ export function SortiesReseau() {
       )}
 
       {avecTrace > 0 && (
-        <p className={styles.inconnue} role="alert" data-testid="fuite-trace">
+        <p
+          ref={alerteFuite}
+          className={styles.inconnue}
+          role="alert"
+          data-testid="fuite-trace"
+        >
           {avecTrace === 1
             ? 'Une requête emportait un point de vos traces'
             : `${String(avecTrace)} requêtes emportaient un point de vos traces`}

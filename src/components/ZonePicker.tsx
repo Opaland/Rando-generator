@@ -1,16 +1,11 @@
-import {
-  Fragment,
-  useEffect,
-  useRef,
-  useState,
-  type FormEvent,
-} from 'react'
+import { Fragment, useEffect, useState, type FormEvent } from 'react'
 import {
   FEATURED_ROUTES,
   ZONES,
   type ZoneGroup,
 } from '../core/overpass.ts'
 import { formatOctets } from '../lib/format.ts'
+import { useDefilerVersAlerte } from '../lib/useDefilerVersAlerte.ts'
 import { useAppStore } from '../store/appStore.ts'
 import styles from './ZonePicker.module.css'
 
@@ -60,21 +55,17 @@ export function ZonePicker() {
   const rafraichirZone = useAppStore((s) => s.rafraichirZone)
   const zoneRestoredAtStartup = useAppStore((s) => s.zoneRestoredAtStartup)
   /*
-    Amener l'alerte sous les yeux quand elle apparaît — et seulement alors.
+    Amener l'alerte sous les yeux quand elle apparaît — et seulement alors
+    (issue #497, généralisé en `useDefilerVersAlerte` par #499).
 
     `block: 'nearest'` est le cœur du choix : si le message est déjà dans la
     fenêtre, il **ne bouge rien**. Le défilement ne se produit donc que dans
     le cas où, sans lui, la personne ne verrait rien — typiquement un bouton
     de zone pris dans un groupe du bas, où remonter l'alerte ne suffit pas.
-
-    Un défilement qui répond au propre clic de la personne n'est pas une
-    surprise ; un `'center'` ou un `'start'` en serait une, parce qu'il
-    déplacerait la page même quand rien ne le demande.
   */
-  const alerteZone = useRef<HTMLParagraphElement>(null)
-  useEffect(() => {
-    if (zoneError) alerteZone.current?.scrollIntoView({ block: 'nearest' })
-  }, [zoneError])
+  const alerteZone = useDefilerVersAlerte<HTMLParagraphElement>(
+    zoneError !== null,
+  )
 
   const [refInput, setRefInput] = useState('')
   const [lieuInput, setLieuInput] = useState('')
