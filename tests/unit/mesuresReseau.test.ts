@@ -1,6 +1,7 @@
 import { describe, it } from 'vitest'
 import {
   OVERPASS_MIRRORS,
+  buildAroundQuery,
   fetchOverpass,
   parseOverpassResponse,
   type OverpassResponse,
@@ -425,6 +426,42 @@ out tags;`)
     ligne('recollent → la relation décrit vraiment une liaison courte (hyp. 3).')
   })
 
+  /**
+   * Le centre de Porcelette, pour appeler la **vraie** fonction de l'app.
+   *
+   * `49.1569855, 6.6535741` — le centre de la limite administrative de la
+   * commune (relation OSM 1402749), obtenu par Nominatim le 07/09. Ce n'est
+   * **pas nécessairement** ce que rend le géocodeur réel de l'application,
+   * `api-adresse.data.gouv.fr` (la Base Adresse Nationale, pensée pour des
+   * adresses postales et non des noms de communes) : cet hôte refusait la
+   * connexion depuis cet environnement le 07/09, et cette hypothèse-là reste
+   * donc non vérifiée. Voir plus bas ce que la mesure a pu trancher malgré
+   * tout.
+   */
+  const CENTRE_PORCELETTE: [number, number] = [6.6535741, 49.1569855]
+
+  /**
+   * Ce qu'une exécution a rendu le 07/09, rejouée **hors vitest** — `fetch()`
+   * y échouait en 30 ms malgré `RESEAU=1 NODE_USE_ENV_PROXY=1`, quand `curl`
+   * sur la même requête, vers le même miroir, réussissait. La requête posée
+   * était strictement celle que produit `buildAroundQuery` ci-dessous, donc
+   * ce qui suit reste une mesure du code de l'application et non d'une
+   * requête écrite à part :
+   *
+   * **41 relations pédestres** dans le rayon de 12 km, dont au moins quatre
+   * **dans la commune même** : « La Sente du Sanglier », « Circuit du
+   * Kirchenberg », « Circuit de la Hardt » et « Sentier des Huguenots » —
+   * chacune porteuse d'un vrai `osmc:symbol`. **L'hypothèse 1 (rien n'est
+   * mappé) est donc réfutée** : la donnée est abondante, pas absente. 14 des
+   * 41 relations n'ont aucun tag `network`, ce qui n'explique pas non plus
+   * un résultat vide — les 27 autres en portent un.
+   *
+   * Ce que ça laisse ouvert : si l'application affiche pourtant zéro
+   * résultat pour « Porcelette », la cause n'est plus dans Overpass ni dans
+   * le filtre `route=`, mais dans ce qui se passe **avant** cette requête —
+   * au premier chef le géocodeur, non vérifiable ici (paragraphe
+   * précédent).
+   */
   it('2 — Porcelette : relations contre chemins balisés (#321)', { timeout: 300_000 }, async () => {
     titre('#321 — Porcelette (Moselle) : trois PR au village, zéro proposée')
     const brut = await mesurer(`[out:json][timeout:180];
@@ -438,6 +475,7 @@ out tags;`)
     const elements = elementsDe(brut)
     const relations = elements.filter((e) => e.type === 'relation')
     const chemins = elements.filter((e) => e.type === 'way')
+    ligne('Dans la limite administrative (admin_level=8) :')
     ligne(`relations "route"             : ${String(relations.length)}`)
     for (const r of relations) {
       const nom = r.tags?.['name'] ?? r.tags?.['ref'] ?? '(sans nom)'
@@ -447,12 +485,27 @@ out tags;`)
       )
     }
     ligne(`chemins balisés               : ${String(chemins.length)}`)
+
+    /*
+      La vraie requête de l'application, avec la vraie fonction — pas une
+      copie. `buildAroundQuery` est ce que `trancheZone.ts` appelle
+      réellement pour « chercher autour d'un lieu » : une requête écrite à la
+      main mesurerait autre chose que ce que l'application exécute (§4bis).
+    */
+    const autour = await mesurer(buildAroundQuery(CENTRE_PORCELETTE))
+    const relationsAutour = elementsDe(autour).filter(
+      (e) => e.type === 'relation',
+    )
+    const sansNetwork = relationsAutour.filter((r) => !r.tags?.['network'])
     ligne('')
-    ligne('À lire : zéro relation + des chemins balisés → hypothèse 1, nos')
-    ligne('trois requêtes ne cherchent que des relations, et il faudrait')
-    ligne('savoir assembler des chemins. Des relations avec un route= non')
-    ligne('reconnu → hypothèse 2, le filtre s’élargit — après avoir mesuré le')
-    ligne('bruit que ça ramène.')
+    ligne("Par la requête réelle de l'app (around:12000, même centre) :")
+    ligne(`relations pédestres trouvées  : ${String(relationsAutour.length)}`)
+    ligne(`  dont sans tag network        : ${String(sansNetwork.length)}`)
+    ligne('')
+    ligne('À lire : zéro dans les deux mesures → hypothèse 1 confirmée, rien')
+    ligne("n'est mappé ici. Un nombre non nul dans la seconde → la donnée")
+    ligne("existe et le défaut est ailleurs que dans Overpass : voir le")
+    ligne('commentaire au-dessus du test, qui porte la mesure du 07/09.')
   })
 
   /**
