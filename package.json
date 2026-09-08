@@ -25,6 +25,7 @@
     "mutation": "stryker run",
     "mesure": "MESURE=1 playwright test tests/e2e/mesure-bibliotheque.spec.ts --workers=1",
     "chargement": "CHARGEMENT=1 playwright test tests/e2e/premier-chargement.spec.ts --workers=1",
+    "panneau": "PANNEAU=1 playwright test tests/e2e/mesure-panneau-zone.spec.ts --workers=1",
     "reel": "REEL=1 playwright test tests/e2e/reel.spec.ts --workers=1",
     "mesures-osm": "RESEAU=1 NODE_USE_ENV_PROXY=1 vitest run tests/unit/mesuresReseau.test.ts"
   },
