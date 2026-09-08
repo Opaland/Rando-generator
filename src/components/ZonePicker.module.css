@@ -54,9 +54,16 @@
 
 .zone,
 .zoneActive {
-  /* Quarante pixels : quatre de moins que le plancher tactile, mesurés le
-     24/08. Une zone se choisit une fois par sortie, souvent avec des gants —
-     c'est exactement le geste que quatre pixels manqués font rater. */
+  /*
+    `--cible-mini` porte déjà sa propre règle (src/index.css) : 32 px au
+    repos, 44 px sous `pointer: coarse` — le plancher WCAG 2.5.5. Ce
+    commentaire disait « quarante pixels, quatre de moins que le plancher
+    tactile », vrai le 24/08 quand la variable était une valeur unique ; #363
+    l'a scindée en deux depuis, et le bouton d'une zone est aujourd'hui à
+    44 px au doigt comme n'importe quel autre — pas quatre de moins.
+    Trouvé périmé par l'audit du 08/09 (CLAUDE.md §4bis) : la phrase avait
+    l'air d'expliquer, elle affirmait un nombre qui avait changé sous elle.
+  */
   min-height: var(--cible-mini);
   padding: var(--espace-4) var(--espace-5);
   border-radius: var(--rayon-md);

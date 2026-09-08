@@ -152,7 +152,18 @@ que la seconde lecture a trouvé, et qui n'existait pas avant.
 | Sylvie — on ne peut pas chercher un lieu | **Levé** (#131) : recherche par commune, en tête du premier écran |
 | Sylvie — le vocabulaire est celui du milieu | **Levé** (#145) : « ref » devient « numéro », GR/GRP/PR expliqués dans la légende et « À propos » |
 | Karim — ses sorties hors zone ne comptent pas, sans explication | **Levé** (#133) : l'écart est nommé sous le pourcentage |
-| Camille — préparer hors connexion | **Ouvert, issue posée** (#153) : altimétrie et POI ne sont toujours pas cachés |
+| Camille — préparer hors connexion | **Levé** (#153) : service worker + bouton « Emporter cette randonnée » |
+| Sylvie — « j'ai fait celui-là » sans trace GPX | **Levé** (#158) : `DeclarerParcouru.tsx`, itinéraire déclaré parcouru |
+| Camille — étapes calées sur les refuges, export du plan | **Levé** (#161) : `calerLesEtapesSurLesCouchages` dans `core/stages.ts` |
+| Karim — grosse archive jamais mesurée | **Levé** (#159) |
+| Marc — le constat ne mène à aucune action | **Levé** (#160) : `core/lienOsm.ts`, lien direct vers la relation OSM |
+| Léa — sa couche n'est pas distinguée, sans attribution | **Levé** (#87) : `SourceItineraire` dans `core/types.ts`, attribution portée dans l'export et la fiche |
+
+*Ces sept lignes ont été retrouvées closes dans le code, pas dans ce
+document, par l'audit persona du 08/09 — le tableau ci-dessus datait tous
+du 20-25/08 et aucune des sept fermetures d'issue ne l'avait mis à jour.
+Même mécanisme que le trou Théo/Jeanine/Zoé (§3) vu depuis l'autre bout :
+une issue qui se ferme n'a aucune raison de rouvrir ce fichier.*
 
 ## Ce que la seconde passe a trouvé
 
@@ -182,27 +193,18 @@ maintenant trouver les sentiers autour de chez elle, comprendre ce qu'est un
 PR, et… ne rien pouvoir en faire. Le produit tout entier suppose un fichier
 qu'elle n'a pas.
 
-C'est le seul persona pour qui l'application reste inutilisable de bout en
-bout. Cocher un itinéraire à la main la ferait entrer dans le produit
-(voir la nouvelle issue dédiée), et l'enregistrement de sortie la ferait
-rester.
+*Au 20/08, c'était le seul persona pour qui l'application restait
+inutilisable de bout en bout — **levé depuis par #158**, voir le tableau
+ci-dessus.*
 
-### Camille : les étapes ne sont toujours pas déplaçables
+### Camille, Karim, Marc : trois manques de la première passe, levés depuis
 
-Le découpage est régulier et calculé ; il ignore les refuges, qui sont
-pourtant ce qui décide d'une étape en montagne. Et son plan ne s'exporte pas
-vers sa montre. Deux manques de la première passe, intacts.
-
-### Karim : une grosse archive n'est toujours pas mesurée
-
-Le développement s'est fait sur des archives de quelques fichiers. Sur 800
-activités, le temps d'import et le quota IndexedDB restent inconnus. Et la
-sauvegarde complète (#132) hérite du même angle mort : une bibliothèque de
-800 traces produit un fichier dont personne n'a mesuré la taille.
-
-### Marc : le constat ne mène toujours à aucune action
-
-Aucun lien vers l'éditeur OSM. Inchangé.
+Trois constats tenus comme ouverts par cette section — les étapes non
+calées sur les refuges et l'export du plan pour Camille, la grosse archive
+non mesurée pour Karim, l'absence de lien vers l'éditeur OSM pour Marc —
+sont **levés par #161, #159 et #160**, voir le tableau ci-dessus. Rien de
+nouveau à ajouter ici : ce paragraphe reste pour montrer ce que cette
+seconde passe croyait encore vrai le 20/08.
 
 ### Bernard, sur les objectifs livrés ce soir
 
@@ -226,15 +228,12 @@ d'être traités avant le reste :
    bord, alors que l'historique, lui, le compte. Deux chiffres, deux
    périmètres, aucune explication.
 
-Le reste — étapes déplaçables, export du plan, lien vers l'éditeur OSM,
-attribution des couches importées — relève de l'approfondissement, pas du
-blocage.
-
-**Au 20/08, ces trois manques communs sont traités** (#131, #132, #133). Ce
-que la seconde passe laisse ouvert est suivi en issues : #158 (cocher un
-itinéraire à la main), #159 (mesurer une grosse bibliothèque), #160 (lien
-vers l'éditeur OSM), #161 (étapes calées sur les refuges, export du plan),
-#153 (préparer hors connexion).
+**Au 20/08, ces trois manques communs sont traités** (#131, #132, #133).
+Ce que la seconde passe laissait ouvert l'est aussi, désormais : #158
+(cocher un itinéraire à la main), #159 (mesurer une grosse bibliothèque),
+#160 (lien vers l'éditeur OSM), #161 (étapes calées sur les refuges, export
+du plan), #153 (préparer hors connexion), #87 (attribution des couches
+importées) — les sept lignes du tableau « Ce qui est levé » ci-dessus.
 
 
 ---
