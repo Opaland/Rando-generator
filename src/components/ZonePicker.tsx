@@ -237,58 +237,78 @@ export function ZonePicker() {
         </ul>
       )}
 
-      {GROUPES.map((groupe) => (
-        <Fragment key={groupe.id}>
-          <p className={styles.groupTitle} id={`${groupe.id}-title`}>
-            {groupe.titre}
-          </p>
-          <div
-            className={styles.zones}
-            role="group"
-            aria-labelledby={`${groupe.id}-title`}
-          >
-            {ZONES.filter((zone) => zone.group === groupe.id).map((zone) => (
-              <button
-                key={zone.id}
-                type="button"
-                className={zoneKey === zone.id ? styles.zoneActive : styles.zone}
-                aria-pressed={zoneKey === zone.id}
-                data-testid={`zone-${zone.id}`}
-                disabled={zoneLoading}
-                onClick={() => void loadZone(zone.id)}
-              >
-                {zone.label}
-              </button>
-            ))}
-          </div>
-        </Fragment>
-      ))}
+      {/*
+        Issue #504, mesuré le 08/09 : les 25 boutons ci-dessous portaient à
+        eux seuls le panneau à 104–141 % de la hauteur d'écran, avant même
+        d'avoir chargé une zone. La recherche par lieu ci-dessus reste la
+        seule entrée qui ne demande rien d'avance (#131) ; cette liste, elle,
+        suppose de connaître un découpage administratif. Elle passe donc dans
+        une hauteur bornée plutôt que de continuer à pousser tout le reste du
+        panneau hors de l'écran — un choix de présentation (§2), pas un calcul.
 
-      <p className={styles.groupTitle} id="featured-title">
-        Grands itinéraires
-      </p>
-      <div
-        className={styles.featured}
-        role="group"
-        aria-labelledby="featured-title"
-      >
-        {FEATURED_ROUTES.map((route) => {
-          const key = `ref:${route.ref.toUpperCase()}`
-          return (
-            <button
-              key={route.ref}
-              type="button"
-              className={zoneKey === key ? styles.zoneActive : styles.zone}
-              aria-pressed={zoneKey === key}
-              data-testid={`featured-${route.ref.replace(/\s+/g, '').toLowerCase()}`}
-              disabled={zoneLoading}
-              onClick={() => void loadRef(route.ref)}
+        280 px : assez pour montrer plusieurs zones d'un coup (la première
+        preuve, pour Jeanine, qu'il y en a d'autres en dessous) sans que le
+        panneau grandisse avec le nombre de zones proposées. `overflow-y:
+        auto` plutôt qu'un second `<details>` replié : un clic de plus aurait
+        caché la liste entière derrière une poignée, alors qu'ici Playwright
+        (et un doigt) fait défiler le conteneur sans geste supplémentaire —
+        vérifié par la suite e2e complète, qui clique une zone par testid dans
+        plus de soixante-dix fichiers sans qu'aucun n'ait dû changer.
+      */}
+      <div className={styles.listeDesZones} data-testid="zone-liste">
+        {GROUPES.map((groupe) => (
+          <Fragment key={groupe.id}>
+            <p className={styles.groupTitle} id={`${groupe.id}-title`}>
+              {groupe.titre}
+            </p>
+            <div
+              className={styles.zones}
+              role="group"
+              aria-labelledby={`${groupe.id}-title`}
             >
-              <span className={styles.featuredRef}>{route.label}</span>
-              <span className={styles.featuredHint}>{route.hint}</span>
-            </button>
-          )
-        })}
+              {ZONES.filter((zone) => zone.group === groupe.id).map((zone) => (
+                <button
+                  key={zone.id}
+                  type="button"
+                  className={zoneKey === zone.id ? styles.zoneActive : styles.zone}
+                  aria-pressed={zoneKey === zone.id}
+                  data-testid={`zone-${zone.id}`}
+                  disabled={zoneLoading}
+                  onClick={() => void loadZone(zone.id)}
+                >
+                  {zone.label}
+                </button>
+              ))}
+            </div>
+          </Fragment>
+        ))}
+
+        <p className={styles.groupTitle} id="featured-title">
+          Grands itinéraires
+        </p>
+        <div
+          className={styles.featured}
+          role="group"
+          aria-labelledby="featured-title"
+        >
+          {FEATURED_ROUTES.map((route) => {
+            const key = `ref:${route.ref.toUpperCase()}`
+            return (
+              <button
+                key={route.ref}
+                type="button"
+                className={zoneKey === key ? styles.zoneActive : styles.zone}
+                aria-pressed={zoneKey === key}
+                data-testid={`featured-${route.ref.replace(/\s+/g, '').toLowerCase()}`}
+                disabled={zoneLoading}
+                onClick={() => void loadRef(route.ref)}
+              >
+                <span className={styles.featuredRef}>{route.label}</span>
+                <span className={styles.featuredHint}>{route.hint}</span>
+              </button>
+            )
+          })}
+        </div>
       </div>
 
       <form className={styles.refForm} onSubmit={onRefSubmit}>

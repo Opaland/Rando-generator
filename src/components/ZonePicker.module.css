@@ -33,6 +33,25 @@
   gap: var(--espace-4);
 }
 
+/*
+  Issue #504 : la liste des zones prédéfinies (19 zones + 6 grands
+  itinéraires) ne doit plus faire grandir le panneau avec son propre
+  contenu — mesuré le 08/09 à 104–141 % de la hauteur d'écran avant tout
+  chargement. 280 px est un choix de présentation (§2) : assez pour montrer
+  plusieurs boutons à la fois, sans que le panneau dépende du nombre de
+  zones proposées.
+*/
+.listeDesZones {
+  display: grid;
+  gap: var(--espace-5);
+  max-height: 280px;
+  overflow-y: auto;
+  /* La barre de défilement ne doit pas recouvrir les boutons : elle prend
+     sa propre place plutôt que de flotter par-dessus le texte. */
+  scrollbar-gutter: stable;
+  padding-right: var(--espace-2);
+}
+
 .zone,
 .zoneActive {
   /* Quarante pixels : quatre de moins que le plancher tactile, mesurés le
