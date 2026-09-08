@@ -455,3 +455,54 @@ ont rendu un verdict tout aussi net.
 Aucun des huit n'a produit une phrase du genre « l'interface pourrait être
 plus claire ». C'était la contrainte de départ, et c'est ce qui distingue
 cette passe d'un tour de table.
+
+---
+
+# Une persona que ce document avait oubliée — trouvée le 08/09
+
+**Zoé est nommée dans trois issues, jamais ici.** #497 (« Il n'y a pas de
+sentier et tant pis »), #504 (« Zoé, à Nouméa, n'y trouve rien du tout »),
+#505 (« concernant le retour de Zoé sur Nouméa »). Cédric la cite nommément
+comme la personne à qui montrer les pistes retenues, au même titre que Théo
+et Jeanine (#504, #10 de CLAUDE.md). C'est exactement le §3 dans sa forme du
+28/08 : une correction de vocabulaire ailleurs, un ajout ici oublié.
+
+## Zoé, teste depuis un laptop, Chrome, Nouméa
+
+N'a jamais utilisé Sentiers. Cherche une ville hors du système administratif
+français (région/département) sur lequel toute la sélection de zone repose.
+
+**Ce qui est vérifié.** Le géocodeur de la recherche par lieu (#131) est
+l'API Adresse de la BAN, choisie et documentée dans `src/core/geocode.ts`
+comme « couvrant la France entière » — au sens administratif du terme, donc
+métropole et DROM, mais pas la Nouvelle-Calédonie, qui n'a pas de code INSEE
+de commune. Une recherche de Zoé sur « Nouméa » ne peut donc pas aboutir au
+même geocodeur que celui mesuré pour #505 (Nominatim, utilisé là uniquement
+pour l'investigation manuelle de l'issue, jamais par l'application). **Ce que
+Zoé voit exactement dans ce cas précis — un lieu non trouvé, ou un lieu
+trouvé sans aucun tracé — n'a pas été rejoué pas à pas dans ce document**,
+seul le message d'erreur générique du panneau (#497→#498) a été corrigé.
+
+Ce qu'#505 établit, séparément, avec une vraie mesure Overpass encore
+incomplète (miroirs injoignables au moment de l'essai) : la donnée existe
+bien à Nouméa — un GR NC1 signalé, plusieurs sentiers nommés dans les deux
+provinces, une zone dense au point que l'API OSM refuse la requête par boîte
+englobante — sans qu'on sache encore combien de relations sont réellement
+exploitables. Et #355 établit que même si la couverture se confirme, le MNT
+IGN ne couvre pas la Nouvelle-Calédonie : pas de profil altimétrique
+là-bas, à dire plutôt qu'à taire.
+
+**Ce qui la fait renoncer, si rien ne bouge :** une zone qui n'existe dans
+aucune des trois pistes de #504 (géolocalisation, recherche, arbre de
+décision) ne lui parle toujours pas d'un système qui couvre le monde entier
+par construction — `ZONES` accepte n'importe quel sélecteur de surface
+(#505), la limite n'est pas technique, elle est dans ce qui a été
+pré-découpé.
+
+**L'angle qu'elle ouvre, que ni Sylvie (ne sait pas chercher) ni Anne-Marie
+(le bon système, la mauvaise couleur) ne couvrent :** que dit l'application à
+quelqu'un dont le lieu est en dehors de tout découpage prévu — silence,
+message honnête, ou pire, une réponse qui laisse croire à une zone vide alors
+que la vraie limite est administrative ? C'est une question pour #504 et
+#505, pas encore une mesure : elle demande, comme pour Théo et Jeanine,
+de suivre Zoé pas à pas plutôt que de lire le code (§10).
