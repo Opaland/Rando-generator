@@ -89,6 +89,20 @@ const NETWORK_COLOR_MATCH = [
   */
 ] as unknown as ExpressionSpecification
 
+/**
+ * Couches d'itinéraires « de base » — chacune a une soeur `-grp` depuis
+ * #360 (le GRP y est filtré à part pour porter un tireté). Nommée plutôt
+ * que recopiée (§4/§4ter) : `useMapInteractions.ts` en a besoin pour savoir
+ * quelles couches interroger au clic, et une seconde liste à la main aurait
+ * fini par oublier les soeurs `-grp`, exactement comme la première l'a fait.
+ */
+const COUCHES_DE_BASE = ['trails-base', 'trails-done'] as const
+
+/** Les couches de base et leurs soeurs `-grp`, pour qui doit les interroger toutes. */
+export const TRAILS_CLIQUABLES: readonly string[] = COUCHES_DE_BASE.flatMap(
+  (id) => [id, `${id}-grp`],
+)
+
 export function baseStyle(tiles: string, attribution: string): StyleSpecification {
   return {
     version: 8,
@@ -132,6 +146,9 @@ export function baseStyle(tiles: string, attribution: string): StyleSpecificatio
         id: 'trails-base',
         type: 'line',
         source: 'trails',
+        // Le GRP a sa propre couche juste en dessous (issue #360) : filtré
+        // d'ici pour ne pas être peint deux fois.
+        filter: ['!=', ['get', 'network'], 'GRP'],
         paint: {
           // Coloré par réseau (comme les tronçons parcourus, en plus discret)
           // dès le chargement de la zone : sans ça, rien ne distingue un GR
@@ -141,6 +158,33 @@ export function baseStyle(tiles: string, attribution: string): StyleSpecificatio
           'line-opacity': 0.45,
         },
         layout: { 'line-cap': 'round', 'line-join': 'round' },
+      },
+      {
+        /*
+          GR et GRP se confondent en vision deutéranope (ΔE 6,9, issue #360)
+          — la couleur seule ne les distingue pas pour un homme sur douze. La
+          couleur ne bouge pas ici : la changer demanderait de la revérifier
+          contre les vingt autres couleurs peintes, comme #335 l'a fait pour
+          le réseau international, et ce travail n'est pas fait.
+
+          GRP se distingue donc par la **forme**, comme le revêtement
+          « autre » et l'itinéraire déclaré avant lui. `line-dasharray` ne
+          prend pas d'expression pilotée par une propriété chez MapLibre
+          (contrairement à `line-color`) : impossible de trancher au sein
+          d'une seule couche « par réseau ». Le remède est donc le même que
+          pour le revêtement — deux couches filtrées, pas une table de plus.
+        */
+        id: 'trails-base-grp',
+        type: 'line',
+        source: 'trails',
+        filter: ['==', ['get', 'network'], 'GRP'],
+        paint: {
+          'line-color': NETWORK_COLOR_MATCH,
+          'line-width': 2,
+          'line-opacity': 0.45,
+          'line-dasharray': [4, 2],
+        },
+        layout: { 'line-cap': 'butt', 'line-join': 'round' },
       },
       {
         /*
@@ -230,12 +274,27 @@ export function baseStyle(tiles: string, attribution: string): StyleSpecificatio
         id: 'trails-done',
         type: 'line',
         source: 'trails-done',
+        // Même scission que trails-base, même raison (#360).
+        filter: ['!=', ['get', 'network'], 'GRP'],
         paint: {
           'line-color': NETWORK_COLOR_MATCH,
           'line-width': 4,
           'line-opacity': 0.95,
         },
         layout: { 'line-cap': 'round', 'line-join': 'round' },
+      },
+      {
+        id: 'trails-done-grp',
+        type: 'line',
+        source: 'trails-done',
+        filter: ['==', ['get', 'network'], 'GRP'],
+        paint: {
+          'line-color': NETWORK_COLOR_MATCH,
+          'line-width': 4,
+          'line-opacity': 0.95,
+          'line-dasharray': [4, 2],
+        },
+        layout: { 'line-cap': 'butt', 'line-join': 'round' },
       },
       {
         id: 'trails-selected',

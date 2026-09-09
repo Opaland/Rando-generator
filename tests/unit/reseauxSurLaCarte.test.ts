@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { validateStyleMin } from '@maplibre/maplibre-gl-style-spec'
-import { baseStyle } from '../../src/components/map/style.ts'
+import { baseStyle, TRAILS_CLIQUABLES } from '../../src/components/map/style.ts'
 import { NETWORK_COLORS } from '../../src/lib/networkDisplay.ts'
 import { ORDRE_DES_RESEAUX } from '../../src/core/reseaux.ts'
 
@@ -92,5 +92,71 @@ describe('la couleur d’un tracé sur la carte (#412)', () => {
       'le style ne passe plus le validateur du style-spec : la carte' +
         ' refuserait de se dessiner.',
     ).toEqual([])
+  })
+})
+
+/**
+ * GR et GRP se confondent en vision deutéranope (ΔE 6,9, mesuré et gardé par
+ * `tests/unit/couleursDeReseau.test.ts`). La couleur ne change pas ici — la
+ * choisir demanderait de revérifier son écart aux vingt autres couleurs
+ * peintes (#335), un travail qui n'est pas fait. GRP se distingue donc par la
+ * **forme** : même remède que le revêtement « autre » et l'itinéraire
+ * déclaré, tous deux déjà lisibles sans la couleur.
+ *
+ * `line-dasharray` n'accepte pas d'expression pilotée par une propriété chez
+ * MapLibre (contrairement à `line-color`) : le repli est donc le même que
+ * pour le revêtement — deux couches filtrées, pas une table de plus.
+ */
+describe('GR et GRP se distinguent par la forme, pas seulement la couleur (#360)', () => {
+  function couche(id: string) {
+    const style = baseStyle('https://exemple/{z}/{x}/{y}', 'attribution')
+    return style.layers.find((c) => c.id === id) as
+      | { paint?: Record<string, unknown>; filter?: unknown }
+      | undefined
+  }
+
+  it.each(['trails-base', 'trails-done'])(
+    '%s a une couche soeur -grp filtrée et tiretée',
+    (idBase) => {
+      const base = couche(idBase)
+      const grp = couche(`${idBase}-grp`)
+      expect(
+        grp,
+        `${idBase}-grp est absent : GR et GRP ne se distinguent plus que` +
+          ' par une couleur qu’un daltonien ne sépare pas (#360).',
+      ).toBeDefined()
+      expect(base?.filter).toEqual(['!=', ['get', 'network'], 'GRP'])
+      expect(grp?.filter).toEqual(['==', ['get', 'network'], 'GRP'])
+      expect(base?.paint?.['line-dasharray']).toBeUndefined()
+      expect(grp?.paint?.['line-dasharray']).toBeDefined()
+    },
+  )
+
+  it('le style complet reste valide pour MapLibre après la scission', () => {
+    const erreurs = validateStyleMin(
+      baseStyle('https://exemple/{z}/{x}/{y}', 'attribution'),
+    )
+    expect(
+      erreurs.map((e) => `${e.message} (${e.identifier})`),
+      'la scission des couches -grp ne passe plus le validateur du' +
+        ' style-spec.',
+    ).toEqual([])
+  })
+
+  /**
+   * `useMapInteractions.ts` interroge `TRAILS_CLIQUABLES` au clic. Si cette
+   * liste nomme une couche que le style ne porte plus (ou plus encore),
+   * cliquer sur un tracé ne ferait plus rien, en silence — exactement le
+   * défaut que ce fichier a introduit une première fois avec les couches
+   * `-grp` (§4/§4ter).
+   */
+  it('TRAILS_CLIQUABLES ne nomme que des couches qui existent vraiment', () => {
+    const style = baseStyle('https://exemple/{z}/{x}/{y}', 'attribution')
+    const idsReels = new Set(style.layers.map((c) => c.id))
+    for (const id of TRAILS_CLIQUABLES) {
+      expect(idsReels.has(id), `${id} est cité mais absent du style`).toBe(
+        true,
+      )
+    }
   })
 })
