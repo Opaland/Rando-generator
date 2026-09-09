@@ -7,9 +7,15 @@ import {
 } from 'maplibre-gl'
 import { useAppStore } from '../../store/appStore.ts'
 import { poiPopupHtml, type PoiPopupProps } from './poiPopup.ts'
+import { TRAILS_CLIQUABLES } from './style.ts'
 
-/** Couches d'itinéraires cliquables (le tracé « fait » couvre le tracé de base). */
-const COUCHES_TRACES = ['trails-base', 'trails-done']
+/**
+ * Couches d'itinéraires cliquables (le tracé « fait » couvre le tracé de
+ * base). Vient de `style.ts` plutôt que d'être recopiée ici : la première
+ * version l'était, et a oublié les couches `-grp` de #360 quand elles sont
+ * apparues.
+ */
+const COUCHES_TRACES = TRAILS_CLIQUABLES
 
 /**
  * Ce que la souris déclenche sur la carte : ouvrir une fiche, poser une
