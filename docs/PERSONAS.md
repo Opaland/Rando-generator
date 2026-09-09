@@ -157,13 +157,29 @@ que la seconde lecture a trouvé, et qui n'existait pas avant.
 | Camille — étapes calées sur les refuges, export du plan | **Levé** (#161) : `calerLesEtapesSurLesCouchages` dans `core/stages.ts` |
 | Karim — grosse archive jamais mesurée | **Levé** (#159) |
 | Marc — le constat ne mène à aucune action | **Levé** (#160) : `core/lienOsm.ts`, lien direct vers la relation OSM |
-| Léa — sa couche n'est pas distinguée, sans attribution | **Levé** (#87) : `SourceItineraire` dans `core/types.ts`, attribution portée dans l'export et la fiche |
+| Léa — l'export GPX ne portait pas d'attribution | **Levé**, dans #87 : `attribution: lecture.source` posé sur l'itinéraire à l'import (`src/store/trancheImport.ts:398`, commentaire qui la cite nommément), affiché sur la fiche et porté dans l'export GPX (`attributionDe`/`mentionDeSource`, `ItineraryDetail.tsx`). |
 
-*Ces sept lignes ont été retrouvées closes dans le code, pas dans ce
-document, par l'audit persona du 08/09 — le tableau ci-dessus datait tous
-du 20-25/08 et aucune des sept fermetures d'issue ne l'avait mis à jour.
-Même mécanisme que le trou Théo/Jeanine/Zoé (§3) vu depuis l'autre bout :
-une issue qui se ferme n'a aucune raison de rouvrir ce fichier.*
+*Six de ces sept lignes correspondent à des issues réellement fermées
+(#131, #132, #133, #145, #153, #158, #159, #160, #161), retrouvées closes
+dans le code plutôt que dans ce document — le tableau datait tous du
+20-25/08 et aucune fermeture d'issue ne l'avait mis à jour. Même mécanisme
+que le trou Théo/Jeanine/Zoé (§3) vu depuis l'autre bout : une issue qui se
+ferme n'a aucune raison de rouvrir ce fichier.*
+
+*La ligne de Léa est différente, et une première version de cette
+correction (mergée puis revue) le disait mal : **#87 reste ouverte**
+aujourd'hui — son objet réel est d'intégrer les PDIPR d'autres
+départements (Rhône bloqué par #20, Loire et Ardèche sans source
+identifiée), pas seulement l'attribution. Seule la moitié « attribution »
+de la plainte de Léa est vérifiée résolue ci-dessus ; l'autre moitié —
+« sa couche n'est pas distinguée comme source institutionnelle » dans la
+liste « Mes itinéraires » — reste ouverte : l'itinéraire importé porte
+toujours `network: 'PERSO'`, le même réseau qu'un tracé dessiné à la main,
+sans badge ni réseau distinct comme `LOCAL` pour les boucles de la
+Métropole. Trouvé en vérifiant que la ligne précédente ne recopiait pas
+seulement l'existence d'un type TypeScript sans vérifier le chemin de code
+réellement emprunté par Léa (§1bis) ; un numéro d'issue existant dans le
+code ne dit pas si l'issue elle-même est close.*
 
 ## Ce que la seconde passe a trouvé
 
