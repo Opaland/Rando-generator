@@ -487,37 +487,36 @@ et Jeanine (#504, #10 de CLAUDE.md). C'est exactement le §3 dans sa forme du
 N'a jamais utilisé Sentiers. Cherche une ville hors du système administratif
 français (région/département) sur lequel toute la sélection de zone repose.
 
-**Ce qui est vérifié.** Le géocodeur de la recherche par lieu (#131) est
-l'API Adresse de la BAN, choisie et documentée dans `src/core/geocode.ts`
-comme « couvrant la France entière » — au sens administratif du terme, donc
-métropole et DROM, mais pas la Nouvelle-Calédonie, qui n'a pas de code INSEE
-de commune. Une recherche de Zoé sur « Nouméa » ne peut donc pas aboutir au
-même geocodeur que celui mesuré pour #505 (Nominatim, utilisé là uniquement
-pour l'investigation manuelle de l'issue, jamais par l'application). **Ce que
-Zoé voit exactement dans ce cas précis — un lieu non trouvé, ou un lieu
-trouvé sans aucun tracé — n'a pas été rejoué pas à pas dans ce document**,
-seul le message d'erreur générique du panneau (#497→#498) a été corrigé.
+**Ce qui a changé le 11/09.** Le comptage que #505 laissait en suspens (miroirs
+injoignables les 04 et 07/09) a été rejoué avec la vraie fonction
+`buildZoneQuery` — **16 relations `route=hiking`**, dont 9 `network=nwn` (les
+tronçons du GR® NC1, Prony → Dumbéa) et 4 nommées sans réseau déclaré (UTNC,
+UTNC 2023, Petite boucle, Grande boucle). C'est plus qu'au dernier comptage
+(15, le 07/09) : la donnée n'est pas seulement présente, elle continue d'être
+tenue à jour dans OpenStreetMap. `Nouvelle-Calédonie` est désormais une entrée
+de `ZONES` (groupe `nc`), au même titre que le Rhône ou un département — Zoé
+peut la choisir directement dans le panneau, sans dépendre d'une recherche.
 
-Ce qu'#505 établit, séparément, avec une vraie mesure Overpass encore
-incomplète (miroirs injoignables au moment de l'essai) : la donnée existe
-bien à Nouméa — un GR NC1 signalé, plusieurs sentiers nommés dans les deux
-provinces, une zone dense au point que l'API OSM refuse la requête par boîte
-englobante — sans qu'on sache encore combien de relations sont réellement
-exploitables. Et #355 établit que même si la couverture se confirme, le MNT
-IGN ne couvre pas la Nouvelle-Calédonie : pas de profil altimétrique
-là-bas, à dire plutôt qu'à taire.
+**Ce qui reste vrai, et qu'il faut continuer à dire.** Le géocodeur de la
+recherche par lieu (#131) est l'API Adresse de la BAN, documentée dans
+`src/core/geocode.ts` comme « couvrant la France entière » au sens
+administratif — métropole et DROM, mais pas la Nouvelle-Calédonie, qui n'a pas
+de code INSEE de commune. **Taper « Nouméa » dans la recherche ne trouvera
+donc toujours rien** : ce n'est pas corrigé, et ne peut pas l'être sans changer
+de géocodeur pour une collectivité de plus. Zoé doit ouvrir la liste des zones
+et y choisir « Nouvelle-Calédonie » — un clic de plus que ce que #504
+promettait pour tout le monde, mais un chemin qui existe et qui marche,
+plutôt que rien.
 
-**Ce qui la fait renoncer, si rien ne bouge :** une zone qui n'existe dans
-aucune des trois pistes de #504 (géolocalisation, recherche, arbre de
-décision) ne lui parle toujours pas d'un système qui couvre le monde entier
-par construction — `ZONES` accepte n'importe quel sélecteur de surface
-(#505), la limite n'est pas technique, elle est dans ce qui a été
-pré-découpé.
+Et #355 tient toujours : le MNT IGN ne couvre pas la Nouvelle-Calédonie
+(revérifié en direct le 11/09 : le service rend `-99999` sur des points près
+de Nouméa). Ce n'était pas dit avant — la fiche restait muette. `ItineraryDetail`
+affiche maintenant « Relief indisponible ici » à la place du silence : aucun
+itinéraire chargé depuis cette zone n'aura de profil altimétrique, et
+Sentiers le dit plutôt que de laisser deviner un chargement resté bloqué.
 
-**L'angle qu'elle ouvre, que ni Sylvie (ne sait pas chercher) ni Anne-Marie
-(le bon système, la mauvaise couleur) ne couvrent :** que dit l'application à
-quelqu'un dont le lieu est en dehors de tout découpage prévu — silence,
-message honnête, ou pire, une réponse qui laisse croire à une zone vide alors
-que la vraie limite est administrative ? C'est une question pour #504 et
-#505, pas encore une mesure : elle demande, comme pour Théo et Jeanine,
-de suivre Zoé pas à pas plutôt que de lire le code (§10).
+**Ce qui n'a pas été rejoué pas à pas** : le parcours complet de Zoé — ouvrir
+l'application, faire défiler jusqu'à « Nouvelle-Calédonie », choisir un
+itinéraire, lire « Relief indisponible » — reste à observer avec elle plutôt
+qu'à déduire du code (§10). C'est la mesure qui manque encore, pas la donnée
+ni le mécanisme.

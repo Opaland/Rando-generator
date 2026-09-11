@@ -18,7 +18,7 @@ export const OVERPASS_MIRRORS = [
 const OVERPASS_TIMEOUT_MS = 180_000
 
 /** Regroupement des zones dans l'UI. */
-export type ZoneGroup = 'proche' | 'aura' | 'vosges'
+export type ZoneGroup = 'proche' | 'aura' | 'vosges' | 'nc'
 
 export interface OverpassZone {
   id: string
@@ -80,6 +80,35 @@ const VOSGES_DEPARTEMENTS: { id: string; label: string; name: string }[] = [
   { id: 'haute-saone', label: 'Haute-Saône', name: 'Haute-Saône' },
 ]
 
+/**
+ * Nouvelle-Calédonie (#505), demandée par Cédric pour Zoé (#504).
+ *
+ * Collectivité sui generis d'outre-mer, sans découpage départemental :
+ * `departementSelector` ne convient pas, il fixe `admin_level=6`. La limite
+ * administrative réelle est la relation OSM 3407643, à `admin_level=3` — pas
+ * 4, mesuré le 07/09 avant de conclure quoi que ce soit sur un résultat vide
+ * (CLAUDE.md §1bis : une réponse vide au mauvais niveau se lit à tort comme
+ * « rien n'est mappé ici »).
+ *
+ * Mesuré le 07/09 par Overpass (`maps.mail.ru`, les deux miroirs de
+ * l'application étant alors injoignables) : 15 relations `route=hiking`,
+ * dont 9 `network=nwn` — les tronçons du GR® NC1 (Prony → Dumbéa, 107 km,
+ * `osmc:symbol` blanc/rouge, une des trois figures dessinées par
+ * `BalisePeinte`) — et 3 nommées sans réseau déclaré (UTNC, Petite boucle,
+ * Grande boucle). Rien de spécifique à la France ne bloquait : `network=nwn`
+ * est dans la palette (#485), la relation du GR NC1 est ordonnée
+ * (`linear: sorted` chez Waymarked Trails), la donnée est réelle.
+ *
+ * Ce qui ne suit pas : le modèle de terrain de l'IGN ne couvre pas la
+ * zone (mesuré à nouveau le 11/09, `ign_rge_alti_wld` rend `-99999` sur deux
+ * points près de Nouméa) — aucun itinéraire chargé ici n'aura de profil
+ * altimétrique. `ItineraryDetail` le dit désormais au lieu de rester muet
+ * (voir le message « Relief indisponible »).
+ */
+const NOUVELLE_CALEDONIE_SELECTORS = [
+  'area["boundary"="administrative"]["admin_level"="3"]["name"="Nouvelle-Calédonie"]',
+]
+
 /** Zones prédéfinies proposées dans l'UI. */
 export const ZONES: OverpassZone[] = [
   {
@@ -119,6 +148,12 @@ export const ZONES: OverpassZone[] = [
     areaSelectors: [departementSelector(dept.name)],
     group: 'vosges' as const,
   })),
+  {
+    id: 'nouvelle-caledonie',
+    label: 'Nouvelle-Calédonie',
+    areaSelectors: NOUVELLE_CALEDONIE_SELECTORS,
+    group: 'nc',
+  },
 ]
 
 /** Grand itinéraire mis en avant, chargé par sa ref (recherche France entière). */

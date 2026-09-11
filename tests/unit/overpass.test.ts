@@ -72,6 +72,21 @@ describe('buildZoneQuery', () => {
     const ids = ZONES.map((z) => z.id)
     expect(new Set(ids).size).toBe(ids.length)
   })
+
+  /**
+   * Nouvelle-Calédonie (#505) : une collectivité sui generis, sans
+   * département — `admin_level=3`, pas 6 comme le reste de `ZONES`, ni 4.
+   * Mesuré le 07/09 sur la relation OSM 3407643 : interroger le niveau 4
+   * rend un résultat vide qui se lit à tort comme « rien n'est mappé ici »
+   * (CLAUDE.md §1bis, une réponse vide indiscernable d'une vraie absence).
+   */
+  it('la Nouvelle-Calédonie est une zone à admin_level=3, sans découpage départemental (#505)', () => {
+    const q = buildZoneQuery('nouvelle-caledonie')
+    expect(q).toContain('"admin_level"="3"')
+    expect(q).toContain('"name"="Nouvelle-Calédonie"')
+    const zone = ZONES.find((z) => z.id === 'nouvelle-caledonie')
+    expect(zone?.group).toBe('nc')
+  })
 })
 
 describe('FEATURED_ROUTES', () => {
@@ -905,6 +920,27 @@ describe('les libellés de zone se suffisent à eux-mêmes', () => {
    */
   it('garde son identifiant, qui vit en base', () => {
     expect(ZONES.some((zone) => zone.id === 'trois')).toBe(true)
+  })
+})
+
+/**
+ * Un groupe de zone se lit à deux endroits qui ne changent jamais ensemble :
+ * `ZONES` le porte, `ZonePicker.GROUPES` lui donne un titre affiché. Le
+ * panneau ne rend que `ZONES.filter((z) => z.group === groupe.id)` **pour
+ * chaque groupe de `GROUPES`** — une zone dont le groupe n'y figure pas ne
+ * s'affiche jamais, et aucun test qui ne regarde que l'un des deux fichiers
+ * ne peut le voir (CLAUDE.md §4ter).
+ */
+describe('chaque groupe de ZONES a un titre dans le panneau (#4ter)', () => {
+  it('ZonePicker.GROUPES couvre tous les groupes réellement utilisés', async () => {
+    const { GROUPES } = await import('../../src/components/zoneGroupes.ts')
+    const groupesUtilises = new Set(ZONES.map((zone) => zone.group))
+    const groupesTitres = new Set(GROUPES.map((g) => g.id))
+    const orphelins = [...groupesUtilises].filter((g) => !groupesTitres.has(g))
+    expect(
+      orphelins,
+      `groupe(s) sans titre dans le panneau : ${orphelins.join(', ')} — leurs zones ne s'affichent jamais`,
+    ).toEqual([])
   })
 })
 

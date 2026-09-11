@@ -280,6 +280,22 @@ export async function mockElevation(page: Page): Promise<void> {
   })
 }
 
+/**
+ * Le service répond, mais hors de sa couverture — le cas mesuré le 11/09
+ * pour la Nouvelle-Calédonie (#505) : `-99999` sur chaque point, la valeur
+ * documentée par l'IGN pour « pas de donnée ici », et non une panne réseau.
+ * `mockElevation` ne peut pas servir à ça : il renvoie toujours des mètres
+ * exploitables.
+ */
+export async function mockElevationHorsCouverture(page: Page): Promise<void> {
+  await page.route('https://data.geopf.fr/altimetrie/**', (route) => {
+    const url = new URL(route.request().url())
+    const lon = (url.searchParams.get('lon') ?? '').split('|')
+    const elevations = lon.map(() => ({ z: -99999 }))
+    void route.fulfill({ json: { elevations } })
+  })
+}
+
 /** Fixture réduite : seule la relation GR 7 reste (pour tester l'actualisation). */
 export function pilatGrOnly(): unknown {
   const data = pilatFixture as { elements: { id: number }[] }

@@ -64,7 +64,10 @@ lit pour chacune.
 ## Utilisation
 
 1. **Charger une zone** : Rhône + Métropole de Lyon, Loire, PNR du Pilat, les
-   trois, ou **n'importe quel département d'Auvergne-Rhône-Alpes** — ou encore
+   trois, **n'importe quel département d'Auvergne-Rhône-Alpes**, le massif
+   vosgien département par département, ou la **Nouvelle-Calédonie**
+   (GR® NC1 et itinéraires locaux ; sans profil altimétrique, le MNT de
+   l'IGN ne la couvre pas — la fiche le dit) — ou encore
    un ref d'itinéraire (ex. « GR 20 »), avec quelques **grands itinéraires**
    proposés en un clic (GR 65 Saint-Jacques, GR 70 Stevenson, GR 5 Alpes…),
    cherchés sur la France entière puisqu'aucune zone ne les contient. Sont
