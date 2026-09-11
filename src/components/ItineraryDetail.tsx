@@ -680,6 +680,25 @@ export function ItineraryDetail() {
             {elevationError}
           </p>
         )}
+        {/*
+          Le service a répondu — ce n'est pas `elevationError` — mais aucun
+          point n'a d'altitude exploitable : `statsCumulees` rend alors
+          `null` (#355, #505). Sans ce message, la section restait muette,
+          ce qui se lit comme un chargement resté bloqué et non comme une
+          absence de donnée — le cas mesuré le 11/09 pour la
+          Nouvelle-Calédonie, hors de la couverture du modèle de terrain de
+          l'IGN.
+        */}
+        {elevationProfile && !stats && (
+          <p
+            className={styles.hint}
+            role="status"
+            data-testid="elevation-indisponible"
+          >
+            Relief indisponible ici : le modèle numérique de terrain de
+            l’IGN ne couvre pas cette zone.
+          </p>
+        )}
         {elevationProfile && stats && (
           <>
             {/* `key` : changer d'itinéraire remet à zéro le zoom et le

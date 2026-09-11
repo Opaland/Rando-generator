@@ -2,6 +2,7 @@ import { describe, it } from 'vitest'
 import {
   OVERPASS_MIRRORS,
   buildAroundQuery,
+  buildZoneQuery,
   fetchOverpass,
   parseOverpassResponse,
   type OverpassResponse,
@@ -1356,4 +1357,55 @@ out ids;`
       ligne('a rien dans OpenStreetMap, et c’est à dire plutôt qu’à corriger.')
     },
   )
+
+  /**
+   * Nouvelle-Calédonie (#505) : le comptage du 07/09 avait été fait dans un
+   * fil de conversation, hors de ce fichier — exactement ce que #445 avait
+   * corrigé pour les autres mesures (sprint 92, cf. le commentaire d'en-tête
+   * de ce fichier). Rejoué ici avec `buildZoneQuery`, la requête que
+   * `trancheZone.ts` exécute réellement pour cette zone, et non une copie
+   * écrite à la main (§4bis) : c'est le zéro-le-plus-honnête possible, si
+   * jamais le nombre a changé depuis.
+   */
+  it('13 — Nouvelle-Calédonie : le compte du 07/09, rejoué (#505)', { timeout: 300_000 }, async () => {
+    titre('#505 — la zone Nouvelle-Calédonie vaut-elle toujours la peine ?')
+    let brut: OverpassResponse
+    try {
+      brut = await mesurer(buildZoneQuery('nouvelle-caledonie'))
+    } catch (erreur) {
+      ligne(`échec : ${(erreur as Error).message.split('\n')[0]}`)
+      ligne('Overpass n’a pas répondu — la question reste ouverte.')
+      return
+    }
+    const elements = elementsDe(brut)
+    const relations = elements.filter((e) => e.type === 'relation')
+    const avecNetwork = relations.filter((r) =>
+      /^[lrni]wn$/.test(r.tags?.['network'] ?? ''),
+    )
+    const avecSymbole = relations.filter(
+      (r) => r.tags?.['osmc:symbol'] !== undefined,
+    )
+    const nommees = relations.filter(
+      (r) => r.tags?.['name'] !== undefined || r.tags?.['ref'] !== undefined,
+    )
+    ligne(`relations route=hiking|foot|walking|pilgrimage : ${String(relations.length)}`)
+    ligne(`   dont un network=lwn/rwn/nwn/iwn            : ${String(avecNetwork.length)}`)
+    ligne(`   dont un osmc:symbol                        : ${String(avecSymbole.length)}`)
+    ligne(`   dont un nom ou une ref                      : ${String(nommees.length)}`)
+    ligne('')
+    for (const r of relations) {
+      const nom = r.tags?.['name'] ?? r.tags?.['ref'] ?? '(sans nom)'
+      ligne(
+        `   network=${(r.tags?.['network'] ?? '—').padEnd(4)} ` +
+          `symbole=${r.tags?.['osmc:symbol'] !== undefined ? 'oui' : 'non '}  ${nom}`,
+      )
+    }
+    ligne('')
+    ligne('À lire : le 07/09, ce même comptage rendait 15 relations, 9 avec')
+    ligne('network=nwn (les tronçons du GR® NC1) et 3 nommées sans réseau')
+    ligne('déclaré (UTNC, Petite boucle, Grande boucle). Un nombre proche de')
+    ligne('celui-là confirme que la zone livrée dans ZONES est toujours à')
+    ligne('jour ; un effondrement demanderait de revérifier avant d’en tirer')
+    ligne('une conclusion (§1bis : une réponse vide n’est pas une absence).')
+  })
 })

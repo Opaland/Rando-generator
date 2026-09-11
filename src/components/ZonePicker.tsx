@@ -1,12 +1,9 @@
 import { Fragment, useEffect, useState, type FormEvent } from 'react'
-import {
-  FEATURED_ROUTES,
-  ZONES,
-  type ZoneGroup,
-} from '../core/overpass.ts'
+import { FEATURED_ROUTES, ZONES } from '../core/overpass.ts'
 import { formatOctets } from '../lib/format.ts'
 import { useDefilerVersAlerte } from '../lib/useDefilerVersAlerte.ts'
 import { useAppStore } from '../store/appStore.ts'
+import { GROUPES } from './zoneGroupes.ts'
 import styles from './ZonePicker.module.css'
 
 const STAGE_TEXT: Record<'requesting' | 'retrying' | 'processing', string> = {
@@ -16,22 +13,6 @@ const STAGE_TEXT: Record<'requesting' | 'retrying' | 'processing', string> = {
     'Premier serveur injoignable, nouvelle tentative sur un second serveur…',
   processing: 'Réponse reçue, traitement des tracés…',
 }
-
-/**
- * Les groupes de zones, dans l'ordre où ils s'affichent.
- *
- * Deux blocs identiques étaient copiés-collés — le même `<p>`, le même
- * `<div role="group">`, le même bouton, à un filtre près. Ajouter le massif
- * vosgien (#286) en aurait fait un troisième, et la troisième copie est
- * toujours celle qui diverge (CLAUDE.md §4). L'identifiant du groupe sert
- * aussi d'ancre `aria-labelledby`, ce qui garantit qu'un groupe ajouté
- * ici arrive nommé pour un lecteur d'écran, et pas seulement peint.
- */
-const GROUPES: { id: ZoneGroup; titre: string }[] = [
-  { id: 'proche', titre: 'Autour de chez moi' },
-  { id: 'aura', titre: 'Auvergne-Rhône-Alpes, par département' },
-  { id: 'vosges', titre: 'Massif vosgien, par département' },
-]
 
 export function ZonePicker() {
   const zoneKey = useAppStore((s) => s.zoneKey)
