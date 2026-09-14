@@ -864,6 +864,34 @@ aside :is(button, label, p, li, h2, h3, span, output) {
   overflow-wrap: anywhere;
 }
 
+/*
+  Cette règle avait un effet de bord non voulu : `aside button` (deux
+  sélecteurs d'élément) a une spécificité plus élevée que le simple
+  `button` du plancher tactile posé plus haut sous `@media (pointer:
+  coarse)`, et gagne donc dans tout `<aside>` — quel que soit l'ordre. Le
+  plancher de 44 px de large (#363) s'y trouvait annulé en silence :
+  mesuré sur un bouton de zone, `min-width` calculé rendait `0px` au lieu
+  de `44px` (#527).
+
+  Aucun bouton n'en souffre aujourd'hui — la grille de `ZonePicker` les
+  rend déjà larges de 165 à 268 px — mais la garde elle-même était morte,
+  prête à laisser passer un futur bouton étroit sans le signaler.
+
+  Restaurée ici avec la même spécificité que la règle ci-dessus (deux
+  sélecteurs d'élément) : elle gagne parce qu'elle vient **après** dans la
+  feuille, pas parce qu'elle serait plus spécifique. Seul `button` est
+  repris, pas `label`, `p`, `li`, `h2`, `h3`, `output` : ce sont les seuls
+  éléments de la liste ci-dessus qui soient aussi des cibles tactiles, et
+  44 px reste bien plus petit que tout libellé qui posait problème pour
+  #173 (jusqu'à 395 px) — le rétrécissement qu'#173 protège n'est donc pas
+  repris en sens inverse.
+*/
+@media (pointer: coarse) {
+  aside button {
+    min-width: var(--cible-mini);
+  }
+}
+
 /* Réservé aux lecteurs d'écran : visible pour eux, absent de l'écran.
    Un `display: none` les priverait aussi de l'information. */
 .sr-only {
