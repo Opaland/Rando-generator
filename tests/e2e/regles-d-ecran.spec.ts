@@ -477,248 +477,288 @@ for (const vue of LARGEURS) {
       })
 
       /**
-       * Question 6. **Ce qui répond à une action est-il là où la personne
-       * regarde ?**
+       * Les quatre questions ci-dessous vivaient dans quatre `test()`
+       * séparés, chacun rejouant `atteindre()` depuis zéro pour la même
+       * paire (largeur, état). Mesuré le 14/09 (#491, le fil resté ouvert
+       * après le reste de l'issue) : 128 appels réels là où 32 auraient
+       * rendu la même information, et 331,9 s sur les 386 s du fichier dans
+       * cette seule redondance.
        *
-       * Zoé a essayé Nouméa depuis un portable et n'a rien vu (#497). Le
-       * message « aucun itinéraire trouvé » existait, il était même assertée
-       * ici — mais 474 px sous la ligne de flottaison, et 945 px sous le
-       * bouton qui l'avait provoqué.
+       * `expect.soft` — et `expect.soft.poll` pour les deux qui convergent —
+       * gardent la propriété qui comptait dans la version à quatre tests :
+       * les quatre défauts possibles sont **tous** rapportés dans un même
+       * run. Une assertion dure aurait arrêté le test au premier échec et
+       * caché les trois autres, ce qui aurait affaibli §6quinquies (« une
+       * sonde se juge sur ce qu'elle trouve »). Vérifié à la main avant
+       * d'y toucher : une assertion `soft` ratée n'interrompt pas
+       * l'exécution du test, et `soft.poll` conserve la même convergence
+       * par intervalles que `poll` (§6ter) au lieu de figer une photo.
        *
-       * Cette sonde était **verte dessus**, et pour la raison exacte que le
-       * §1bis décrit : l'état « zone sans itinéraire » se contentait d'un
-       * `toBeVisible()`, qui répond « oui » pour un élément parfaitement hors
-       * de l'écran. Le commentaire qui l'accompagnait disait « met le message
-       * à l'écran » — un §4bis, une justification qui affirme et qui était
-       * fausse.
-       *
-       * La règle porte sur **tout `role="alert"`**, pas sur ce message-là :
-       * une alerte est par définition ce qu'on montre à quelqu'un qui n'a
-       * rien demandé de plus, et une alerte hors cadre n'alerte personne.
+       * Ce que ce regroupement ne change pas : la fixture `page` standard
+       * reste seule en jeu, `atteindre()` n'est pas modifiée, aucun contexte
+       * n'est fabriqué à la main — donc pas de perte de la trace automatique
+       * à la première reprise en CI, et pas de risque sur la distribution
+       * des tests entre exécutants.
        */
-      test('une alerte est dans la fenêtre, et peinte', async ({ page }) => {
+      test('les quatre questions d’écran', async ({ page }) => {
         await atteindre(page, etat, vue.tactile)
-        /*
-          `expect.poll` parce qu'un `scrollIntoView` court après le rendu :
-          une mesure unique lirait la position d'avant le défilement (§6ter).
-          Une alerte réellement hors cadre, elle, y reste.
-        */
-        await expect
-          .poll(
-            async () =>
-              await page.evaluate(() =>
-                Array.from(document.querySelectorAll('[role="alert"]'))
-                  .filter((el) => {
-                    const r = el.getBoundingClientRect()
-                    return r.width > 0 && r.height > 0
-                  })
-                  .map((el) => {
-                    const r = el.getBoundingClientRect()
-                    const x = r.left + r.width / 2
-                    const y = r.top + r.height / 2
-                    const peint = document.elementFromPoint(x, y)
-                    return {
-                      quoi:
-                        el.getAttribute('data-testid') ??
-                        el.textContent.slice(0, 40),
-                      haut: Math.round(r.top),
-                      bas: Math.round(r.bottom),
-                      fenetre: window.innerHeight,
-                      peinte: peint !== null && el.contains(peint),
-                    }
-                  })
-                  .filter(
-                    (m) =>
-                      m.haut < 0 || m.bas > m.fenetre || !m.peinte,
+
+        await test.step(
+          'une alerte est dans la fenêtre, et peinte',
+          async () => {
+            /*
+              Question 6. Ce qui répond à une action est-il là où la personne
+              regarde ?
+
+              Zoé a essayé Nouméa depuis un portable et n'a rien vu (#497).
+              Le message « aucun itinéraire trouvé » existait, il était même
+              assertée ici — mais 474 px sous la ligne de flottaison, et
+              945 px sous le bouton qui l'avait provoqué.
+
+              Cette sonde était **verte dessus**, et pour la raison exacte
+              que le §1bis décrit : l'état « zone sans itinéraire » se
+              contentait d'un `toBeVisible()`, qui répond « oui » pour un
+              élément parfaitement hors de l'écran. Le commentaire qui
+              l'accompagnait disait « met le message à l'écran » — un
+              §4bis, une justification qui affirme et qui était fausse.
+
+              La règle porte sur **tout `role="alert"`**, pas sur ce
+              message-là : une alerte est par définition ce qu'on montre à
+              quelqu'un qui n'a rien demandé de plus, et une alerte hors
+              cadre n'alerte personne.
+
+              `.poll` parce qu'un `scrollIntoView` court après le rendu :
+              une mesure unique lirait la position d'avant le défilement
+              (§6ter). Une alerte réellement hors cadre, elle, y reste.
+            */
+            await expect
+              .soft.poll(
+                async () =>
+                  await page.evaluate(() =>
+                    Array.from(document.querySelectorAll('[role="alert"]'))
+                      .filter((el) => {
+                        const r = el.getBoundingClientRect()
+                        return r.width > 0 && r.height > 0
+                      })
+                      .map((el) => {
+                        const r = el.getBoundingClientRect()
+                        const x = r.left + r.width / 2
+                        const y = r.top + r.height / 2
+                        const peint = document.elementFromPoint(x, y)
+                        return {
+                          quoi:
+                            el.getAttribute('data-testid') ??
+                            el.textContent.slice(0, 40),
+                          haut: Math.round(r.top),
+                          bas: Math.round(r.bottom),
+                          fenetre: window.innerHeight,
+                          peinte: peint !== null && el.contains(peint),
+                        }
+                      })
+                      .filter(
+                        (m) =>
+                          m.haut < 0 || m.bas > m.fenetre || !m.peinte,
+                      ),
                   ),
-              ),
-            {
-              message:
-                'alertes hors de la fenêtre ou non peintes — personne ne les voit',
-            },
-          )
-          .toEqual([])
-      })
-
-      /**
-       * Question 5. Un débordement horizontal de la page entière n'est jamais
-       * voulu : il vient d'un mot trop long, d'un tableau, d'une largeur en
-       * dur. Il donne un défilement latéral que personne ne cherche et qui
-       * déplace tout le reste.
-       */
-      test('rien ne déborde en largeur, ni la page ni ses panneaux', async ({
-        page,
-      }) => {
-        await atteindre(page, etat, vue.tactile)
-        /*
-          On boucle sur l'état final voulu plutôt que de prendre une photo
-          (CLAUDE.md §6ter et §1bis).
-
-          Le 25/08, ce test est tombé **une fois**, sur « PC, filtres
-          ouverts », et **uniquement en suite complète** : relancé seul, puis
-          sur son fichier entier, puis avec le champ rempli d'une longue
-          phrase, il n'a plus jamais rien trouvé — page à 1 280 px, zéro
-          panneau en débordement. C'est la signature de cette famille : la
-          fenêtre ne s'ouvre que sous charge, quand une mesure tombe avant
-          que la mise en page ne se soit posée.
-
-          Ce n'est pas une assertion amollie. Un débordement **réel** est
-          permanent : il survit à toutes les tentatives et fait échouer la
-          convergence, message et chiffres compris. Ce que la boucle retire,
-          c'est le seul cas où l'ancienne version avait tort — l'instant.
-        */
-        await expect
-          .poll(async () => await debordementsEnLargeur(page), {
-            message: 'débordements en largeur qui ne se résorbent pas',
-          })
-          .toEqual([])
-      })
-
-      /**
-       * Question 2. Chaque dessin vectoriel est rendu au rapport où il a été
-       * composé — sauf s'il déclare expressément le contraire par un
-       * `preserveAspectRatio="none"` **et** une boîte au bon rapport, ce qui
-       * n'est pas une exception mais la façon correcte d'exagérer une échelle.
-       *
-       * Le profil altimétrique tombait exactement là : `viewBox` 3,2 rendu
-       * 4,9 pendant des semaines.
-       */
-      test('aucun dessin vectoriel n’est écrasé', async ({ page }) => {
-        await atteindre(page, etat, vue.tactile)
-        const ecrases = await page.evaluate(() => {
-          const mauvais: { id: string; rendu: number; dessin: number }[] = []
-          for (const svg of Array.from(document.querySelectorAll('svg'))) {
-            const vb = svg.getAttribute('viewBox')
-            if (!vb) continue
-            const [, , l, h] = vb.split(/[\s,]+/).map(Number)
-            if (!l || !h) continue
-            const r = svg.getBoundingClientRect()
-            if (r.width < 8 || r.height < 8) continue
-            const rendu = r.width / r.height
-            const dessin = l / h
-            if (rendu / dessin < 0.9 || rendu / dessin > 1.1) {
-              mauvais.push({
-                id:
-                  svg.getAttribute('data-testid') ??
-                  svg.getAttribute('aria-label')?.slice(0, 30) ??
-                  'svg',
-                rendu: Math.round(rendu * 100) / 100,
-                dessin: Math.round(dessin * 100) / 100,
-              })
-            }
-          }
-          return mauvais
-        })
-        expect(ecrases, `dessins écrasés : ${JSON.stringify(ecrases)}`).toEqual(
-          [],
-        )
-      })
-
-      /**
-       * Question 4. Deux seuils, parce que les normes en donnent deux — et
-       * qu'un seuil unique aurait été soit inapplicable, soit inutile.
-       *
-       * - **44 px sous le point de rupture** : c'est un doigt. WCAG 2.5.5
-       *   (niveau AAA) le pose, l'audit mobile de ce dépôt aussi, et la barre
-       *   d'onglets le respecte déjà.
-       * - **24 px au-dessus** : c'est un curseur. WCAG 2.5.8, ajouté en 2.2 au
-       *   niveau AA précisément parce que 44 px partout dévaste une interface
-       *   dense de bureau.
-       *
-       * Ce sont des seuils de **présentation** et ils viennent d'une norme
-       * publiée, pas de mon jugement — c'est la différence que CLAUDE.md §2
-       * demande de faire.
-       *
-       * Deux exclusions, et il faut dire pourquoi :
-       *
-       * - **un lien dans une phrase** n'est pas une cible tactile mais du texte
-       *   cliquable ; l'exiger à 44 px casserait le paragraphe, et WCAG 2.5.8
-       *   l'exclut nommément ;
-       * - **les liens d'attribution de MapLibre** — même raison de fond, plus
-       *   une raison technique : ce sont des boîtes en ligne, sur lesquelles
-       *   `min-height` n'a aucun effet.
-       *
-       * Les **boutons** de MapLibre, eux, sont dans le compte : zoom, boussole,
-       * bascule d'attribution. Ils sont dans notre DOM et sous notre doigt, et
-       * ils étaient à 29 px. Ce qui reste listé sans bloquer est donc réduit
-       * aux liens d'attribution — assez peu pour que la liste garde un sens.
-       *
-       * ## Ce que la question ne voyait pas jusqu'au 25/08
-       *
-       * Elle interrogeait `button, a[href], summary, [role="button"],
-       * input[type="range"]`. **Ni `select`, ni `input` hors `range`, ni
-       * `textarea`** : vingt-cinq commandes du dépôt, dont les seize du
-       * panneau de filtres, n'avaient jamais été mesurées. Elles se sont
-       * révélées toutes à 44 px — le plancher CSS les tenait déjà — mais
-       * c'était par chance, pas par surveillance.
-       *
-       * **La cible d'une case à cocher est son `label`, pas la case.** Une
-       * case fait treize pixels ; cliquer son étiquette la bascule, et c'est
-       * garanti par HTML, pas par une convention. Mesurer la case seule
-       * rapporterait un défaut là où le doigt a de la place.
-       *
-       * Cette indulgence s'arrête là. Pour un `select`, un champ de texte ou
-       * un `textarea`, cliquer l'étiquette **donne le focus sans ouvrir la
-       * liste ni poser le curseur** : ce qu'on vise reste la commande. Leur
-       * accorder la boîte de l'étiquette aurait déclaré conforme un menu de
-       * douze pixels posé à côté d'un long libellé.
-       */
-      test('les cibles font la taille du geste qui les vise', async ({
-        page,
-      }) => {
-        await atteindre(page, etat, vue.tactile)
-        // Le geste décide, pas la place : une tablette large se touche.
-        const plancherHaut = vue.tactile ? 44 : 24
-        const resultat = await page.evaluate(
-          ({ plancher }: { plancher: number }) => {
-            const notres: { quoi: string; l: number; h: number }[] = []
-            const maplibre: { quoi: string; l: number; h: number }[] = []
-            const cibles = document.querySelectorAll(
-              'button, a[href], summary, [role="button"], select, textarea, input',
-            )
-            for (const el of Array.from(cibles)) {
-              const propre = el.getBoundingClientRect()
-              if (propre.width < 2 || propre.height < 2) continue
-              const style = getComputedStyle(el)
-              if (style.visibility === 'hidden' || style.display === 'none') {
-                continue
-              }
-              if (el.tagName === 'A' && el.closest('p, li, span')) continue
-              // Voir plus haut : seules la case et le bouton radio héritent
-              // de la boîte de leur étiquette.
-              const coche =
-                el instanceof HTMLInputElement &&
-                (el.type === 'checkbox' || el.type === 'radio')
-              const etiquette = coche ? el.closest('label') : null
-              const r = (etiquette ?? el).getBoundingClientRect()
-              if (r.height >= plancher && r.width >= plancher) continue
-              const fiche = {
-                quoi:
-                  el.getAttribute('data-testid') ??
-                  el.getAttribute('aria-label') ??
-                  (etiquette ?? el).textContent.trim().slice(0, 28),
-                l: Math.round(r.width),
-                h: Math.round(r.height),
-              }
-              if (el.closest('.maplibregl-ctrl')) maplibre.push(fiche)
-              else notres.push(fiche)
-            }
-            return { notres, maplibre }
+                {
+                  message:
+                    'alertes hors de la fenêtre ou non peintes — personne ne les voit',
+                },
+              )
+              .toEqual([])
           },
-          { plancher: plancherHaut },
         )
 
-        // Ce que la bibliothèque rend, relevé mais pas bloquant : voir plus haut.
-        if (resultat.maplibre.length > 0) {
-          console.log(
-            `[maplibre ${vue.nom}] ${String(resultat.maplibre.length)} commandes sous ${String(plancherHaut)} px : ${JSON.stringify(resultat.maplibre)}`,
-          )
-        }
+        await test.step(
+          'rien ne déborde en largeur, ni la page ni ses panneaux',
+          async () => {
+            /*
+              Question 5. Un débordement horizontal de la page entière n'est
+              jamais voulu : il vient d'un mot trop long, d'un tableau,
+              d'une largeur en dur. Il donne un défilement latéral que
+              personne ne cherche et qui déplace tout le reste.
 
-        expect(
-          resultat.notres,
-          `cibles sous ${String(plancherHaut)} px : ${JSON.stringify(resultat.notres)}`,
-        ).toEqual([])
+              On boucle sur l'état final voulu plutôt que de prendre une
+              photo (CLAUDE.md §6ter et §1bis).
+
+              Le 25/08, ce test est tombé **une fois**, sur « PC, filtres
+              ouverts », et **uniquement en suite complète** : relancé seul,
+              puis sur son fichier entier, puis avec le champ rempli d'une
+              longue phrase, il n'a plus jamais rien trouvé — page à
+              1 280 px, zéro panneau en débordement. C'est la signature de
+              cette famille : la fenêtre ne s'ouvre que sous charge, quand
+              une mesure tombe avant que la mise en page ne se soit posée.
+
+              Ce n'est pas une assertion amollie. Un débordement **réel**
+              est permanent : il survit à toutes les tentatives et fait
+              échouer la convergence, message et chiffres compris. Ce que
+              la boucle retire, c'est le seul cas où l'ancienne version
+              avait tort — l'instant.
+            */
+            await expect
+              .soft.poll(async () => await debordementsEnLargeur(page), {
+                message: 'débordements en largeur qui ne se résorbent pas',
+              })
+              .toEqual([])
+          },
+        )
+
+        await test.step('aucun dessin vectoriel n’est écrasé', async () => {
+          /*
+            Question 2. Chaque dessin vectoriel est rendu au rapport où il a
+            été composé — sauf s'il déclare expressément le contraire par un
+            `preserveAspectRatio="none"` **et** une boîte au bon rapport, ce
+            qui n'est pas une exception mais la façon correcte d'exagérer
+            une échelle.
+
+            Le profil altimétrique tombait exactement là : `viewBox` 3,2
+            rendu 4,9 pendant des semaines.
+          */
+          const ecrases = await page.evaluate(() => {
+            const mauvais: { id: string; rendu: number; dessin: number }[] =
+              []
+            for (const svg of Array.from(document.querySelectorAll('svg'))) {
+              const vb = svg.getAttribute('viewBox')
+              if (!vb) continue
+              const [, , l, h] = vb.split(/[\s,]+/).map(Number)
+              if (!l || !h) continue
+              const r = svg.getBoundingClientRect()
+              if (r.width < 8 || r.height < 8) continue
+              const rendu = r.width / r.height
+              const dessin = l / h
+              if (rendu / dessin < 0.9 || rendu / dessin > 1.1) {
+                mauvais.push({
+                  id:
+                    svg.getAttribute('data-testid') ??
+                    svg.getAttribute('aria-label')?.slice(0, 30) ??
+                    'svg',
+                  rendu: Math.round(rendu * 100) / 100,
+                  dessin: Math.round(dessin * 100) / 100,
+                })
+              }
+            }
+            return mauvais
+          })
+          expect
+            .soft(ecrases, `dessins écrasés : ${JSON.stringify(ecrases)}`)
+            .toEqual([])
+        })
+
+        await test.step(
+          'les cibles font la taille du geste qui les vise',
+          async () => {
+            /*
+              Question 4. Deux seuils, parce que les normes en donnent deux
+              — et qu'un seuil unique aurait été soit inapplicable, soit
+              inutile.
+
+              - **44 px sous le point de rupture** : c'est un doigt. WCAG
+                2.5.5 (niveau AAA) le pose, l'audit mobile de ce dépôt
+                aussi, et la barre d'onglets le respecte déjà.
+              - **24 px au-dessus** : c'est un curseur. WCAG 2.5.8, ajouté
+                en 2.2 au niveau AA précisément parce que 44 px partout
+                dévaste une interface dense de bureau.
+
+              Ce sont des seuils de **présentation** et ils viennent d'une
+              norme publiée, pas de mon jugement — c'est la différence que
+              CLAUDE.md §2 demande de faire.
+
+              Deux exclusions, et il faut dire pourquoi :
+
+              - **un lien dans une phrase** n'est pas une cible tactile mais
+                du texte cliquable ; l'exiger à 44 px casserait le
+                paragraphe, et WCAG 2.5.8 l'exclut nommément ;
+              - **les liens d'attribution de MapLibre** — même raison de
+                fond, plus une raison technique : ce sont des boîtes en
+                ligne, sur lesquelles `min-height` n'a aucun effet.
+
+              Les **boutons** de MapLibre, eux, sont dans le compte : zoom,
+              boussole, bascule d'attribution. Ils sont dans notre DOM et
+              sous notre doigt, et ils étaient à 29 px. Ce qui reste listé
+              sans bloquer est donc réduit aux liens d'attribution — assez
+              peu pour que la liste garde un sens.
+
+              Ce que la question ne voyait pas jusqu'au 25/08 : elle
+              interrogeait `button, a[href], summary, [role="button"],
+              input[type="range"]`. **Ni `select`, ni `input` hors `range`,
+              ni `textarea`** : vingt-cinq commandes du dépôt, dont les
+              seize du panneau de filtres, n'avaient jamais été mesurées.
+              Elles se sont révélées toutes à 44 px — le plancher CSS les
+              tenait déjà — mais c'était par chance, pas par surveillance.
+
+              **La cible d'une case à cocher est son `label`, pas la
+              case.** Une case fait treize pixels ; cliquer son étiquette
+              la bascule, et c'est garanti par HTML, pas par une
+              convention. Mesurer la case seule rapporterait un défaut là
+              où le doigt a de la place.
+
+              Cette indulgence s'arrête là. Pour un `select`, un champ de
+              texte ou un `textarea`, cliquer l'étiquette **donne le focus
+              sans ouvrir la liste ni poser le curseur** : ce qu'on vise
+              reste la commande. Leur accorder la boîte de l'étiquette
+              aurait déclaré conforme un menu de douze pixels posé à côté
+              d'un long libellé.
+            */
+            // Le geste décide, pas la place : une tablette large se touche.
+            const plancherHaut = vue.tactile ? 44 : 24
+            const resultat = await page.evaluate(
+              ({ plancher }: { plancher: number }) => {
+                const notres: { quoi: string; l: number; h: number }[] = []
+                const maplibre: { quoi: string; l: number; h: number }[] = []
+                const cibles = document.querySelectorAll(
+                  'button, a[href], summary, [role="button"], select, textarea, input',
+                )
+                for (const el of Array.from(cibles)) {
+                  const propre = el.getBoundingClientRect()
+                  if (propre.width < 2 || propre.height < 2) continue
+                  const style = getComputedStyle(el)
+                  if (
+                    style.visibility === 'hidden' ||
+                    style.display === 'none'
+                  ) {
+                    continue
+                  }
+                  if (el.tagName === 'A' && el.closest('p, li, span')) continue
+                  // Voir plus haut : seules la case et le bouton radio
+                  // héritent de la boîte de leur étiquette.
+                  const coche =
+                    el instanceof HTMLInputElement &&
+                    (el.type === 'checkbox' || el.type === 'radio')
+                  const etiquette = coche ? el.closest('label') : null
+                  const r = (etiquette ?? el).getBoundingClientRect()
+                  if (r.height >= plancher && r.width >= plancher) continue
+                  const fiche = {
+                    quoi:
+                      el.getAttribute('data-testid') ??
+                      el.getAttribute('aria-label') ??
+                      (etiquette ?? el).textContent.trim().slice(0, 28),
+                    l: Math.round(r.width),
+                    h: Math.round(r.height),
+                  }
+                  if (el.closest('.maplibregl-ctrl')) maplibre.push(fiche)
+                  else notres.push(fiche)
+                }
+                return { notres, maplibre }
+              },
+              { plancher: plancherHaut },
+            )
+
+            // Ce que la bibliothèque rend, relevé mais pas bloquant : voir
+            // plus haut.
+            if (resultat.maplibre.length > 0) {
+              console.log(
+                `[maplibre ${vue.nom}] ${String(resultat.maplibre.length)} commandes sous ${String(plancherHaut)} px : ${JSON.stringify(resultat.maplibre)}`,
+              )
+            }
+
+            expect
+              .soft(
+                resultat.notres,
+                `cibles sous ${String(plancherHaut)} px : ${JSON.stringify(resultat.notres)}`,
+              )
+              .toEqual([])
+          },
+        )
       })
     })
   }
