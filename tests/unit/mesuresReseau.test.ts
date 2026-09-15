@@ -1408,4 +1408,125 @@ out ids;`
     ligne('jour ; un effondrement demanderait de revérifier avant d’en tirer')
     ligne('une conclusion (§1bis : une réponse vide n’est pas une absence).')
   })
+
+  /**
+   * La troisième question de #333, restée sans réponse depuis le 27/08 :
+   * « quelle part de géométrie deux variantes partagent ». La mesure 6
+   * l'avait écartée faute de savoir où chercher — « à faire quand on saura
+   * qu'il y a des variantes à mesurer » — mais son propre résultat répond
+   * déjà à cette condition : la famille GR 76 (Rhône), un tronc et quatre
+   * variantes lettrées, aucune rattachée par superroute.
+   *
+   * Chaque relation est demandée avec ses chemins en toute géométrie
+   * (`way(r); out geom;`), et la longueur vient de `polylineLengthMeters`
+   * — la même fonction que l'application, pas une réimplémentation qui
+   * finirait par ne plus mesurer la même chose que le code (§4ter, la leçon
+   * de #303). Le partage se lit à l'identifiant de chemin : deux relations
+   * qui suivent le même tronçon de terrain se réfèrent au même `way`, ce
+   * n'est pas une distance à estimer.
+   */
+  it(
+    '14 — la géométrie partagée par les variantes du GR 76 (#333)',
+    { timeout: 300_000 },
+    async () => {
+      titre('#333 — GR 76 et ses quatre variantes lettrées : combien partagent le tronc')
+
+      const RELATIONS_GR76 = {
+        tronc: 14316345, // GR 76
+        variantes: [14313152, 14313151, 14313047, 14310467], // GR 76 A, B, C, D
+      }
+      const idsDemandes = [RELATIONS_GR76.tronc, ...RELATIONS_GR76.variantes]
+
+      let brut: OverpassResponse
+      try {
+        brut = await mesurer(`[out:json][timeout:180];
+relation(id:${idsDemandes.join(',')});
+out body;
+way(r);
+out geom;`)
+      } catch (erreur) {
+        ligne(`échec : ${(erreur as Error).message.split('\n')[0]}`)
+        ligne('Overpass n’a pas répondu — la question reste ouverte.')
+        return
+      }
+
+      const elements = elementsDe(brut) as (ElementTague & {
+        members?: { type?: string; ref?: number }[]
+        geometry?: { lat: number; lon: number }[]
+      })[]
+      const relations = elements.filter((e) => e.type === 'relation')
+      const relationsById = new Map(relations.map((r) => [r.id, r]))
+      const longueurWay = new Map<number, number>()
+      for (const e of elements) {
+        if (e.type !== 'way' || e.id === undefined || !e.geometry) continue
+        const coords = e.geometry.map(({ lon, lat }) => [lon, lat] as const)
+        longueurWay.set(e.id, polylineLengthMeters(coords as [number, number][]))
+      }
+
+      const tronc = relationsById.get(RELATIONS_GR76.tronc)
+      if (!tronc) {
+        ligne('relation tronc absente de la réponse — la question reste ouverte.')
+        return
+      }
+      const waysDuTronc = new Set(
+        (tronc.members ?? [])
+          .filter((m) => m.type === 'way')
+          .map((m) => m.ref)
+          .filter((ref): ref is number => ref !== undefined),
+      )
+      const longueurTronc = [...waysDuTronc].reduce(
+        (total, id) => total + (longueurWay.get(id) ?? 0),
+        0,
+      )
+      ligne(
+        `${tronc.tags?.['ref'] ?? 'tronc'} (tronc) : ${(longueurTronc / 1000).toFixed(1)} km, ${String(waysDuTronc.size)} chemins`,
+      )
+      ligne('')
+
+      for (const idVariante of RELATIONS_GR76.variantes) {
+        const variante = relationsById.get(idVariante)
+        if (!variante) {
+          ligne(`r${String(idVariante)} absente de la réponse`)
+          continue
+        }
+        const waysVariante = (variante.members ?? [])
+          .filter((m) => m.type === 'way')
+          .map((m) => m.ref)
+          .filter((ref): ref is number => ref !== undefined)
+        const longueurTotale = waysVariante.reduce(
+          (total, id) => total + (longueurWay.get(id) ?? 0),
+          0,
+        )
+        const waysPartages = waysVariante.filter((id) => waysDuTronc.has(id))
+        const longueurPartagee = waysPartages.reduce(
+          (total, id) => total + (longueurWay.get(id) ?? 0),
+          0,
+        )
+        ligne(
+          `${(variante.tags?.['ref'] ?? String(idVariante)).padEnd(8)} ` +
+            `${(longueurTotale / 1000).toFixed(1).padStart(6)} km total, ` +
+            `${part(waysPartages.length, waysVariante.length)} chemins en commun, ` +
+            `${(longueurPartagee / 1000).toFixed(2)} km partagés ` +
+            `(${longueurTotale > 0 ? ((longueurPartagee / longueurTotale) * 100).toFixed(1) : '—'} % de la variante)`,
+        )
+      }
+
+      ligne('')
+      ligne('Mesuré le 15/09 : GR 76A partage 0,0 % de sa longueur avec le')
+      ligne('tronc, GR 76C 0,8 %, GR 76B 2,5 %, GR 76D 39,3 %. Ce n’est pas')
+      ligne('un seul comportement à décrire — « variante » recouvre ici deux')
+      ligne('situations opposées, sous le même mot et la même absence de')
+      ligne('superroute (mesure 6) : GR 76D est un vrai doublon partiel de')
+      ligne('terrain, GR 76A/B/C sont des itinéraires quasi indépendants qui')
+      ligne('empruntent le nom du tronc sans en parcourir le tracé.')
+      ligne('')
+      ligne('À lire : fusionner les compteurs de complétion traiterait GR 76A')
+      ligne('comme s’il valait la peine de le confondre avec GR 76 — 0 % de')
+      ligne('recouvrement le dément. Les compter séparément traiterait GR 76D')
+      ligne('comme entièrement étranger au tronc, alors que 39 % de son tracé')
+      ligne('l’est déjà. Aucune des deux règles ne convient aux quatre à la')
+      ligne('fois : la décision de #333 (fusionner ou non) ne peut donc pas')
+      ligne('être uniforme par construction de la donnée, pas par choix (§2).')
+    },
+  )
 })
