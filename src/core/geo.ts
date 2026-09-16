@@ -74,6 +74,25 @@ export function interpolate(a: LonLat, b: LonLat, t: number): LonLat {
   return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]
 }
 
+/**
+ * Une coordonnée WGS84 plausible — pas une projection métrique glissée sans
+ * reprojection (Lambert 93 et consorts dépassent 180/90 très vite).
+ *
+ * Trouvée écrite deux fois (`core/boucles.ts` et `core/geojson.ts`, sous
+ * `isLonLat`/`estLonLat`, corps identique) en cherchant où la poser pour un
+ * troisième fichier — le §4ter de CLAUDE.md à l'endroit où on l'attrape
+ * plutôt qu'après coup.
+ */
+export function isWgs84Coordinate(value: unknown): value is LonLat {
+  return (
+    Array.isArray(value) &&
+    typeof value[0] === 'number' &&
+    typeof value[1] === 'number' &&
+    Math.abs(value[0]) <= 180 &&
+    Math.abs(value[1]) <= 90
+  )
+}
+
 /** Cap initial (0–360°, 0 = nord) du grand cercle de a vers b. */
 export function bearingDegrees(a: LonLat, b: LonLat): number {
   const lat1 = a[1] * DEG_TO_RAD

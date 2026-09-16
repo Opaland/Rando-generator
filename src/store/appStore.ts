@@ -60,7 +60,8 @@ import {
   type EtatFiche,
 } from './trancheFiche.ts'
 import { downloadBlob } from '../lib/download.ts'
-import { fetchLocalBoucles, trancheZone } from './trancheZone.ts'
+import { trancheZone } from './trancheZone.ts'
+import { fetchLocalBoucles } from './sourcesLocales.ts'
 import {
   RECHERCHE_AU_REPOS,
   trancheRecherche,

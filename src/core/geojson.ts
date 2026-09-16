@@ -1,3 +1,4 @@
+import { isWgs84Coordinate } from './geo.ts'
 import type { LonLat, SourceItineraire } from './types.ts'
 
 /**
@@ -55,16 +56,6 @@ interface Feature {
   geometry?: Geometrie | null
 }
 
-function estLonLat(valeur: unknown): valeur is LonLat {
-  return (
-    Array.isArray(valeur) &&
-    typeof valeur[0] === 'number' &&
-    typeof valeur[1] === 'number' &&
-    Math.abs(valeur[0]) <= 180 &&
-    Math.abs(valeur[1]) <= 90
-  )
-}
-
 /** Une coordonnée hors des bornes WGS84 : projection métrique, pas un bug. */
 function estProjetee(valeur: unknown): boolean {
   return (
@@ -107,7 +98,7 @@ function lignesDe(geometry: Geometrie | null | undefined): LonLat[][] {
       )
     }
     // Une ligne d'un seul point ne trace rien : on l'écarte sans bruit.
-    if (ligne.length < 2 || !ligne.every(estLonLat)) continue
+    if (ligne.length < 2 || !ligne.every(isWgs84Coordinate)) continue
     lignes.push(ligne.map((p) => [p[0], p[1]] as LonLat))
   }
   return lignes

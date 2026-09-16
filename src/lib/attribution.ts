@@ -118,6 +118,14 @@ export const METROPOLE: Credit = {
   lien: 'https://data.grandlyon.com/',
 }
 
+/** Le GR Nord (Nouvelle-Calédonie), versé par la Province Nord. */
+export const PROVINCE_NORD: Credit = {
+  quoi: 'GR Nord',
+  qui: 'Province Nord',
+  licence: 'Licence Ouverte 2.0',
+  lien: 'https://data.gouv.nc/explore/dataset/gr-province-nord/',
+}
+
 /** Le fond **et** les itinéraires, quand le miroir OSM remplace l'IGN. */
 export const OSM_FOND_ET_TRACES: Credit = {
   ...OSM,
@@ -198,7 +206,7 @@ export function creditsDesSources(
   sources: readonly GpxAttribution[],
 ): Credit[] {
   const connus = new Map<string, Credit>(
-    [OSM, METROPOLE].map((credit) => [nomComplet(credit), credit]),
+    [OSM, METROPOLE, PROVINCE_NORD].map((credit) => [nomComplet(credit), credit]),
   )
   const credits: Credit[] = []
   for (const source of sources) {

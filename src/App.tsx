@@ -58,6 +58,7 @@ import {
   MARQUES_FFRANDONNEE,
   METROPOLE,
   OSM,
+  PROVINCE_NORD,
 } from './lib/attribution.ts'
 
 // La carte (MapLibre, ~900 kB) est chargée à part : le tableau de bord et les
@@ -646,7 +647,8 @@ function App() {
         className={styles.attributionImpression}
         data-testid="attribution-impression"
       >
-        {attributionTexte(OSM, IGN_RELIEF, METROPOLE)} · {MARQUES_FFRANDONNEE}
+        {attributionTexte(OSM, IGN_RELIEF, METROPOLE, PROVINCE_NORD)} ·{' '}
+        {MARQUES_FFRANDONNEE}
       </footer>
 
       {onglets && (

@@ -1,4 +1,5 @@
 import { polylineLengthMeters } from './sampling.ts'
+import { isWgs84Coordinate } from './geo.ts'
 import type { Itinerary, LonLat, TrailWay } from './types.ts'
 import { lienSortant } from './lienSortant.ts'
 
@@ -40,16 +41,6 @@ function asHttpUrlOrNull(value: unknown): string | null {
   return lienSortant(asStringOrNull(value))
 }
 
-function isLonLat(value: unknown): value is LonLat {
-  return (
-    Array.isArray(value) &&
-    typeof value[0] === 'number' &&
-    typeof value[1] === 'number' &&
-    Math.abs(value[0]) <= 180 &&
-    Math.abs(value[1]) <= 90
-  )
-}
-
 /**
  * Convertit un FeatureCollection de boucles (MultiLineString, WGS84) en
  * itinéraires LOCAL. Défensif de bout en bout : une donnée malformée (champ
@@ -78,7 +69,7 @@ export function parseBouclesGeoJSON(
     const ways: TrailWay[] = []
     for (const [lineIndex, line] of lines.entries()) {
       if (!Array.isArray(line) || line.length < 2) continue
-      if (!line.every(isLonLat)) continue
+      if (!line.every(isWgs84Coordinate)) continue
       ways.push({
         osmWayId: LOCAL_WAY_ID_BASE - gid * WAYS_PER_BOUCLE - lineIndex,
         coords: line.map((p) => [p[0], p[1]] as LonLat),

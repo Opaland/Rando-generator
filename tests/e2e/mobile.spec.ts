@@ -224,7 +224,7 @@ test('rien ne descend sous 13 px sur un écran de téléphone', async ({
   //  — l'attribution MapLibre, phrase dense qu'on consulte une fois et qui
   //    occuperait le quart de la carte à 14 px.
   const attribution = (t: string) =>
-    /MapLibre|IGN|OpenStreetMap|Métropole/.test(t)
+    /MapLibre|IGN|OpenStreetMap|Métropole|Province Nord/.test(t)
   expect(textes.filter((t) => t.px < 13 && !attribution(t.texte))).toEqual([])
   expect(
     textes.filter((t) => t.px < 14 && !t.badge && !attribution(t.texte)),

@@ -20,6 +20,7 @@ import {
   METROPOLE,
   OSM,
   OSM_FOND_ET_TRACES,
+  PROVINCE_NORD,
 } from '../../lib/attribution.ts'
 import { ORDRE_DES_RESEAUX } from '../../core/reseaux.ts'
 import type { Itinerary, PointOfInterest } from '../../core/types.ts'
@@ -48,8 +49,12 @@ export const OSM_TILES = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
   au caractère près — et les morceaux vivent désormais dans un seul fichier,
   d'où la feuille d'impression les tire aussi.
 */
-export const ATTRIBUTION = attributionHtml(IGN, OSM, METROPOLE)
-export const ATTRIBUTION_OSM = attributionHtml(OSM_FOND_ET_TRACES, METROPOLE)
+export const ATTRIBUTION = attributionHtml(IGN, OSM, METROPOLE, PROVINCE_NORD)
+export const ATTRIBUTION_OSM = attributionHtml(
+  OSM_FOND_ET_TRACES,
+  METROPOLE,
+  PROVINCE_NORD,
+)
 
 /**
  * La couleur d'un tracé, par réseau — **dérivée**, jamais énumérée (#412).

@@ -22,8 +22,9 @@ parcouru 34 % du GR 7, 61 % des sentiers du Pilat ».
 - **Données ouvertes uniquement** : itinéraires © les contributeurs
   OpenStreetMap (ODbL) via l'API Overpass ; boucles locales de la Métropole
   de Lyon © Métropole de Lyon (Licence Ouverte 2.0, jeu « Boucles communales
-  de randonnée ») ; fond de carte Plan IGN v2 (licence ouverte Etalab 2.0)
-  avec repli automatique sur les tuiles OSM.
+  de randonnée ») ; GR Nord (Nouvelle-Calédonie) © Province Nord (Licence
+  Ouverte 2.0, jeu « GR Province Nord ») ; fond de carte Plan IGN v2 (licence
+  ouverte Etalab 2.0) avec repli automatique sur les tuiles OSM.
 - **Utilisable hors réseau** : service worker sans dépendance (ni Workbox ni
   greffon PWA), précache généré au build, tuiles déjà vues conservées.
 - Site statique : déployable tel quel sur GitHub Pages, Netlify, etc.
@@ -66,8 +67,10 @@ lit pour chacune.
 1. **Charger une zone** : Rhône + Métropole de Lyon, Loire, PNR du Pilat, les
    trois, **n'importe quel département d'Auvergne-Rhône-Alpes**, le massif
    vosgien département par département, ou la **Nouvelle-Calédonie**
-   (GR® NC1 et itinéraires locaux ; sans profil altimétrique, le MNT de
-   l'IGN ne la couvre pas — la fiche le dit) — ou encore
+   (GR® NC1 et itinéraires locaux depuis OSM, plus les cinq étapes du **GR
+   Nord** © Province Nord ajoutées automatiquement ; sans profil
+   altimétrique, le MNT de l'IGN ne la couvre pas — la fiche le dit) — ou
+   encore
    un ref d'itinéraire (ex. « GR 20 »), avec quelques **grands itinéraires**
    proposés en un clic (GR 65 Saint-Jacques, GR 70 Stevenson, GR 5 Alpes…),
    cherchés sur la France entière puisqu'aucune zone ne les contient. Sont
@@ -81,7 +84,9 @@ lit pour chacune.
    couvrant la Métropole de Lyon, les **55 boucles communales** du jeu open
    data métropolitain (réseau « Boucle », bleu-vert) s'ajoutent
    automatiquement aux itinéraires OSM — fichier embarqué avec le site
-   (`public/data/`), aucun appel réseau supplémentaire.
+   (`public/data/`), aucun appel réseau supplémentaire. Même mécanisme pour
+   la Nouvelle-Calédonie : les **cinq étapes du GR Nord** (jeu « GR Province
+   Nord », data.gouv.nc) s'ajoutent au GR® NC1 déjà présent dans OSM.
 2. **Enregistrer une sortie** : « Démarrer », marcher, « Terminer ». La
    sortie devient une trace comme les autres — appariée, comptée,
    exportable. Elle se met en pause, s'abandonne sans rien laisser, et
@@ -386,6 +391,7 @@ src/
 │  ├─ elevation.ts # profil altimétrique (service IGN), D+/D-, comblement de trous
 │  ├─ poi.ts       # POI le long d'un tracé (Overpass, bbox découpées)
 │  ├─ boucles.ts   # boucles communales open data (Métropole de Lyon, LO 2.0)
+│  ├─ grNord.ts    # GR Nord open data (Province Nord, Nouvelle-Calédonie, LO 2.0)
 │  ├─ routing.ts   # graphe des sentiers, accroche d'un clic, Dijkstra
 │  ├─ history.ts   # sorties par mois, totaux, cumuls
 │  ├─ discovery.ts # durées et dénivelés publiés, forme du tracé, filtres

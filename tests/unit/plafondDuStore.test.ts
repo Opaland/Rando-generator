@@ -73,8 +73,19 @@ const PLAFONDS: Record<string, number> = {
     Descendu de 540 à 530 le 01/09, quand la recherche de lieu est sortie
     (#454) : 510 lignes après. Un plafond qu'on ne redescend pas après un
     découpage autorise à reprendre exactement ce qu'on vient de rendre.
+
+    Redescendu à 495 le 16/09 : l'accès aux sources open data embarquées
+    (boucles de Lyon, puis GR Nord) est sorti dans `sourcesLocales.ts`,
+    plutôt que de relever ce plafond pour une seconde source qui n'est pas
+    de la logique de zone elle-même — la même réponse honnête qu'en #454.
   */
-  'trancheZone.ts': 530,
+  'trancheZone.ts': 495,
+  /*
+    Sorti de `trancheZone.ts` le 16/09 en écrivant le GR Nord : 85 lignes.
+    Le plafond laisse la place d'une troisième source (Ain, Isère — #87)
+    avant de forcer une nouvelle décision.
+  */
+  'sourcesLocales.ts': 110,
   /*
     Le journal des sorties réseau (issue #178), sorti d'`appStore.ts` le
     07/09 (#445) : 113 lignes, la seule action qui était encore écrite en
