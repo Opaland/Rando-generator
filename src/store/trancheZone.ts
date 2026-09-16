@@ -49,7 +49,7 @@ import type { Lieu } from '../core/geocode.ts'
 import { fetchPois } from '../core/poi.ts'
 import { reponseTronquee } from '../core/poisDeZone.ts'
 import { itineraryCoords } from '../core/mapdata.ts'
-import { parseBouclesGeoJSON } from '../core/boucles.ts'
+import { sourcesLocalesPour } from './sourcesLocales.ts'
 import {
   zoneUtilisable,
   SCHEMA_ZONE,
@@ -60,40 +60,6 @@ import type { Itinerary, PointOfInterest } from '../core/types.ts'
 
 /** Où en est un chargement de zone, pour l'annoncer plutôt que le taire. */
 export type ZoneLoadStage = 'requesting' | 'retrying' | 'processing' | null
-
-/** Zones dont le périmètre couvre la Métropole de Lyon (boucles locales). */
-const ZONES_WITH_LOCAL_BOUCLES = new Set(['rhone', 'trois'])
-
-/*
-  Boucles locales open data, embarquées avec le site (© Métropole de Lyon,
-  Licence Ouverte 2.0). Chargées paresseusement et une seule fois ; en cas
-  d'échec, l'app fonctionne exactement comme avant — c'est un bonus.
-*/
-let bouclesPromise: Promise<Itinerary[]> | null = null
-
-/**
- * Exporté parce que la démonstration s'en sert : elle rejoue des sorties
- * fictives sur les boucles locales, qui sont embarquées avec le site et donc
- * disponibles hors ligne dès le premier écran.
- */
-export function fetchLocalBoucles(): Promise<Itinerary[]> {
-  bouclesPromise ??= fetch(
-    `${import.meta.env.BASE_URL}data/boucles-metropole-lyon.json`,
-  )
-    .then((response) => (response.ok ? response.json() : null))
-    .then((data: unknown) =>
-      parseBouclesGeoJSON(data, new Date().toISOString()),
-    )
-    .catch(() => [])
-    .then((boucles) => {
-      // Un échec ne se mémorise pas. Hors ligne au premier chargement, les
-      // boucles seraient sinon absentes pour toute la session, alors qu'un
-      // simple changement de zone suffirait à les retrouver.
-      if (boucles.length === 0) bouclesPromise = null
-      return boucles
-    })
-  return bouclesPromise
-}
 
 /** Ce que la zone ajoute à l'état du store. */
 export interface EtatZone {
@@ -383,20 +349,38 @@ export function trancheZone(deps: DependancesZone): ActionsZone {
   }
 
   /**
-   * Ajoute les boucles locales open data aux itinéraires de la zone affichée
-   * (fusion en mémoire uniquement — jamais écrites dans le cache Overpass,
-   * qui reste une copie pure d'OSM). Sans effet si la zone a changé entre
-   * temps ou si l'asset est indisponible.
+   * Ajoute une source d'itinéraires embarquée aux itinéraires de la zone
+   * affichée (fusion en mémoire uniquement — jamais écrite dans le cache
+   * Overpass, qui reste une copie pure d'OSM). Sans effet si la zone a
+   * changé entre temps ou si l'asset est indisponible.
+   *
+   * Nommée une fois, appelée pour chaque source (boucles de Lyon, GR Nord) :
+   * la recopier serait le mode d'échec que CLAUDE.md §4 nomme — deux copies
+   * qui divergent sans que rien ne le dise.
    */
-  async function mergeLocalBoucles(zoneKey: string): Promise<void> {
-    if (!ZONES_WITH_LOCAL_BOUCLES.has(zoneKey)) return
-    const boucles = await fetchLocalBoucles()
-    if (boucles.length === 0 || deps.etat().zoneKey !== zoneKey) return
+  async function fusionnerItinerairesSupplementaires(
+    zoneKey: string,
+    fetchSupplement: () => Promise<Itinerary[]>,
+  ): Promise<void> {
+    const supplement = await fetchSupplement()
+    if (supplement.length === 0 || deps.etat().zoneKey !== zoneKey) return
     const known = new Set(deps.etat().itineraries.map((i) => i.osmRelationId))
-    const fresh = boucles.filter((b) => !known.has(b.osmRelationId))
+    const fresh = supplement.filter((i) => !known.has(i.osmRelationId))
     if (fresh.length === 0) return
     deps.set((state) => ({ itineraries: [...state.itineraries, ...fresh] }))
     await deps.recompute()
+  }
+
+  /**
+   * Ajoute les sources d'itinéraires open data embarquées qui couvrent cette
+   * zone (`sourcesLocales.ts` — boucles de la Métropole de Lyon, GR Nord de
+   * Province Nord). Le nom date d'avant le GR Nord ; le garder évite de
+   * toucher `appStore.ts` et la suite de tests qui l'appellent déjà ainsi.
+   */
+  async function mergeLocalBoucles(zoneKey: string): Promise<void> {
+    for (const fetchSupplement of sourcesLocalesPour(zoneKey)) {
+      await fusionnerItinerairesSupplementaires(zoneKey, fetchSupplement)
+    }
   }
 
   const actions: ActionsZone = {

@@ -1,0 +1,38 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "objectid": 1, "nom": "Tchamba St Thomas" },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [165.24323600017297, -21.003095999742147],
+          [165.2432860003974, -21.00308699917427],
+          [165.24331699963906, -21.003067999687307],
+          [165.24340000027547, -21.003021999194768]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "objectid": 2, "nom": "St Thomas Pombei" },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [165.19444499989686, -20.92949399911297],
+          [165.1943419998061, -20.929478999268053],
+          [165.1942750002768, -20.929483999638364]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "objectid": 3, "nom": "Trop courte" },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [[165.14180900029606, -20.829527999138666]]
+      }
+    }
+  ]
+}

@@ -48,7 +48,9 @@ describe('les crédits composés rendent ce qui était écrit à la main', () =>
         ' href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' +
         ' (ODbL) · Boucles locales © <a' +
         ' href="https://data.grandlyon.com/">Métropole de Lyon</a> (Licence' +
-        ' Ouverte)',
+        ' Ouverte) · GR Nord © <a' +
+        ' href="https://data.gouv.nc/explore/dataset/gr-province-nord/">Province' +
+        ' Nord</a> (Licence Ouverte 2.0)',
     )
   })
 
@@ -58,7 +60,9 @@ describe('les crédits composés rendent ce qui était écrit à la main', () =>
         ' href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' +
         ' (ODbL) · Boucles locales © <a' +
         ' href="https://data.grandlyon.com/">Métropole de Lyon</a> (Licence' +
-        ' Ouverte)',
+        ' Ouverte) · GR Nord © <a' +
+        ' href="https://data.gouv.nc/explore/dataset/gr-province-nord/">Province' +
+        ' Nord</a> (Licence Ouverte 2.0)',
     )
   })
 
