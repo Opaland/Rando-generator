@@ -37,6 +37,21 @@
  * Un échec dur casserait les tests qui déclenchent légitimement un
  * chargement dont ils ne mesurent pas l'issue.
  *
+ * ## L'exception RESEAU=1, et pourquoi elle a mis deux semaines à se voir
+ *
+ * `tests/unit/mesuresReseau.test.ts` (#331) et `tests/e2e/reel.spec.ts`
+ * existent pour parler aux vrais serveurs, derrière `RESEAU=1` / `REEL=1`.
+ * Le second est un fichier e2e : Playwright ne charge pas ce `setupFiles`
+ * de Vitest, donc `REEL=1` a toujours fonctionné. Mais `mesuresReseau.test.ts`
+ * tourne sous Vitest, comme tout le reste — et cette coupure, posée sans
+ * exception le 01/09 (#456), s'appliquait donc aussi à lui. Depuis cette
+ * date, `RESEAU=1` ne changeait rien : le stub gagnait toujours, et toute
+ * mesure de #331 échouait en quelques millisecondes avec le même message que
+ * n'importe quel test ordinaire. Découvert le 15/09 en écrivant la mesure
+ * #333 : le témoin (mesure 0, déjà « confirmé » à une date antérieure au
+ * 01/09) échouait de la même façon, montrant que la panne n'était pas dans le
+ * code neuf.
+ *
  * ## La mesure qui a décidé de cette forme
  *
  * Sonde jetable du 01/09 : `fetch` enveloppé pour journaliser ses appels, sur
@@ -57,12 +72,21 @@
 
 import { RESEAU_COUPE } from './messageDeReseauCoupe.ts'
 
-globalThis.fetch = (entree) => {
-  const url =
-    typeof entree === 'string'
-      ? entree
-      : entree instanceof URL
-        ? entree.href
-        : entree.url
-  return Promise.reject(new Error(`${RESEAU_COUPE} (${url})`))
+/*
+  `process` déclaré ici plutôt qu'importé de `node:process`, comme dans
+  `mesuresReseau.test.ts` : `tsconfig.app.json` couvre `tests/unit` avec
+  `types: ["vite/client"]`, pas les types Node.
+*/
+declare const process: { env: Record<string, string | undefined> }
+
+if (process.env['RESEAU'] !== '1') {
+  globalThis.fetch = (entree) => {
+    const url =
+      typeof entree === 'string'
+        ? entree
+        : entree instanceof URL
+          ? entree.href
+          : entree.url
+    return Promise.reject(new Error(`${RESEAU_COUPE} (${url})`))
+  }
 }
