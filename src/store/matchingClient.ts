@@ -5,6 +5,8 @@ import type { MatchRequest, MatchResponse } from '../workers/matching.worker.ts'
 export interface MatchingInput {
   itineraries: Itinerary[]
   trackPoints: LonLat[]
+  /** Même longueur et même ordre que `trackPoints` (issue #150). */
+  trackTimes?: (number | null)[] | undefined
   toleranceMeters: number
   stepMeters: number
   computedAt: string
@@ -101,5 +103,6 @@ export async function computeMatching(
     toleranceMeters: input.toleranceMeters,
     stepMeters: input.stepMeters,
     computedAt: input.computedAt,
+    trackTimes: input.trackTimes,
   })
 }

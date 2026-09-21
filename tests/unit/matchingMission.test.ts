@@ -2,6 +2,7 @@
 import { describe, it, expect } from 'vitest'
 import { runMatching } from '../../src/core/matching.ts'
 import { parseGpx } from '../../src/core/gpx.ts'
+import { distanceMeters } from '../../src/core/geo.ts'
 import type { Itinerary, LonLat } from '../../src/core/types.ts'
 
 /**
@@ -15,8 +16,10 @@ import type { Itinerary, LonLat } from '../../src/core/types.ts'
  * limite connue est annoté LIMITE : il passe aujourd'hui en décrivant une
  * faille, et c'est son inversion qui marquera la correction.
  *
- *   ±60 m de bruit crédité à 100 %  → issue #150
- *   voiture le long du sentier      → issue #150
+ *   ±60 m de bruit crédité à 100 %  → issue #150 (filtrage hdop, reste ouvert :
+ *                                      pas de corpus hdop réel disponible)
+ *   voiture le long du sentier      → issue #150, corrigée (coupure par
+ *                                      vitesse, cas 6 ci-dessous)
  *   parallèles à 15 m               → issue #151
  *
  * Ne pas « réparer » un test LIMITE en ajustant son seuil : ce serait perdre
@@ -67,11 +70,35 @@ function traceParallele(
   return points
 }
 
-function match(itins: Itinerary[], points: LonLat[], tolerance = 50) {
+function match(
+  itins: Itinerary[],
+  points: LonLat[],
+  tolerance = 50,
+  times?: (number | null)[],
+) {
   return runMatching(itins, points, {
     toleranceMeters: tolerance,
     computedAt: '2026-08-20T00:00:00Z',
+    trackTimes: times,
   })
+}
+
+/**
+ * Horodatages (ms epoch) d'une trace parcourue à vitesse constante, dérivés
+ * des distances réelles entre points consécutifs — pas d'un pas de temps
+ * fixe, pour rester correct même si `points` n'est pas uniformément espacé.
+ */
+function timesConstants(
+  points: LonLat[],
+  speedMps: number,
+  startMs = 0,
+): number[] {
+  const times: number[] = [startMs]
+  for (let i = 1; i < points.length; i++) {
+    const d = distanceMeters(points[i - 1] as LonLat, points[i] as LonLat)
+    times.push((times[i - 1] as number) + (d / speedMps) * 1000)
+  }
+  return times
 }
 
 /** Bruit pseudo-aléatoire déterministe (mulberry32) — tests reproductibles. */
@@ -429,11 +456,84 @@ describe('cas 19 — géométrie OSM incomplète (relation en deux morceaux)', (
 })
 
 describe('cas 6 — vitesse élevée (voiture le long du sentier)', () => {
-  it('LIMITE : sans horodatage conservé, un trajet en voiture est crédité', () => {
+  it("un trajet en voiture (56 km/h, horodaté) n'est plus crédité comme une marche (#150)", () => {
     // Points espacés de ~470 m (< MAX_GAP 1 km) : typique d'un GPS au volant.
+    // 56 km/h est une vitesse routière ordinaire, très au-dessus du seuil
+    // (28,5 km/h, record du 800 m — voir MAX_WALK_SPEED_MPS).
+    const points = traceParallele(0, 0.006)
+    const times = timesConstants(points, 56 / 3.6)
+    const pct = match([sentierDroit()], points, 50, times).global.pct
+    // Coupée en points isolés à ~470 m d'écart, la trace ne peut plus
+    // confirmer de passage continu pour une tolérance de 50 m.
+    expect(pct).toBeLessThan(15)
+  })
+
+  it('sans horodatage conservé, la coupure par vitesse ne peut pas s’appliquer (résiduel connu, pas une régression)', () => {
+    // Même trace, sans `times` : le cas d'une trace en base avant #149, ou
+    // d'un GPX sans <time>. La seule protection qui reste est
+    // MAX_GAP_METERS, qui ne voit rien sous 1 km — documenté, pas corrigé
+    // par cette issue (voir #149 : les champs horodatage restent optionnels).
     const pct = match([sentierDroit()], traceParallele(0, 0.006)).global.pct
-    // Le parseur jette <time> : aucun contrôle de vitesse n'est possible.
-    // Ce test documente la faille ; l'inverser quand le contrôle existera.
+    expect(pct).toBeGreaterThan(90)
+  })
+})
+
+/**
+ * Reproduit la trouvaille de docs/MESURE_VITESSE_25_08.md : un enregistreur
+ * à cadence variable (~15 s, « smart recording ») rééchantillonné à 1 Hz par
+ * un export produit des paires de points identiques puis un saut qui, pris
+ * seul, dépasse largement MAX_WALK_SPEED_MPS — sans que la distance ni la
+ * durée réellement parcourues n'aient changé. Juger un segment sur sa seule
+ * vitesse instantanée couperait cette marche ; c'est tout l'objet de la
+ * fenêtre de lissage (SPEED_WINDOW_S).
+ */
+function simulerReechantillonnage1Hz(
+  realPoints: LonLat[],
+  realTimes: number[],
+): { points: LonLat[]; times: number[] } {
+  const points: LonLat[] = [realPoints[0] as LonLat]
+  const times: number[] = [realTimes[0] as number]
+  for (let i = 1; i < realPoints.length; i++) {
+    const tStart = realTimes[i - 1] as number
+    const tEnd = realTimes[i] as number
+    const steps = Math.max(1, Math.round((tEnd - tStart) / 1000))
+    for (let s = 1; s < steps; s++) {
+      points.push(realPoints[i - 1] as LonLat) // position figée (padding 1 Hz)
+      times.push(tStart + s * 1000)
+    }
+    points.push(realPoints[i] as LonLat) // le saut réel
+    times.push(tEnd)
+  }
+  return { points, times }
+}
+
+describe('cas 6bis — un rééchantillonnage GPX ne doit pas faire couper une vraie marche', () => {
+  it('des points dupliqués suivis d’un saut restent crédités comme une marche', () => {
+    // Pas ~125 m entre relevés réels (délai de plusieurs dizaines de
+    // secondes, GPS sous couvert forestier) à 1,25 m/s (médiane du corpus
+    // réel) : l'écart dépasse 2× la tolérance (50 m), condition nécessaire
+    // pour que le test distingue vraiment un lissage correct d'un jugement
+    // au seul écart instantané — vérifié en réduisant SPEED_WINDOW_S à 1 s :
+    // ce test échoue alors (pct proche de 0), preuve qu'il ne passe pas pour
+    // rien.
+    const real = traceParallele(0, 0.0016)
+    const realTimes = timesConstants(real, 1.25)
+    const { points, times } = simulerReechantillonnage1Hz(real, realTimes)
+    const pct = match([sentierDroit()], points, 50, times).global.pct
+    expect(pct).toBeGreaterThan(90)
+  })
+
+  it('une marche à rythme variable (jusqu’à 2,62 m/s par rafale) reste créditée', () => {
+    // Plafond mesuré sur le corpus réel, fenêtre 60 s (docs/MESURE_VITESSE_25_08.md).
+    const rand = rng(11)
+    const points = traceParallele(0, 0.0003)
+    const times: number[] = [0]
+    for (let i = 1; i < points.length; i++) {
+      const speedMps = 1 + rand() * 1.5 // 1 à 2,5 m/s, jamais au-delà du seuil
+      const d = distanceMeters(points[i - 1] as LonLat, points[i] as LonLat)
+      times.push((times[i - 1] as number) + (d / speedMps) * 1000)
+    }
+    const pct = match([sentierDroit()], points, 50, times).global.pct
     expect(pct).toBeGreaterThan(90)
   })
 })
