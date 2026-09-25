@@ -85,9 +85,13 @@ function segmentCompte(
  * Le dénivelé positif cumulé, ou `null` si aucun point ne porte d'altitude.
  *
  * L'hystérésis de 3 m est celle qu'applique déjà `elevationGainMeters` à
- * toute trace importée : on ne s'en invente pas une autre. Deux formules
- * pour le même chiffre finiraient par diverger, et personne ne saurait
- * laquelle est affichée (CLAUDE.md §4).
+ * toute trace importée : on ne s'en invente pas une autre. Ce commentaire
+ * affirmait déjà cette unicité quand une seconde formule, asymétrique,
+ * vivait dans `elevation.ts` et rendait un chiffre différent sur un simple
+ * creux de terrain — trouvé le 23/09 par une chasse aux jumeaux (§4bis :
+ * l'affirmation n'était plus vraie, personne ne l'avait relue). Depuis le
+ * 25/09, `elevationGainMeters` délègue réellement à `elevationStats` : il
+ * n'existe plus qu'une seule formule, donc plus rien à diverger.
  */
 export function deniveleParcouru(e: Enregistrement): number | null {
   return elevationGainMeters(e.points.map((point) => point.altitude))

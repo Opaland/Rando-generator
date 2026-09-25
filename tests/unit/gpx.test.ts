@@ -99,6 +99,22 @@ describe('elevationGainMeters', () => {
   it('ignore les trous (null) au milieu du profil', () => {
     expect(elevationGainMeters([100, null, 150])).toBe(50)
   })
+
+  /**
+   * Trouvé le 23/09 par une chasse aux jumeaux : cette fonction laissait la
+   * référence chuter sans seuil à la moindre baisse, alors que
+   * `elevationStats` (elevation.ts) ne la bouge que si le delta cumulé
+   * atteint `thresholdMeters` — dans les deux sens. Sur ce profil, l'ancien
+   * code rendait 3 (un creux de 2 m sous le seuil avait déjà fait chuter la
+   * référence à 98, donc la remontée à 101 se lisait comme +3), l'algorithme
+   * partagé rend 0 (98 puis 101 restent tous deux à moins de 3 m de la
+   * référence 100). Cédric a tranché le 25/09 : une seule hystérésis,
+   * symétrique, partout — `elevationGainMeters` délègue désormais à
+   * `elevationStats`.
+   */
+  it('ne diverge plus de elevationStats : plus de creux sous le seuil qui fait sur-compter une remontée', () => {
+    expect(elevationGainMeters([100, 98, 101])).toBe(0)
+  })
 })
 
 describe('trackFingerprint', () => {

@@ -140,9 +140,16 @@ describe('la distance parcourue', () => {
 describe('le dénivelé', () => {
   /**
    * L'hystérésis de 3 m est celle qu'applique déjà `elevationGainMeters` à
-   * toute trace importée. On ne s'en invente pas une autre : deux formules
-   * pour le même chiffre finiraient par diverger, et personne ne saurait
-   * laquelle est affichée (CLAUDE.md §4).
+   * toute trace importée. On ne s'en invente pas une autre.
+   *
+   * Valeur corrigée le 25/09 : 20, pas 22. L'ancienne version laissait la
+   * référence chuter sans seuil à la moindre baisse (199 sous 200, puis 209
+   * sous 210), ce qui comptait chaque creux comme un nouveau départ de
+   * montée. La version partagée avec `elevationStats` ne bouge la référence
+   * que si l'écart cumulé atteint 3 m dans un sens **ou** l'autre : les
+   * creux d'un mètre (199, 209) ne suffisent pas à la déplacer, donc la
+   * référence reste à 200 jusqu'à la montée franche vers 210 (+10), puis à
+   * 210 jusqu'à celle vers 220 (+10 encore).
    */
   it('filtre le bruit du GPS comme le fait l’import', () => {
     let e = demarrer(enregistreurVide(), T0)
@@ -150,11 +157,7 @@ describe('le dénivelé', () => {
     altitudes.forEach((altitude, i) => {
       e = ajouterPoint(e, point(i, T0 + i * 1_000, altitude))
     })
-    // L'hystérésis repart du point le plus bas atteint : 199 → 210, puis
-    // 209 → 220. Onze mètres deux fois, et pas les vingt qu'on lirait en
-    // suivant les sommets. Les oscillations d'un mètre ne comptent pas ;
-    // les creux, eux, déplacent la référence.
-    expect(deniveleParcouru(e)).toBe(22)
+    expect(deniveleParcouru(e)).toBe(20)
   })
 
   it('rend null quand aucun point ne porte d’altitude', () => {

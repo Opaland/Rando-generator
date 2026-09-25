@@ -1,5 +1,6 @@
 import { estDansLeMonde } from './coordonnees.ts'
 import { verifierDomaine } from './domaine.ts'
+import { elevationStats } from './elevation.ts'
 import type { LonLat } from './types.ts'
 
 /** Erreur de lecture d'un fichier GPX, message affichable tel quel à l'utilisateur. */
@@ -198,32 +199,22 @@ function extractPoints(doc: Document, tagName: 'trkpt' | 'rtept'): ExtractedPoin
 }
 
 /**
- * Dénivelé positif cumulé, avec hystérésis pour filtrer le bruit GPS :
- * une montée n'est comptée que lorsqu'elle dépasse `thresholdMeters` depuis
- * le dernier point bas. Retourne null si aucune altitude n'est exploitable.
+ * Dénivelé positif cumulé, avec hystérésis pour filtrer le bruit GPS : une
+ * montée (ou une descente) n'est comptée que lorsqu'elle dépasse
+ * `thresholdMeters` depuis la dernière référence. Retourne null si aucune
+ * altitude n'est exploitable.
+ *
+ * Délègue à `elevationStats` (elevation.ts, la même hystérésis symétrique
+ * que le profil planifié) plutôt que de recalculer : une chasse aux jumeaux
+ * du 23/09 a trouvé ici une seconde formule, asymétrique, qui rendait un
+ * chiffre différent sur un simple creux de terrain sous le seuil — corrigé
+ * le 25/09, décision de Cédric (symétrique partout).
  */
 export function elevationGainMeters(
   elevations: (number | null)[],
   thresholdMeters = 3,
 ): number | null {
-  let gain = 0
-  let reference: number | null = null
-  let hasData = false
-  for (const elevation of elevations) {
-    if (elevation === null) continue
-    hasData = true
-    if (reference === null) {
-      reference = elevation
-      continue
-    }
-    if (elevation - reference >= thresholdMeters) {
-      gain += elevation - reference
-      reference = elevation
-    } else if (elevation < reference) {
-      reference = elevation
-    }
-  }
-  return hasData ? gain : null
+  return elevationStats(elevations, thresholdMeters)?.gain ?? null
 }
 
 /**
