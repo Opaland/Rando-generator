@@ -135,6 +135,38 @@ describe('la distance parcourue', () => {
       distanceMeters([4.802, 45.75], [4.803, 45.75])
     expect(distanceParcourue(e)).toBeCloseTo(attendu, 6)
   })
+
+  /**
+   * Trouvé le 25/09, en vrai : un Pixel 7 mis en poche, écran verrouillé,
+   * n'envoie plus aucune position pendant 25 minutes — Android suspend
+   * `watchPosition` sans erreur ni avertissement, et personne n'appuie sur
+   * « Pause ». Les deux relevés valides qui encadrent ce silence se sont
+   * retrouvés à 900 m l'un de l'autre, comptés comme une ligne droite
+   * marchée en une seconde.
+   *
+   * Le trou ne se voit qu'à l'écart entre deux relevés consécutifs, jamais
+   * aussi grand en fonctionnement normal : `GEO_OPTIONS.timeout`
+   * (core/geolocation.ts) est déjà la limite que l'application se donne
+   * avant de déclarer l'échec d'un relevé. Un écart plus grand que ça entre
+   * deux relevés RÉUSSIS ne peut pas venir d'une attente normale — emprunté,
+   * pas inventé (§2).
+   */
+  it('ne compte pas un segment qui enjambe un trou GPS silencieux, même sans pause', () => {
+    let e = demarrer(enregistreurVide(), T0)
+    e = ajouterPoint(e, point(0, T0 + 1_000))
+    e = ajouterPoint(e, point(1, T0 + 2_000))
+    const avantLeTrou = distanceParcourue(e)
+
+    e = ajouterPoint(e, point(300, T0 + 2_000 + 25 * 60_000))
+    expect(distanceParcourue(e)).toBe(avantLeTrou)
+
+    // La marche normale reprend ensuite sans rien devoir à ce trou.
+    e = ajouterPoint(e, point(301, T0 + 2_000 + 25 * 60_000 + 1_000))
+    expect(distanceParcourue(e)).toBeCloseTo(
+      avantLeTrou + distanceMeters(pointLonLat(300), pointLonLat(301)),
+      6,
+    )
+  })
 })
 
 describe('le dénivelé', () => {
@@ -170,6 +202,29 @@ describe('le dénivelé', () => {
   it('rend null sur une sortie sans le moindre point', () => {
     expect(deniveleParcouru(enregistreurVide())).toBeNull()
   })
+
+  /**
+   * Même trou que « la distance parcourue » ci-dessus (Pixel 7, 25 min de
+   * silence GPS, 25/09) : sans coupure, une remontée de 150 m jamais
+   * grimpée s'ajouterait au dénivelé affiché. `deniveleParcouru` ignorait
+   * `segmentCompte` jusqu'ici — seule `distanceParcourue` et `profilDeSortie`
+   * le consultaient — c'était l'angle mort.
+   */
+  it('ne compte pas le dénivelé à travers un trou GPS silencieux', () => {
+    let e = demarrer(enregistreurVide(), T0)
+    e = ajouterPoint(e, point(0, T0 + 1_000, 100))
+    e = ajouterPoint(e, point(1, T0 + 1_000 + 25 * 60_000, 250))
+    expect(deniveleParcouru(e)).toBe(0)
+  })
+
+  it('recompte le dénivelé normalement de part et d’autre du trou', () => {
+    let e = demarrer(enregistreurVide(), T0)
+    e = ajouterPoint(e, point(0, T0 + 1_000, 100))
+    e = ajouterPoint(e, point(1, T0 + 2_000, 110)) // +10 avant le trou
+    e = ajouterPoint(e, point(2, T0 + 2_000 + 25 * 60_000, 250)) // trou, ignoré
+    e = ajouterPoint(e, point(3, T0 + 2_000 + 25 * 60_000 + 1_000, 260)) // +10 après
+    expect(deniveleParcouru(e)).toBe(20)
+  })
 })
 
 describe('les chiffres de l’écran de marche', () => {
@@ -199,7 +254,12 @@ describe('les chiffres de l’écran de marche', () => {
     e = ajouterPoint(e, point(0, T0))
     e = suspendre(e, T0 + 60_000)
     e = reprendre(e, T0 + 3_660_000) // une heure de pause
+    // Quatre pas de 15 s (< MAX_GAP_MS) plutôt qu'un seul de 60 s : l'espacement
+    // n'est ici qu'une commodité d'écriture, pas un trou GPS à simuler.
     e = ajouterPoint(e, point(10, T0 + 3_660_000))
+    e = ajouterPoint(e, point(12.5, T0 + 3_675_000))
+    e = ajouterPoint(e, point(15, T0 + 3_690_000))
+    e = ajouterPoint(e, point(17.5, T0 + 3_705_000))
     e = ajouterPoint(e, point(20, T0 + 3_720_000))
 
     const chiffres = chiffresDeLaSortie(e, T0 + 3_720_000)
