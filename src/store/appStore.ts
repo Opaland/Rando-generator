@@ -445,10 +445,16 @@ export const useAppStore = create<AppState>()((set, get) => {
     const sequence = ++recomputeSequence
     set({ matchingBusy: true })
     const trackPoints: LonLat[] = tracks.flatMap((t) => t.points)
+    // Même longueur et alignement que trackPoints : une trace sans
+    // horodatage (#149) contribue des `null`, pas un décalage.
+    const trackTimes: (number | null)[] = tracks.flatMap(
+      (t) => t.times ?? t.points.map(() => null),
+    )
     const computedAt = new Date().toISOString()
     const result = await computeMatching({
       itineraries,
       trackPoints,
+      trackTimes,
       toleranceMeters,
       stepMeters: STEP_METERS,
       computedAt,
@@ -460,6 +466,7 @@ export const useAppStore = create<AppState>()((set, get) => {
         ? await computeMatching({
             itineraries: customItineraries,
             trackPoints,
+            trackTimes,
             toleranceMeters,
             stepMeters: STEP_METERS,
             computedAt,
@@ -899,6 +906,7 @@ export const useAppStore = create<AppState>()((set, get) => {
       const resultat = await computeMatching({
         itineraries: tous,
         trackPoints: track.points,
+        trackTimes: track.times,
         toleranceMeters,
         stepMeters: STEP_METERS,
         computedAt,

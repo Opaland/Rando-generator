@@ -6,6 +6,8 @@ export interface MatchRequest {
   requestId: number
   itineraries: Itinerary[]
   trackPoints: LonLat[]
+  /** Même longueur et même ordre que `trackPoints` (issue #150). */
+  trackTimes?: (number | null)[] | undefined
   toleranceMeters: number
   stepMeters: number
   computedAt: string
@@ -19,12 +21,20 @@ export interface MatchResponse {
 const scope = self as unknown as DedicatedWorkerGlobalScope
 
 scope.onmessage = (event: MessageEvent<MatchRequest>) => {
-  const { requestId, itineraries, trackPoints, toleranceMeters, stepMeters, computedAt } =
-    event.data
+  const {
+    requestId,
+    itineraries,
+    trackPoints,
+    trackTimes,
+    toleranceMeters,
+    stepMeters,
+    computedAt,
+  } = event.data
   const result = runMatching(itineraries, trackPoints, {
     toleranceMeters,
     stepMeters,
     computedAt,
+    trackTimes,
   })
   scope.postMessage({ requestId, result } satisfies MatchResponse)
 }

@@ -447,10 +447,14 @@ tests/
 Les règles 4 et 5 corrigent des faux positifs mesurés : une trace parallèle
 à 30 m créditait auparavant **100 %** d'un sentier jamais foulé. Les
 scénarios adverses sont dans `tests/unit/matchingQuality.test.ts`, avec les
-valeurs d'avant en commentaire. Limite connue : sans horodatage par point
-(le parseur ne le conserve pas), on ne peut pas distinguer une marche d'un
-trajet en voiture le long d'un sentier — un contrôle de vitesse reste à
-faire.
+valeurs d'avant en commentaire. Depuis #150, un second contrôle coupe aussi
+sur la vitesse : au-delà de **28,5 km/h** lissés sur une fenêtre d'une
+minute (seuil emprunté au record du monde du 800 m, pas inventé — CLAUDE.md
+§2), un segment est traité comme une coupure, ce qui écarte un trajet en
+voiture le long d'un sentier. Limite connue : un bruit de position de
+quelques dizaines de mètres peut encore créditer un sentier à tort —
+corriger ça demande de filtrer sur la précision GPS (`hdop`), pas encore
+fait faute d'un corpus réel pour poser un seuil sans l'inventer.
 
 ### Décisions notables
 

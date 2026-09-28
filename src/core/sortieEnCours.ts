@@ -1,4 +1,5 @@
 import { distanceMeters } from './geo.ts'
+import { GEO_OPTIONS } from './geolocation.ts'
 import { elevationGainMeters } from './gpx.ts'
 import {
   dureeEnMarche,
@@ -22,13 +23,36 @@ import type { ElevationProfile, LonLat, Track } from './types.ts'
  *   dans l'enregistrement ne le dit aujourd'hui ; le déduire de la position
  *   demanderait un appariement en direct, dont le seuil de tolérance change
  *   ce qui est compté (issues #150 et #151) ;
- * - **aucun filtre de bruit sur les positions.** Distance minimale entre
- *   deux points, intervalle minimal, seuil de précision : ces trois-là
- *   changent ce qui est enregistré, donc ce qui sera compté comme parcouru.
- *   Les fixer demande de mesurer sur des sorties réelles (CLAUDE.md §2).
- *   En attendant, tous les points comptent, et la distance affichée est
- *   celle du GPS brut — un peu plus longue que la réalité.
+ * - **aucun filtre de bruit sur les positions elles-mêmes.** Distance
+ *   minimale entre deux points, intervalle minimal, seuil de précision :
+ *   ces trois-là changent ce qui est enregistré, donc ce qui sera compté
+ *   comme parcouru. Les fixer demande de mesurer sur des sorties réelles
+ *   (CLAUDE.md §2). En attendant, tous les points comptent, et la distance
+ *   affichée est celle du GPS brut — un peu plus longue que la réalité.
+ *
+ *   Ce qui *est* filtré depuis le 25/09 (`MAX_GAP_MS`, ci-dessous) est
+ *   différent : ce n'est pas le bruit d'une position imprécise, c'est le
+ *   silence d'un GPS suspendu par le système pendant un écran verrouillé —
+ *   mesuré en vrai (Pixel 7, 25 minutes en poche), pas un cas d'école.
  */
+
+/**
+ * Au-delà de ce délai entre deux relevés RÉUSSIS, on ne les relie plus.
+ *
+ * Trouvé le 25/09, en vrai : un Pixel 7 en poche, écran verrouillé, n'a
+ * envoyé aucune position pendant 25 minutes — Android suspend
+ * `watchPosition` sans erreur ni avertissement, et personne n'a demandé de
+ * pause. Les deux relevés qui encadrent ce silence se sont retrouvés à
+ * 900 m l'un de l'autre, comptés comme une ligne droite marchée en une
+ * seconde.
+ *
+ * Emprunté à `GEO_OPTIONS.timeout`, pas inventé (§2) : c'est le délai que
+ * l'application se donne déjà avant de déclarer l'échec d'un relevé. Un
+ * écart plus grand que ça entre deux relevés qui ont **réussi** ne peut pas
+ * venir d'une attente normale — sinon le navigateur aurait rendu une erreur
+ * avant.
+ */
+const MAX_GAP_MS = GEO_OPTIONS.timeout ?? 20_000
 
 /** À quel intervalle de marche appartient un instant, ou -1 s'il tombe dehors. */
 function intervalleDe(instant: number, intervalles: Intervalle[]): number {
@@ -42,13 +66,15 @@ function intervalleDe(instant: number, intervalles: Intervalle[]): number {
 /**
  * La distance effectivement marchée, en mètres.
  *
- * **Le segment qui enjambe une pause n'est pas compté.** Une pause de deux
- * heures pendant laquelle on redescend en voiture chercher des lacets
- * laisserait, entre le dernier point d'avant et le premier point d'après,
- * un segment de quinze kilomètres que personne n'a marché. L'enregistrement
- * ne sait pas ce qui s'est passé : il n'écoutait pas. On ne compte que ce
- * qu'on a vu — c'est le même raisonnement qu'à la reprise après un onglet
- * tué.
+ * **Le segment qui enjambe une pause, ou un trou GPS silencieux, n'est pas
+ * compté.** Une pause de deux heures pendant laquelle on redescend en
+ * voiture chercher des lacets laisserait, entre le dernier point d'avant et
+ * le premier point d'après, un segment de quinze kilomètres que personne
+ * n'a marché. Un écran verrouillé vingt-cinq minutes fait exactement la
+ * même chose sans qu'on ait rien demandé (trouvé le 25/09, en vrai — voir
+ * `MAX_GAP_MS`). L'enregistrement ne sait pas ce qui s'est passé dans les
+ * deux cas : il n'écoutait pas. On ne compte que ce qu'on a vu — c'est le
+ * même raisonnement qu'à la reprise après un onglet tué.
  */
 export function distanceParcourue(e: Enregistrement): number {
   let total = 0
@@ -67,8 +93,8 @@ export function distanceParcourue(e: Enregistrement): number {
  *
  * Nommée pour que `distanceParcourue` et `profilDeSortie` la consultent
  * toutes les deux plutôt que de la recopier — le même segment qui enjambe
- * une pause ne doit pas allonger la distance affichée d'un côté et l'axe du
- * profil de l'autre (CLAUDE.md §4).
+ * une pause ou un trou GPS ne doit pas allonger la distance affichée d'un
+ * côté et l'axe du profil de l'autre (CLAUDE.md §4).
  */
 function segmentCompte(
   avant: PointBrut,
@@ -77,20 +103,61 @@ function segmentCompte(
 ): boolean {
   return (
     intervalleDe(avant.instant, intervalles) ===
-    intervalleDe(apres.instant, intervalles)
+      intervalleDe(apres.instant, intervalles) &&
+    apres.instant - avant.instant <= MAX_GAP_MS
   )
+}
+
+/**
+ * Découpe les points en tronçons continus, coupés aux pauses et aux trous
+ * GPS silencieux (`segmentCompte`) — pour que le dénivelé se calcule
+ * segment par segment, comme la distance et le profil, plutôt que sur la
+ * suite brute des altitudes.
+ */
+function segmentsMarches(e: Enregistrement): PointBrut[][] {
+  const segments: PointBrut[][] = []
+  let courant: PointBrut[] = []
+  let avant: PointBrut | null = null
+  for (const point of e.points) {
+    if (avant !== null && !segmentCompte(avant, point, e.intervalles)) {
+      segments.push(courant)
+      courant = []
+    }
+    courant.push(point)
+    avant = point
+  }
+  if (courant.length > 0) segments.push(courant)
+  return segments
 }
 
 /**
  * Le dénivelé positif cumulé, ou `null` si aucun point ne porte d'altitude.
  *
  * L'hystérésis de 3 m est celle qu'applique déjà `elevationGainMeters` à
- * toute trace importée : on ne s'en invente pas une autre. Deux formules
- * pour le même chiffre finiraient par diverger, et personne ne saurait
- * laquelle est affichée (CLAUDE.md §4).
+ * toute trace importée : on ne s'en invente pas une autre. Ce commentaire
+ * affirmait déjà cette unicité quand une seconde formule, asymétrique,
+ * vivait dans `elevation.ts` et rendait un chiffre différent sur un simple
+ * creux de terrain — trouvé le 23/09 par une chasse aux jumeaux (§4bis :
+ * l'affirmation n'était plus vraie, personne ne l'avait relue). Depuis le
+ * 25/09, `elevationGainMeters` délègue réellement à `elevationStats` : il
+ * n'existe plus qu'une seule formule, donc plus rien à diverger.
+ *
+ * Calculé segment par segment (`segmentsMarches`) depuis le 25/09 : c'était
+ * le seul des trois chiffres de l'écran de marche à ignorer `segmentCompte`
+ * — `distanceParcourue` et `profilDeSortie` le consultaient déjà, lui non,
+ * et un trou GPS silencieux (écran verrouillé) pouvait ajouter au dénivelé
+ * la différence d'altitude entre deux points qu'aucune marche ne relie.
  */
 export function deniveleParcouru(e: Enregistrement): number | null {
-  return elevationGainMeters(e.points.map((point) => point.altitude))
+  let gain = 0
+  let hasData = false
+  for (const segment of segmentsMarches(e)) {
+    const gainDuSegment = elevationGainMeters(segment.map((p) => p.altitude))
+    if (gainDuSegment === null) continue
+    hasData = true
+    gain += gainDuSegment
+  }
+  return hasData ? gain : null
 }
 
 export interface ChiffresSortie {

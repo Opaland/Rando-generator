@@ -37,7 +37,7 @@ libère beaucoup.
 
 | | Ce qu'il faut | Ce que ça débloque |
 |---|---|---|
-| **#150** | Un corpus de traces annotées — « ici je marchais, là j'étais en voiture ». `#204` dit exactement quoi et combien | Le seuil de vitesse du matching v3. Sans lui, on invente un nombre qui change ce qui est compté (CLAUDE.md §2) |
+| **#150** | Un corpus GPS annoté avec la précision (`hdop`) de chaque point réel | Le second test `LIMITE` de #150 (filtrer le bruit de position ±60 m). Le seuil de vitesse, lui, est réglé sans corpus, emprunté au record du monde du 800 m plutôt qu'inventé (CLAUDE.md §2) |
 | **#171 / E2** | Cinq personnes, une séance | La navigation par onglets est en service par défaut depuis le 22/08 **sans** que la séance ait eu lieu. Le pari n'est pas encore validé |
 | **#173 / E3–E4** | Théo (9 ans) et Jeanine (76 ans) menant chacun une tâche sans aide | L'issue reste ouverte tant que la preuve humaine manque — le code, lui, est fini |
 | **#203** | Un arbitrage : doubler les réglages dans `localStorage` (synchrone) ou accepter la fenêtre | Un réglage changé puis rechargé dans la seconde est perdu. La fenêtre est étroite ; doubler crée deux sources de vérité |
@@ -170,9 +170,7 @@ Dans cet ordre, parce que chacun suppose le précédent :
   l'instant le seul garde-fou est qu'on peut arrêter ;
 - **#154 — prévenir quand on quitte le parcours suivi**. Attention : c'est la
   frontière de « pas de navigation ». Prévenir qu'on s'écarte n'est pas
-  guider ; le vérifier auprès d'une personne avant de le construire ;
-- **#151 — deux sentiers à moins de 20 m se créditent l'un l'autre**. Bug de
-  matching, indépendant, à traiter quand le corpus de #150 sera là.
+  guider ; le vérifier auprès d'une personne avant de le construire.
 
 ---
 

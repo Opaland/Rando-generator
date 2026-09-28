@@ -42,6 +42,7 @@ import {
   waypointsDesEtapes,
 } from '../core/stages.ts'
 import { assessItinerary } from '../core/dataQuality.ts'
+import { recouvrementAvecTronc } from '../core/variantes.ts'
 import { lienOpenStreetMap } from '../core/lienOsm.ts'
 import {
   attributionDe,
@@ -250,6 +251,10 @@ export function ItineraryDetail() {
   // grande interruption quand on sait la situer — Marc arrive à l'endroit
   // qui manque, pas au début d'un GR de 400 km.
   const lienOsm = lienOpenStreetMap(itin, qualite.gaps)
+  // #333 : GR 76A à GR 76D partagent de 0 % à 39,3 % de leur tracé avec le
+  // GR 76 — jamais fusionné dans le pourcentage de complétion (décision de
+  // Cédric, 25/09), mais dit plutôt que tu.
+  const recouvrement = recouvrementAvecTronc(itin, itineraries)
 
   return (
     <aside
@@ -548,7 +553,7 @@ export function ItineraryDetail() {
         </section>
       )}
 
-      {(qualite.warnings.length > 0 || itin.osmUpdatedAt) && (
+      {(qualite.warnings.length > 0 || itin.osmUpdatedAt || recouvrement) && (
         <section className={styles.section} data-testid="detail-quality">
           <h4 className={styles.sectionTitle}>Qualité de la donnée</h4>
           <ul className={styles.quality}>
@@ -564,6 +569,29 @@ export function ItineraryDetail() {
                 . Un itinéraire balisé qui n’a pas bougé depuis longtemps n’est
                 pas forcément faux — mais le pourcentage affiché dépend de ce
                 tracé-là.
+              </li>
+            )}
+            {recouvrement && (
+              <li data-testid="detail-recouvrement">
+                {recouvrement.pourcentageDeLaVariante > 0 ? (
+                  <>
+                    Partage {Math.round(recouvrement.pourcentageDeLaVariante)}{' '}
+                    % de son tracé avec {recouvrement.tronc.ref}
+                    {recouvrement.tronc.name
+                      ? ` (${recouvrement.tronc.name})`
+                      : ''}
+                    . Les deux pourcentages restent comptés séparément — l’un
+                    ne fait pas avancer l’autre.
+                  </>
+                ) : (
+                  <>
+                    Ne partage aucun tronçon avec {recouvrement.tronc.ref}
+                    {recouvrement.tronc.name
+                      ? ` (${recouvrement.tronc.name})`
+                      : ''}
+                    , malgré un nom qui s’en rapproche.
+                  </>
+                )}
               </li>
             )}
           </ul>

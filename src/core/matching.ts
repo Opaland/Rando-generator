@@ -54,11 +54,39 @@ export interface MatchResult {
  *
  * Le seuil est haut à dessein : certains appareils n'enregistrent qu'un point
  * toutes les quelques minutes, soit plusieurs centaines de mètres, sans que
- * la marche ait été interrompue. Faute d'horodatage par point (le parseur ne
- * le conserve pas), la distance est le seul critère disponible — un contrôle
- * de vitesse serait plus juste et reste à faire.
+ * la marche ait été interrompue. Reste le seul critère quand `times` est
+ * absent (trace sans horodatage) ; sinon, `windowedSpeedMps` (#150) coupe
+ * aussi sur la vitesse, plus fin qu'une distance brute.
  */
 const MAX_GAP_METERS = 1_000
+
+/**
+ * Vitesse au-delà de laquelle un déplacement n'est plus une marche mais un
+ * trajet motorisé (issue #150). Ancrée sur le record du monde du 800 m
+ * (David Rudisha, 1 min 40,91 s, Jeux olympiques de Londres, 2012) : un
+ * effort quasi maximal tenu sur une durée proche de la fenêtre de lissage
+ * ci-dessous — choisi plutôt qu'inventé (§2/§6sexies).
+ *
+ * docs/MESURE_VITESSE_25_08.md établit, sur un corpus de six randonnées
+ * réelles (81 km, 21 h), qu'aucune ne dépasse 2,62 m/s sur une fenêtre d'une
+ * minute — mais le corpus ne contient pas de course à pied, donc le seuil ne
+ * peut pas se caler dessus sans risquer d'amputer un traileur en descente.
+ */
+const MAX_WALK_SPEED_MPS = 800 / 100.91 // ≈ 7,93 m/s (28,5 km/h)
+
+/**
+ * Fenêtre de lissage de la vitesse, en secondes (issue #150).
+ *
+ * 60 s est la première fenêtre où un FIT natif et son export GPX
+ * rééchantillonné à 1 Hz s'accordent à moins de 10 % l'un de l'autre
+ * (docs/MESURE_VITESSE_25_08.md). En dessous — et *a fortiori* point à
+ * point — la vitesse mesurée reflète le format d'export, pas la marche : le
+ * même corpus montre un facteur 20 entre le FIT natif d'une sortie
+ * (4,91 m/s) et son export GPX rééchantillonné (93,18 m/s), à cause des
+ * paires de points consécutifs identiques qu'un rééchantillonnage produit
+ * (jusqu'à 61 % des points sur une des six sorties).
+ */
+const SPEED_WINDOW_S = 60
 
 /** Échantillons consécutifs minimum pour créditer un passage (~300 m). */
 const MIN_RUN_SAMPLES = 3
@@ -76,6 +104,14 @@ export interface MatchOptions {
   computedAt: string
   minRunSamples?: number
   confirmRatio?: number
+  /**
+   * Horodatage de chaque point de `trackPoints`, en ms depuis l'epoch, même
+   * longueur et même ordre que `trackPoints` (issue #150). Absent pour une
+   * trace sans horodatage (GPX minimal sans `<time>`, itinéraire tracé) : le
+   * matching revient alors à la seule coupure par distance (MAX_GAP_METERS),
+   * comme avant cette option.
+   */
+  trackTimes?: (number | null)[] | undefined
 }
 
 /**
@@ -135,11 +171,67 @@ function addToCells(index: TrackIndex, segment: TrackSegment): void {
 }
 
 /**
- * Indexe la trace GPS sous forme de segments. Les sauts de plus de
- * MAX_GAP_METERS sont conservés comme deux points isolés plutôt que comme un
- * segment : rien ne dit que l'utilisateur a marché entre les deux.
+ * Vitesse lissée autour du segment [i-1, i], sur une fenêtre d'environ
+ * SPEED_WINDOW_S secondes construite à partir des points environnants dont
+ * l'horodatage est connu.
+ *
+ * Ne juge jamais un segment sur son seul écart instantané : un GPX
+ * rééchantillonné à 1 Hz alterne des paires de points identiques et des
+ * sauts qui doublent la vitesse apparente (docs/MESURE_VITESSE_25_08.md).
+ * Lisser sur la fenêtre efface cet artefact sans rien perdre de la distance
+ * réellement parcourue — elle est simplement répartie différemment entre
+ * les points.
+ *
+ * Rend `null` quand l'un des deux points du segment n'a pas d'horodatage :
+ * le segment est alors jugé uniquement sur la distance (MAX_GAP_METERS),
+ * comme avant cette option.
  */
-function buildTrackIndex(points: LonLat[]): TrackIndex {
+function windowedSpeedMps(
+  points: LonLat[],
+  times: (number | null)[],
+  i: number,
+): number | null {
+  const tA = times[i - 1]
+  const tB = times[i]
+  if (tA == null || tB == null) return null
+  const windowMs = SPEED_WINDOW_S * 1000
+  let lo = i - 1
+  while (lo > 0) {
+    const tPrev = times[lo - 1]
+    if (tPrev == null || tB - tPrev > windowMs) break
+    lo--
+  }
+  let hi = i
+  while (hi < points.length - 1) {
+    const tNext = times[hi + 1]
+    if (tNext == null || tNext - tA > windowMs) break
+    hi++
+  }
+  const tLo = times[lo]
+  const tHi = times[hi]
+  if (tLo == null || tHi == null) return null
+  const elapsedS = (tHi - tLo) / 1000
+  if (!(elapsedS > 0)) return null
+  let distance = 0
+  for (let k = lo + 1; k <= hi; k++) {
+    distance += distanceMeters(points[k - 1] as LonLat, points[k] as LonLat)
+  }
+  return distance / elapsedS
+}
+
+/**
+ * Indexe la trace GPS sous forme de segments. Un segment est conservé comme
+ * deux points isolés plutôt que comme un segment continu — rien ne dit que
+ * l'utilisateur a marché entre les deux — dans deux cas :
+ *
+ * - l'écart dépasse MAX_GAP_METERS (appareil éteint, gros trou d'échantillon) ;
+ * - la vitesse lissée sur la fenêtre autour du segment dépasse
+ *   MAX_WALK_SPEED_MPS (trajet motorisé), quand `times` est fourni (#150).
+ */
+function buildTrackIndex(
+  points: LonLat[],
+  times?: (number | null)[],
+): TrackIndex {
   const index: TrackIndex = new Map()
   if (points.length === 0) return index
   if (points.length === 1) {
@@ -150,7 +242,11 @@ function buildTrackIndex(points: LonLat[]): TrackIndex {
   for (let i = 1; i < points.length; i++) {
     const a = points[i - 1] as LonLat
     const b = points[i] as LonLat
-    if (distanceMeters(a, b) > MAX_GAP_METERS) {
+    const tropLoin = distanceMeters(a, b) > MAX_GAP_METERS
+    const tropRapide =
+      times != null &&
+      (windowedSpeedMps(points, times, i) ?? 0) > MAX_WALK_SPEED_MPS
+    if (tropLoin || tropRapide) {
       addToCells(index, { a, b: a })
       addToCells(index, { a: b, b })
     } else {
@@ -549,11 +645,15 @@ function computeCompletion(
  * faux positif, et transformerait une garde utile en bruit.
  *
  * Ce que cette fonction ne fait PAS : créditer quand même. Un point tous
- * les 1,5 km sur une ligne droite reste de l'information, mais savoir si on
- * peut la créditer sans rouvrir la faille du trajet en voiture demande une
- * vitesse — donc les horodatages de #149, et un corpus de traces réelles
- * qui n'existe pas encore. Cette fonction supprime la pire conséquence, le
- * silence ; elle ne prétend pas résoudre le fond.
+ * les 1,5 km sur une ligne droite reste de l'information, mais créditer sans
+ * rouvrir la faille du trajet en voiture demande une vitesse — les
+ * horodatages de #149 et le corpus de traces réelles existent désormais
+ * (docs/MESURE_VITESSE_25_08.md, utilisé par MAX_WALK_SPEED_MPS/
+ * windowedSpeedMps ci-dessus pour `buildTrackIndex`), mais cette fonction-ci
+ * ne les consulte pas : elle reste un simple avertissement de dépistage, pas
+ * un calcul de crédit. L'étendre pour créditer un espacement coarse-mais-
+ * horodaté resterait un item à part, pas fait ici. Cette fonction supprime
+ * la pire conséquence, le silence ; elle ne prétend pas résoudre le fond.
  */
 export function espacementTropGrand(points: LonLat[]): number | null {
   if (points.length < 2) return null
@@ -589,7 +689,7 @@ export function runMatching(
 ): MatchResult {
   const stepMeters = options.stepMeters ?? STEP_METERS
   const samples = buildSamples(itineraries, stepMeters)
-  const index = buildTrackIndex(trackPoints)
+  const index = buildTrackIndex(trackPoints, options.trackTimes)
   matchSamples(samples, index, options.toleranceMeters)
   const confirmMeters = options.toleranceMeters * CONFIRM_FACTOR
   const passages = applyContinuity(samples, {
