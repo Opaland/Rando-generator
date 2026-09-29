@@ -51,10 +51,25 @@ test('depuis la carte, chaque onglet montre son contenu', async ({ page }) => {
   // ne mesurait donc plus un invariant mais un coup de dé, et il l'a joué
   // en intégration continue : rouge trois fois de suite après avoir été
   // vert autant.
+  // « Réglages » visait `settings`, le bloc `<details>` entier de la
+  // précision GPS — ouvert par défaut dès qu'il y a des données, donc haut de
+  // 707 px. Mesuré à 390 × 844, feuille à mi-hauteur (349 px de haut) : son
+  // centre tombe à plus de 400 px sous le bas de la feuille, jamais peint.
+  //
+  // Trouvé le 29/09 en corrigeant #171 (repli forcé sur « Carte », voir
+  // maquetteOnglets.ts) : ce test passait quand même, parce que l'ancienne
+  // version de « Carte » laissait la feuille dans sa position d'avant, et le
+  // détour par plusieurs clics réels sur la poignée (`replier`) prenait assez
+  // de temps pour que `expect.poll` capture un instant transitoire où la
+  // feuille était encore à « pleine » — pas l'état final, réellement à
+  // « moitié ». Même défaut que « Sorties » ci-dessus, sur un autre onglet :
+  // un test qui passe pour une raison qu'on n'a pas voulue n'est pas un test
+  // (CLAUDE.md §1bis). Cible corrigée sur le titre de l'accordéon, en haut du
+  // contenu quel que soit son état ouvert/fermé.
   const attendu = {
     sorties: 'enregistreur',
     progression: 'global-pct',
-    reglages: 'settings',
+    reglages: 'settings-title',
   } as const
 
   for (const [onglet, cible] of Object.entries(attendu)) {
@@ -103,7 +118,7 @@ test('changer d’onglet ne referme jamais ce qui est ouvert', async ({ page }) 
   expect(await feuille.getAttribute('data-position')).toBe('pleine')
 })
 
-test('« Carte » ne bouge pas la feuille : son contenu est derrière', async ({
+test('« Carte » replie la feuille : son contenu est derrière, pas caché par un autre onglet', async ({
   page,
 }) => {
   await avecUneZone(page)
@@ -113,9 +128,15 @@ test('« Carte » ne bouge pas la feuille : son contenu est derrière', async ({
     await page.getByTestId('sheet-handle').click()
   }
   await page.getByTestId('onglet-carte').click()
-  // Perdre sa place dans la liste des zones parce qu'on a fait un
-  // aller-retour ne se rattrape pas ; la poignée, elle, est à un toucher.
-  expect(await feuille.getAttribute('data-position')).toBe('pleine')
+  // Revu le 29/09 (audit UI, #171) : laisser la feuille à « pleine » masquait
+  // la carte à 93 % (mesuré 7 % visible, 56 px sur 855, Pixel 7) dès qu'un
+  // autre onglet avait été déplié en grand — exactement l'onglet qui n'existe
+  // que pour montrer la carte. Le coût qu'on redoutait (perdre sa place dans
+  // la liste des zones) est réel mais moindre, et ne concerne que « Carte »
+  // elle-même, pas un aller-retour depuis un autre onglet.
+  await expect
+    .poll(() => feuille.getAttribute('data-position'), { timeout: 15_000 })
+    .toBe('repliee')
 })
 
 test('le défilement de la feuille repart du haut', async ({ page }) => {

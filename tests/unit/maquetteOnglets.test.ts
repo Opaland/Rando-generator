@@ -143,14 +143,23 @@ describe('sectionsDeLOnglet', () => {
  * l'écran ne bouge pas. Il fallait deviner qu'un second geste — tirer la
  * poignée — restait à faire.
  *
- * La règle tient en une phrase : **un onglet dont tout le contenu vit dans
- * la feuille l'ouvre ; un onglet qui a du contenu ailleurs ne la touche
- * pas.** « Carte » est le seul du second genre : son contenu, c'est la
- * carte, qui est derrière la feuille et non dedans.
+ * La règle tient en une phrase pour les trois onglets dont tout le contenu
+ * vit dans la feuille : elle s'ouvre en arrivant, et changer d'onglet ne la
+ * rétrécit jamais — quelqu'un qui a déplié en grand pour lire une longue
+ * liste ne doit pas la voir se refermer parce qu'il est allé voir ailleurs
+ * et revenu.
  *
- * Et changer d'onglet ne rétrécit jamais : quelqu'un qui a déplié en grand
- * pour lire une longue liste ne doit pas la voir se refermer parce qu'il est
- * allé voir ailleurs et revenu.
+ * « Carte » suit une règle inverse, et c'était faux avant le 29/09.
+ * L'ancienne version la laissait telle quelle, au nom du même principe — un
+ * aller-retour ne doit rien réduire. Mesuré en vrai (Pixel 7, #171) : en
+ * dépliant « Sorties » en pleine hauteur puis en retapant « Carte », la carte
+ * restait à 7 % de l'écran (56 px sur 855), cachée par le panneau de
+ * l'onglet précédent — alors que « Carte » est justement l'onglet dont le
+ * contenu utile est *derrière* la feuille, pas dedans. Le coût qui avait fait
+ * écarter le repli — perdre sa place dans la liste des zones après un
+ * aller-retour — est réel mais mineur à côté d'une carte invisible sur
+ * l'onglet qui n'existe que pour elle. « Carte » replie donc systématiquement
+ * en arrivant.
  */
 describe('positionPourOnglet', () => {
   it('ouvre la feuille pour un onglet qui n’a rien à montrer ailleurs', () => {
@@ -159,15 +168,15 @@ describe('positionPourOnglet', () => {
     }
   })
 
-  it('ne rétrécit jamais ce qui est déjà ouvert', () => {
+  it('ne rétrécit jamais ce qui est déjà ouvert, sauf pour « Carte »', () => {
     expect(positionPourOnglet('progression', 'moitie')).toBe('moitie')
     expect(positionPourOnglet('progression', 'pleine')).toBe('pleine')
     expect(positionPourOnglet('sorties', 'pleine')).toBe('pleine')
   })
 
-  it('laisse « Carte » comme elle est : son contenu est derrière la feuille', () => {
+  it('replie la feuille en arrivant sur « Carte », quelle que soit la position de départ', () => {
     for (const position of ['repliee', 'moitie', 'pleine'] as const) {
-      expect(positionPourOnglet('carte', position)).toBe(position)
+      expect(positionPourOnglet('carte', position)).toBe('repliee')
     }
   })
 
