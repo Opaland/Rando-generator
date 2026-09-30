@@ -286,7 +286,7 @@ function App() {
   const changerDOnglet = (onglet: Onglet) => {
     setOngletActif(onglet)
     if (filtrage) {
-      setFeuille(positionPourOnglet(onglet, position))
+      setFeuille(positionPourOnglet(onglet, position, hasZoneData))
       panneauRef.current?.scrollTo({ top: 0 })
       return
     }

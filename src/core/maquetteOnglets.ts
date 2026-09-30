@@ -223,13 +223,24 @@ export type PositionFeuille = 'repliee' | 'moitie' | 'pleine'
  * restait à 7 % de l'écran (56 px sur 855), cachée par le panneau de l'onglet
  * précédent — pas un aller-retour sur elle-même, mais n'importe quel autre
  * onglet laissé grand ouvert qui la rendait invisible. Le coût réel dépassait
- * largement celui qu'on avait pesé : « Carte » replie donc systématiquement.
+ * largement celui qu'on avait pesé : « Carte » replie donc systématiquement…
+ *
+ * **… sauf que non.** Ce repli systématique a cassé la CI le lendemain (15
+ * tests e2e rouges, run GitHub 36541166319) : `sectionsDeLOnglet('carte')`
+ * vaut `['zone']`, le sélecteur de zone vit *dans* la feuille, pas sur la
+ * carte. Le replier avant tout choix de zone rend `zone-pilat` et les autres
+ * boutons de zone intouchables — recouverts par la poignée elle-même,
+ * mesuré en CI : « intercepts pointer events », 30 s de tentatives, échec.
+ * Le contenu utile de « Carte » n'est *derrière* la feuille qu'une fois une
+ * zone chargée ; avant ça, il est *dedans*, exactement comme les trois
+ * autres onglets. L'exception ne s'applique donc que si `zoneChargee`.
  */
 export function positionPourOnglet(
   onglet: Onglet,
   courante: PositionFeuille,
+  zoneChargee: boolean,
 ): PositionFeuille {
-  if (onglet === 'carte') return 'repliee'
+  if (onglet === 'carte' && zoneChargee) return 'repliee'
   return courante === 'repliee' ? 'moitie' : courante
 }
 
