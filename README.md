@@ -370,6 +370,15 @@ regardé : un relief ou des POI périmés ne valent pas mieux qu'un message
 clair. Ce qui est gardé l'a été sur demande. Un bandeau l'explique dès que la
 connexion tombe.
 
+Une PWA ouverte depuis son icône ne revisite jamais le site : rien n'y
+déclenchait de vérification de mise à jour, et une correction pouvait rester
+invisible des semaines (signalé en usage réel le 29/09). Un bandeau
+« Nouvelle version disponible » apparaît maintenant dès qu'une version plus
+récente a pris la main en arrière-plan, avec un bouton « Recharger » —
+jamais automatique, puisque la même page peut porter un enregistrement en
+cours. Rien n'est perdu en rechargeant quand même : une sortie non terminée
+se retrouve en pause, comme après un onglet tué.
+
 Sur téléphone, la carte occupe tout le cadre et le panneau de contrôle devient
 une feuille glissante à trois positions : repliée sur sa seule poignée — qui
 affiche le pourcentage global —, à mi-hauteur, ou presque plein écran. Elle
