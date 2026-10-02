@@ -102,6 +102,10 @@ lit pour chacune.
    annonce celui qu'il est en train de lire. **Déplier une trace** montre ce
    que cette sortie-là a fait avancer : quels itinéraires balisés, et de
    combien (un simple croisement de sentier, sous 300 m, n'est pas compté).
+   Chaque trace — enregistrée ou importée — se **réexporte en GPX** à son
+   tour (horodatage par point conservé quand il existe), pour la reprendre
+   dans une montre ou une autre application sans jamais l'avoir laissée
+   captive de Sentiers.
 4. **Créer « Mes itinéraires »** : importez le GPX d'un parcours *à faire*
    (cartoguide, Visorando, tracé maison…) — il devient un itinéraire local
    avec sa propre progression, hors statistiques des réseaux OSM. Ou

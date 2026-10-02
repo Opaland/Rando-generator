@@ -1,4 +1,4 @@
-import type { Itinerary, LonLat, Network } from './types.ts'
+import type { Itinerary, LonLat, Network, Track } from './types.ts'
 
 /**
  * Export GPX : de quoi charger un itinéraire dans une montre, un GPS ou une
@@ -112,6 +112,14 @@ export interface GpxExportOptions {
    * un seul, le tracé reste entier, et les coupures se lisent dessus.
    */
   waypoints?: GpxWaypoint[]
+  /**
+   * Horodatage ISO de chaque point, aligné sur `coords` (issue sprint 1,
+   * export d'une sortie enregistrée ou importée). `null` à un index donné
+   * veut dire que ce point précis n'a pas d'horaire — on ne l'invente pas,
+   * on l'omet. Absent, aucun `<time>` de point n'est écrit : c'est le cas
+   * d'un itinéraire-cible, qui n'a jamais été marché.
+   */
+  pointTimes?: (string | null)[]
 }
 
 function escapeXml(text: string): string {
@@ -132,10 +140,15 @@ export function buildGpxDocument(options: GpxExportOptions): string {
 
   const safeName = escapeXml(name.trim() || 'Itinéraire')
   const points = coords
-    .map(
-      ([lon, lat]) =>
-        `      <trkpt lat="${lat.toFixed(7)}" lon="${lon.toFixed(7)}"></trkpt>`,
-    )
+    .map(([lon, lat], i) => {
+      // Schéma GPX 1.1 : à l'intérieur de <trkpt>, <time> vient après <ele>
+      // (absent ici, aucun point de trace ne porte d'altitude).
+      const instant = options.pointTimes?.[i]
+      const balise = instant
+        ? `\n        <time>${escapeXml(instant)}</time>\n      `
+        : ''
+      return `      <trkpt lat="${lat.toFixed(7)}" lon="${lon.toFixed(7)}">${balise}</trkpt>`
+    })
     .join('\n')
 
   // L'ordre des éléments de <metadata> est imposé par le schéma GPX 1.1 :
@@ -175,6 +188,54 @@ ${points}
   </trk>
 </gpx>
 `
+}
+
+/**
+ * Le nom de fichier d'une trace, sans son extension — c'est le nom qu'on
+ * veut voir dans les métadonnées GPX, pas « activity_18274639.gpx ».
+ *
+ * `versTrace` (sortieEnCours.ts) ne pose jamais d'extension sur une sortie
+ * enregistrée (« Sortie enregistrée ») : le remplacement est un no-op pour
+ * elle, et ne touche que les traces importées.
+ */
+export function trackDisplayName(track: Track): string {
+  return track.filename.replace(/\.(gpx|fit|tcx)$/i, '')
+}
+
+/**
+ * Exporte une trace personnelle — enregistrée ou importée — en GPX.
+ *
+ * Trou laissé ouvert depuis la livraison de l'enregistrement (#152) :
+ * `enregistrementSlice.ts` dit qu'une sortie terminée devient « une trace
+ * comme une autre — appariée, comptée, **exportable** », mais rien ne
+ * l'exportait. Sans ça, une sortie faite dans l'application ne pouvait en
+ * ressortir sous aucune forme — à l'inverse de la promesse « vos données
+ * restent les vôtres ».
+ *
+ * Jamais d'attribution : une `Track` est toujours la trace de la personne
+ * — enregistrée par elle ou déposée par elle —, jamais une donnée balisée
+ * de tiers (ça, c'est `Itinerary`, et c'est `attributionDe` qui s'en
+ * charge).
+ */
+export function gpxDocumentFromTrack(track: Track): string {
+  return buildGpxDocument({
+    name: trackDisplayName(track),
+    coords: track.points,
+    attribution: null,
+    // La date de la sortie plutôt que celle de son rangement en base ; à
+    // défaut (trace importée sans date lisible), le moment de l'import
+    // reste le seul horodatage dont on dispose.
+    createdAt: track.date ?? track.importedAt,
+    // `exactOptionalPropertyTypes` : une trace sans `times` ne doit pas
+    // poser `pointTimes: undefined`, qui n'est pas la même chose que
+    // l'absence de la clé — l'un et l'autre valent « rien à écrire », mais
+    // seule l'absence est un type valide ici.
+    ...(track.times && {
+      pointTimes: track.times.map((t) =>
+        t === null ? null : new Date(t).toISOString(),
+      ),
+    }),
+  })
 }
 
 /** Nom de fichier sûr, sans accent ni caractère interdit par les systèmes. */

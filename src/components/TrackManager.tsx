@@ -16,6 +16,12 @@ import {
   type EntreeHistorique,
 } from '../core/historique.ts'
 import { ConfirmDeleteButton } from './ConfirmDeleteButton.tsx'
+import {
+  gpxDocumentFromTrack,
+  gpxFilename,
+  trackDisplayName,
+} from '../core/gpxExport.ts'
+import { downloadTextFile } from '../lib/download.ts'
 import styles from './TrackManager.module.css'
 
 const SUCCESS_TIMEOUT_MS = 4000
@@ -481,6 +487,19 @@ function ItemTrace({
             Importée depuis&nbsp;: {track.zoneALImport}
           </span>
         )}
+      </button>
+      <button
+        type="button"
+        className="btn-secondary"
+        data-testid={`track-export-${track.filename}`}
+        onClick={() => {
+          downloadTextFile(
+            gpxFilename(trackDisplayName(track)),
+            gpxDocumentFromTrack(track),
+          )
+        }}
+      >
+        Exporter en GPX
       </button>
       <ConfirmDeleteButton
         label={`Supprimer la trace ${track.filename}`}
