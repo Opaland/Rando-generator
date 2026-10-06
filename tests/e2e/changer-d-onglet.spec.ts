@@ -139,6 +139,34 @@ test('« Carte » replie la feuille : son contenu est derrière, pas caché par 
     .toBe('repliee')
 })
 
+test('« pleine » ne réserve le haut que sur « Carte », qui a quelque chose dessous', async ({
+  page,
+}) => {
+  await avecUneZone(page)
+  const feuille = page.getByTestId('sidebar')
+
+  await page.getByTestId('onglet-carte').click()
+  while ((await feuille.getAttribute('data-position')) !== 'pleine') {
+    await page.getByTestId('sheet-handle').click()
+  }
+  // La transition CSS dure 0,2 s (§1bis) : on la laisse finir avant de
+  // mesurer, comme carte.spec.ts et loading.spec.ts le font déjà.
+  await page.waitForTimeout(300)
+  const hauteurCarte = (await feuille.boundingBox())?.height ?? 0
+
+  // Rester à « pleine » en changeant d'onglet (déjà garanti par le test
+  // ci-dessus) : aucun second cycle de poignée n'est nécessaire.
+  await page.getByTestId('onglet-sorties').click()
+  await expect(feuille).toHaveAttribute('data-position', 'pleine')
+  await page.waitForTimeout(300)
+  const hauteurSorties = (await feuille.boundingBox())?.height ?? 0
+
+  // « Sorties » n'a rien derrière la feuille : les 24 px réservés en haut
+  // pour apercevoir la carte sous « Carte » n'ont aucune raison de s'imposer
+  // aussi ici.
+  expect(hauteurSorties).toBeGreaterThan(hauteurCarte + 15)
+})
+
 test('le défilement de la feuille repart du haut', async ({ page }) => {
   await avecUneZone(page)
   await page.getByTestId('onglet-sorties').click()

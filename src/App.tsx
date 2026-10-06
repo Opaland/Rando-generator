@@ -427,6 +427,7 @@ function App() {
           aria-label={filtrage ? 'Contenu de l’onglet' : 'Panneau de contrôle'}
           data-testid="sidebar"
           data-position={position}
+          data-onglet={ongletActif}
           id="panneau-de-controle"
           hidden={panneauLarge && panneauReplie}
         >
