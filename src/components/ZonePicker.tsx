@@ -236,7 +236,12 @@ export function ZonePicker() {
         vérifié par la suite e2e complète, qui clique une zone par testid dans
         plus de soixante-dix fichiers sans qu'aucun n'ait dû changer.
       */}
-      <div className={styles.listeDesZones} data-testid="zone-liste">
+      <div
+        className={styles.listeDesZones}
+        data-testid="zone-liste"
+        role="group"
+        aria-label="Liste des zones"
+      >
         {GROUPES.map((groupe) => (
           <Fragment key={groupe.id}>
             <p className={styles.groupTitle} id={`${groupe.id}-title`}>

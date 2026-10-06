@@ -173,3 +173,19 @@ test('la carte s’annonce comme une région, et la liste mène partout où elle
   // Les points d'intérêt aussi : sur la carte ils ne s'ouvrent qu'au clic.
   await expect(fiche).toContainText(/point|eau|abri|refuge|aucun/i)
 })
+
+test('le conteneur défilant des zones s’annonce, avant tout choix (#528)', async ({
+  page,
+}) => {
+  await mockExternalNetwork(page)
+  await page.goto('/')
+
+  // Avant tout choix de zone, c'est le seul contenu utile de l'écran : un
+  // lecteur d'écran qui y entre doit savoir qu'il parcourt un groupe de
+  // zones, pas une suite de boutons sans titre. Les groupes internes
+  // (« AURA », « Pilat »…) portaient déjà `role="group"` ; le conteneur qui
+  // les enveloppe, lui, n'avait ni rôle ni nom.
+  const liste = page.getByTestId('zone-liste')
+  await expect(liste).toHaveAttribute('role', 'group')
+  await expect(liste).toHaveAttribute('aria-label', /zone/i)
+})
