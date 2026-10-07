@@ -190,3 +190,46 @@ test('le défilement de la feuille repart du haut', async ({ page }) => {
   await page.getByTestId('onglet-progression').click()
   expect(await feuille.evaluate((e) => e.scrollTop)).toBe(0)
 })
+
+test('un balayage sur la barre d’onglets change d’onglet (sprint 3)', async ({
+  page,
+}) => {
+  await avecUneZone(page)
+  // `avecUneZone` affiche tous les réseaux, ce qui passe par « Progression »
+  // (afficherTousLesReseaux) : repartir d'un onglet connu plutôt que de
+  // supposer lequel ce détour a laissé actif.
+  await page.getByTestId('onglet-carte').click()
+  const barre = page.getByTestId('barre-onglets')
+  const boite = await barre.boundingBox()
+  if (!boite) throw new Error('barre-onglets introuvable')
+  const y = boite.y + boite.height / 2
+
+  // Depuis « Carte » : balayer vers la gauche amène « Sorties », le
+  // suivant dans l'ordre affiché par la barre.
+  await page.mouse.move(boite.x + boite.width - 20, y)
+  await page.mouse.down()
+  await page.mouse.move(boite.x + 20, y, { steps: 10 })
+  await page.mouse.up()
+  await expect(page.getByTestId('onglet-sorties')).toHaveAttribute(
+    'aria-current',
+    'page',
+  )
+
+  // Et balayer vers la droite revient en arrière.
+  await page.mouse.move(boite.x + 20, y)
+  await page.mouse.down()
+  await page.mouse.move(boite.x + boite.width - 20, y, { steps: 10 })
+  await page.mouse.up()
+  await expect(page.getByTestId('onglet-carte')).toHaveAttribute(
+    'aria-current',
+    'page',
+  )
+
+  // Et un simple tap, sans déplacement, continue de fonctionner comme avant
+  // : le geste ne doit rien retirer à l'existant.
+  await page.getByTestId('onglet-reglages').click()
+  await expect(page.getByTestId('onglet-reglages')).toHaveAttribute(
+    'aria-current',
+    'page',
+  )
+})

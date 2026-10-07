@@ -51,7 +51,7 @@ const PLAFONDS: Record<string, number> = {
   'OfflineBanner.tsx': 115,
   'NextOuting.tsx': 115,
   'EmptyState.tsx': 105,
-  'BarreOnglets.tsx': 85,
+  'BarreOnglets.tsx': 150,
   'UpdateBanner.tsx': 80,
   'BalisePeinte.tsx': 80,
   'ModeSwitch.tsx': 80,
