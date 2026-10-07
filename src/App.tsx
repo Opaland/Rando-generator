@@ -10,6 +10,7 @@ import { About } from './components/About.tsx'
 import { Backup } from './components/Backup.tsx'
 import { CustomItineraries } from './components/CustomItineraries.tsx'
 import { Dashboard } from './components/Dashboard.tsx'
+import { DemarrerRapide } from './components/DemarrerRapide.tsx'
 import { EmptyState } from './components/EmptyState.tsx'
 import { Enregistreur } from './components/Enregistreur.tsx'
 import { temoinDeSortie } from './core/sortieEnCours.ts'
@@ -624,7 +625,19 @@ function App() {
           <ItineraryCard />
           <ItineraryDetail />
           <RouteDrawer />
-          <LocateButton />
+          <LocateButton
+            avant={
+              onglets &&
+              ongletActif !== 'sorties' &&
+              enregistrement.etat === 'repos' && (
+                <DemarrerRapide
+                  onDemarrer={() => {
+                    changerDOnglet('sorties')
+                  }}
+                />
+              )
+            }
+          />
         </main>
       </div>
 

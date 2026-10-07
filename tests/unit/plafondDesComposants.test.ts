@@ -59,6 +59,7 @@ const PLAFONDS: Record<string, number> = {
   'LocateButton.tsx': 65,
   'ProgressBalise.tsx': 60,
   'DemoBanner.tsx': 55,
+  'DemarrerRapide.tsx': 55,
   'PoigneeTexte.tsx': 40,
 }
 

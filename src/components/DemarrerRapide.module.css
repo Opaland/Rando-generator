@@ -1,0 +1,21 @@
+.bouton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espace-4);
+  box-shadow: var(--ombre-flottante);
+  white-space: nowrap;
+}
+
+/* Même palier que LocateButton : le libellé cède la place à l'icône seule
+   une fois la carte étroite. */
+@media (max-width: 800px) {
+  .bouton span:last-child {
+    display: none;
+  }
+
+  .bouton {
+    padding: var(--espace-4);
+    min-width: 44px;
+    justify-content: center;
+  }
+}
