@@ -423,6 +423,14 @@ préférence système est consultée pour le mouvement et ignorée pour la
 lumière. Un départ se prépare à l'aube, et 400 nits de blanc dans un dortoir
 réveillent tout le monde.
 
+**Corrigé depuis** (volet 1) : `src/index.css` suit maintenant
+`prefers-color-scheme: dark`, éprouvé aux quatre modes (clair/sombre ×
+normal/gros texte) par `tests/unit/couleurs.test.ts` et
+`tests/e2e/contraste-rendu.spec.ts`. Le second volet que l'issue laissait
+ouvert — un réglage explicite dans « Affichage », en plus du suivi système —
+a été tranché par Cédric le 07/10 : non, le suivi système suffit (revue
+sprints 3+4).
+
 ## Ceux qui n'ont rien trouvé
 
 Ce sont des mesures, pas des impressions : elles sont datées et
