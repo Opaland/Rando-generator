@@ -69,6 +69,17 @@ export function BarreOnglets({
       aria-label="Sections de l’application"
       data-testid="barre-onglets"
       onPointerDown={(evenement) => {
+        // Seul le bouton principal (ou un contact tactile, qui vaut 0 lui
+        // aussi) compte comme un balayage — sinon un glissé au bouton droit
+        // changeait d'onglet au lieu d'ouvrir un menu contextuel (trouvé en
+        // revue, #balayage).
+        if (evenement.button !== 0) return
+        // Remis à plat ici, et pas seulement après le clic qui suit
+        // d'ordinaire un balayage : sur un vrai doigt, un geste qui dépasse
+        // le seuil de tap du navigateur ne déclenche souvent aucun clic de
+        // suivi, et le drapeau serait resté levé pour avaler le tap
+        // suivant, sans rapport (trouvé en revue, #balayage).
+        vientDeBalayer.current = false
         depart.current = { x: evenement.clientX, y: evenement.clientY }
       }}
       onPointerUp={(evenement) => {

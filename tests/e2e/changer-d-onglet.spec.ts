@@ -233,3 +233,84 @@ test('un balayage sur la barre d’onglets change d’onglet (sprint 3)', async 
     'page',
   )
 })
+
+test('un balayage sans clic de suivi ne doit pas avaler le tap suivant (revue sprint 3+4)', async ({
+  page,
+}) => {
+  /*
+    Un vrai doigt qui glisse au-delà du seuil de tap d'un navigateur mobile
+    ne déclenche généralement pas le clic synthétique qui suit d'ordinaire
+    un pointerup — c'est ce qui distingue justement un balayage d'un tap. Le
+    mouse-drag de Playwright, lui, déclenche toujours ce clic, donc le test
+    précédent ne pouvait pas voir ce défaut : il fallait reproduire
+    exactement l'absence de clic en dispatchant les événements pointeur à la
+    main, sans laisser le navigateur produire le sien.
+  */
+  await avecUneZone(page)
+  await page.getByTestId('onglet-carte').click()
+  const barre = page.getByTestId('barre-onglets')
+  const boite = await barre.boundingBox()
+  if (!boite) throw new Error('barre-onglets introuvable')
+  const y = boite.y + boite.height / 2
+
+  await page.evaluate(
+    ({ x1, x2, y: yy }) => {
+      const nav = document.querySelector(
+        '[data-testid="barre-onglets"]',
+      ) as HTMLElement
+      nav.dispatchEvent(
+        new PointerEvent('pointerdown', {
+          clientX: x1,
+          clientY: yy,
+          bubbles: true,
+          pointerId: 1,
+        }),
+      )
+      nav.dispatchEvent(
+        new PointerEvent('pointerup', {
+          clientX: x2,
+          clientY: yy,
+          bubbles: true,
+          pointerId: 1,
+        }),
+      )
+    },
+    { x1: boite.x + boite.width - 20, x2: boite.x + 20, y },
+  )
+  await expect(page.getByTestId('onglet-sorties')).toHaveAttribute(
+    'aria-current',
+    'page',
+  )
+
+  // Le balayage a fonctionné ; c'est le tap suivant, normal, qui doit
+  // continuer de fonctionner.
+  await page.getByTestId('onglet-progression').click()
+  await expect(page.getByTestId('onglet-progression')).toHaveAttribute(
+    'aria-current',
+    'page',
+  )
+})
+
+test('un déplacement au bouton droit ne change pas d’onglet (revue sprint 3+4)', async ({
+  page,
+}) => {
+  // La barre est rendue à toutes les largeurs, y compris sur PC, où un
+  // bouton autre que le principal peut glisser sur la barre (menu
+  // contextuel, sélection…). Seul le bouton principal doit valoir pour un
+  // balayage.
+  await avecUneZone(page)
+  await page.getByTestId('onglet-carte').click()
+  const barre = page.getByTestId('barre-onglets')
+  const boite = await barre.boundingBox()
+  if (!boite) throw new Error('barre-onglets introuvable')
+  const y = boite.y + boite.height / 2
+
+  await page.mouse.move(boite.x + boite.width - 20, y)
+  await page.mouse.down({ button: 'right' })
+  await page.mouse.move(boite.x + 20, y, { steps: 10 })
+  await page.mouse.up({ button: 'right' })
+  await expect(page.getByTestId('onglet-carte')).toHaveAttribute(
+    'aria-current',
+    'page',
+  )
+})
