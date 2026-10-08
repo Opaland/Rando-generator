@@ -95,6 +95,62 @@ const NETWORK_COLOR_MATCH = [
 ] as unknown as ExpressionSpecification
 
 /**
+ * Visibilité des tracés selon le zoom (issue #523, demande de Cédric).
+ *
+ * Avant ce palier, chaque couche portait une largeur fixe : à l'échelle
+ * d'une région entière, tous les tracés se peignaient aussi épais qu'au
+ * zoom le plus rapproché, et se recouvraient.
+ *
+ * Choix de présentation, posé au jugé et non mesuré (§2) :
+ * - `ZOOM_TRACES_PLEINE_LARGEUR` (11) retrouve la largeur actuelle du
+ *   **liseré** (`trails-casing`) ; en dessous, lui seul s'amincit. Le palier
+ *   est posé par rapport à l'ancrage déjà présent dans `useMapCamera.ts`
+ *   (zoom 15 pour « regarder un itinéraire sélectionné ») : sous 11, ce qui
+ *   est à l'écran dépasse largement une seule sortie — c'est précisément la
+ *   situation que #523 décrit (ex. « Auvergne-Rhône-Alpes, par
+ *   département ») ;
+ * - `ZOOM_DETAIL_REVETEMENT` (12), un palier au-dessus : la bande de
+ *   revêtement, décalée de 3 px, ne se lit pas tant que le liseré lui-même
+ *   n'a pas retrouvé sa taille normale.
+ *
+ * **`trails-base` et `trails-done` (et leurs sœurs `-grp`) gardent leur
+ * largeur fixe**, bien qu'elles fassent partie des couches visuellement les
+ * plus épaisses : ce sont aussi les seules couches cliquables
+ * (`TRAILS_CLIQUABLES`, lues par `useMapInteractions.ts`), et MapLibre
+ * calcule la zone cliquable d'une ligne à partir de sa largeur **rendue**.
+ * Les amincir cassait le clic sur un tracé à faible zoom — mesuré : onze
+ * tests e2e passant par `openDetailFromMap` ont rougi dès la première
+ * tentative, tous pour la même raison (la fiche détail ne s'ouvrait plus).
+ * Le liseré, lui, ne reçoit aucun gestionnaire de clic : l'amincir ne
+ * retire aucune zone cliquable.
+ *
+ * Pistes écartées : un dégradé continu (`interpolate`) aurait demandé
+ * plusieurs points de contrôle à justifier pour un gain non mesuré ; baisser
+ * aussi `line-opacity` aurait ajouté un second nombre inventé pour le même
+ * objectif (moins de poids visuel) déjà atteint par la largeur seule ;
+ * élargir la zone de détection du clic indépendamment de la largeur rendue
+ * (un `line-width` invisible plus large uniquement pour la détection)
+ * aurait découplé ce qu'on voit de ce qu'on touche, une source de confusion
+ * plus coûteuse que le gain visuel recherché ici.
+ */
+const ZOOM_TRACES_PLEINE_LARGEUR = 11
+const ZOOM_DETAIL_REVETEMENT = 12
+
+/** Étroit avant `ZOOM_TRACES_PLEINE_LARGEUR`, la largeur actuelle à partir de là. */
+function largeurParZoom(
+  etroite: number,
+  pleine: number,
+): ExpressionSpecification {
+  return [
+    'step',
+    ['zoom'],
+    etroite,
+    ZOOM_TRACES_PLEINE_LARGEUR,
+    pleine,
+  ] as unknown as ExpressionSpecification
+}
+
+/**
  * Couches d'itinéraires « de base » — chacune a une soeur `-grp` depuis
  * #360 (le GRP y est filtré à part pour porter un tireté). Nommée plutôt
  * que recopiée (§4/§4ter) : `useMapInteractions.ts` en a besoin pour savoir
@@ -142,7 +198,7 @@ export function baseStyle(tiles: string, attribution: string): StyleSpecificatio
         source: 'trails',
         paint: {
           'line-color': BLANC_BALISAGE,
-          'line-width': 6,
+          'line-width': largeurParZoom(3, 6),
           'line-opacity': 0.85,
         },
         layout: { 'line-cap': 'round', 'line-join': 'round' },
@@ -215,6 +271,7 @@ export function baseStyle(tiles: string, attribution: string): StyleSpecificatio
         type: 'line',
         source: 'trails-revetement',
         filter: ['!=', ['get', 'tirets'], true],
+        minzoom: ZOOM_DETAIL_REVETEMENT,
         paint: {
           'line-color': ['get', 'couleur'] as unknown as ExpressionSpecification,
           'line-width': 2.5,
@@ -242,6 +299,7 @@ export function baseStyle(tiles: string, attribution: string): StyleSpecificatio
         type: 'line',
         source: 'trails-revetement',
         filter: ['==', ['get', 'tirets'], true],
+        minzoom: ZOOM_DETAIL_REVETEMENT,
         paint: {
           'line-color': ['get', 'couleur'] as unknown as ExpressionSpecification,
           'line-width': 2.5,
