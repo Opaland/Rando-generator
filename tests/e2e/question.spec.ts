@@ -48,6 +48,26 @@ test.describe('une question en toutes lettres', () => {
     await expect(page.getByTestId('list-shape')).toHaveValue('loop')
   })
 
+  test('écrit aussi ce qu’elle a compris (#477)', async ({ page }) => {
+    await page.getByTestId('list-question').fill('une boucle de moins de 12 km')
+    await page.getByTestId('list-question-ok').click()
+
+    // Jusqu'ici l'écran ne disait que ce qu'il n'avait pas compris — jamais
+    // ce qu'il avait réellement pris en compte, qu'il fallait deviner en
+    // regardant les listes changer.
+    const dit = page.getByTestId('question-compris')
+    await expect(dit).toBeVisible()
+    await expect(dit).toContainText('moins de 12 km')
+  })
+
+  test('n’écrit rien de compris sur une phrase entièrement ignorée', async ({
+    page,
+  }) => {
+    await page.getByTestId('list-question').fill('où est-ce qu’on mange bien ?')
+    await page.getByTestId('list-question-ok').click()
+    await expect(page.getByTestId('question-compris')).toHaveCount(0)
+  })
+
   test('écrit ce qu’elle n’a pas compris', async ({ page }) => {
     await page
       .getByTestId('list-question')

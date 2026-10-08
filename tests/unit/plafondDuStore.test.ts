@@ -60,15 +60,21 @@ const PLAFONDS: Record<string, number> = {
     vérifiait. Un plafond qu'on ne redescend pas après un découpage autorise
     à reprendre exactement ce qu'on vient de rendre.
 
-    Ce qui reste au-delà de 1 106 est la composition elle-même : `init()`
-    ouvre la base et fusionne huit réglages persistés, et sept fabriques de
-    tranches (`trancheZone`, `trancheRecherche`, `trancheAffichage`…) sont
-    instanciées et câblées ici, nulle part ailleurs. Ni l'un ni l'autre ne
-    se réduit à une neuvième tranche sans déplacer le problème plutôt que le
-    résoudre — c'est la seconde réponse honnête que ce fichier nomme,
-    appliquée cette fois au fichier qui reste après la première.
+    Redescendu de 1 130 à 1 105 le 30/09 (revue technique), quand les
+    objectifs épinglés sont sortis dans `trancheObjectifs.ts` : 1 115 lignes
+    avant (marge tombée à 15, la troisième fois que « ça finira par casser »
+    se vérifiait), 1 082 après.
+
+    Ce qui reste au-delà de 1 082 est la composition elle-même : `init()`
+    ouvre la base et fusionne huit réglages persistés, et une dizaine de
+    fabriques de tranches (`trancheZone`, `trancheRecherche`,
+    `trancheAffichage`, `trancheObjectifs`…) sont instanciées et câblées
+    ici, nulle part ailleurs. Ni l'un ni l'autre ne se réduit à une tranche
+    de plus sans déplacer le problème plutôt que le résoudre — c'est la
+    seconde réponse honnête que ce fichier nomme, appliquée cette fois au
+    fichier qui reste après la seconde extraction.
   */
-  'appStore.ts': 1_130,
+  'appStore.ts': 1_105,
   /*
     Descendu de 540 à 530 le 01/09, quand la recherche de lieu est sortie
     (#454) : 510 lignes après. Un plafond qu'on ne redescend pas après un
@@ -120,6 +126,13 @@ const PLAFONDS: Record<string, number> = {
   // avait déjà été fausse en #437.
   'epilogueDImport.ts': 80,
   'matchingClient.ts': 110,
+  /*
+    Sorti d'`appStore.ts` le 30/09 (revue technique) : objectifs épinglés,
+    bascule et calcul du reste à marcher. 90 lignes, dont la moitié de
+    commentaire — le plafond laisse la place d'une garde de plus, pas d'une
+    fonctionnalité.
+  */
+  'trancheObjectifs.ts': 110,
 }
 
 describe('le store ne regrossit pas en silence', () => {

@@ -23,7 +23,7 @@ import {
   detoursParItineraire,
   type DetoursPoi,
 } from '../core/poisDeZone.ts'
-import { lireIntention } from '../core/intention.ts'
+import { lireIntention, type Fragment } from '../core/intention.ts'
 import { RESEAUX_FILTRABLES } from '../core/reseaux.ts'
 import { comptesMasques } from '../core/lisibilite.ts'
 import { useReseauxVisibles } from '../store/reseauxVisibles.ts'
@@ -207,12 +207,20 @@ export function ItineraryList() {
     useState<Partial<DiscoveryFilters> | null>(null)
   const [question, setQuestion] = useState('')
   const [incompris, setIncompris] = useState<string[]>([])
+  /**
+   * Ce que la question a fait tenir, pour le dire — pas seulement ce qu'elle
+   * n'a pas tenu (issue #477). La donnée existait déjà dans `Intention`
+   * (`compris[].texte`, déjà gardée par `tests/unit/intention.test.ts`) ;
+   * seul l'écran la taisait, en ne montrant que l'ignoré.
+   */
+  const [compris, setCompris] = useState<Fragment[]>([])
 
   const lancerLaQuestion = (texte: string) => {
     const lue = lireIntention(texte)
     if (lue.compris.length === 0) {
       setDepuisQuestion(null)
       setIncompris(lue.incompris)
+      setCompris([])
       return
     }
     /*
@@ -234,6 +242,7 @@ export function ItineraryList() {
     }
     setDepuisQuestion(Object.keys(pose).length > 0 ? pose : null)
     setIncompris(lue.incompris)
+    setCompris(lue.compris)
   }
 
   /**
@@ -438,6 +447,7 @@ export function ItineraryList() {
     setDepuisQuestion(null)
     setQuestion('')
     setIncompris([])
+    setCompris([])
   }
 
   return (
@@ -561,6 +571,11 @@ export function ItineraryList() {
             Appliquer
           </button>
         </form>
+        {compris.length > 0 && (
+          <p className={styles.hint} data-testid="question-compris">
+            Compris : {compris.map((f) => f.texte).join(', ')}.
+          </p>
+        )}
         {incompris.length > 0 && (
           <p className={styles.hint} data-testid="question-incompris">
             Je n’ai pas su quoi faire de : {incompris.join(', ')}. Le reste de

@@ -1,0 +1,25 @@
+.bandeau {
+  /* Même palette que DemoBanner, pour la même raison : ni une erreur, ni
+     une décision — un état qu'on choisit de regarder ou non. */
+  border-left: 4px solid var(--attention-bord);
+  background: var(--attention-fond);
+  padding: var(--espace-5) var(--espace-6);
+  display: grid;
+  gap: var(--espace-4);
+}
+
+.texte {
+  margin: 0;
+  font-size: var(--texte-secondaire);
+}
+
+.recharger {
+  justify-self: start;
+  min-height: 44px;
+  padding: var(--espace-2) var(--espace-7);
+  border: 1px solid var(--encre);
+  border-radius: var(--rayon-sm);
+  background: var(--blanc-carte);
+  font: inherit;
+  cursor: pointer;
+}

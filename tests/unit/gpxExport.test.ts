@@ -2,9 +2,10 @@ import { describe, it, expect } from 'vitest'
 import {
   buildGpxDocument,
   gpxAttributionFor,
+  gpxDocumentFromTrack,
   gpxFilename,
 } from '../../src/core/gpxExport.ts'
-import type { LonLat } from '../../src/core/types.ts'
+import type { LonLat, Track } from '../../src/core/types.ts'
 
 const COORDS: LonLat[] = [
   [4.5, 45.4],
@@ -87,6 +88,102 @@ describe('buildGpxDocument', () => {
         createdAt: CREATED_AT,
       }),
     ).toThrow()
+  })
+
+  it('pose un <time> par point quand pointTimes les fournit (issue sprint 1, export de sortie)', () => {
+    const horodate = buildGpxDocument({
+      name: 'Avec horaires',
+      coords: COORDS,
+      attribution: null,
+      createdAt: CREATED_AT,
+      pointTimes: [
+        '2026-08-19T21:30:00.000Z',
+        '2026-08-19T21:35:00.000Z',
+        null,
+      ],
+    })
+    const tempsParPoint = horodate.match(/<trkpt[^>]*>[\s\S]*?<\/trkpt>/g) ?? []
+    expect(tempsParPoint).toHaveLength(3)
+    expect(tempsParPoint[0]).toContain(
+      '<time>2026-08-19T21:30:00.000Z</time>',
+    )
+    expect(tempsParPoint[1]).toContain(
+      '<time>2026-08-19T21:35:00.000Z</time>',
+    )
+    // Le troisième point n'a pas d'horaire (`null`) : pas de <time> inventé.
+    expect(tempsParPoint[2]).not.toContain('<time>')
+  })
+
+  it('ne pose aucun <time> de point sans pointTimes', () => {
+    expect(gpx).not.toMatch(/<trkpt[^>]*>[\s\S]*?<time>/)
+  })
+})
+
+describe('gpxDocumentFromTrack', () => {
+  const traceEnregistree: Track = {
+    id: 'sortie-1',
+    filename: 'Sortie enregistrée',
+    points: COORDS,
+    date: '2026-08-23T08:00:00.000Z',
+    importedAt: '2026-08-23T11:00:00.000Z',
+    times: [1755936000000, 1755936300000, null],
+  }
+
+  it('exporte une sortie enregistrée sans rien attribuer à un tiers', () => {
+    const gpx = gpxDocumentFromTrack(traceEnregistree)
+    expect(gpx).not.toContain('<copyright')
+    expect(gpx).toContain('<name>Sortie enregistrée</name>')
+    // La date de la sortie (son début), pas celle de l'écriture en base.
+    expect(gpx).toContain('<time>2026-08-23T08:00:00.000Z</time>')
+  })
+
+  it('convertit les instants bruts (ms) de la trace en horaires GPX', () => {
+    const gpx = gpxDocumentFromTrack(traceEnregistree)
+    const tempsParPoint = gpx.match(/<trkpt[^>]*>[\s\S]*?<\/trkpt>/g) ?? []
+    expect(tempsParPoint[0]).toContain(
+      `<time>${new Date(1755936000000).toISOString()}</time>`,
+    )
+    expect(tempsParPoint[2]).not.toContain('<time>')
+  })
+
+  it('retombe sur la date d’import quand la trace importée n’a pas de date', () => {
+    const importee: Track = {
+      id: 'import-1',
+      filename: 'activity_18274639.gpx',
+      points: COORDS,
+      date: null,
+      importedAt: '2026-08-23T11:00:00.000Z',
+    }
+    const gpx = gpxDocumentFromTrack(importee)
+    expect(gpx).toContain('<time>2026-08-23T11:00:00.000Z</time>')
+  })
+
+  it('retire l’extension du nom de fichier pour le nom affiché, sans en inventer un pour une sortie qui n’en a pas', () => {
+    const importee: Track = {
+      id: 'import-1',
+      filename: 'activity_18274639.gpx',
+      points: COORDS,
+      date: null,
+      importedAt: CREATED_AT,
+    }
+    expect(gpxDocumentFromTrack(importee)).toContain(
+      '<name>activity_18274639</name>',
+    )
+    expect(gpxDocumentFromTrack(traceEnregistree)).toContain(
+      '<name>Sortie enregistrée</name>',
+    )
+  })
+
+  it('n’écrit aucun <time> de point quand la trace n’en porte pas', () => {
+    const sansHoraires: Track = {
+      id: 'import-2',
+      filename: 'vieille-trace.gpx',
+      points: COORDS,
+      date: '2026-01-01T00:00:00.000Z',
+      importedAt: CREATED_AT,
+    }
+    const gpx = gpxDocumentFromTrack(sansHoraires)
+    expect(gpx).not.toMatch(/<trkpt[^>]*>[\s\S]*?<time>/)
   })
 })
 

@@ -51,10 +51,25 @@ test('depuis la carte, chaque onglet montre son contenu', async ({ page }) => {
   // ne mesurait donc plus un invariant mais un coup de dé, et il l'a joué
   // en intégration continue : rouge trois fois de suite après avoir été
   // vert autant.
+  // « Réglages » visait `settings`, le bloc `<details>` entier de la
+  // précision GPS — ouvert par défaut dès qu'il y a des données, donc haut de
+  // 707 px. Mesuré à 390 × 844, feuille à mi-hauteur (349 px de haut) : son
+  // centre tombe à plus de 400 px sous le bas de la feuille, jamais peint.
+  //
+  // Trouvé le 29/09 en corrigeant #171 (repli forcé sur « Carte », voir
+  // maquetteOnglets.ts) : ce test passait quand même, parce que l'ancienne
+  // version de « Carte » laissait la feuille dans sa position d'avant, et le
+  // détour par plusieurs clics réels sur la poignée (`replier`) prenait assez
+  // de temps pour que `expect.poll` capture un instant transitoire où la
+  // feuille était encore à « pleine » — pas l'état final, réellement à
+  // « moitié ». Même défaut que « Sorties » ci-dessus, sur un autre onglet :
+  // un test qui passe pour une raison qu'on n'a pas voulue n'est pas un test
+  // (CLAUDE.md §1bis). Cible corrigée sur le titre de l'accordéon, en haut du
+  // contenu quel que soit son état ouvert/fermé.
   const attendu = {
     sorties: 'enregistreur',
     progression: 'global-pct',
-    reglages: 'settings',
+    reglages: 'settings-title',
   } as const
 
   for (const [onglet, cible] of Object.entries(attendu)) {
@@ -103,7 +118,7 @@ test('changer d’onglet ne referme jamais ce qui est ouvert', async ({ page }) 
   expect(await feuille.getAttribute('data-position')).toBe('pleine')
 })
 
-test('« Carte » ne bouge pas la feuille : son contenu est derrière', async ({
+test('« Carte » replie la feuille : son contenu est derrière, pas caché par un autre onglet', async ({
   page,
 }) => {
   await avecUneZone(page)
@@ -113,9 +128,43 @@ test('« Carte » ne bouge pas la feuille : son contenu est derrière', async ({
     await page.getByTestId('sheet-handle').click()
   }
   await page.getByTestId('onglet-carte').click()
-  // Perdre sa place dans la liste des zones parce qu'on a fait un
-  // aller-retour ne se rattrape pas ; la poignée, elle, est à un toucher.
-  expect(await feuille.getAttribute('data-position')).toBe('pleine')
+  // Revu le 29/09 (audit UI, #171) : laisser la feuille à « pleine » masquait
+  // la carte à 93 % (mesuré 7 % visible, 56 px sur 855, Pixel 7) dès qu'un
+  // autre onglet avait été déplié en grand — exactement l'onglet qui n'existe
+  // que pour montrer la carte. Le coût qu'on redoutait (perdre sa place dans
+  // la liste des zones) est réel mais moindre, et ne concerne que « Carte »
+  // elle-même, pas un aller-retour depuis un autre onglet.
+  await expect
+    .poll(() => feuille.getAttribute('data-position'), { timeout: 15_000 })
+    .toBe('repliee')
+})
+
+test('« pleine » ne réserve le haut que sur « Carte », qui a quelque chose dessous', async ({
+  page,
+}) => {
+  await avecUneZone(page)
+  const feuille = page.getByTestId('sidebar')
+
+  await page.getByTestId('onglet-carte').click()
+  while ((await feuille.getAttribute('data-position')) !== 'pleine') {
+    await page.getByTestId('sheet-handle').click()
+  }
+  // La transition CSS dure 0,2 s (§1bis) : on la laisse finir avant de
+  // mesurer, comme carte.spec.ts et loading.spec.ts le font déjà.
+  await page.waitForTimeout(300)
+  const hauteurCarte = (await feuille.boundingBox())?.height ?? 0
+
+  // Rester à « pleine » en changeant d'onglet (déjà garanti par le test
+  // ci-dessus) : aucun second cycle de poignée n'est nécessaire.
+  await page.getByTestId('onglet-sorties').click()
+  await expect(feuille).toHaveAttribute('data-position', 'pleine')
+  await page.waitForTimeout(300)
+  const hauteurSorties = (await feuille.boundingBox())?.height ?? 0
+
+  // « Sorties » n'a rien derrière la feuille : les 24 px réservés en haut
+  // pour apercevoir la carte sous « Carte » n'ont aucune raison de s'imposer
+  // aussi ici.
+  expect(hauteurSorties).toBeGreaterThan(hauteurCarte + 15)
 })
 
 test('le défilement de la feuille repart du haut', async ({ page }) => {
@@ -140,4 +189,128 @@ test('le défilement de la feuille repart du haut', async ({ page }) => {
 
   await page.getByTestId('onglet-progression').click()
   expect(await feuille.evaluate((e) => e.scrollTop)).toBe(0)
+})
+
+test('un balayage sur la barre d’onglets change d’onglet (sprint 3)', async ({
+  page,
+}) => {
+  await avecUneZone(page)
+  // `avecUneZone` affiche tous les réseaux, ce qui passe par « Progression »
+  // (afficherTousLesReseaux) : repartir d'un onglet connu plutôt que de
+  // supposer lequel ce détour a laissé actif.
+  await page.getByTestId('onglet-carte').click()
+  const barre = page.getByTestId('barre-onglets')
+  const boite = await barre.boundingBox()
+  if (!boite) throw new Error('barre-onglets introuvable')
+  const y = boite.y + boite.height / 2
+
+  // Depuis « Carte » : balayer vers la gauche amène « Sorties », le
+  // suivant dans l'ordre affiché par la barre.
+  await page.mouse.move(boite.x + boite.width - 20, y)
+  await page.mouse.down()
+  await page.mouse.move(boite.x + 20, y, { steps: 10 })
+  await page.mouse.up()
+  await expect(page.getByTestId('onglet-sorties')).toHaveAttribute(
+    'aria-current',
+    'page',
+  )
+
+  // Et balayer vers la droite revient en arrière.
+  await page.mouse.move(boite.x + 20, y)
+  await page.mouse.down()
+  await page.mouse.move(boite.x + boite.width - 20, y, { steps: 10 })
+  await page.mouse.up()
+  await expect(page.getByTestId('onglet-carte')).toHaveAttribute(
+    'aria-current',
+    'page',
+  )
+
+  // Et un simple tap, sans déplacement, continue de fonctionner comme avant
+  // : le geste ne doit rien retirer à l'existant.
+  await page.getByTestId('onglet-reglages').click()
+  await expect(page.getByTestId('onglet-reglages')).toHaveAttribute(
+    'aria-current',
+    'page',
+  )
+})
+
+test('un balayage sans clic de suivi ne doit pas avaler le tap suivant (revue sprint 3+4)', async ({
+  page,
+}) => {
+  /*
+    Un vrai doigt qui glisse au-delà du seuil de tap d'un navigateur mobile
+    ne déclenche généralement pas le clic synthétique qui suit d'ordinaire
+    un pointerup — c'est ce qui distingue justement un balayage d'un tap. Le
+    mouse-drag de Playwright, lui, déclenche toujours ce clic, donc le test
+    précédent ne pouvait pas voir ce défaut : il fallait reproduire
+    exactement l'absence de clic en dispatchant les événements pointeur à la
+    main, sans laisser le navigateur produire le sien.
+  */
+  await avecUneZone(page)
+  await page.getByTestId('onglet-carte').click()
+  const barre = page.getByTestId('barre-onglets')
+  const boite = await barre.boundingBox()
+  if (!boite) throw new Error('barre-onglets introuvable')
+  const y = boite.y + boite.height / 2
+
+  await page.evaluate(
+    ({ x1, x2, y: yy }) => {
+      const nav = document.querySelector(
+        '[data-testid="barre-onglets"]',
+      ) as HTMLElement
+      nav.dispatchEvent(
+        new PointerEvent('pointerdown', {
+          clientX: x1,
+          clientY: yy,
+          bubbles: true,
+          pointerId: 1,
+        }),
+      )
+      nav.dispatchEvent(
+        new PointerEvent('pointerup', {
+          clientX: x2,
+          clientY: yy,
+          bubbles: true,
+          pointerId: 1,
+        }),
+      )
+    },
+    { x1: boite.x + boite.width - 20, x2: boite.x + 20, y },
+  )
+  await expect(page.getByTestId('onglet-sorties')).toHaveAttribute(
+    'aria-current',
+    'page',
+  )
+
+  // Le balayage a fonctionné ; c'est le tap suivant, normal, qui doit
+  // continuer de fonctionner.
+  await page.getByTestId('onglet-progression').click()
+  await expect(page.getByTestId('onglet-progression')).toHaveAttribute(
+    'aria-current',
+    'page',
+  )
+})
+
+test('un déplacement au bouton droit ne change pas d’onglet (revue sprint 3+4)', async ({
+  page,
+}) => {
+  // La barre est rendue à toutes les largeurs, y compris sur PC, où un
+  // bouton autre que le principal peut glisser sur la barre (menu
+  // contextuel, sélection…). Seul le bouton principal doit valoir pour un
+  // balayage.
+  await avecUneZone(page)
+  await page.getByTestId('onglet-carte').click()
+  const barre = page.getByTestId('barre-onglets')
+  const boite = await barre.boundingBox()
+  if (!boite) throw new Error('barre-onglets introuvable')
+  const y = boite.y + boite.height / 2
+
+  await page.mouse.move(boite.x + boite.width - 20, y)
+  await page.mouse.down({ button: 'right' })
+  await page.mouse.move(boite.x + 20, y, { steps: 10 })
+  await page.mouse.up({ button: 'right' })
+  await expect(page.getByTestId('onglet-carte')).toHaveAttribute(
+    'aria-current',
+    'page',
+  )
 })

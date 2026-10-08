@@ -10,6 +10,7 @@ import { About } from './components/About.tsx'
 import { Backup } from './components/Backup.tsx'
 import { CustomItineraries } from './components/CustomItineraries.tsx'
 import { Dashboard } from './components/Dashboard.tsx'
+import { DemarrerRapide } from './components/DemarrerRapide.tsx'
 import { EmptyState } from './components/EmptyState.tsx'
 import { Enregistreur } from './components/Enregistreur.tsx'
 import { temoinDeSortie } from './core/sortieEnCours.ts'
@@ -22,6 +23,7 @@ import { LocateButton } from './components/LocateButton.tsx'
 import { NextOuting } from './components/NextOuting.tsx'
 import { Objectifs } from './components/Objectifs.tsx'
 import { OfflineBanner } from './components/OfflineBanner.tsx'
+import { UpdateBanner } from './components/UpdateBanner.tsx'
 import { RouteDrawer } from './components/RouteDrawer.tsx'
 import { Settings } from './components/Settings.tsx'
 import { TrackManager } from './components/TrackManager.tsx'
@@ -286,7 +288,7 @@ function App() {
   const changerDOnglet = (onglet: Onglet) => {
     setOngletActif(onglet)
     if (filtrage) {
-      setFeuille(positionPourOnglet(onglet, position))
+      setFeuille(positionPourOnglet(onglet, position, hasZoneData))
       panneauRef.current?.scrollTo({ top: 0 })
       return
     }
@@ -411,6 +413,7 @@ function App() {
       </header>
 
       <OfflineBanner />
+      <UpdateBanner />
 
       {dbWarning && (
         <p className={styles.dbWarning} role="alert" data-testid="db-warning">
@@ -425,6 +428,7 @@ function App() {
           aria-label={filtrage ? 'Contenu de l’onglet' : 'Panneau de contrôle'}
           data-testid="sidebar"
           data-position={position}
+          data-onglet={ongletActif}
           id="panneau-de-controle"
           hidden={panneauLarge && panneauReplie}
         >
@@ -621,7 +625,19 @@ function App() {
           <ItineraryCard />
           <ItineraryDetail />
           <RouteDrawer />
-          <LocateButton />
+          <LocateButton
+            avant={
+              onglets &&
+              ongletActif !== 'sorties' &&
+              enregistrement.etat === 'repos' && (
+                <DemarrerRapide
+                  onDemarrer={() => {
+                    changerDOnglet('sorties')
+                  }}
+                />
+              )
+            }
+          />
         </main>
       </div>
 

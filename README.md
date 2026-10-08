@@ -102,6 +102,10 @@ lit pour chacune.
    annonce celui qu'il est en train de lire. **Déplier une trace** montre ce
    que cette sortie-là a fait avancer : quels itinéraires balisés, et de
    combien (un simple croisement de sentier, sous 300 m, n'est pas compté).
+   Chaque trace — enregistrée ou importée — se **réexporte en GPX** à son
+   tour (horodatage par point conservé quand il existe), pour la reprendre
+   dans une montre ou une autre application sans jamais l'avoir laissée
+   captive de Sentiers.
 4. **Créer « Mes itinéraires »** : importez le GPX d'un parcours *à faire*
    (cartoguide, Visorando, tracé maison…) — il devient un itinéraire local
    avec sa propre progression, hors statistiques des réseaux OSM. Ou
@@ -365,6 +369,15 @@ sont indisponibles, elle ne conclut pas qu'il n'y en a pas. Rien n'est gardé po
 regardé : un relief ou des POI périmés ne valent pas mieux qu'un message
 clair. Ce qui est gardé l'a été sur demande. Un bandeau l'explique dès que la
 connexion tombe.
+
+Une PWA ouverte depuis son icône ne revisite jamais le site : rien n'y
+déclenchait de vérification de mise à jour, et une correction pouvait rester
+invisible des semaines (signalé en usage réel le 29/09). Un bandeau
+« Nouvelle version disponible » apparaît maintenant dès qu'une version plus
+récente a pris la main en arrière-plan, avec un bouton « Recharger » —
+jamais automatique, puisque la même page peut porter un enregistrement en
+cours. Rien n'est perdu en rechargeant quand même : une sortie non terminée
+se retrouve en pause, comme après un onglet tué.
 
 Sur téléphone, la carte occupe tout le cadre et le panneau de contrôle devient
 une feuille glissante à trois positions : repliée sur sa seule poignée — qui

@@ -362,6 +362,15 @@
     max-height: calc(100% - 24px);
   }
 
+  /*
+    Seule « Carte » a quelque chose à apercevoir derrière la feuille : les
+    24 px ci-dessus n'ont aucune raison de s'imposer aux trois autres
+    onglets, qui n'ont rien sous eux.
+  */
+  .sidebar[data-onglet]:not([data-onglet='carte']).pleine {
+    max-height: 100%;
+  }
+
   .replier {
     display: none;
   }

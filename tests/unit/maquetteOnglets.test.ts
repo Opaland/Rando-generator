@@ -143,32 +143,64 @@ describe('sectionsDeLOnglet', () => {
  * l'écran ne bouge pas. Il fallait deviner qu'un second geste — tirer la
  * poignée — restait à faire.
  *
- * La règle tient en une phrase : **un onglet dont tout le contenu vit dans
- * la feuille l'ouvre ; un onglet qui a du contenu ailleurs ne la touche
- * pas.** « Carte » est le seul du second genre : son contenu, c'est la
- * carte, qui est derrière la feuille et non dedans.
+ * La règle tient en une phrase pour les trois onglets dont tout le contenu
+ * vit dans la feuille : elle s'ouvre en arrivant, et changer d'onglet ne la
+ * rétrécit jamais — quelqu'un qui a déplié en grand pour lire une longue
+ * liste ne doit pas la voir se refermer parce qu'il est allé voir ailleurs
+ * et revenu.
  *
- * Et changer d'onglet ne rétrécit jamais : quelqu'un qui a déplié en grand
- * pour lire une longue liste ne doit pas la voir se refermer parce qu'il est
- * allé voir ailleurs et revenu.
+ * « Carte » suit une règle inverse, et c'était faux avant le 29/09.
+ * L'ancienne version la laissait telle quelle, au nom du même principe — un
+ * aller-retour ne doit rien réduire. Mesuré en vrai (Pixel 7, #171) : en
+ * dépliant « Sorties » en pleine hauteur puis en retapant « Carte », la carte
+ * restait à 7 % de l'écran (56 px sur 855), cachée par le panneau de
+ * l'onglet précédent — alors que « Carte » est justement l'onglet dont le
+ * contenu utile est *derrière* la feuille, pas dedans. Le coût qui avait fait
+ * écarter le repli — perdre sa place dans la liste des zones après un
+ * aller-retour — est réel mais mineur à côté d'une carte invisible sur
+ * l'onglet qui n'existe que pour elle. « Carte » replie donc systématiquement
+ * en arrivant.
+ *
+ * **Faux, en fait — corrigé le 30/09.** Ce premier correctif a cassé la CI
+ * (15 tests e2e rouges, dont ceux qui choisissent une zone au tout début) :
+ * `sectionsDeLOnglet('carte')` vaut `['zone']`, donc le sélecteur de zone vit
+ * *dans* la feuille, pas la carte elle-même. Replier systématiquement cache
+ * ce sélecteur tant qu'aucune zone n'est encore choisie — exactement le cas
+ * où il est le seul contenu utile de l'écran. Vérifié en CI (job
+ * 109316657478, run 36541166319) : `zone-pilat` est intercepté par le texte
+ * de la poignée repliée, 30 s de tentatives, échec.
+ *
+ * L'exception ne vaut donc que si une zone est déjà chargée — c'est à ce
+ * moment-là, et seulement à ce moment-là, que le contenu utile de « Carte »
+ * bascule de la feuille (le sélecteur) vers ce qu'elle cache (la carte).
+ * Sans zone chargée, « Carte » suit la même règle que les trois autres.
  */
 describe('positionPourOnglet', () => {
   it('ouvre la feuille pour un onglet qui n’a rien à montrer ailleurs', () => {
     for (const onglet of ['sorties', 'progression', 'reglages'] as const) {
-      expect(positionPourOnglet(onglet, 'repliee')).toBe('moitie')
+      expect(positionPourOnglet(onglet, 'repliee', false)).toBe('moitie')
+      expect(positionPourOnglet(onglet, 'repliee', true)).toBe('moitie')
     }
   })
 
-  it('ne rétrécit jamais ce qui est déjà ouvert', () => {
-    expect(positionPourOnglet('progression', 'moitie')).toBe('moitie')
-    expect(positionPourOnglet('progression', 'pleine')).toBe('pleine')
-    expect(positionPourOnglet('sorties', 'pleine')).toBe('pleine')
+  it('ne rétrécit jamais ce qui est déjà ouvert, sauf pour « Carte » zone chargée', () => {
+    expect(positionPourOnglet('progression', 'moitie', true)).toBe('moitie')
+    expect(positionPourOnglet('progression', 'pleine', true)).toBe('pleine')
+    expect(positionPourOnglet('sorties', 'pleine', true)).toBe('pleine')
   })
 
-  it('laisse « Carte » comme elle est : son contenu est derrière la feuille', () => {
+  it('replie la feuille en arrivant sur « Carte » une fois une zone chargée, quelle que soit la position de départ', () => {
     for (const position of ['repliee', 'moitie', 'pleine'] as const) {
-      expect(positionPourOnglet('carte', position)).toBe(position)
+      expect(positionPourOnglet('carte', position, true)).toBe('repliee')
     }
+  })
+
+  it('ne replie pas « Carte » tant qu’aucune zone n’est chargée : le sélecteur vit dans la feuille', () => {
+    // Le cas exact qui a cassé la CI le 29/09 : `zone-pilat` est dans la
+    // feuille, la replier avant tout choix de zone le rend intouchable.
+    expect(positionPourOnglet('carte', 'repliee', false)).toBe('moitie')
+    expect(positionPourOnglet('carte', 'moitie', false)).toBe('moitie')
+    expect(positionPourOnglet('carte', 'pleine', false)).toBe('pleine')
   })
 
   /**
@@ -179,10 +211,12 @@ describe('positionPourOnglet', () => {
   it('ne laisse jamais un onglet sans rien à l’écran', () => {
     for (const onglet of ONGLETS) {
       for (const position of ['repliee', 'moitie', 'pleine'] as const) {
-        const apres = positionPourOnglet(onglet.cle, position)
-        const feuilleMontreQuelqueChose = apres !== 'repliee'
-        const contenuHorsFeuille = onglet.cle === 'carte'
-        expect(feuilleMontreQuelqueChose || contenuHorsFeuille).toBe(true)
+        for (const zoneChargee of [true, false]) {
+          const apres = positionPourOnglet(onglet.cle, position, zoneChargee)
+          const feuilleMontreQuelqueChose = apres !== 'repliee'
+          const contenuHorsFeuille = onglet.cle === 'carte' && zoneChargee
+          expect(feuilleMontreQuelqueChose || contenuHorsFeuille).toBe(true)
+        }
       }
     }
   })

@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises'
 import { test, expect } from '@playwright/test'
 import { afficherTousLesReseaux, mockExternalNetwork, buildGpx } from './helpers.ts'
 
@@ -166,4 +167,31 @@ test('un réimport d’archive s’écarte d’un seul geste (revue sprint 1)', 
   await expect(
     page.getByTestId('tracks-list').getByRole('listitem'),
   ).toHaveCount(3)
+})
+
+test('exporter une trace importée en GPX (sprint 1 : vos traces ne restent plus captives)', async ({
+  page,
+}) => {
+  await mockExternalNetwork(page)
+  await page.goto('/')
+
+  await page.getByTestId('gpx-input').setInputFiles({
+    name: 'sortie-test.gpx',
+    mimeType: 'application/gpx+xml',
+    buffer: Buffer.from(buildGpx(15), 'utf-8'),
+  })
+  await expect(page.getByTestId('tracks-list')).toContainText('sortie-test')
+
+  const downloadPromise = page.waitForEvent('download')
+  await page.getByTestId('track-export-sortie-test.gpx').click()
+  const download = await downloadPromise
+
+  expect(download.suggestedFilename()).toBe('sentiers-sortie-test.gpx')
+  const path = await download.path()
+  const gpx = await readFile(path, 'utf-8')
+  expect(gpx).toContain('<gpx version="1.1"')
+  // Le nom affiché est celui du fichier, sans son extension.
+  expect(gpx).toContain('<name>sortie-test</name>')
+  // Une trace personnelle importée n'est pas une donnée licenciée de tiers.
+  expect(gpx).not.toContain('<copyright')
 })

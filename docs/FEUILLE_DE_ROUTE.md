@@ -193,9 +193,10 @@ question qu'on ne leur a pas posée.
 
 ## Jalon 5 — La dette, quand elle gêne et pas avant
 
-- **#155 — découper `appStore.ts`** (1 566 lignes) en tranches. Il gêne
-  déjà : la revue du sprint 6 y a trouvé une course sur sept réglages qu'un
-  fichier plus court aurait rendue visible ;
+- **#155 — découper `appStore.ts`** en tranches. Déjà traité aux trois
+  quarts (1 566 lignes à l'ouverture, 1 082 aujourd'hui, plafond testé à
+  1 105 par `tests/unit/plafondDuStore.test.ts` — le chiffre ne regrossit
+  plus entre deux revues sans qu'un test ne le dise) ;
 - **#159 — mesurer une grosse bibliothèque** : 800 activités à l'import ;
 - **#93 — tuiles vectorielles**. Gros chantier, gain réel, aucune urgence ;
 - **#170 — la distance est fausse à l'antiméridien**. P3 assumé : personne ne

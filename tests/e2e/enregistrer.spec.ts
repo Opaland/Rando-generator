@@ -126,6 +126,34 @@ test("une sortie abandonnée ne laisse aucune trace", async ({ page }) => {
   await expect(page.getByTestId("tracks-empty")).toBeVisible();
 });
 
+test("un raccourci sur la carte démarre sans passer par l'onglet « Sorties » (sprint 3)", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await ouvrir(page);
+
+  // Sur « Carte », l'onglet actif par défaut en mobile, Enregistreur n'est
+  // pas monté : il vit sous « Sorties », repliée dans la feuille.
+  await expect(page.getByTestId("sortie-demarrer")).toHaveCount(0);
+
+  await page.getByTestId("demarrer-rapide").click();
+
+  // Démarrer bascule sur « Sorties » pour montrer ce qui vient de
+  // commencer, sans qu'on ait eu à naviguer soi-même — et c'est bien peint,
+  // pas seulement présent dans le DOM (§1bis).
+  await expect
+    .poll(() => estAlEcran(page, "sortie-chiffres"), { timeout: 15_000 })
+    .toBe(true);
+  await expect(page.getByTestId("onglet-sorties")).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+
+  // Le raccourci disparaît : une sortie est en cours, le dupliquer
+  // n'ajouterait rien à côté du bouton « Pause » déjà là.
+  await expect(page.getByTestId("demarrer-rapide")).toHaveCount(0);
+});
+
 /**
  * Le cœur de la pierre 2, vu de l'utilisateur. Un rechargement est
  * exactement ce que subit un onglet que le navigateur a récupéré : le

@@ -202,21 +202,10 @@ export function dispositionDemandee(recherche: string): Disposition {
 export type PositionFeuille = 'repliee' | 'moitie' | 'pleine'
 
 /**
- * Les onglets dont tout le contenu vit dans la feuille.
+ * Où poser la feuille en arrivant sur un onglet (AUDIT_UX.md, constat U3 ;
+ * revu le 29/09, audit UI de l'issue #171).
  *
- * « Carte » n'en est pas : son contenu, c'est la carte, qui est *derrière*
- * la feuille et non dedans. Nommé plutôt que testé à l'envers dans deux
- * endroits — c'est la même distinction qui décide de la position et de ce
- * qu'on peut affirmer sur elle (CLAUDE.md §4).
- */
-function toutTientDansLaFeuille(onglet: Onglet): boolean {
-  return onglet !== 'carte'
-}
-
-/**
- * Où poser la feuille en arrivant sur un onglet (AUDIT_UX.md, constat U3).
- *
- * Mesuré avant correction : feuille repliée à 52 px, on touche
+ * Mesuré avant la première correction : feuille repliée à 52 px, on touche
  * « Progression », la feuille reste à 52 px. L'onglet s'allumait, l'écran ne
  * bougeait pas, et il fallait deviner qu'un second geste restait à faire.
  *
@@ -224,20 +213,34 @@ function toutTientDansLaFeuille(onglet: Onglet): boolean {
  *
  * - un onglet qui n'a rien à montrer hors de la feuille l'ouvre à mi-hauteur
  *   si elle est fermée ;
- * - changer d'onglet ne rétrécit jamais. Quelqu'un qui a déplié en grand
- *   pour lire une longue liste ne doit pas la voir se refermer parce qu'il
- *   est allé voir ailleurs et revenu.
+ * - changer d'onglet ne rétrécit jamais — **sauf pour « Carte »**, le seul
+ *   dont le contenu utile est *derrière* la feuille et non dedans.
  *
- * Écarté : replier la feuille en arrivant sur « Carte », qui aurait servi le
- * geste « montre-moi la carte ». La poignée est juste là et le fait en un
- * toucher, alors que perdre sa place dans la liste des zones parce qu'on a
- * fait un aller-retour ne se rattrape pas.
+ * Cette exception a d'abord été écartée : replier en arrivant sur « Carte »
+ * ferait perdre sa place dans la liste des zones après un aller-retour, coût
+ * jugé pire que le bénéfice. Mesuré en vrai depuis (Pixel 7, #171) : en
+ * dépliant « Sorties » en pleine hauteur puis en retapant « Carte », la carte
+ * restait à 7 % de l'écran (56 px sur 855), cachée par le panneau de l'onglet
+ * précédent — pas un aller-retour sur elle-même, mais n'importe quel autre
+ * onglet laissé grand ouvert qui la rendait invisible. Le coût réel dépassait
+ * largement celui qu'on avait pesé : « Carte » replie donc systématiquement…
+ *
+ * **… sauf que non.** Ce repli systématique a cassé la CI le lendemain (15
+ * tests e2e rouges, run GitHub 36541166319) : `sectionsDeLOnglet('carte')`
+ * vaut `['zone']`, le sélecteur de zone vit *dans* la feuille, pas sur la
+ * carte. Le replier avant tout choix de zone rend `zone-pilat` et les autres
+ * boutons de zone intouchables — recouverts par la poignée elle-même,
+ * mesuré en CI : « intercepts pointer events », 30 s de tentatives, échec.
+ * Le contenu utile de « Carte » n'est *derrière* la feuille qu'une fois une
+ * zone chargée ; avant ça, il est *dedans*, exactement comme les trois
+ * autres onglets. L'exception ne s'applique donc que si `zoneChargee`.
  */
 export function positionPourOnglet(
   onglet: Onglet,
   courante: PositionFeuille,
+  zoneChargee: boolean,
 ): PositionFeuille {
-  if (!toutTientDansLaFeuille(onglet)) return courante
+  if (onglet === 'carte' && zoneChargee) return 'repliee'
   return courante === 'repliee' ? 'moitie' : courante
 }
 

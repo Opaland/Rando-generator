@@ -56,7 +56,11 @@ export function Settings() {
       }}
     >
       <summary className="acc-summary">
-        <h2 id="settings-title" className={styles.title}>
+        <h2
+          id="settings-title"
+          data-testid="settings-title"
+          className={styles.title}
+        >
           Précision de suivi GPS
         </h2>
       </summary>

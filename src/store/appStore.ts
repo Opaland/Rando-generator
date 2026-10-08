@@ -1,7 +1,6 @@
 import { create } from 'zustand'
 import { libelleDeZone } from '../core/overpass.ts'
 import type { Lieu } from '../core/geocode.ts'
-import { resumeObjectif, type ResumeObjectif } from '../core/objectifs.ts'
 import type { ParcoursDeclare } from '../core/declaratif.ts'
 import { outingHighlights, type OutingHighlight } from '../core/outing.ts'
 import { estModeAffichage, lireDrapeau } from '../core/affichage.ts'
@@ -26,6 +25,13 @@ import {
   type EtatSortie,
 } from './enregistrementSlice.ts'
 import { creerOubliDeZone } from './oubliDeZone.ts'
+import {
+  lireObjectifs,
+  OBJECTIFS_AU_REPOS,
+  trancheObjectifs,
+  type ActionsObjectifs,
+  type EtatObjectifs,
+} from './trancheObjectifs.ts'
 import { creerVeilleGeo } from './veilleGeo.ts'
 import { GEO_OPTIONS, geolocationErrorMessage } from '../core/geolocation.ts'
 import type { Itinerary, LonLat, Track, UserPosition } from '../core/types.ts'
@@ -133,6 +139,8 @@ export type ZoneLoadStage = 'requesting' | 'retrying' | 'processing' | null
 
 export interface AppState
   extends
+    EtatObjectifs,
+    ActionsObjectifs,
     EtatSortie,
     ActionsSortie,
     EtatTrace,
@@ -181,11 +189,6 @@ export interface AppState
   backupMessage: string | null
 
 
-  /**
-   * Itinéraires épinglés comme objectifs (issue #13). Le tableau de bord
-   * constate ; un objectif dit par où continuer.
-   */
-  objectifs: number[]
   /**
    * Itinéraires déclarés parcourus, sans trace GPX (issue #158).
    *
@@ -289,10 +292,6 @@ export interface AppState
    * restaurée — pas parce qu'un test s'en sert (§4bis).
    */
   mergeLocalBoucles: (zoneKey: string) => Promise<void>
-  /** Épingle (ou dépingle) un itinéraire comme objectif. */
-  basculerObjectif: (id: number) => Promise<void>
-  /** Ce qu'il reste sur un objectif : mètres, pourcentage, tronçons. */
-  resumeDeLObjectif: (id: number) => ResumeObjectif | null
   setTolerance: (value: number) => Promise<void>
   setCompletionPct: (value: number) => Promise<void>
   selectItinerary: (id: number | null) => void
@@ -328,21 +327,6 @@ let outingSequence = 0
  * vient simplement de charger.
  */
 let pctsPrecedents: Map<number, number> | null = null
-/**
- * Relit la liste des objectifs épinglés. Elle est stockée en JSON parce que
- * le magasin de réglages ne connaît que des nombres et des chaînes ; un
- * contenu abîmé ne doit pas empêcher l'application de démarrer.
- */
-function lireObjectifs(brut: number | string | undefined): number[] {
-  if (typeof brut !== 'string') return []
-  try {
-    const lu: unknown = JSON.parse(brut)
-    return Array.isArray(lu) ? lu.filter((id) => typeof id === 'number') : []
-  } catch {
-    return []
-  }
-}
-
 /**
  * Ouverture d'IndexedDB en cours, s'il y en a une. Sert à faire patienter les
  * écritures lancées pendant le démarrage plutôt qu'à les perdre (baseOuverte).
@@ -611,7 +595,7 @@ export const useAppStore = create<AppState>()((set, get) => {
     ...AFFICHAGE_PAR_DEFAUT,
     backupMessage: null,
     ...RECHERCHE_AU_REPOS,
-    objectifs: [],
+    ...OBJECTIFS_AU_REPOS,
     parcoursDeclares: [],
     customItineraries: [],
     toleranceMeters: DEFAULT_TOLERANCE_METERS,
@@ -802,24 +786,7 @@ export const useAppStore = create<AppState>()((set, get) => {
       }
     },
 
-    async basculerObjectif(id) {
-      const actuels = get().objectifs
-      const objectifs = actuels.includes(id)
-        ? actuels.filter((autre) => autre !== id)
-        : [...actuels, id]
-      await enregistrerReglage('objectifs', JSON.stringify(objectifs), () => {
-        set({ objectifs })
-      })
-    },
-
-    resumeDeLObjectif(id) {
-      const { matching, itineraries, customItineraries } = get()
-      const itineraire = [...itineraries, ...customItineraries].find(
-        (i) => i.osmRelationId === id,
-      )
-      if (!itineraire || !matching) return null
-      return resumeObjectif(itineraire, matching.samples, STEP_METERS)
-    },
+    ...trancheObjectifs({ lire: () => get(), set, enregistrerReglage }),
 
     /*
       Cocher un itinéraire (issue #158).
