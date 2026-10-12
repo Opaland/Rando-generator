@@ -1,21 +1,31 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { echouer } from "./_socle.mjs";
 
 /* --------------------------------------------------------------------------
-   Les commandes qui lancent Playwright, et celles qui sont annoncées avec
-   PW_CHROMIUM_PATH (issue #435).
+   Les commandes qui lancent Chromium avec `PW_CHROMIUM_PATH`, et celles qui
+   sont annoncées avec elle (issue #435).
 
-   `playwright.config.ts` lit cette variable pour **toute** exécution. Quatre
-   scripts de `package.json` en dépendent donc, et un seul était annoncé avec
-   elle — dans le README comme dans le §6. Le 31/08, `npm run monkey` a rendu
-   trois échecs au milieu d'une porte verte pour cette seule raison.
+   `playwright.config.ts` lit cette variable pour **toute** exécution via
+   `playwright test`. Quatre scripts de `package.json` en dépendent donc, et
+   un seul était annoncé avec elle — dans le README comme dans le §6. Le
+   31/08, `npm run monkey` a rendu trois échecs au milieu d'une porte verte
+   pour cette seule raison.
 
    Ce n'est pas un faux vert : le navigateur ne se lance pas du tout, l'échec
    est bruyant. C'est une porte rouge pour une raison qui n'est pas celle
    qu'on cherche, au pire moment.
 
+   Le motif `playwright test` ne suffit pas : `og-image` lance Chromium sans
+   passer par le CLI Playwright (`chromium.launch({ executablePath:
+   process.env.PW_CHROMIUM_PATH })` directement dans `scripts/og-image.mjs`),
+   et a donc été invisible à cette garde pendant tout le temps où elle ne
+   savait lire que ce seul motif — l'angle mort de #435, reproduit à
+   l'identique sur un septième script. On regarde donc aussi, pour toute
+   commande qui référence un fichier sous `scripts/`, si ce fichier appelle
+   `chromium.launch(` lui-même.
+
    La liste vit dans `package.json` ; les deux autres la décrivent. Un script
-   neuf qui lance Playwright sans être nommé dans les deux fait échouer ici.
+   neuf qui lance Chromium sans être nommé dans les deux fait échouer ici.
    -------------------------------------------------------------------------- */
 
 const PAQUET = "package.json";
@@ -23,8 +33,19 @@ const README_PW = "README.md";
 const REGLES_PW = "CLAUDE.md";
 
 const scripts = JSON.parse(readFileSync(PAQUET, "utf8")).scripts ?? {};
+
+const lanceChromiumDirectement = (commande) => {
+  const refFichier = commande.match(/scripts\/[\w./-]+\.(?:mjs|js|ts)/);
+  if (!refFichier || !existsSync(refFichier[0])) return false;
+  return /chromium\.launch\(/.test(readFileSync(refFichier[0], "utf8"));
+};
+
 const lancentPlaywright = Object.entries(scripts)
-  .filter(([, commande]) => /(^|\s)(npx )?playwright test(\s|$)/.test(commande))
+  .filter(
+    ([, commande]) =>
+      /(^|\s)(npx )?playwright test(\s|$)/.test(commande) ||
+      lanceChromiumDirectement(commande),
+  )
   .map(([nom]) => nom);
 
 if (lancentPlaywright.length === 0) {

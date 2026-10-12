@@ -219,12 +219,15 @@ Trois pièges mesurés sur ce dépôt :
   sources. Un `npm run build` dont on masque la sortie peut échouer en
   silence et laisser tester une version périmée.
 - **`PW_CHROMIUM_PATH=/opt/pw-browsers/chromium` pour toute commande qui
-  lance Playwright** — `e2e`, `monkey`, `mesure`, `reel`, `chargement`,
-  `panneau`. Cette phrase-là a
+  lance Chromium** — `e2e`, `monkey`, `mesure`, `reel`, `chargement`,
+  `panneau`, `og-image`. Cette phrase-là a
   déjà été trop étroite une fois : le 31/08, `npm run monkey` a rendu trois
   échecs au milieu d'une porte verte, faute de la variable, et la seule
   commande annoncée avec elle était `e2e` (issue #435). `npm run listes`
-  garde maintenant l'accord entre cette liste et `package.json`.
+  garde maintenant l'accord entre cette liste et `package.json` — y compris
+  pour `og-image`, qui lance Chromium directement (`chromium.launch(…)`)
+  sans passer par le CLI `playwright test`, et qu'un motif cherchant ce seul
+  littéral ne pouvait pas voir (08/10).
 
   **`--workers=1` n'est plus à taper** : `playwright.config.ts` le pose hors
   CI (#491). Le drapeau était la deuxième moitié du même raté — un garde-fou
