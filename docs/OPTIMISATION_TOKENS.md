@@ -57,29 +57,28 @@ se lancent à la main.
 
 ### 1.3 Le e2e et le monkey sont relancés en entier même pour un changement qui ne touche pas l'application servie
 
-L'item en cours au moment de cette demande (garde `og-image`) ne modifie
-que `scripts/jumelles/11-playwright.mjs`, `README.md` et `CLAUDE.md` —
-aucun fichier sous `src/`. La porte e2e+monkey complète a quand même été
-relancée, parce que §6 ne prévoit pas d'exception.
+**Tranché par Cédric le 13/10 : oui, l'exception s'applique.** Un commit
+dont le diff ne touche que `docs/`, `README.md`, `CLAUDE.md` ou
+`scripts/jumelles/` (les gardes elles-mêmes, pas le code servi) committe
+sur lint + listes + textes + chemins + typecheck seuls, sans
+coverage/build/e2e/monkey — cette règle a été appliquée pour la première
+fois sur le commit qui ajoute le présent paragraphe.
 
-**Mesuré sur cette session** : une porte e2e+monkey complète tourne de
-l'ordre de 10 à 15 minutes et produit, même en ne lisant que les dernières
-lignes du journal, plusieurs passages de lecture de journal dans le fil
-principal.
+L'item qui a posé la question (garde `og-image`, commit précédent) ne
+modifiait que `scripts/jumelles/11-playwright.mjs`, `README.md` et
+`CLAUDE.md` — aucun fichier sous `src/`. La porte e2e+monkey complète avait
+quand même été relancée à ce moment-là, parce que §6 ne prévoyait pas
+d'exception. **Mesuré sur cette session** : une porte e2e+monkey complète
+tourne de l'ordre de 10 à 25 minutes.
 
-**Levier, à trancher par Cédric (ce n'est pas un seuil à inventer, §2)** :
-une commande qui ne touche ni `src/`, ni `tests/e2e/`, ni le build, ne peut
-pas faire varier un résultat e2e — y faire tourner e2e quand même vérifie
-une hypothèse déjà vraie par construction. Deux options :
-- garder §6 tel quel (coût connu, zéro risque de laisser passer une
-  régression inattendue) ;
-- ajouter une exception explicite et écrite : un commit dont le diff ne
-  touche que `docs/`, `README.md`, `CLAUDE.md` ou `scripts/jumelles/` (les
-  gardes elles-mêmes, pas le code servi) peut committer sur lint + listes +
-  textes + chemins + typecheck seuls, sans coverage/build/e2e/monkey.
-
-Je n'ai pas pris cette décision à votre place : cette session continue de
-lancer la porte complète tant que vous n'avez pas tranché.
+Le raisonnement qui justifie l'exception, écrit une fois pour ne pas le
+refaire à chaque commit concerné : une commande qui ne touche ni `src/`,
+ni `tests/e2e/`, ni le build, ne peut pas faire varier un résultat e2e — y
+faire tourner e2e quand même vérifie une hypothèse déjà vraie par
+construction. Si un futur changement touche à la fois `docs/` et `src/`
+dans le même commit, l'exception ne s'applique pas : la porte complète
+reste de mise dès qu'un seul fichier hors de la liste ci-dessus est
+touché.
 
 ### 1.4 Une session continue sur plusieurs jours paie le réchauffement du cache à chaque reprise
 
@@ -139,15 +138,14 @@ question porte sur un fait précis plutôt que sur la structure d'ensemble.
 |---|---|---|---|
 | 1 | Grouper les éditions de `CLAUDE.md`/`README.md` par sprint plutôt qu'au fil de l'eau | moi, pratique immédiate | ~6 000 tokens évités par édition groupée |
 | 2 | Ne plus relancer à la main lint/listes/textes/chemins/typecheck/tests avant un commit couvert par le hook ; les lancer seulement si le fichier concerné a été touché | moi, pratique immédiate | 6 commandes par item |
-| 3 | Exception e2e/monkey pour les commits qui ne touchent que `docs/`/gardes (§1.3) | **à trancher par Cédric** | ~10-15 min de porte par item concerné |
+| 3 | Exception e2e/monkey pour les commits qui ne touchent que `docs/`/gardes (§1.3) | **tranché par Cédric le 13/10 : oui** | ~10-25 min de porte par item concerné |
 | 4 | Sessions neuves après une coupure de plus d'une heure, avec un résumé écrit en handoff | Cédric (habitude de travail) | le plus gros poste, proportionnel à la durée d'inactivité avant reprise |
 | 5 | `grep` ciblé avant `Read` complet sur tout fichier de plus de 200 lignes | moi, pratique immédiate | variable, mais systématique |
 | 6 | Réserver les agents à l'exploration ouverte, pas aux tâches mécaniques connues | moi, pratique immédiate | évite le coût fixe de déclenchement sans contrepartie |
 
-Les actions 1, 2, 5, 6 sont appliquées dès cette session, sans qu'il y ait
-besoin de les demander à nouveau. L'action 3 attend une décision écrite
-(un mot suffit : « oui » ou « non » sur l'exception proposée au §1.3).
-L'action 4 est une question d'habitude de travail plutôt que de réglage :
+Les actions 1, 2, 3, 5, 6 sont appliquées dès cette session, sans qu'il y
+ait besoin de les redemander. L'action 4 est une question d'habitude de
+travail plutôt que de réglage :
 la proposition concrète est de clore une session en fin de sprint avec un
 état écrit (ce que `docs/FEUILLE_DE_ROUTE.md` et les tâches de suivi font
 déjà), et d'en ouvrir une neuve à la reprise plutôt que de rouvrir

@@ -458,3 +458,24 @@ fait ; le nom promettait plus que le contenu.
 Certaines issues demandent une preuve humaine — #173 exige que Théo et
 Jeanine mènent une tâche sans aide. Le code peut être fini quand l'issue ne
 l'est pas. Le dire dans la PR plutôt que laisser le `Closes` parler.
+
+## 11. Le budget de tokens se gère, lui aussi
+
+Demande de Cédric (12/10) : le quota se vide avant la fin de la semaine.
+`docs/OPTIMISATION_TOKENS.md` mesure où ça part et ce qui n'économise rien
+(déléguer à un agent, compresser plus souvent) — à relire en début de
+session, pas seulement une fois. Deux pratiques qui en sortent, à tenir
+par défaut :
+
+- ne pas relancer à la main lint/listes/textes/chemins/typecheck/tests
+  avant un commit : `.claude/hooks/porte-avant-commit.sh` les relance déjà
+  et bloque le commit si l'un d'eux est rouge — coverage/build/e2e/monkey
+  restent hors hook, ceux-là se vérifient à la main ;
+- grouper les éditions de `CLAUDE.md`/`README.md` plutôt que les étaler
+  dans la session : chaque édition de ce fichier en recharge l'intégralité
+  dans le contexte, environ 6 000 tokens au 12/10 ;
+- **un commit dont le diff ne touche que `docs/`, `README.md`,
+  `CLAUDE.md` ou `scripts/jumelles/` committe sur lint + listes + textes +
+  chemins + typecheck seuls**, sans coverage/build/e2e/monkey (tranché le
+  13/10, §1.3 du plan) — dès qu'un seul fichier hors de cette liste est
+  touché, la porte complète reste de mise.
