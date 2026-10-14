@@ -97,15 +97,56 @@ test.describe('mesure d’une grosse bibliothèque (issue #159)', () => {
     relever('archive_fabrication_ms', String(Date.now() - debutArchive))
 
     const debutImport = Date.now()
+    // Même horloge que les repères posés plus loin (`performance.now()`,
+    // relative à la navigation) — `Date.now()` et elle ne se comparent pas.
+    const debutImportPerf = await page.evaluate(() => performance.now())
     await page.getByTestId('gpx-input').setInputFiles({
       name: 'export-strava.zip',
       mimeType: 'application/zip',
       buffer: Buffer.from(archive),
     })
+
     await expect(page.getByTestId('gpx-importing')).toHaveCount(0, {
       timeout: 25 * 60 * 1000,
     })
-    relever('import_ms', String(Date.now() - debutImport))
+    const finImport = Date.now()
+    relever('import_ms', String(finImport - debutImport))
+
+    /*
+      Issue #539 : le temps total se partageait en un seul chiffre entre
+      deux phases de nature différente — l'analyse séquentielle des
+      fichiers, et l'unique calcul de correspondance final, qui construit
+      entre autres un index spatial sur la totalité des points de toutes
+      les traces d'un coup (`buildTrackIndex`, indépendant du nombre
+      d'itinéraires — cette mesure n'en charge aucun).
+
+      Une première version guettait `matchingBusy` (le « calcul… » du
+      tableau de bord) dans le DOM : à 5 puis 50 activités, l'indicateur
+      n'est jamais apparu alors que `computeMatching` a bien pris un temps
+      mesurable (vérifié en construisant un Worker à la main dans la même
+      page : aucune erreur, aucun blocage côté CSP). Rien ne garantit
+      qu'un rendu React s'intercale entre les deux `set()` qui encadrent
+      l'appel — ni dans le relais au worker, ni dans un éventuel repli
+      synchrone — et une sonde qui dépend d'un rendu qui n'a pas à avoir
+      lieu ne garde rien (§1bis). `performance.mark`, posé dans
+      `recompute()` (appStore.ts) de part et d'autre de l'appel, ne dépend
+      d'aucun rendu : il s'exécute dans le fil qui appelle `recompute`,
+      pas dans celui qui peint.
+    */
+    const [debutCalcul, finCalcul] = await page.evaluate(() => {
+      const marques = (nom: string) =>
+        performance.getEntriesByName(nom).at(-1)?.startTime
+      return [
+        marques('sentiers:recompute:debut'),
+        marques('sentiers:recompute:fin'),
+      ]
+    })
+    if (debutCalcul !== undefined && finCalcul !== undefined) {
+      relever('analyse_ms', String(Math.round(debutCalcul - debutImportPerf)))
+      relever('correspondance_ms', String(Math.round(finCalcul - debutCalcul)))
+    } else {
+      relever('recompute_jamais_marque', 'true')
+    }
 
     /*
       Ce qui doit être vrai quelle que soit la durée : tout est arrivé. Le

@@ -427,6 +427,11 @@ export const useAppStore = create<AppState>()((set, get) => {
   async function recompute(): Promise<void> {
     const { itineraries, customItineraries, tracks, toleranceMeters } = get()
     const sequence = ++recomputeSequence
+    // Repères de mesure (issue #539) : `matchingBusy` ne se peint pas de
+    // façon fiable en e2e — rien ne garantit qu'un rendu intervienne entre
+    // les deux `set`, qu'il s'agisse du relais au worker ou du repli
+    // synchrone. `performance.mark` ne dépend d'aucun rendu.
+    performance.mark('sentiers:recompute:debut')
     set({ matchingBusy: true })
     const trackPoints: LonLat[] = tracks.flatMap((t) => t.points)
     // Même longueur et alignement que trackPoints : une trace sans
@@ -476,6 +481,7 @@ export const useAppStore = create<AppState>()((set, get) => {
         franchissementTientEncore(annonceEnCours, result.results)
           ? annonceEnCours
           : null)
+      performance.mark('sentiers:recompute:fin')
       set({
         matching: result,
         customMatching: customResult,
