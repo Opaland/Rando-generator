@@ -64,3 +64,23 @@ export function messageDeZone(faits: FaitsDeZone): string | null {
   }
   return null
 }
+
+/**
+ * Le message quand les miroirs Overpass sont injoignables et qu'on retombe
+ * sur une zone déjà en cache, même périmée (#404, troisième chemin — sorti
+ * de `trancheZone.ts` au sprint 8 d'octobre, issue #539).
+ *
+ * « Réessayez avec “Actualiser les tracés” » — le conseil de la zone vide —
+ * est délibérément écarté ici : c'est exactement le geste qui vient
+ * d'échouer, et le proposer enverrait quelqu'un refaire ce qui ne marchera
+ * pas. Une zone vide se voit à l'écran ; elle n'a pas besoin d'une marche à
+ * suivre qui ne marchera pas. C'est pour ce seul mot que cette fonction
+ * n'appelle pas simplement `messageDeZone` tel quel.
+ */
+export function messageDeRepliSurCache(faits: FaitsDeZone): string {
+  const diagnostic = faits.itineraires === 0 ? null : messageDeZone(faits)
+  return (
+    'Serveurs OpenStreetMap injoignables : affichage des tracés en cache (ils datent peut-être un peu).' +
+    (diagnostic === null ? '' : ` ${diagnostic}`)
+  )
+}

@@ -84,8 +84,13 @@ const PLAFONDS: Record<string, number> = {
     (boucles de Lyon, puis GR Nord) est sorti dans `sourcesLocales.ts`,
     plutôt que de relever ce plafond pour une seconde source qui n'est pas
     de la logique de zone elle-même — la même réponse honnête qu'en #454.
+
+    Redescendu de 495 à 480 le 14/10 (sprint 8) : la composition du message
+    de repli sur cache (#404, troisième chemin) est sortie dans
+    `messageDeRepliSurCache` (`core/messageDeZone.ts`), qui porte déjà la
+    même responsabilité pour les deux autres chemins. 473 lignes après.
   */
-  'trancheZone.ts': 495,
+  'trancheZone.ts': 480,
   /*
     Sorti de `trancheZone.ts` le 16/09 en écrivant le GR Nord : 85 lignes.
     Le plafond laisse la place d'une troisième source (Ain, Isère — #87)
@@ -125,7 +130,20 @@ const PLAFONDS: Record<string, number> = {
   // plafond de 480 (#442). Mesuré, pas supposé — la prédiction inverse
   // avait déjà été fausse en #437.
   'epilogueDImport.ts': 80,
-  'matchingClient.ts': 110,
+  /*
+    Relevé de 110 à 120 le 14/10 (sprint 8, analyse du 08/10) : la marge
+    était tombée à 2 lignes sans qu'aucun sous-bloc ne s'en détache. Le
+    fichier est un seul mécanisme — construire le worker, l'abandonner pour
+    de bon après un échec, retomber en synchrone — et la moitié de ses
+    lignes sont le commentaire qui explique pourquoi `workerImpossible` ne
+    retente jamais (#471, lui-même corrigé une fois pour une énumération
+    présentée comme exhaustive qui ne l'était pas, §4bis). Le couper
+    séparerait soit le mécanisme de sa justification, soit une moitié de
+    worker sans l'autre : aucune des deux n'est un sous-bloc qui a sa place
+    ailleurs. C'est la seconde réponse honnête du §2, appliquée ici parce
+    que la première ne s'applique pas.
+  */
+  'matchingClient.ts': 120,
   /*
     Sorti d'`appStore.ts` le 30/09 (revue technique) : objectifs épinglés,
     bascule et calcul du reste à marcher. 90 lignes, dont la moitié de

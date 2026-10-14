@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { messageDeZone } from '../../src/core/messageDeZone.ts'
+import {
+  messageDeZone,
+  messageDeRepliSurCache,
+} from '../../src/core/messageDeZone.ts'
 
 /**
  * Issue #404 — ce qu'une zone a de travers, et où cette phrase se compose.
@@ -87,5 +90,38 @@ describe('ce qu’une zone a de travers', () => {
    */
   it('se tait sur une zone écrite avant que le fait ne soit gardé', () => {
     expect(messageDeZone({ itineraires: 12 })).toBeNull()
+  })
+})
+
+/**
+ * Le message du repli sur cache, sorti de `trancheZone.ts` (issue #539,
+ * sprint 8) : même composition que `messageDeZone`, mais sur un chemin qui
+ * dit en plus que les miroirs sont injoignables — et qui écarte le conseil
+ * « Réessayez avec “Actualiser les tracés” » sur une zone vide, puisque
+ * c'est justement ce geste qui vient d'échouer.
+ */
+describe('le repli sur une zone en cache quand les miroirs sont injoignables', () => {
+  it("dit l'injoignabilité seule sur une zone entière", () => {
+    expect(messageDeRepliSurCache({ itineraires: 12 })).toBe(
+      'Serveurs OpenStreetMap injoignables : affichage des tracés en cache (ils datent peut-être un peu).',
+    )
+  })
+
+  it('ajoute que les pourcentages sont surestimés sur une zone tronquée', () => {
+    const message = messageDeRepliSurCache({ itineraires: 12, partielle: true })
+    expect(message).toMatch(/injoignables/i)
+    expect(message).toMatch(/surestim/i)
+  })
+
+  it('ajoute combien d’itinéraires découpés manquent', () => {
+    expect(messageDeRepliSurCache({ itineraires: 12, perdues: 3 })).toMatch(
+      /3 itinéraires/,
+    )
+  })
+
+  it('ne conseille pas d’actualiser sur une zone vide', () => {
+    const message = messageDeRepliSurCache({ itineraires: 0 })
+    expect(message).toMatch(/injoignables/i)
+    expect(message).not.toMatch(/Actualiser/i)
   })
 })

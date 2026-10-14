@@ -44,7 +44,7 @@ import {
   ZONES,
   libelleDeZone,
 } from '../core/overpass.ts'
-import { messageDeZone } from '../core/messageDeZone.ts'
+import { messageDeZone, messageDeRepliSurCache } from '../core/messageDeZone.ts'
 import type { Lieu } from '../core/geocode.ts'
 import { fetchPois } from '../core/poi.ts'
 import { reponseTronquee } from '../core/poisDeZone.ts'
@@ -296,38 +296,17 @@ export function trancheZone(deps: DependancesZone): ActionsZone {
             cached.itineraries,
             cached.fetchedAt,
           )
-          /*
-            Le troisième chemin de #404, oublié par sa propre PR — qui
-            déclarait pourtant en avoir couvert « les deux ». La garde nommée
-            existait déjà ; elle n'était simplement pas appelée ici, et une
-            zone tronquée repassait muette avec ses pourcentages surestimés.
-            C'est le §4 pour la cinquième fois dans ce dépôt.
-
-            Le vide est écarté, et pour un mot : le message de la zone vide
-            conseille « Réessayez avec “Actualiser les tracés” », ce qui
-            enverrait quelqu'un refaire exactement ce qui vient d'échouer.
-            Une zone vide se voit à l'écran ; elle n'a pas besoin d'une
-            marche à suivre qui ne marchera pas.
-          */
-          const diagnostic =
-            cached.itineraries.length === 0
-              ? null
-              : messageDeZone({
-                  itineraires: cached.itineraries.length,
-                  partielle: cached.partielle,
-                  perdues: cached.perdues,
-                })
+          // Le troisième chemin de #404, oublié par sa propre PR — qui
+          // déclarait pourtant en avoir couvert « les deux ». La composition
+          // du message (pourquoi le vide est écarté, pourquoi pas « Les
+          // serveurs … ») vit maintenant dans `messageDeRepliSurCache`
+          // (`core/messageDeZone.ts`), sortie d'ici au sprint 8 (#539).
           deps.set({
-            zoneError:
-              // « Serveurs … injoignables » plutôt que « Les serveurs … sont
-              // injoignables » : le diagnostic qui peut suivre commence par
-              // « Les serveurs OpenStreetMap ont interrompu la requête », et
-              // les deux phrases se lisaient l'une derrière l'autre avec la
-              // même ouverture. Retoucher la seconde aurait été en écrire une
-              // deuxième version — ce que le §4ter interdit plus fermement
-              // qu'une maladresse ne coûte.
-              'Serveurs OpenStreetMap injoignables : affichage des tracés en cache (ils datent peut-être un peu).' +
-              (diagnostic === null ? '' : ` ${diagnostic}`),
+            zoneError: messageDeRepliSurCache({
+              itineraires: cached.itineraries.length,
+              partielle: cached.partielle,
+              perdues: cached.perdues,
+            }),
           })
           await deps.persistLastZone(zoneKey)
           await deps.recompute()
