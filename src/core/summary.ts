@@ -15,7 +15,7 @@ import { attributionDe, type GpxAttribution } from './gpxExport.ts'
 /** Au-delà, l'image devient un tableau qu'on ne lit plus. */
 const TOP_MAX = 5
 
-export interface SummaryLine {
+interface SummaryLine {
   name: string
   pct: number
   completed: boolean
@@ -50,7 +50,7 @@ export interface Summary {
   sources: GpxAttribution[]
 }
 
-export interface SummaryInput {
+interface SummaryInput {
   global: AggregateStats
   results: CompletionResult[]
   itineraries: Itinerary[]

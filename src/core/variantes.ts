@@ -11,7 +11,7 @@ import type { Itinerary } from './types.ts'
  */
 const REF_DERIVEE = /^(.*?\d+)\s?([A-Z])$/
 
-export interface Recouvrement {
+interface Recouvrement {
   tronc: Itinerary
   metresPartages: number
   pourcentageDeLaVariante: number

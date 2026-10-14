@@ -121,7 +121,7 @@ export const TRACE_VIDE: EtatTrace = { drawMode: false, ...TRACE_PERIMEE }
  * ajoutée ici est une dépendance qu'on voit grandir, au lieu d'un accès
  * qu'on découvre en cherchant un défaut.
  */
-export interface DependancesTrace {
+interface DependancesTrace {
   set: (partiel: Partial<EtatTrace>) => void
   /**
    * Range l'itinéraire tracé : il est enregistré, ajouté aux itinéraires

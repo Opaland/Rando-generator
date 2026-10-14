@@ -127,7 +127,7 @@ export const MIN_TOLERANCE = 25
 export const MAX_TOLERANCE = 100
 
 /** Étape affichée pendant zoneLoading, pour un retour visuel non figé. */
-export type ZoneLoadStage = 'requesting' | 'retrying' | 'processing' | null
+type ZoneLoadStage = 'requesting' | 'retrying' | 'processing' | null
 
 /**
  * Une trace mise de côté parce qu'elle ressemble à une autre déjà importée.
@@ -137,7 +137,7 @@ export type ZoneLoadStage = 'requesting' | 'retrying' | 'processing' | null
  * fois.
  */
 
-export interface AppState
+interface AppState
   extends
     EtatObjectifs,
     ActionsObjectifs,

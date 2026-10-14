@@ -26,7 +26,7 @@
  *
  * La forme est celle de `creerEnregistreurDeReglage`, pour la même raison.
  */
-export interface DependancesOubli {
+interface DependancesOubli {
   /** La base, ou `null` si elle n'a pas pu s'ouvrir. */
   baseOuverte: () => Promise<{
     deleteZone: (zoneKey: string) => Promise<unknown>

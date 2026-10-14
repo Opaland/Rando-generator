@@ -10,7 +10,7 @@ import type { Track } from './types.ts'
  * selon le fuseau où l'on ouvre l'application.
  */
 
-export interface MonthBucket {
+interface MonthBucket {
   /** Mois au format « 2026-08 ». */
   month: string
   count: number
@@ -18,7 +18,7 @@ export interface MonthBucket {
   elevationGain: number
 }
 
-export interface HistoryStats {
+interface HistoryStats {
   count: number
   distanceMeters: number
   elevationGain: number
@@ -155,7 +155,7 @@ export function monthLabel(month: string): string {
 }
 
 /** Ce qu'il faut pour qu'une barre se lise : le sommet, et son échelle. */
-export interface ReperesHistogramme {
+interface ReperesHistogramme {
   /** Le mois le plus haut, ou `null` si aucun mois ne porte de sortie. */
   moisLePlusHaut: string | null
   /** Sa distance, en mètres. Zéro quand il n'y a rien à désigner. */

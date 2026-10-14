@@ -99,7 +99,7 @@ export interface GpxWaypoint {
   name: string
 }
 
-export interface GpxExportOptions {
+interface GpxExportOptions {
   name: string
   coords: LonLat[]
   attribution: GpxAttribution | null

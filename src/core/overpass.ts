@@ -20,7 +20,7 @@ const OVERPASS_TIMEOUT_MS = 180_000
 /** Regroupement des zones dans l'UI. */
 export type ZoneGroup = 'proche' | 'aura' | 'vosges' | 'nc'
 
-export interface OverpassZone {
+interface OverpassZone {
   id: string
   label: string
   areaSelectors: string[]
@@ -157,7 +157,7 @@ export const ZONES: OverpassZone[] = [
 ]
 
 /** Grand itinéraire mis en avant, chargé par sa ref (recherche France entière). */
-export interface FeaturedRoute {
+interface FeaturedRoute {
   ref: string
   label: string
   hint: string

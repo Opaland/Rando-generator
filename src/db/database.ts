@@ -280,7 +280,7 @@ export interface SentiersDb {
   retirerParcoursDeclare(itineraryId: number): Promise<void>
 }
 
-export interface OpenDbOptions {
+interface OpenDbOptions {
   /** Injectable pour les tests ; par défaut, l'IndexedDB du navigateur. */
   indexedDB?: IDBFactory | undefined
 }

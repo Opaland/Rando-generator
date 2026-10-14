@@ -73,7 +73,7 @@ export const SORTIES_RESEAU_AU_REPOS: EtatSortiesReseau = {
 }
 
 /** Ce que la tranche a besoin de savoir du reste du store. */
-export interface DependancesSortiesReseau {
+interface DependancesSortiesReseau {
   set: (
     partiel:
       | Partial<EtatSortiesReseau>

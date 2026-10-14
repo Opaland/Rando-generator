@@ -127,7 +127,7 @@ export function parseElevationResponse(
   })
 }
 
-export interface ElevationStats {
+interface ElevationStats {
   gain: number
   loss: number
   min: number
@@ -297,9 +297,9 @@ export function fillElevationGaps(elevations: (number | null)[]): number[] {
   return result as number[]
 }
 
-export type FetchLike = (url: string, init?: RequestInit) => Promise<Response>
+type FetchLike = (url: string, init?: RequestInit) => Promise<Response>
 
-export interface FetchElevationOptions {
+interface FetchElevationOptions {
   fetchFn?: FetchLike
   timeoutMs?: number
 }

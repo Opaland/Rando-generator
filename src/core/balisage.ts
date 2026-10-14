@@ -17,7 +17,7 @@
  * de #284 dans l'autre sens : affirmer un classement qu'on n'a pas lu.
  */
 
-export interface Balisage {
+interface Balisage {
   /** Couleur de la voie elle-même, souvent redondante avec le reste. */
   couleurVoie: string
   /** Fond de la balise peinte. */

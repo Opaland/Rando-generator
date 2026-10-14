@@ -20,7 +20,7 @@ import { estDansLeMonde } from './coordonnees.ts'
  * s'éprouve sans navigateur.
  */
 
-export type EtatEnregistrement = 'repos' | 'enregistrement' | 'pause' | 'termine'
+type EtatEnregistrement = 'repos' | 'enregistrement' | 'pause' | 'termine'
 
 export type Action =
   | 'demarrer'

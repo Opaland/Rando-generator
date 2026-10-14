@@ -15,7 +15,7 @@ import { formatChrono, formatDistance, formatPct } from '../lib/format.ts'
  * feuille et changer d'onglet pour lire sa distance.
  */
 
-export interface EtatPoignee {
+interface EtatPoignee {
   /** Les chiffres de la sortie en cours, ou `null` s'il n'y en a pas. */
   sortie: { distanceMetres: number; dureeEnMarcheMs: number } | null
   /** Progression globale, ou `null` s'il n'y a rien à compter (constat U5). */

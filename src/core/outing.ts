@@ -25,7 +25,7 @@ export interface OutingHighlight {
   pct: number
 }
 
-export interface OutingOptions {
+interface OutingOptions {
   limit?: number
   minMeters?: number
 }

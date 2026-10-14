@@ -31,7 +31,7 @@
 import type { GpxAttribution } from '../core/gpxExport.ts'
 
 /** Un crédit : à qui, pour quoi, sous quelle licence, et où lire celle-ci. */
-export interface Credit {
+interface Credit {
   /** Ce qu'on doit à cette source, tel qu'il apparaît dans la phrase. */
   readonly quoi: string
   /**

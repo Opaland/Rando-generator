@@ -160,7 +160,7 @@ export function deniveleParcouru(e: Enregistrement): number | null {
   return hasData ? gain : null
 }
 
-export interface ChiffresSortie {
+interface ChiffresSortie {
   distanceMetres: number
   dureeTotaleMs: number
   dureeEnMarcheMs: number
@@ -301,7 +301,7 @@ export function traceProvisoire(e: Enregistrement): Track | null {
 }
 
 /** Ce qu'il y a à dire sur un chiffre vide, ou `null` s'il n'y a rien à dire. */
-export interface ExplicationsSortie {
+interface ExplicationsSortie {
   distance: string | null
   denivele: string | null
 }

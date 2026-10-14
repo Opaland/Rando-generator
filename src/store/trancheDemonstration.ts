@@ -45,7 +45,7 @@ export interface EtatDemonstration {
 }
 
 /** Ce que la démonstration ajoute aux actions du store. */
-export interface ActionsDemonstration {
+interface ActionsDemonstration {
   demarrerDemonstration: () => Promise<void>
   arreterDemonstration: () => Promise<void>
   quitterDemonstration: () => Promise<void>

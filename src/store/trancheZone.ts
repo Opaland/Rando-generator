@@ -59,10 +59,10 @@ import {
 import type { Itinerary, PointOfInterest } from '../core/types.ts'
 
 /** Où en est un chargement de zone, pour l'annoncer plutôt que le taire. */
-export type ZoneLoadStage = 'requesting' | 'retrying' | 'processing' | null
+type ZoneLoadStage = 'requesting' | 'retrying' | 'processing' | null
 
 /** Ce que la zone ajoute à l'état du store. */
-export interface EtatZone {
+interface EtatZone {
   zoneKey: string | null
   zoneLabel: string | null
   zoneError: string | null
@@ -75,13 +75,13 @@ export interface EtatZone {
 }
 
 /** Les champs du store que la tranche lit sans les posséder. */
-export interface EtatLuAilleurs {
+interface EtatLuAilleurs {
   db: SentiersDb | null
   itineraries: Itinerary[]
   demonstration: boolean
 }
 
-export interface ActionsZone {
+interface ActionsZone {
   loadZone: (zoneId: string, options?: { force?: boolean }) => Promise<void>
   loadRef: (ref: string, options?: { force?: boolean }) => Promise<void>
   loadAutour: (lieu: Lieu, options?: { force?: boolean }) => Promise<void>

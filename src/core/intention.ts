@@ -56,7 +56,7 @@ export interface Fragment {
   champ: keyof DiscoveryFilters
 }
 
-export interface Intention {
+interface Intention {
   filtres: DiscoveryFilters
   compris: Fragment[]
   /**

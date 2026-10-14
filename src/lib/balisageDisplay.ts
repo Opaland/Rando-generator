@@ -64,7 +64,7 @@ export const PEINTURE: Record<string, string> = {
 }
 
 /** Une figure dessinable, et rien d'autre. */
-export type Figure =
+type Figure =
   | { genre: 'moities'; haut: string; bas: string; fond: string | null }
   | { genre: 'barre'; couleur: string; fond: string | null }
   | { genre: 'crete'; couleur: string; fond: string | null }

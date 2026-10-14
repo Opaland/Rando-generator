@@ -22,7 +22,7 @@ import { STEP_METERS } from './types.ts'
  */
 export const MAX_TRONCONS = 8
 
-export interface TronconRestant {
+interface TronconRestant {
   wayId: number
   meters: number
   /** Premier point non parcouru : c'est là qu'on se gare. */

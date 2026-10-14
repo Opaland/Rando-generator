@@ -132,12 +132,12 @@ export function interruptionsDuTrace(itinerary: Itinerary): Interruption[] {
 }
 
 /** GeoJSON minimal — évite une dépendance de types externe dans core. */
-export interface LineStringGeometry {
+interface LineStringGeometry {
   type: 'LineString'
   coordinates: LonLat[]
 }
 
-export interface TrailProperties {
+interface TrailProperties {
   network: Network
   /** Itinéraire « principal » du way (réseau prioritaire), pour le clic. */
   itineraryId: number
@@ -146,13 +146,13 @@ export interface TrailProperties {
   wayId: number
 }
 
-export interface LineFeature<P> {
+interface LineFeature<P> {
   type: 'Feature'
   geometry: LineStringGeometry
   properties: P
 }
 
-export interface LineCollection<P> {
+interface LineCollection<P> {
   type: 'FeatureCollection'
   features: LineFeature<P>[]
 }
@@ -186,7 +186,7 @@ function lineFeature<P>(coordinates: LonLat[], properties: P): LineFeature<P> {
   }
 }
 
-export interface TrailGeoJSON {
+interface TrailGeoJSON {
   /** Tous les ways (géométrie précise), pour le tracé « non parcouru ». */
   base: LineCollection<TrailProperties>
   /** Tronçons parcourus (suites d'échantillons faits, résolution STEP). */
@@ -288,7 +288,7 @@ export function buildTrailGeoJSON(
   }
 }
 
-export interface TrackProperties {
+interface TrackProperties {
   trackId: string
 }
 

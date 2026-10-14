@@ -53,7 +53,7 @@ export function metresDeclares(
   return total
 }
 
-export interface ChiffresCompletion {
+interface ChiffresCompletion {
   pctMesure: number
   pctDeclare: number
   metresMesures: number
@@ -61,7 +61,7 @@ export interface ChiffresCompletion {
   metresTotal: number
 }
 
-export interface OptionsCompletion {
+interface OptionsCompletion {
   /**
    * Mètres déjà mesurés sur chaque itinéraire.
    *
@@ -121,7 +121,7 @@ export function libelleCompletion(chiffres: {
 }
 
 /** Une déclaration telle que « Mes sorties » la montre. */
-export interface DeclarationListee {
+interface DeclarationListee {
   itineraryId: number
   nom: string
   network: Network
@@ -183,7 +183,7 @@ export function listerDeclarations(
  * endroits pourraient vouloir la poser, et que la recopier est le mode
  * d'échec de CLAUDE.md §4.
  */
-export type EtatBilan = 'vide' | 'declare' | 'mesure'
+type EtatBilan = 'vide' | 'declare' | 'mesure'
 
 export function etatDuBilan(compte: {
   traces: number

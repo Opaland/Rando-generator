@@ -32,7 +32,7 @@ export type SectionApp =
   | 'reglages'
   | 'sauvegarde'
 
-export interface DefinitionOnglet {
+interface DefinitionOnglet {
   cle: Onglet
   libelle: string
   /** Icône **et** libellé : une icône seule se devine, et se devine mal. */
@@ -163,7 +163,7 @@ export function ancreDeSection(section: SectionApp): string {
   return ANCRES[section]
 }
 
-export type Disposition = 'onglets' | 'accordeons'
+type Disposition = 'onglets' | 'accordeons'
 
 /**
  * Quelle disposition afficher.

@@ -97,7 +97,7 @@ const CONFIRM_FACTOR = 0.4
 /** Part minimale d'échantillons confirmés pour créditer un passage. */
 const CONFIRM_RATIO = 0.25
 
-export interface MatchOptions {
+interface MatchOptions {
   toleranceMeters: number
   stepMeters?: number
   /** Horodatage ISO des résultats — injecté pour garder la fonction pure. */

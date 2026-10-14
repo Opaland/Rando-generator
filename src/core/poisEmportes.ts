@@ -29,7 +29,7 @@ export interface PoisEmportes {
 
 export type SourcePois = 'reseau' | 'emporte' | 'aucune'
 
-export interface ResultatPois {
+interface ResultatPois {
   pois: PointOfInterest[]
   source: SourcePois
   /** Date de l'emport, quand c'est de là que viennent les points. */

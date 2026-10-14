@@ -91,7 +91,7 @@ export function emporter(
  * ici — n'écrire que ce qui est une réponse — se vérifie alors sans
  * navigateur ni réseau.
  */
-export interface PortsPois {
+interface PortsPois {
   recuperer: (coords: LonLat[]) => Promise<PointOfInterest[] | null>
   ecrire: (pois: PoisEmportes) => Promise<void>
   maintenant: () => Date

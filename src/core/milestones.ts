@@ -84,7 +84,7 @@ export function isCompleted(
   return pct >= seuil
 }
 
-export interface MilestoneCrossing {
+interface MilestoneCrossing {
   itineraryId: number
   milestone: number
 }

@@ -48,7 +48,7 @@ export interface Stage {
   bounds: [LonLat, LonLat]
 }
 
-export interface StageOptions {
+interface StageOptions {
   stageMeters?: number
   stepMeters?: number
   minStagedMeters?: number
@@ -198,7 +198,7 @@ export interface CouchageSitue {
 }
 
 /** Une étape, et le couchage sur lequel sa fin a été calée s'il y en a un. */
-export interface EtapeCalee extends Stage {
+interface EtapeCalee extends Stage {
   couchage: CouchageSitue | null
 }
 

@@ -125,7 +125,7 @@ export function trierHistorique(
   })
 }
 
-export interface GroupeHistorique {
+interface GroupeHistorique {
   /** `null` : soit la liste est courte et n'est pas groupée, soit ce sont
    * les sorties sans date. `ouvertParDefaut` distingue les deux cas. */
   annee: number | null

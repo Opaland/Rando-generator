@@ -48,7 +48,7 @@ export interface TrailWay {
 }
 
 /** Métadonnées éditoriales d'une boucle locale (source open data). */
-export interface LocalDetails {
+interface LocalDetails {
   /** Producteur de la donnée, pour l'attribution (ex. « Métropole de Lyon »). */
   source: string
   commune: string | null

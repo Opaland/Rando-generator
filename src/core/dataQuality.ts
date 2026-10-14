@@ -23,7 +23,7 @@ export interface GeometryGap {
   meters: number
 }
 
-export interface DataQuality {
+interface DataQuality {
   /** Morceaux distincts de la géométrie (1 = continue, 0 = rien d'exploitable). */
   pieces: number
   /** Interruptions entre morceaux, de la plus grande à la plus petite. */

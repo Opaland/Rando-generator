@@ -15,7 +15,7 @@ import {
 /** Nombre d'erreurs de tuiles avant de basculer sur le fond OpenStreetMap. */
 const ERREURS_AVANT_REPLI = 3
 
-export interface MapInstance {
+interface MapInstance {
   mapRef: RefObject<MaplibreMap | null>
   /** Vrai une fois le premier style chargé : les couches existent. */
   ready: boolean

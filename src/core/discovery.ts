@@ -36,7 +36,7 @@ const NODE_PRECISION_DEG = 1e-5
 const PROXIMITY_MAX_POINTS = 200
 
 /** Forme du tracé. `unknown` : réseau ramifié ou géométrie insuffisante. */
-export type Shape = 'loop' | 'linear' | 'unknown'
+type Shape = 'loop' | 'linear' | 'unknown'
 
 export interface ItineraryFacts {
   meters: number
@@ -329,7 +329,7 @@ export function matchesFilters(
 export const SEUIL_FACILE_MINUTES = 150
 export const SEUIL_MOYEN_MINUTES = 300
 
-export type Effort = 'facile' | 'moyen' | 'soutenu'
+type Effort = 'facile' | 'moyen' | 'soutenu'
 
 export function effortEstime(facts: ItineraryFacts): Effort {
   if (facts.minutes <= SEUIL_FACILE_MINUTES) return 'facile'

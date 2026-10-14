@@ -28,12 +28,12 @@ export class BackupError extends Error {
 export const BACKUP_FORMAT = 'sentiers-sauvegarde'
 export const BACKUP_VERSION = 1
 
-export interface BackupReglages {
+interface BackupReglages {
   toleranceMeters?: number
   completionPct?: number
 }
 
-export interface Backup {
+interface Backup {
   format: typeof BACKUP_FORMAT
   version: number
   exportedAt: string
@@ -314,7 +314,7 @@ export async function lireArchiveBackup(
   }
 }
 
-export interface FusionTraces {
+interface FusionTraces {
   tracks: Track[]
   ajoutees: number
   ignorees: number
@@ -351,7 +351,7 @@ export function fusionnerTraces(
   return { tracks, ajoutees, ignorees }
 }
 
-export interface FusionItineraires {
+interface FusionItineraires {
   itineraries: Itinerary[]
   ajoutes: number
   ignores: number

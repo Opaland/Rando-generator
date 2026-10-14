@@ -50,7 +50,7 @@ import type { SentiersDb } from '../db/database.ts'
  */
 
 /** Ce que la sauvegarde ajoute à l'état du store. */
-export interface EtatSauvegarde {
+interface EtatSauvegarde {
   /**
    * Ce que la dernière fusion a rapporté, ou `null`.
    *
@@ -62,7 +62,7 @@ export interface EtatSauvegarde {
 }
 
 /** Ce que la sauvegarde ajoute aux actions du store. */
-export interface ActionsSauvegarde {
+interface ActionsSauvegarde {
   exporterSauvegarde: () => Promise<void>
   importerSauvegarde: (file: File) => Promise<void>
   clearBackupMessage: () => void

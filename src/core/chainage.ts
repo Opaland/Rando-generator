@@ -51,7 +51,7 @@ function nodeKey(point: LonLat): string {
   return `${Math.round(point[0] / NODE_PRECISION_DEG)},${Math.round(point[1] / NODE_PRECISION_DEG)}`
 }
 
-export interface Maillon {
+interface Maillon {
   wayId: number
   reversed: boolean
   /** Premier point du tronçon, dans le sens de la marche. */

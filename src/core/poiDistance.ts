@@ -94,7 +94,7 @@ export function situerPois(
  */
 export const DETOUR_MAX_METRES = 1_000
 
-export interface PoisDuChemin {
+interface PoisDuChemin {
   /** Ce qui est à portée — ou ce qui vaut le détour quoi qu'il en coûte. */
   retenus: PoiSitue[]
   /** Le reste, gardé pour pouvoir le dire, pas pour l'afficher. */

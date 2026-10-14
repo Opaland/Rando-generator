@@ -24,7 +24,7 @@
  */
 
 /** Ce qu'on sait d'une zone au moment de l'afficher. */
-export interface FaitsDeZone {
+interface FaitsDeZone {
   /** Combien d'itinéraires sont à l'écran. */
   itineraires: number
   /**

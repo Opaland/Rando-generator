@@ -44,7 +44,7 @@ export function lireObjectifs(brut: number | string | undefined): number[] {
   }
 }
 
-export interface DependancesObjectifs {
+interface DependancesObjectifs {
   lire: () => {
     objectifs: number[]
     matching: MatchResult | null

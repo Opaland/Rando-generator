@@ -19,7 +19,7 @@
  * seulement un ornement.
  */
 
-export type Destination =
+type Destination =
   | 'sentiers'
   | 'fond-de-carte'
   | 'altimetrie'
@@ -140,7 +140,7 @@ export function classerSortie(
   return { destination: 'inconnue', hote }
 }
 
-export interface GroupeDestination {
+interface GroupeDestination {
   destination: Destination
   hotes: string[]
   nombre: number
@@ -170,7 +170,7 @@ export function noterSortie(
   return copie
 }
 
-export interface ResumeJournal {
+interface ResumeJournal {
   /** Requêtes parties vers un tiers. Les fichiers du site n'en sont pas. */
   total: number
   parDestination: GroupeDestination[]

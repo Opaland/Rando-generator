@@ -178,7 +178,7 @@ async function decompresser(
   )
 }
 
-export interface LectureOptions {
+interface LectureOptions {
   /** Plafond de décompression pour cette entrée. Injectable pour les tests. */
   tailleMax?: number
 }

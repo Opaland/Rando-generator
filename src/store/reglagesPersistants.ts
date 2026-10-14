@@ -53,7 +53,7 @@ export function oublierReglagesTouches(): void {
 }
 
 /** Ce dont l'écriture a besoin du reste du store. */
-export interface DependancesReglages {
+interface DependancesReglages {
   /** La base, ou `null` si elle n'a pas pu s'ouvrir. */
   baseOuverte: () => Promise<{
     setSetting: (clef: SettingKey, valeur: string | number) => Promise<unknown>

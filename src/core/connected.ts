@@ -32,7 +32,7 @@ function nodeKey(point: LonLat): string {
   return `${Math.round(point[0] / NODE_PRECISION_DEG)},${Math.round(point[1] / NODE_PRECISION_DEG)}`
 }
 
-export interface WalkedRun {
+interface WalkedRun {
   /** Longueur de l'enchaînement, en mètres. */
   meters: number
   /** Tronçons qui le composent, par identifiant OSM croissant. */

@@ -61,7 +61,7 @@ export const AFFICHAGE_PAR_DEFAUT: EtatAffichage = {
   panneauReplie: false,
 }
 
-export interface DependancesAffichage {
+interface DependancesAffichage {
   set: (partiel: Partial<EtatAffichage>) => void
   /** Écrit le réglage puis l'applique — voir `reglagesPersistants.ts`. */
   enregistrerReglage: (

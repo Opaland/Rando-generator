@@ -35,7 +35,7 @@ export const ORDRE_TERRAIN: readonly FamilleRevetement[] = [
   'autre',
 ]
 
-export interface ContenuLegende {
+interface ContenuLegende {
   /** Les réseaux présents sur la carte, dans l'ordre de la charte. */
   reseaux: Network[]
   /**
