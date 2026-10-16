@@ -4,6 +4,7 @@ import {
   NETWORK_COLORS,
   NETWORK_EXPLANATIONS,
   NETWORK_LABELS,
+  NETWORK_TIRETS,
 } from '../lib/networkDisplay.ts'
 import {
   TERRAIN_COLORS,
@@ -54,7 +55,11 @@ export function MapLegend() {
             >
               <span
                 className={styles.swatch}
-                style={{ background: NETWORK_COLORS[network] }}
+                style={{
+                  background: NETWORK_TIRETS.includes(network)
+                    ? `repeating-linear-gradient(90deg, ${NETWORK_COLORS[network]} 0 4px, transparent 4px 8px)`
+                    : NETWORK_COLORS[network],
+                }}
               />
               {NETWORK_LABELS[network]}
             </li>

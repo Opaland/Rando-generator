@@ -92,6 +92,21 @@ export const NETWORK_COLORS: Record<Network, string> = {
 }
 
 /**
+ * Les réseaux rendus en trait discontinu plutôt qu'en trait plein, sur la
+ * carte comme dans la légende.
+ *
+ * GRP porte déjà ce tireté sur la carte (`trails-base-grp`/`trails-done-grp`,
+ * `[4,2]`, `style.ts`) — la distinction par la **forme** que #360 demande
+ * pour une paire GR/GRP qui s'effondre en vision deutéranope (ΔE 6,9,
+ * `tests/unit/couleursDeReseau.test.ts`). La légende ne le reprenait pas :
+ * sa pastille restait pleine, la même règle que « autre » pour le terrain
+ * (`TERRAIN_TIRETS`), oubliée au troisième endroit où elle s'applique
+ * (§4ter) — le témoin de la légende doit ressembler à ce qui est peint sur
+ * la carte, pas seulement sa teinte.
+ */
+export const NETWORK_TIRETS: Network[] = ['GRP']
+
+/**
  * Le nom de la propriété CSS qui porte la couleur de chaque réseau.
  *
  * `NETWORK_COLORS` donne la valeur ; ceci donne le **jeton**, c'est-à-dire ce
