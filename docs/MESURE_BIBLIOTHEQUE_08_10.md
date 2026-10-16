@@ -53,10 +53,92 @@ séparément pour trancher, ce qui n'a pas été fait ici.
 Sur ces deux points, le résultat est « tout va bien » au sens où #159
 l'envisageait : la mesure vaut, elle ne trouve rien d'alarmant.
 
-## Ce que ce document ne tranche pas
+## Ce que ce document ne tranche pas (08/10)
 
 Pourquoi l'import est si lent par activité (3,7 s), et laquelle des deux
 phases (analyse ou calcul de correspondance) domine. #159 demandait de
 mesurer puis décider, dans cet ordre : la mesure est faite, et elle dit
 qu'il y a quelque chose à investiguer — pas encore quoi corriger. Suite
 ouverte dans une issue dédiée plutôt que devinée ici.
+
+## Mise à jour du 16/10 — #539, la répartition, et l'hypothèse linéaire qui ne tient pas
+
+Trois points de mesure supplémentaires, avec le détail du calcul de
+correspondance posé en #539 (`performance.mark` autour de `recompute()`,
+`appStore.ts`), tous mesurés sur ce même environnement.
+
+| activités | temps d'import | analyse | correspondance | ms / activité |
+|---:|---:|---:|---:|---:|
+| 20 | 13 758 ms | 2 591 ms (19 %) | 10 614 ms (77 %) | 688 |
+| 100 (08/10) | 368 123 ms | — (pas instrumenté alors) | — | 3 681 |
+| 200 | ≥ 1 200 000 ms (n'a pas fini en 20 min) | — | — | ≥ 6 000 |
+| 400 | ≥ 1 500 000 ms (n'a pas fini en 25 min, le plafond du test) | — | — | ≥ 3 750 |
+
+À 20 activités, le calcul de correspondance domine déjà largement — 77 %
+du temps, contre 19 % pour l'analyse séquentielle. Ça répond à la question
+que #539 laissait ouverte. Ce n'est pas la partie la plus importante de
+cette mise à jour.
+
+### L'hypothèse linéaire ne tient pas face aux quatre points
+
+#539 extrapolait un comportement linéaire depuis la seule mesure à 100
+activités, et prévoyait ~49 minutes à 800. Le ms/activité **devrait rester
+constant** si c'était vrai. Il ne l'est pas : 688 à 20 activités, 3 681 à
+100 — un facteur 5,3 pour un facteur 5 d'activités, la signature d'une
+croissance **quadratique**, pas linéaire, en nombre d'activités.
+
+| activités | mesuré | prédit (linéaire, ancre 100) | prédit (quadratique, ancre 100) |
+|---:|---:|---:|---:|
+| 20 | 13 758 ms | 73 625 ms | 14 725 ms |
+| 200 | ≥ 1 200 000 ms (n'a pas fini) | 736 246 ms (12,3 min) | 1 472 492 ms (24,5 min) |
+| 400 | ≥ 1 500 000 ms (n'a pas fini) | 1 472 492 ms (24,5 min) | 5 889 968 ms (98,2 min) |
+
+Le quadratique colle au point de 20 activités (14 725 ms prédits contre
+13 758 mesurés, 7 % d'écart) et explique pourquoi 200 activités ne finit
+pas en 20 minutes, alors que le linéaire prédisait 12,3 minutes.
+**Ceci reste un ajustement sur quatre points, pas une preuve** : un
+cinquième point (50 activités, par exemple) le confirmerait sans
+attendre un plafond — non fait ici, cette seule mise à jour ayant déjà
+coûté près d'une heure de calcul en arrière-plan.
+
+### Une cause plausible, et ce qu'elle laisse en suspens
+
+`buildTrackIndex` (`src/core/matching.ts`) range les segments de trace
+dans une grille de cellules de 0,0015° (~167 m en latitude, logique posée
+par #170). La fixture de ce banc (`gpxActivite`,
+`tests/e2e/mesure-bibliotheque.spec.ts`) décale chaque activité d'environ
+**un mètre** de latitude par rapport à la précédente, pour rester
+distinctes sans être des doublons (§1bis de CLAUDE.md le rappelle : un
+point trouvé en écrivant la fixture, pas en la lisant après coup) — cent
+activités tiennent donc dans une bande de 100 m, plus étroite qu'une
+seule cellule.
+
+Si c'est la cause : les segments de centaines d'activités s'accumulent
+dans les **mêmes** cellules, et chaque requête de correspondance
+(`distanceToTrack`) balaie un panier qui grossit avec le nombre
+d'activités plutôt que de rester borné — exactement ce que le hachage
+spatial est censé éviter.
+
+**Ce que cette mesure ne permet pas de trancher** : si une vraie
+bibliothèque de 800 sorties réelles — dispersées sur des dizaines de
+sentiers, parfois à des kilomètres les unes des autres plutôt qu'à un
+mètre — se comporterait aussi mal. Le chiffre « quadratique » mesuré ici
+dit quelque chose sur ce banc ; pas forcément sur un usage réel.
+
+### Ce qu'il faudrait pour trancher, non fait ici
+
+1. Un point à 50 activités, pour confirmer ou infirmer l'ajustement
+   quadratique sans attendre un plafond.
+2. Une variante de `gpxActivite` qui disperse les activités sur une vraie
+   étendue géographique plutôt que de les empiler à un mètre les unes des
+   autres — pour savoir si le ralentissement vient de la densité du jeu
+   de données ou de l'algorithme lui-même.
+3. Si (2) confirme un comportement quadratique sur une donnée dispersée :
+   mesurer la taille des paniers de `TrackIndex` pendant un import réel,
+   avant de choisir un correctif.
+
+Aucune des trois n'est faite ici. La mesure en main inverse déjà la
+conclusion du 08/10 — de « c'est lent, linéairement » à « c'est peut-être
+bien plus grave, sur un banc dont la donnée est elle-même suspecte » —
+et c'est une raison de s'arrêter avant d'inventer un correctif, pas après
+(§2 de CLAUDE.md).
