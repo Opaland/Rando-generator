@@ -220,7 +220,7 @@ Trois pièges mesurés sur ce dépôt :
   silence et laisser tester une version périmée.
 - **`PW_CHROMIUM_PATH=/opt/pw-browsers/chromium` pour toute commande qui
   lance Chromium** — `e2e`, `monkey`, `mesure`, `reel`, `chargement`,
-  `panneau`, `og-image`. Cette phrase-là a
+  `panneau`, `dense`, `og-image`. Cette phrase-là a
   déjà été trop étroite une fois : le 31/08, `npm run monkey` a rendu trois
   échecs au milieu d'une porte verte, faute de la variable, et la seule
   commande annoncée avec elle était `e2e` (issue #435). `npm run listes`
