@@ -80,13 +80,44 @@ plutôt que de l'écarter en silence.
 
 **Ne pas implémenter de nouvelle fonctionnalité dans cette phase.**
 
+## Phase E — Revue UI/UX et design system (une fois, après D)
+
+Demande du 16/10 : « review UI/UX et correction et changement de design
+system ». Deux natures de constats, à ne pas mélanger (§6sexies : ce qui se
+mesure se mesure, le reste se décide) :
+
+1. **Ce qui se mesure** (contraste, px, ΔE, ce qui est peint par-dessus
+   quoi, cible tactile) : corriger directement, même discipline que la
+   phase C — TDD, porte complète, un commit par constat.
+2. **Ce qui se décide** (rendre l'appli « sexy », un nouveau système de
+   design, une palette différente) : `docs/DESIGN_SYSTEM.md` documente déjà
+   une identité délibérée (papier crème, pas de bibliothèque de composants —
+   section « Ce qu'on ne fera pas »), et `FEUILLE_DE_ROUTE.md` la rejoint.
+   **Ne pas la remplacer de soi-même.** Écrire 2-3 pistes concrètes de
+   direction visuelle (palette, typographie, densité) dans un nouveau
+   `docs/PROPOSITIONS_DESIGN_<date du jour>.md`, chacune avec ce qu'elle
+   coûte et ce qu'elle garde de l'existant — jamais une seule appliquée sans
+   que Cédric n'ait choisi.
+
+## Phase F — Positionnement marketing (une fois, après E)
+
+Demande du 16/10 : « comment market l'appli, la rendre sexy ». Recherche et
+rédaction seules — **aucune action externe** (rien publié, aucun compte créé,
+aucun domaine réservé). Écrire dans un nouveau
+`docs/POSITIONNEMENT_<date du jour>.md` : à qui l'application s'adresse
+réellement (les personas documentés en disent déjà beaucoup —
+`docs/PERSONAS.md`), ce qui la distingue des concurrents trouvés en phase D
+(hors-ligne, confidentialité, pas de compte), et 2-3 pistes de message et de
+canaux, avec leur coût et ce qu'elles supposent de la phase E. Encore une
+fois : des propositions documentées, jamais une action prise.
+
 ---
 
-## Après la phase D
+## Après la phase F
 
 Le dire clairement, et s'arrêter. Ne pas relancer le cycle depuis la phase A
-sans qu'un humain ne le redemande explicitement — les quatre phases
-répondent à une demande ponctuelle, pas à une boucle permanente.
+sans qu'un humain ne le redemande explicitement — les six phases répondent
+à des demandes ponctuelles, pas à une boucle permanente.
 
 ---
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
