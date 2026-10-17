@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAppStore } from '../store/appStore.ts'
 import { formatKm, formatPct } from '../lib/format.ts'
+import { attributionDe } from '../core/gpxExport.ts'
 import { ProgressBalise } from './ProgressBalise.tsx'
 import { ConfirmDeleteButton } from './ConfirmDeleteButton.tsx'
 import styles from './CustomItineraries.module.css'
@@ -146,6 +147,12 @@ export function CustomItineraries() {
             const pct = result?.pct ?? 0
             const selected = selectedItineraryId === itin.osmRelationId
             const name = itin.name ?? 'Itinéraire perso'
+            // Issue #541 — Léa : un PDIPR importé se confondait avec un
+            // tracé personnel sans source, nulle part dans cette liste.
+            // L'attribution existait déjà (#87, portée jusqu'au GPX) ;
+            // elle manquait ici, le seul endroit où la distinction compte
+            // avant d'exporter quoi que ce soit.
+            const source = attributionDe(itin)
             return (
               <li key={itin.osmRelationId} className={styles.item}>
                 <button
@@ -156,7 +163,14 @@ export function CustomItineraries() {
                     selectItinerary(selected ? null : itin.osmRelationId)
                   }}
                 >
-                  <span className={styles.name}>{name}</span>
+                  <span className={styles.nameCol}>
+                    <span className={styles.name}>{name}</span>
+                    {source && (
+                      <span className={styles.source} data-testid="custom-source">
+                        Source : {source.author}
+                      </span>
+                    )}
+                  </span>
                   <ProgressBalise
                     pct={pct}
                     network="PERSO"

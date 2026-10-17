@@ -35,7 +35,9 @@ const PLAFONDS: Record<string, number> = {
   'About.tsx': 325,
   'Dashboard.tsx': 295,
   'Enregistreur.tsx': 225,
-  'CustomItineraries.tsx': 195,
+  // #541 : la source déclarée d'un import, visible dans la liste plutôt que
+  // seulement dans la fiche détaillée — quatre lignes de JSX et un commentaire.
+  'CustomItineraries.tsx': 200,
   'BoutonEmporter.tsx': 180,
   'MapView.tsx': 175,
   'Settings.tsx': 175,

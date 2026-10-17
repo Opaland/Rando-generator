@@ -77,9 +77,26 @@
   box-shadow: var(--anneau-selection);
 }
 
+.nameCol {
+  display: grid;
+  gap: var(--espace-1);
+  min-width: 0;
+}
+
 .name {
   font-weight: 600;
   font-size: var(--texte-courant);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* #541 : la source déclarée d'un import — visible sans survol, pour se
+   distinguer d'un tracé personnel au premier regard, pas seulement dans
+   la fiche détaillée (où elle existait déjà, #87). */
+.source {
+  font-size: var(--texte-appui);
+  color: var(--encre-douce);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
