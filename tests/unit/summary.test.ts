@@ -76,6 +76,24 @@ describe('buildSummary', () => {
     expect(bilan.top[1]?.completed).toBe(false)
   })
 
+  it('départage une égalité de pourcentage par les mètres parcourus', () => {
+    /*
+      Trouvé par mutation du 17/10 : le `||` du tri secondaire devenu `&&`
+      survivait, parce qu'aucun test n'avait deux résultats à pourcentage
+      égal — le seul cas où le second critère de tri compte.
+    */
+    const bilan = buildSummary({
+      global,
+      results: [
+        { ...result(1, 50), doneMeters: 4_000 },
+        { ...result(2, 50), doneMeters: 6_000 },
+      ],
+      itineraries: [itinerary(1, 'GR 7'), itinerary(2, 'GR 3')],
+      tracks: [],
+    })
+    expect(bilan.top.map((t) => t.name)).toEqual(['GR 3', 'GR 7'])
+  })
+
   it('limite le classement pour rester lisible', () => {
     const nombreux = Array.from({ length: 12 }, (_, i) => i + 1)
     const bilan = buildSummary({
@@ -99,6 +117,25 @@ describe('buildSummary', () => {
       ],
     })
     expect(bilan.outings).toBe(3)
+    expect(bilan.period).toEqual({ from: '2025-04-10', to: '2026-06-01' })
+  })
+
+  it('trouve la période même quand les sorties n’arrivent pas triées', () => {
+    /*
+      Trouvé par mutation du 17/10 : `jours.sort()` supprimé survivait,
+      parce que le test précédent présente déjà les sorties par date
+      croissante — l'ordre d'arrivée masquait l'absence de tri.
+    */
+    const bilan = buildSummary({
+      global,
+      results: [],
+      itineraries: [],
+      tracks: [
+        track('b', '2026-06-01T08:00:00Z'),
+        track('a', '2025-04-10T08:00:00Z'),
+        track('c', '2025-09-15T08:00:00Z'),
+      ],
+    })
     expect(bilan.period).toEqual({ from: '2025-04-10', to: '2026-06-01' })
   })
 

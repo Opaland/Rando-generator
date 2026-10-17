@@ -67,6 +67,79 @@ describe('parseTcx', () => {
     expect(resultat.elevations).toEqual([null])
   })
 
+  it('aligne les horodatages sur les points, pas seulement les positions', () => {
+    // Trouvé par mutation du 17/10 : aucun test ne lisait jamais `.times`.
+    const xml = tcx(
+      point(45.4, 4.5, { time: '2024-06-15T08:00:00Z' }) +
+        point(45.41, 4.51, { time: '2024-06-15T08:05:00Z' }),
+    )
+    const resultat = parseTcx(xml, parser)
+    expect(resultat.times).toEqual([
+      Date.parse('2024-06-15T08:00:00Z'),
+      Date.parse('2024-06-15T08:05:00Z'),
+    ])
+  })
+
+  it('garde la date du premier trackpoint, pas celle du dernier qui en porte une', () => {
+    /*
+      Trouvé par mutation du 17/10 : `premiereDate === null && time` devenu
+      `=== null || time` (ou la condition entière rendue toujours vraie)
+      survivait, parce qu'un seul des trackpoints de test portait jamais un
+      horodatage. Avec deux horodatages réels, une garde affaiblie laisse le
+      second écraser le premier.
+    */
+    const xml = tcx(
+      point(45.4, 4.5, { time: '2024-06-15T08:00:00Z' }) +
+        point(45.41, 4.51, { time: '2024-06-15T09:30:00Z' }),
+    )
+    expect(parseTcx(xml, parser).date).toBe('2024-06-15T08:00:00Z')
+  })
+
+  it('ne compte pas une position illisible comme hors limites', () => {
+    /*
+      Trouvé par mutation du 17/10 : remplacer le `||` par un `&&` dans la
+      garde `!Number.isFinite(lat) || !Number.isFinite(lon)` laissait un
+      point à une seule coordonnée illisible retomber sur la garde
+      `estDansLeMonde`, qui le compte comme « hors limites » — une autre
+      catégorie, avec un autre message — au lieu de le taire comme illisible.
+    */
+    const casse =
+      '<Trackpoint><Position><LatitudeDegrees>abc</LatitudeDegrees><LongitudeDegrees>4.5</LongitudeDegrees></Position></Trackpoint>'
+    const resultat = parseTcx(tcx(casse), parser)
+    expect(resultat.points).toEqual([])
+    expect(resultat.pointsHorsLimites).toBe(0)
+  })
+
+  it('élague les espaces d’un identifiant d’activité mis en forme', () => {
+    // Trouvé par mutation du 17/10 : un export indenté à la main place du
+    // texte avec des espaces autour — `.trim()` sur l'identifiant d'activité
+    // n'était jamais mis à l'épreuve d'un tel texte.
+    const xml = `<?xml version="1.0"?>
+<TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2">
+  <Activities><Activity>
+    <Id>
+      2024-06-15T07:45:00Z
+    </Id>
+    <Lap><Track>${point(45.4, 4.5)}</Track></Lap>
+  </Activity></Activities>
+</TrainingCenterDatabase>`
+    expect(parseTcx(xml, parser).date).toBe('2024-06-15T07:45:00Z')
+  })
+
+  it('élague les espaces d’un horodatage de trackpoint mis en forme', () => {
+    /*
+      Trouvé par mutation du 17/10 : `.trim()` sur l'heure du trackpoint
+      n'était jamais mis à l'épreuve, et `Date.parse` ne tolère pas les
+      espaces (`Date.parse('  2024…  ')` rend `NaN`, pas la bonne date) —
+      sans l'identifiant d'activité pour masquer le problème, l'heure du
+      premier trackpoint sert de date, et doit rester une date valide.
+    */
+    const xml = tcx('<Trackpoint><Time>\n      2024-06-15T08:00:00Z\n    </Time><Position><LatitudeDegrees>45.4</LatitudeDegrees><LongitudeDegrees>4.5</LongitudeDegrees></Position></Trackpoint>')
+    const resultat = parseTcx(xml, parser)
+    expect(resultat.date).toBe('2024-06-15T08:00:00Z')
+    expect(resultat.times).toEqual([Date.parse('2024-06-15T08:00:00Z')])
+  })
+
   it('préfère l’heure d’activité déclarée à celle du premier point', () => {
     const xml = tcx(
       point(45.4, 4.5, { time: '2024-06-15T08:00:00Z' }),

@@ -76,6 +76,22 @@ describe('traverseAntimeridien', () => {
     ).toBe(false)
   })
 
+  it('ne signale pas un pas de 180° pile, seulement plus', () => {
+    /*
+      Trouvé par mutation du 17/10 : `> 180` devenu `>= 180` survivait,
+      parce qu'aucun test n'utilisait un pas de longitude exactement égal à
+      180°. Ce pas-là reste ambigu plutôt qu'un symptôme certain de
+      l'enroulement — contrairement à `A`/`B`, où l'écart brut (359,998°)
+      ne peut s'expliquer que par lui.
+    */
+    expect(
+      traverseAntimeridien([
+        [0, 10],
+        [180, 10],
+      ]),
+    ).toBe(false)
+  })
+
   it('ne dit rien d’un tracé vide ou d’un point seul', () => {
     expect(traverseAntimeridien([])).toBe(false)
     expect(traverseAntimeridien([A])).toBe(false)

@@ -62,6 +62,23 @@ describe('historyStats', () => {
     expect(stats.lastDate).toBe('2026-07-02T08:00:00Z')
   })
 
+  it('retient la première et la dernière date même hors ordre d’arrivée', () => {
+    /*
+      Trouvé par mutation du 17/10 : le test précédent présente les traces
+      déjà triées par date d'arrivée (juin puis juillet), où « mettre à
+      jour sans condition » et « mettre à jour seulement si plus extrême »
+      donnent le même résultat. Ici l'ordre d'arrivée ne correspond à
+      aucun des deux extrêmes.
+    */
+    const stats = historyStats([
+      track('b', '2026-06-01T08:00:00Z', 1000),
+      track('a', '2026-01-01T08:00:00Z', 1000),
+      track('c', '2026-03-01T08:00:00Z', 1000),
+    ])
+    expect(stats.firstDate).toBe('2026-01-01T08:00:00Z')
+    expect(stats.lastDate).toBe('2026-06-01T08:00:00Z')
+  })
+
   it('compte les sorties sans date sans les perdre', () => {
     const stats = historyStats([
       track('a', '2026-06-10T08:00:00Z', 5000),
@@ -105,6 +122,11 @@ describe('monthlyBuckets', () => {
     expect(buckets.map((b) => b.month)).toEqual(['2026-06', '2026-07'])
     expect(buckets[1]!.count).toBe(2)
     expect(buckets[1]!.elevationGain).toBe(600)
+    // Trouvé par mutation du 17/10 : `+=` devenu `-=` ne cassait aucun test,
+    // parce que seul `elevationGain` était lu sur un mois à deux traces.
+    expect(buckets[1]!.distanceMeters).toBeGreaterThan(
+      buckets[0]!.distanceMeters,
+    )
   })
 
   it('comble les mois sans sortie plutôt que de les masquer', () => {
@@ -218,6 +240,20 @@ describe('reperesHistogramme', () => {
     const reperes = reperesHistogramme([bucket('2026-09', 5_400)])
     expect(reperes.moisLePlusHaut).toBe('2026-09')
     expect(reperes.metresLePlusHaut).toBe(5_400)
+    expect(reperes.moisRenseignes).toBe(1)
+  })
+
+  it('désigne un seul mois même si sa distance est nulle', () => {
+    /*
+      Trouvé par mutation du 17/10 : `moisLePlusHaut === null` retiré de la
+      condition (ne laissant que « distance strictement plus grande que le
+      maximum courant ») survivait parce que le maximum courant démarre à
+      0 et qu'aucun test n'avait de mois avec sortie (count > 0) mais une
+      distance nulle — un relevé GPS à un seul point, par exemple.
+    */
+    const reperes = reperesHistogramme([bucket('2026-09', 0, 1)])
+    expect(reperes.moisLePlusHaut).toBe('2026-09')
+    expect(reperes.metresLePlusHaut).toBe(0)
     expect(reperes.moisRenseignes).toBe(1)
   })
 

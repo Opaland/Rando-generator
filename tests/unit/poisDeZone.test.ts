@@ -4,8 +4,10 @@ import {
   DETOURS_PROPOSES,
   RAYON_DE_RECHERCHE_METERS,
   detoursParItineraire,
+  reponseTronquee,
 } from '../../src/core/poisDeZone.ts'
 import { DETOUR_MAX_METRES } from '../../src/core/poiDistance.ts'
+import { MAX_POIS } from '../../src/core/poi.ts'
 import type { Itinerary, LonLat, PointOfInterest } from '../../src/core/types.ts'
 
 /**
@@ -153,6 +155,54 @@ describe('detoursParItineraire (#156)', () => {
     expect(loin?.water).toBeNull()
   })
 
+  it('trouve un POI dans la cellule voisine, pas seulement la sienne', () => {
+    /*
+      Trouvé par mutation du 17/10 : les bornes de la double boucle qui
+      visite les 9 cellules voisines (-1 à 1 sur chaque axe) pouvaient être
+      réduites sans qu'aucun test ne le remarque, parce que les itinéraires
+      de test sont des lignes de plusieurs points, et un POI proche finit
+      presque toujours par tomber dans la cellule d'au moins l'un d'eux. Ici,
+      un tracé réduit à une seule cellule, et un POI positionné dans la
+      cellule juste à l'ouest de la sienne, à 320 m — dans le rayon, mais
+      hors de sa propre cellule.
+    */
+    const [detoursOuest] = detoursParItineraire(
+      [itin(1, 4.5, 4.501)],
+      [poi('node/1', 'water', 4.495906347967221, LAT)],
+    )
+    expect(detoursOuest?.water).not.toBeNull()
+
+    // Même chose à l'est : la version mutée qui ne garde que `dx === 1`
+    // (donc jamais `-1` ni `0`) manque la cellule propre de l'itinéraire,
+    // et celle qui arrête `dx` avant `1` manque celle-ci, à l'est.
+    const [detoursEst] = detoursParItineraire(
+      [itin(2, 4.5, 4.501)],
+      [poi('node/2', 'water', 4.503553500900502, LAT)],
+    )
+    expect(detoursEst?.water).not.toBeNull()
+
+    // Et au nord : la frontière de cellule en latitude est indépendante de
+    // celle en longitude, et c'est elle que `dy` parcourt.
+    const frontiereLat = 45.39942980860237
+    const itinNord: Itinerary = {
+      ...itin(3, 4.5, 4.5),
+      ways: [
+        {
+          osmWayId: 30,
+          coords: [
+            [4.5, frontiereLat - 0.00001],
+            [4.5, frontiereLat - 0.000005],
+          ],
+        },
+      ],
+    }
+    const [detoursNord] = detoursParItineraire(
+      [itinNord],
+      [poi('node/3', 'water', 4.5, frontiereLat + 0.00001)],
+    )
+    expect(detoursNord?.water).not.toBeNull()
+  })
+
   it('un itinéraire sans géométrie ne fait pas tout tomber', () => {
     const vide: Itinerary = { ...itin(9, 4.5, 4.5), ways: [] }
     const [detours] = detoursParItineraire([vide], [poi('node/1', 'water', 4.5, LAT)])
@@ -182,6 +232,18 @@ describe('les paliers de la liste et le rayon de la fiche (§4ter)', () => {
     }
   })
 
+  it('retient exactement les paliers à hauteur du plafond, pas moins', () => {
+    /*
+      Trouvé par mutation du 17/10 : `metres <= DETOUR_MAX_METRES` devenu
+      `<` (qui exclut le palier égal au plafond), et `Math.max(...) / 2`
+      devenu `* 2`, survivaient tous deux parce qu'aucun test ne lisait la
+      valeur exacte de `DETOURS_PROPOSES` ou de `RAYON_DE_RECHERCHE_METERS`
+      — seulement leur longueur et leur signe.
+    */
+    expect(DETOURS_PROPOSES).toEqual([250, 500, 1_000])
+    expect(RAYON_DE_RECHERCHE_METERS).toBe(500)
+  })
+
   it('en propose quand même au moins un', () => {
     // La dérivation est un filtre : baisser `DETOUR_MAX_METRES` sous 250 le
     // viderait, et `Math.max()` d'un tableau vide rend -Infinity — un rayon
@@ -189,5 +251,24 @@ describe('les paliers de la liste et le rayon de la fiche (§4ter)', () => {
     // d'eau ». L'échec doit se voir ici, pas sur le terrain.
     expect(DETOURS_PROPOSES.length).toBeGreaterThan(0)
     expect(RAYON_DE_RECHERCHE_METERS).toBeGreaterThan(0)
+  })
+})
+
+describe('reponseTronquee', () => {
+  // Trouvé par mutation du 17/10 : cette fonction n'avait aucun test.
+  const beaucoup = Array.from({ length: MAX_POIS }, (_, i) =>
+    poi(`node/${String(i)}`, 'water', 4.5, LAT),
+  )
+
+  it('dit vrai quand la réponse atteint exactement le plafond', () => {
+    expect(reponseTronquee(beaucoup)).toBe(true)
+  })
+
+  it('dit faux en dessous du plafond', () => {
+    expect(reponseTronquee(beaucoup.slice(0, -1))).toBe(false)
+  })
+
+  it('dit faux sur une liste vide', () => {
+    expect(reponseTronquee([])).toBe(false)
   })
 })

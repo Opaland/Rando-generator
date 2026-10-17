@@ -139,6 +139,26 @@ describe('seuil de complétion réglable', () => {
     expect(normalizeCompletionPct(Number.NaN)).toBe(DEFAULT_COMPLETION_PCT)
     expect(normalizeCompletionPct(undefined)).toBe(DEFAULT_COMPLETION_PCT)
   })
+
+  it('refuse une valeur qui n’est pas un nombre, même si elle y ressemble', () => {
+    /*
+      Trouvé par mutation du 17/10 : désactiver la garde `typeof !==
+      'number'` survivait à `normalizeCompletionPct(undefined)` et
+      `(NaN)`, parce que `Math.abs(choix - valeur)` rend `NaN` pour ces
+      deux-là — une comparaison `NaN < ecart` est toujours fausse, donc la
+      boucle ne change jamais `plusProche`, et le résultat retombe par
+      coïncidence sur le défaut. Une chaîne numérique ne produit pas de
+      `NaN` : `Math.abs(90 - '150')` vaut 60, bien réel.
+    */
+    expect(normalizeCompletionPct('150')).toBe(DEFAULT_COMPLETION_PCT)
+  })
+
+  it('garde le premier seuil rencontré en cas d’égalité de distance', () => {
+    // Trouvé par mutation du 17/10 : `distance < ecart` devenu `<=`
+    // survivait, parce qu'aucune valeur testée n'était à égale distance de
+    // deux seuils. 92,5 est à 2,5 de 90 et de 95 ; 90 est rencontré en premier.
+    expect(normalizeCompletionPct(92.5)).toBe(90)
+  })
 })
 
 describe('franchissementTientEncore', () => {

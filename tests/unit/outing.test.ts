@@ -63,6 +63,14 @@ describe('outingHighlights', () => {
     expect(faits.map((f) => f.name)).toEqual(['GR 7'])
   })
 
+  it('garde un parcours qui atteint exactement le seuil', () => {
+    // Trouvé par mutation du 17/10 : `>=` devenu `>` survivait, parce que
+    // le seul test de ce seuil utilisait `MIN_OUTING_METERS - 1`, jamais la
+    // valeur exacte.
+    const faits = outingHighlights([result(1, MIN_OUTING_METERS)], itineraires)
+    expect(faits.map((f) => f.name)).toEqual(['GR 7'])
+  })
+
   it('ignore un itinéraire qui n’est plus chargé', () => {
     expect(outingHighlights([result(99, 5_000)], itineraires)).toEqual([])
   })

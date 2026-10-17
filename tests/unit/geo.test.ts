@@ -6,6 +6,7 @@ import {
   cellIndices,
   interpolate,
   bearingDegrees,
+  isWgs84Coordinate,
 } from '../../src/core/geo.ts'
 import type { LonLat } from '../../src/core/types.ts'
 
@@ -103,5 +104,51 @@ describe('bearingDegrees', () => {
     const b = bearingDegrees([4.6, 45.4], [4.5, 45.4])
     expect(b).toBeGreaterThanOrEqual(0)
     expect(b).toBeLessThan(360)
+  })
+
+  it('calcule un cap diagonal précis, pas seulement les quatre points cardinaux', () => {
+    /*
+      Trouvé par mutation du 17/10 : les quatre points cardinaux ont chacun
+      soit dLon = 0 (nord/sud) soit lat1 = lat2 avec un dLon minuscule
+      (est/ouest) — deux cas où `sin(dLon) * cos(lat2)` et le second terme
+      de `x` valent 0, ou sont trop peu sensibles à `*` devenu `/`, pour
+      qu'une tolérance à l'entier (`toBeCloseTo(_, 0)`) les distingue. Un
+      cap vraiment diagonal, avec une précision fine, n'a pas cette
+      coïncidence.
+    */
+    expect(bearingDegrees([4.5, 45.4], [5.5, 46.4])).toBeCloseTo(34.476492, 4)
+  })
+})
+
+describe('isWgs84Coordinate', () => {
+  /*
+    Trouvé par mutation du 17/10 : cette fonction n'avait aucun test direct
+    — seulement une mise à l'épreuve indirecte via ses appelants
+    (grNord.ts, boucles.ts, geojson.ts), qui ne couvrait jamais chaque
+    clause de la chaîne séparément.
+  */
+  it('accepte une coordonnée WGS84 ordinaire', () => {
+    expect(isWgs84Coordinate([4.5, 45.4])).toBe(true)
+  })
+
+  it('rejette ce qui n’est pas un tableau, même un objet aux clés numériques', () => {
+    // Un objet `{0: 4.5, 1: 45.4}` passerait les contrôles suivants si
+    // `Array.isArray` était retiré de la chaîne.
+    expect(isWgs84Coordinate({ 0: 4.5, 1: 45.4 })).toBe(false)
+    expect(isWgs84Coordinate('4.5,45.4')).toBe(false)
+    expect(isWgs84Coordinate(null)).toBe(false)
+    expect(isWgs84Coordinate(undefined)).toBe(false)
+  })
+
+  it('rejette une longitude ou une latitude qui n’est pas un nombre', () => {
+    expect(isWgs84Coordinate(['4.5', 45.4])).toBe(false)
+    expect(isWgs84Coordinate([4.5, '45.4'])).toBe(false)
+  })
+
+  it('accepte les bornes exactes, et rejette juste au-delà', () => {
+    expect(isWgs84Coordinate([180, 90])).toBe(true)
+    expect(isWgs84Coordinate([-180, -90])).toBe(true)
+    expect(isWgs84Coordinate([180.0001, 45])).toBe(false)
+    expect(isWgs84Coordinate([45, 90.0001])).toBe(false)
   })
 })
