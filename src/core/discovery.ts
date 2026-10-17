@@ -101,6 +101,119 @@ export const ALL_FILTERS: DiscoveryFilters = {
 }
 
 /**
+ * Les paliers du panneau « Trouver une sortie », et la question en langage
+ * naturel qui peut les piloter.
+ *
+ * Sortis d'`ItineraryList.tsx` (issue de dette du 17/10, le fichier
+ * approchait son plafond de lignes) : `filters` s'en sert pour construire ce
+ * qui filtre la liste, et le panneau de découverte pour afficher les menus —
+ * les deux en ont besoin, donc ni l'un ni l'autre ne peut en garder la seule
+ * copie (§4ter).
+ */
+export interface Plage {
+  label: string
+  minKm: number | null
+  maxKm: number | null
+}
+
+export const TOUTES_LONGUEURS: Plage = { label: 'toutes', minKm: null, maxKm: null }
+
+export const LONGUEURS: Plage[] = [
+  TOUTES_LONGUEURS,
+  { label: 'moins de 5 km', minKm: null, maxKm: 5 },
+  { label: '5 à 10 km', minKm: 5, maxKm: 10 },
+  { label: '10 à 20 km', minKm: 10, maxKm: 20 },
+  { label: 'plus de 20 km', minKm: 20, maxKm: null },
+]
+
+export const DUREES: { label: string; minutes: number | null }[] = [
+  { label: 'peu importe', minutes: null },
+  { label: 'moins d’1 h', minutes: 60 },
+  { label: 'moins de 2 h', minutes: 120 },
+  { label: 'moins de 3 h', minutes: 180 },
+  { label: 'moins de 4 h', minutes: 240 },
+  { label: 'moins de 6 h', minutes: 360 },
+]
+
+export const DENIVELES: { label: string; gain: number | null }[] = [
+  { label: 'peu importe', gain: null },
+  { label: 'moins de 100 m', gain: 100 },
+  { label: 'moins de 300 m', gain: 300 },
+  { label: 'moins de 600 m', gain: 600 },
+  { label: 'moins de 1 000 m', gain: 1_000 },
+]
+
+export const PROXIMITES: { label: string; km: number | null }[] = [
+  { label: 'partout', km: null },
+  { label: 'à moins de 5 km', km: 5 },
+  { label: 'à moins de 10 km', km: 10 },
+  { label: 'à moins de 25 km', km: 25 },
+  { label: 'à moins de 50 km', km: 50 },
+]
+
+/** Les quatre listes qu'une question peut piloter. */
+export const CHAMPS_PILOTES = [
+  'longueur',
+  'duree',
+  'denivele',
+  'proximite',
+] as const
+export type ChampPilote = (typeof CHAMPS_PILOTES)[number]
+
+/**
+ * Les champs de `DiscoveryFilters` derrière chaque liste.
+ *
+ * Une table plutôt que quatre `if` recopiés : la longueur en tient deux, et
+ * une garde transverse se nomme (CLAUDE.md §4).
+ */
+export const CHAMPS_LIBRES = [
+  'minKm',
+  'maxKm',
+  'maxMinutes',
+  'maxGain',
+  'maxAwayKm',
+] as const
+
+export const CHAMPS_DU_PILOTE: Record<
+  ChampPilote,
+  readonly (typeof CHAMPS_LIBRES)[number][]
+> = {
+  longueur: ['minKm', 'maxKm'],
+  duree: ['maxMinutes'],
+  denivele: ['maxGain'],
+  proximite: ['maxAwayKm'],
+}
+
+/** Ce qu'une question en langage naturel a posé sur un champ piloté, en mots. */
+export function libelleQuestion(
+  pose: Partial<DiscoveryFilters>,
+  champ: ChampPilote,
+): string | null {
+  if (champ === 'longueur') {
+    if (pose.minKm != null && pose.maxKm != null)
+      return `${String(pose.minKm)} à ${String(pose.maxKm)} km`
+    if (pose.maxKm != null) return `moins de ${String(pose.maxKm)} km`
+    if (pose.minKm != null) return `plus de ${String(pose.minKm)} km`
+    return null
+  }
+  if (champ === 'duree')
+    return pose.maxMinutes == null
+      ? null
+      : `moins de ${String(pose.maxMinutes)} min`
+  if (champ === 'denivele')
+    return pose.maxGain == null ? null : `moins de ${String(pose.maxGain)} m`
+  return pose.maxAwayKm == null
+    ? null
+    : `à moins de ${String(pose.maxAwayKm)} km`
+}
+
+/** Convertit la valeur d'un <select> d'index en index sûr. */
+export function toIndex(value: string, length: number): number {
+  const index = Number(value)
+  return Number.isInteger(index) && index >= 0 && index < length ? index : 0
+}
+
+/**
  * Lit une durée publiée (« 1h30 », « 3 h », « 45 min »). Retourne null pour
  * tout ce qui n'est pas sûrement interprétable : mieux vaut estimer que
  * afficher une durée fausse tirée d'un texte libre.

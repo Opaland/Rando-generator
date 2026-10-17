@@ -27,7 +27,10 @@ const fichiers: Record<string, string> = import.meta.glob<string>(
 
 /** Les plafonds, en lignes — voir plafondDuStore.test.ts pour la méthode. */
 const PLAFONDS: Record<string, number> = {
-  'ItineraryList.tsx': 970,
+  // Panneau « Trouver une sortie » sorti dans DiscoveryFiltersPanel.tsx
+  // (dette du 17/10, le plafond approchait 970 avec 5 lignes de marge).
+  'ItineraryList.tsx': 625,
+  'DiscoveryFiltersPanel.tsx': 410,
   'ItineraryDetail.tsx': 965,
   'TrackManager.tsx': 580,
   'ElevationChart.tsx': 495,

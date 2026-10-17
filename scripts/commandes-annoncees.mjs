@@ -38,7 +38,18 @@
  */
 import { readFileSync } from 'node:fs'
 
-const PANNEAU = 'src/components/ItineraryList.tsx'
+/*
+  Deux fichiers depuis le 17/10 (dette technique, #4ter en acte) :
+  `DiscoveryFiltersPanel.tsx` porte maintenant le panneau « Trouver une
+  sortie », sorti d'`ItineraryList.tsx` pour en garder le plafond de lignes.
+  Un seul des deux ici aurait fait retomber le trou que ce script existe
+  pour fermer — mesuré en le déplaçant : 10 commandes vues avant, 1 après,
+  sans qu'aucun `data-testid` n'ait changé.
+*/
+const PANNEAU = [
+  'src/components/ItineraryList.tsx',
+  'src/components/DiscoveryFiltersPanel.tsx',
+]
 const README = 'README.md'
 
 /** Le mot que le README doit employer pour chaque commande du panneau. */
@@ -71,7 +82,9 @@ const HORS_PANNEAU = new Set([
   'list-empty', // l'état vide, quand aucun itinéraire ne passe
 ])
 
-const source = readFileSync(PANNEAU, 'utf8')
+const source = PANNEAU.map((fichier) => readFileSync(fichier, 'utf8')).join(
+  '\n',
+)
 const trouves = [
   ...new Set(
     [...source.matchAll(/data-testid="(list-[a-z-]+)"/g)].map((m) => m[1]),
