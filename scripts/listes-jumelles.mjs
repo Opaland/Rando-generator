@@ -47,7 +47,7 @@ const DOSSIER = "scripts/jumelles";
   le jour où une famille naît ou meurt, et ce jour-là il échoue en le
   disant, au lieu de laisser filer.
 */
-const FAMILLES_ATTENDUES = 13;
+const FAMILLES_ATTENDUES = 14;
 
 const fichiers = readdirSync(DOSSIER)
   .filter((nom) => nom.endsWith(".mjs") && !nom.startsWith("_"))
