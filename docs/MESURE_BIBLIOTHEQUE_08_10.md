@@ -142,3 +142,80 @@ conclusion du 08/10 — de « c'est lent, linéairement » à « c'est peut-êtr
 bien plus grave, sur un banc dont la donnée est elle-même suspecte » —
 et c'est une raison de s'arrêter avant d'inventer un correctif, pas après
 (§2 de CLAUDE.md).
+
+## Résolu le 17/10 : ce n'était pas l'espace, c'était le temps qui reculait
+
+Les trois points laissés en suspens ont été faits. Dans l'ordre, ce qu'ils
+ont montré — et le détour qu'il a fallu pour y arriver.
+
+### 1. La dispersion géographique ne change rien
+
+`gpxActivite` dispose désormais d'un `MESURE_ESPACEMENT_M` (défaut : 1 m,
+inchangé pour rester comparable aux mesures précédentes). Rejoué à 100
+activités espacées de 5 000 m plutôt que de 1 m — toujours avec
+l'horodatage cassé d'alors — : **268 261 ms** de correspondance, contre
+**368 123 ms** au total le 08/10 pour la même taille en dense. Aucune
+amélioration qui justifierait l'hypothèse du hachage spatial saturé.
+**L'espace n'est pas la cause.**
+
+### 2. Le vrai coupable : un temps qui recule, pas une cellule qui sature
+
+`windowedSpeedMps` (`src/core/matching.ts`) cherche, pour chaque segment,
+une fenêtre de ±60 s autour de lui en balayant les points voisins — et ne
+s'arrête que lorsque l'écart de temps **dépasse** cette fenêtre. Un temps
+qui recule donne un écart **négatif**, qui ne dépasse jamais rien : la
+recherche ne s'arrête plus, et balaie tout ce qui précède.
+
+La fixture faisait reculer le temps de deux façons, découvertes et
+corrigées l'une après l'autre :
+
+1. **Dans l'écriture à la main de l'horodatage** : l'heure était figée à
+   `08`, la minute calculée par `% 60` — pour une activité de 9 000 s
+   (2,5 h), le temps repartait de `08:00:00` deux fois par activité.
+   Corrigé en calculant l'horodatage depuis un vrai `Date`.
+2. **Insuffisant, et ça n'a été vu qu'à la mesure suivante** : chaque
+   activité repartait du **même** instant de départ. Une fois toutes les
+   activités mises bout à bout (`tracks.flatMap((t) => t.points)` dans
+   `recompute()`, `appStore.ts`), le temps reculait quand même — à la
+   frontière entre deux activités plutôt qu'au milieu d'une seule.
+   Reproduit en mémoire avec cette seule correction manquante : **81 875 ms**
+   (50 activités) et **342 734 ms** (100), quasiment identique qu'on
+   disperse les activités dans l'espace ou pas (83 949 ms et 347 650 ms) —
+   la même signature quadratique, pour la même raison que le point 1 ci-
+   dessus, une deuxième fois. C'est le §4 retourné contre moi : une
+   correction qui ne tient qu'à un endroit, le vrai problème (un temps qui
+   recule) revenait par un autre chemin.
+
+Chaque activité démarre maintenant un jour après la précédente, comme le
+ferait une vraie bibliothèque où deux sorties ne partagent jamais leur
+horodatage. Reproduit en mémoire, avec les deux corrections : coût
+**linéaire** en nombre d'activités — 1 220 ms, 3 163 ms, 6 599 ms à 20, 50,
+100 activités.
+
+### 3. La mesure réelle, enfin
+
+`MESURE_ACTIVITES=200 npm run mesure`, sur le même environnement que les
+mesures qui n'avaient pas fini en 20 puis 25 minutes :
+
+| | avant (17/10, correctif encore incomplet) | après (deux correctifs) |
+|---|---:|---:|
+| import total | ≥ 1 200 000 ms (n'a pas fini) | **34 656 ms** |
+| dont correspondance | ≥ 1 008 324 ms | **10 669 ms** |
+
+Un facteur **~95** sur la correspondance, à taille égale. Le fichier entier
+(archive, import, sauvegarde) tourne maintenant en moins d'une minute à
+200 activités, contre un plafond de 20 à 25 minutes dépassé auparavant.
+
+### Ce que ce résultat ne tranche pas
+
+Une vraie trace réelle peut-elle présenter un horodatage non monotone —
+une pause GPS qui fait sauter l'appareil en mode économie puis revenir, un
+changement d'heure d'été/hiver mal géré par un firmware, deux fichiers
+importés dans le désordre ? Si oui, `windowedSpeedMps` retomberait dans le
+même piège sur une vraie bibliothèque, pas seulement sur ce banc. Cette
+question reste ouverte : aucune mesure ici ne porte sur des exports réels,
+et la trancher demanderait de regarder des traces réelles plutôt que d'en
+décider depuis ce fichier (§2 de CLAUDE.md). Si la réponse est oui,
+`windowedSpeedMps` gagnerait à borner son balayage par un nombre de points
+plutôt que par un seul test d'écart — mais ce serait un correctif sur une
+hypothèse non mesurée, pas fait ici.

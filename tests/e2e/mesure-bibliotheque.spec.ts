@@ -40,6 +40,17 @@ function relever(nom: string, valeur: string): void {
 const POINTS_PAR_ACTIVITE = 2.5 * 3600
 const ACTIVITES = Number(process.env['MESURE_ACTIVITES'] ?? '800')
 
+/*
+  Issue #539, suite du 16/10 : l'espacement par défaut (1 m) tasse toutes
+  les activités dans une poignée de cellules du hachage spatial de
+  `buildTrackIndex` (0,0015° ≈ 167 m en latitude) — un artefact du banc, pas
+  forcément le comportement d'une vraie bibliothèque dispersée sur des
+  dizaines de sentiers. `MESURE_ESPACEMENT_M` permet de rejouer la même
+  mesure avec des activités réellement éloignées, sans changer le défaut
+  (1 m) qui garde les mesures précédentes comparables.
+*/
+const ESPACEMENT_M = Number(process.env['MESURE_ESPACEMENT_M'] ?? '1')
+
 function gpxActivite(index: number): string {
   /*
     Chaque activité doit être **distincte**, et ce détail a failli me faire
@@ -51,22 +62,56 @@ function gpxActivite(index: number): string {
     relevé disait « 800 entrent, 40 arrivent », ce qui ressemblait beaucoup à
     une perte silencieuse. C'était la fixture qui était fausse.
   */
-  const lat = 45.4 + index / 111_195
+  const lat = 45.4 + (index * ESPACEMENT_M) / 111_195
+  /*
+    Issue #539, suite du 17/10, en deux correctifs successifs — le premier
+    était incomplet, et c'est resté invisible jusqu'à la mesure suivante.
+
+    1. L'horodatage s'écrivait à la main avec une heure figée à 08 et une
+       minute qui boucle toutes les 3600 secondes — pour une activité de
+       9 000 s (2,5 h), le temps reculait d'une heure pile, deux fois par
+       activité. Corrigé en calculant l'horodatage depuis un `Date`.
+
+    2. Insuffisant : chaque activité repartait du **même** instant de départ
+       (`2026-05-01T08:00:00Z`), donc le tableau global une fois toutes les
+       activités mises bout à bout (`tracks.flatMap((t) => t.points)` dans
+       `recompute()`, `appStore.ts`) reculait quand même — à la frontière
+       entre deux activités plutôt qu'au milieu d'une seule. Mesuré : une
+       reproduction en mémoire avec cette seconde forme de recul donnait
+       81 875 ms (50 activités) et 342 734 ms (100), quasi identique qu'on
+       disperse les activités dans l'espace ou pas (83 949 ms et
+       347 650 ms) — la même signature quadratique que l'horodatage cassé
+       d'origine, et la preuve que l'hypothèse spatiale de cette issue
+       (le hachage de `buildTrackIndex`) n'est pour rien dans le
+       ralentissement.
+
+    `windowedSpeedMps` (matching.ts) cherche une fenêtre de 60 s en arrière
+    et en avant, et ne s'arrête que si l'écart dépasse cette fenêtre : un
+    temps qui RECULE — qu'il boucle en interne ou qu'il reparte à zéro à la
+    frontière suivante — ne dépasse jamais ce seuil (l'écart est négatif),
+    donc la recherche ne s'arrête plus et balaie tout ce qui précède,
+    jusqu'au début de tout ce qui a déjà été importé.
+
+    Chaque activité démarre maintenant un jour après la précédente : le
+    tableau global des temps croît strictement, comme pour une vraie
+    bibliothèque où deux sorties ne partagent jamais leur horodatage.
+    Reproduit en mémoire avec ce schéma : coût linéaire en nombre
+    d'activités (1 220 ms, 3 163 ms, 6 599 ms à 20, 50, 100 activités).
+  */
+  const debut = Date.parse('2026-05-01T08:00:00Z') + index * 86_400_000
   const lignes: string[] = []
   for (let i = 0; i < POINTS_PAR_ACTIVITE; i++) {
     const lon = 4.5 + (i / POINTS_PAR_ACTIVITE) * 0.03
+    const horodatage = new Date(debut + i * 1000).toISOString()
     lignes.push(
       `<trkpt lat="${lat.toFixed(7)}" lon="${lon.toFixed(7)}"><ele>${String(
         800 + (i % 150),
-      )}</ele><time>2026-05-01T08:${String(Math.floor(i / 60) % 60).padStart(
-        2,
-        '0',
-      )}:${String(i % 60).padStart(2, '0')}Z</time></trkpt>`,
+      )}</ele><time>${horodatage}</time></trkpt>`,
     )
   }
   return `<?xml version="1.0" encoding="UTF-8"?>
 <gpx version="1.1" creator="mesure" xmlns="http://www.topografix.com/GPX/1/1">
-  <metadata><time>2026-05-01T08:00:00Z</time></metadata>
+  <metadata><time>${new Date(debut).toISOString()}</time></metadata>
   <trk><trkseg>${lignes.join('')}</trkseg></trk>
 </gpx>`
 }
@@ -92,6 +137,7 @@ test.describe('mesure d’une grosse bibliothèque (issue #159)', () => {
       })),
     )
     relever('activites', String(ACTIVITES))
+    relever('espacement_m', String(ESPACEMENT_M))
     relever('points_par_activite', String(POINTS_PAR_ACTIVITE))
     relever('archive_octets', String(archive.byteLength))
     relever('archive_fabrication_ms', String(Date.now() - debutArchive))
