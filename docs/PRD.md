@@ -116,7 +116,7 @@ supposé.
 | Zones prédéfinies et grands itinéraires en un clic | ✅ | |
 | Recherche par nom de ville (BAN) | ✅ #131 | « Introuvable » et « en panne » sont deux messages distincts |
 | Filtres de découverte (distance, D+, durée, boucle, proximité) | ✅ | |
-| Vocabulaire du premier écran (« ref », « GRP », « tolérance ») | 🔜 | Reste à reprendre : juste, mais suppose tout acquis |
+| Vocabulaire du premier écran (« ref », « GRP », « tolérance ») | ✅ | `tests/e2e/scenario.spec.ts`, « le premier écran explique son vocabulaire au lieu de le supposer acquis » — vérifié vert le 17/10, marqué 🔜 depuis le 20/08 sans que personne ne remarque que c'était fait (§4bis) |
 
 ---
 
