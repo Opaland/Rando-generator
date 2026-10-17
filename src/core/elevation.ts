@@ -23,6 +23,21 @@ const ELEVATION_RESOURCE = 'ign_rge_alti_wld'
 export const MAX_ELEVATION_POINTS = 100
 
 /**
+ * Hystérésis anti-bruit GPS/DEM, en mètres : une variation n'est comptée
+ * que si elle dépasse ce seuil depuis le dernier extremum.
+ *
+ * Nommée depuis le 17/10 : trois fonctions (`elevationStats` et
+ * `statsCumulees` ci-dessous, `elevationGainMeters` dans gpx.ts) posaient
+ * chacune `thresholdMeters = 3` comme valeur par défaut, trois fois la même
+ * décision sans rien qui les lie — une chasse aux jumeaux du 23/09 avait
+ * déjà trouvé ici une formule asymétrique divergente, corrigée le 25/09
+ * (symétrique partout, décision de Cédric) ; il manquait la garde
+ * mécanique qui empêche la même dérive de revenir par un seul des trois
+ * sites (§4).
+ */
+export const HYSTERESIS_ALTIMETRIQUE_METRES = 3
+
+/**
  * Les **indices** retenus par le sous-échantillonnage.
  *
  * Nommé, parce que trois choses en dépendent et qu'elles doivent retenir les
@@ -211,7 +226,7 @@ export function tronconsContinus(
  */
 export function statsCumulees(
   troncons: ElevationProfile[],
-  thresholdMeters = 3,
+  thresholdMeters = HYSTERESIS_ALTIMETRIQUE_METRES,
 ): ElevationStats | null {
   let gain = 0
   let loss = 0
@@ -234,7 +249,7 @@ export function statsCumulees(
 
 export function elevationStats(
   elevations: (number | null)[],
-  thresholdMeters = 3,
+  thresholdMeters = HYSTERESIS_ALTIMETRIQUE_METRES,
 ): ElevationStats | null {
   let gain = 0
   let loss = 0

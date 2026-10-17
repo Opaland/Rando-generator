@@ -5,12 +5,15 @@ import {
   parseElevationResponse,
   fetchElevationProfile,
   elevationStats,
+  statsCumulees,
   fillElevationGaps,
   ElevationError,
   MAX_ELEVATION_POINTS,
+  HYSTERESIS_ALTIMETRIQUE_METRES,
   pointAtDistance,
   libelleResolution,
 } from '../../src/core/elevation.ts'
+import { elevationGainMeters } from '../../src/core/gpx.ts'
 import { distanceMeters } from '../../src/core/geo.ts'
 import { sampleWay } from '../../src/core/sampling.ts'
 import { straightLine } from '../fixtures/synthetic.ts'
@@ -123,6 +126,39 @@ describe('elevationStats', () => {
     const stats = elevationStats([100, null, 300, 50])
     expect(stats?.min).toBe(50)
     expect(stats?.max).toBe(300)
+  })
+})
+
+describe('HYSTERESIS_ALTIMETRIQUE_METRES, trois fonctions, un seul seuil', () => {
+  /*
+    `elevationStats`, `statsCumulees` (elevation.ts) et `elevationGainMeters`
+    (gpx.ts) posaient chacune `thresholdMeters = 3` séparément — trouvé par
+    la chasse aux jumeaux du 17/10, et exactement le mode d'échec déjà
+    rencontré ici le 23/09 pour une formule asymétrique. Une montée de 4 m
+    est choisie pour ce test parce qu'elle tombe entre le seuil actuel (3,
+    comptée) et une valeur voisine plausible comme 5 (pas comptée) : un
+    défaut sur un seul des trois sites s'y verrait immédiatement.
+  */
+  const montee = [100, 104]
+  const troncon = (elevations: (number | null)[]) => ({
+    distances: elevations.map((_, i) => i * 10),
+    elevations,
+    coords: elevations.map((): [number, number] => [4.5, 45.4]),
+  })
+
+  it('est la même constante pour les trois fonctions, sur une montée à la limite', () => {
+    expect(elevationStats(montee)?.gain).toBe(HYSTERESIS_ALTIMETRIQUE_METRES + 1)
+    expect(statsCumulees([troncon(montee)])?.gain).toBe(
+      HYSTERESIS_ALTIMETRIQUE_METRES + 1,
+    )
+    expect(elevationGainMeters(montee)).toBe(HYSTERESIS_ALTIMETRIQUE_METRES + 1)
+  })
+
+  it('un seuil explicite au-delà de la montée efface le gain, pour les trois', () => {
+    const seuilHaut = HYSTERESIS_ALTIMETRIQUE_METRES + 2
+    expect(elevationStats(montee, seuilHaut)?.gain).toBe(0)
+    expect(statsCumulees([troncon(montee)], seuilHaut)?.gain).toBe(0)
+    expect(elevationGainMeters(montee, seuilHaut)).toBe(0)
   })
 })
 

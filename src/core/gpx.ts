@@ -1,6 +1,6 @@
 import { estDansLeMonde } from './coordonnees.ts'
 import { verifierDomaine } from './domaine.ts'
-import { elevationStats } from './elevation.ts'
+import { elevationStats, HYSTERESIS_ALTIMETRIQUE_METRES } from './elevation.ts'
 import type { LonLat } from './types.ts'
 
 /** Erreur de lecture d'un fichier GPX, message affichable tel quel à l'utilisateur. */
@@ -212,7 +212,7 @@ function extractPoints(doc: Document, tagName: 'trkpt' | 'rtept'): ExtractedPoin
  */
 export function elevationGainMeters(
   elevations: (number | null)[],
-  thresholdMeters = 3,
+  thresholdMeters = HYSTERESIS_ALTIMETRIQUE_METRES,
 ): number | null {
   return elevationStats(elevations, thresholdMeters)?.gain ?? null
 }
