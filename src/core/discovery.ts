@@ -14,11 +14,22 @@ import type { Itinerary, LonLat, TrailWay } from './types.ts'
  * silencieusement la quasi-totalité des tracés OSM, qui ne publient pas de D+.
  */
 
-/** Vitesse de marche à plat retenue pour l'estimation (km/h). */
-const FLAT_KMH = 4
+/**
+ * Vitesse de marche à plat retenue pour l'estimation (km/h).
+ *
+ * Exportée depuis le 17/10 : une chasse aux règles jumelles a trouvé cette
+ * valeur recopiée en toutes lettres dans l'infobulle de la liste
+ * (`ItineraryList.tsx`) et dans le README, les deux en texte figé plutôt
+ * qu'en lisant cette constante — un changement de vitesse de référence les
+ * aurait rendus faux sans qu'aucune porte ne le signale (§4ter).
+ */
+export const FLAT_KMH = 4
 
 /** Montée avalée en une heure (m) — règle de terrain française usuelle. */
-const ASCENT_METERS_PER_HOUR = 300
+export const ASCENT_METERS_PER_HOUR = 300
+
+/** La règle d'estimation, en mots — lue par l'infobulle et par le README. */
+export const LIBELLE_REGLE_ESTIMATION = `${String(FLAT_KMH)} km/h à plat, ${String(ASCENT_METERS_PER_HOUR)} m de montée à l'heure`
 
 /** Au-delà, la durée publiée est une coquille de saisie, pas une donnée. */
 const MAX_PUBLISHED_MINUTES = 24 * 60

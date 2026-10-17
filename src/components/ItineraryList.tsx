@@ -7,6 +7,7 @@ import {
   CHAMPS_PILOTES,
   DENIVELES,
   DUREES,
+  LIBELLE_REGLE_ESTIMATION,
   LONGUEURS,
   PROXIMITES,
   TOUTES_LONGUEURS,
@@ -519,7 +520,7 @@ export function ItineraryList() {
                       <span
                         title={
                           facts.minutesSource === 'estimated'
-                            ? 'Durée estimée : 4 km/h à plat, 300 m de montée à l’heure'
+                            ? `Durée estimée : ${LIBELLE_REGLE_ESTIMATION}`
                             : 'Durée annoncée par la source'
                         }
                       >
