@@ -143,8 +143,43 @@ const ETATS = [
   */
   'réseaux masqués',
   'points repliés',
+  /*
+    AUDIT_APPLICATIF_17_10.md, constat 1 : en disposition compacte
+    (≤ 800 px), `App.tsx` ne monte même pas les sections non actives — pas
+    un `<details>` replié cette fois, un filtrage par onglet entièrement
+    équivalent dans ses effets (§6quinquies). Les six états précédents
+    passent tous par l'onglet « carte » ou « progression » ; aucun n'avait
+    jamais ouvert « sorties » ni « réglages ». La mesure à la main de
+    l'audit n'a rien trouvé — ces deux états la rendent permanente plutôt
+    que de la refaire dans six mois.
+  */
+  'sorties ouvert',
+  'reglages ouvert',
 ] as const
 type Etat = (typeof ETATS)[number]
+
+/**
+ * Un import avec un nom et une attribution délibérément longs — le cas le
+ * plus défavorable pour « Mes itinéraires », mesuré par l'audit du 17/10
+ * (constat 2 : une attribution réelle peut dépasser 60 caractères).
+ */
+function geojsonLong(): string {
+  return JSON.stringify({
+    type: 'FeatureCollection',
+    attribution: 'Communauté de Communes du Haut-Beaujolais et des Monts du Lyonnais',
+    license: 'https://www.etalab.gouv.fr/licence-ouverte-open-licence',
+    features: [
+      {
+        type: 'Feature',
+        properties: { name: 'Un nom de sentier délibérément long pour forcer le pire cas' },
+        geometry: {
+          type: 'LineString',
+          coordinates: Array.from({ length: 30 }, (_, i) => [4.5 + i * 0.002, 45.4]),
+        },
+      },
+    ],
+  })
+}
 
 async function atteindre(
   page: Page,
@@ -202,6 +237,27 @@ async function atteindre(
     await expect(page.getByTestId('zone-error')).toBeVisible({
       timeout: 15_000,
     })
+    return
+  }
+
+  if (etat === 'sorties ouvert' || etat === 'reglages ouvert') {
+    if (compact) await ouvrirOnglet(page, 'sorties')
+    await page.getByTestId('custom-input').setInputFiles({
+      name: 'pdipr-long.geojson',
+      mimeType: 'application/geo+json',
+      buffer: Buffer.from(geojsonLong(), 'utf-8'),
+    })
+    // On prouve que l'import a pris, pour la même raison que le mode
+    // simple et les filtres le prouvent plus haut : sans cela, un import
+    // resté muet ferait remesurer un onglet vide sous un autre nom.
+    await expect(page.getByTestId('custom-list')).toContainText(
+      'Un nom de sentier',
+      { timeout: 15_000 },
+    )
+    if (etat === 'reglages ouvert') {
+      if (compact) await ouvrirOnglet(page, 'reglages')
+      await expect(page.getByTestId('settings')).toBeVisible()
+    }
     return
   }
 

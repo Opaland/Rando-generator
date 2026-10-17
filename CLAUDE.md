@@ -397,7 +397,7 @@ touché un fichier lu par `vite.config.ts`, on redémarre.
 Les règles d'écran (`tests/e2e/regles-d-ecran.spec.ts`) posent cinq
 questions mesurables — qu'est-ce qui est peint par-dessus quoi, qu'est-ce
 qui est écrasé, qu'est-ce qui déborde sans le dire, qu'est-ce qu'on ne peut
-pas toucher, qu'est-ce qui sort du cadre — à quatre largeurs et dans huit
+pas toucher, qu'est-ce qui sort du cadre — à quatre largeurs et dans dix
 états.
 
 Les états ne sont pas décoratifs. La première version n'auscultait
@@ -415,6 +415,20 @@ cinq n'ouvrait. Ses seize commandes n'avaient jamais été mesurées. Élargie,
 la sonde a trouvé du neuf le jour même — deux boutons radio à 22 px, sous le
 plancher de 24 px de WCAG 2.5.8. **Ce qui est replié par défaut est ce qu'une
 sonde oublie par défaut.**
+
+Le 17/10, le même trou a repris une forme différente : pas un `<details>`
+replié, un **onglet non actif** — en disposition compacte, `App.tsx` ne
+monte même pas les sections de « Sorties » et « Réglages » hors de leur
+onglet. Six états sur six passaient tous par « carte » ou « progression » ;
+aucun n'avait jamais ouvert les deux autres. L'audit du 17/10
+(`docs/AUDIT_APPLICATIF_17_10.md`) les a mesurés à la main sans rien y
+trouver — les deux états les rendent permanents. Vérifié avant de le
+croire (§1) : une injection de `min-width: 3000px` sur la ligne d'un import
+personnalisé est passée inaperçue tant que la règle de cascade qui
+l'annulait silencieusement (un second `min-width` écrit juste après, dans
+le fichier source de ce test lui-même) n'a pas été vue et corrigée — sans
+quoi ces deux états auraient rejoint la liste des sondes qui ne peuvent pas
+échouer.
 
 ## 6sexies. Ce qui est mesurable se mesure ; le reste se décide, et se dit
 

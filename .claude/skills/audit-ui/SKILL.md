@@ -1,6 +1,6 @@
 ---
 name: audit-ui
-description: Auditer l'interface de Sentiers en mesurant ce qui est peint — recouvrements, écrasements, débordements, cibles tactiles, cadrage — à quatre largeurs, dans huit états et en gros texte. À lancer après un lot de mise en page, et quand quelqu'un dit « ça ne va pas » sans savoir pourquoi.
+description: Auditer l'interface de Sentiers en mesurant ce qui est peint — recouvrements, écrasements, débordements, cibles tactiles, cadrage — à quatre largeurs, dans dix états et en gros texte. À lancer après un lot de mise en page, et quand quelqu'un dit « ça ne va pas » sans savoir pourquoi.
 ---
 
 # Audit d'interface
