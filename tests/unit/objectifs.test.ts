@@ -47,7 +47,32 @@ describe('tronconsRestants', () => {
     ])
     const troncons = tronconsRestants(GR7, samples, 100)
     expect(troncons).toHaveLength(2)
-    expect(troncons[0]?.meters).toBeGreaterThan(troncons[1]?.meters ?? 0)
+    /*
+      Trouvé par mutation du 17/10 : `+=` remplacé par `-=` rendait des
+      longueurs négatives, et l'assertion `toBeGreaterThan` passait encore —
+      0 > -200 autant que 400 > 200. Il faut la vraie valeur, pas seulement
+      l'ordre relatif.
+    */
+    expect(troncons[0]?.meters).toBe(400)
+    expect(troncons[1]?.meters).toBe(200)
+  })
+
+  it('trie par longueur décroissante, pas par ordre de rencontre', () => {
+    /*
+      Trouvé par mutation du 17/10 : `.sort((a, b) => b.meters - a.meters)`
+      remplacé par `() => undefined`, ou par une addition, ou supprimé pur
+      et simple, survivait à tous les tests existants, qui ne construisaient
+      jamais un cas où l'ordre de tri diffère de l'ordre de rencontre.
+    */
+    const samples = echantillons([
+      false, false, // 1er tronçon rencontré : 2 pas.
+      true,
+      false, false, false, false, false, false, // 2e : 6 pas, le plus long.
+      true,
+      false, false, false, false, // 3e : 4 pas.
+    ])
+    const troncons = tronconsRestants(GR7, samples, 100)
+    expect(troncons.map((t) => t.meters)).toEqual([600, 400, 200])
   })
 
   it('donne le point où l’on reprend, et celui où l’on s’arrête', () => {
@@ -114,6 +139,29 @@ describe('resumeObjectif', () => {
     expect(resume.remainingMeters).toBeCloseTo(200, 0)
     expect(resume.troncons).toHaveLength(1)
     expect(resume.pct).toBeCloseTo(60, 0)
+    // Trouvé par mutation du 17/10 : `faits * stepMeters` devenu
+    // `faits / stepMeters` ne cassait aucun test, parce qu'aucun ne lisait
+    // `doneMeters`.
+    expect(resume.doneMeters).toBeCloseTo(300, 0)
+  })
+
+  it('ignore les échantillons des autres itinéraires dans son propre calcul', () => {
+    /*
+      Trouvé par mutation du 17/10 : `samples.filter((s) =>
+      s.itineraryIds.includes(...))` remplacé par `samples` (filtre
+      supprimé) survivait, parce qu'aucun test ne mélangeait les échantillons
+      d'un autre itinéraire dans l'appel à `resumeObjectif`.
+    */
+    const samples: Sample[] = [
+      ...echantillons([true, false]),
+      { lon: 9, lat: 45, wayId: 99, itineraryIds: [2], done: false },
+      { lon: 9.01, lat: 45, wayId: 99, itineraryIds: [2], done: false },
+      { lon: 9.02, lat: 45, wayId: 99, itineraryIds: [2], done: false },
+    ]
+    const resume = resumeObjectif(GR7, samples, 100)
+    expect(resume.pct).toBeCloseTo(50, 0)
+    expect(resume.doneMeters).toBeCloseTo(100, 0)
+    expect(resume.remainingMeters).toBeCloseTo(100, 0)
   })
 
   it('annonce 100 % sans tronçon restant', () => {

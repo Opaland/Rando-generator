@@ -107,8 +107,16 @@ function accepte(e: Enregistrement, action: Action): boolean {
   return actionsPossibles(e).includes(action)
 }
 
-/** Ferme l'intervalle de marche en cours, s'il y en a un. */
-function fermerIntervalle(intervalles: Intervalle[], instant: number): Intervalle[] {
+/**
+ * Ferme l'intervalle de marche en cours, s'il y en a un.
+ *
+ * Exportée pour `reprise.ts`, qui fermait le même intervalle avec sa propre
+ * copie de cette fonction (`fermerA`) — trouvé par une vague de mutation du
+ * 17/10 : les deux portaient la même lacune, parce qu'aucun test ne
+ * couvrait un intervalle fermé qui n'est pas le dernier, ni un dernier déjà
+ * fermé qu'il ne faut pas réécraser. Une seule fonction, un seul test.
+ */
+export function fermerIntervalle(intervalles: Intervalle[], instant: number): Intervalle[] {
   return intervalles.map((intervalle, i) =>
     i === intervalles.length - 1 && intervalle.fin === null
       ? { ...intervalle, fin: instant }

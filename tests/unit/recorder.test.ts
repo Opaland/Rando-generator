@@ -7,6 +7,7 @@ import {
   dureeEnMarche,
   dureeTotale,
   enregistreurVide,
+  fermerIntervalle,
   reprendre,
   suspendre,
   terminer,
@@ -308,5 +309,35 @@ describe('abandonner', () => {
     let e = demarrer(enregistreurVide(), T0)
     e = suspendre(e, T0 + 1000)
     expect(abandonner(e)).toEqual(enregistreurVide())
+  })
+})
+
+describe('fermerIntervalle', () => {
+  /*
+    `reprise.ts` portait sa propre copie de cette fonction (`fermerA`),
+    trouvé par une vague de mutation du 17/10 — même lacune aux deux
+    endroits : aucun test ne distinguait « le dernier intervalle » de
+    « un intervalle ouvert, qui n'est pas forcément le dernier », ni
+    « fermer » de « réécrire un intervalle déjà fermé ». Les deux copies
+    sont fusionnées ici ; ce test couvre les deux usages.
+  */
+  it('ne ferme que le dernier intervalle, et seulement s’il est encore ouvert', () => {
+    const intervalles = [
+      { debut: 0, fin: 10 }, // déjà clos, pas le dernier : ne doit pas bouger.
+      { debut: 20, fin: null }, // ouvert, mais pas le dernier : pas celui-ci.
+      { debut: 30, fin: 40 }, // le dernier, déjà clos : ne doit pas être réécrasé.
+    ]
+    expect(fermerIntervalle(intervalles, 999)).toEqual(intervalles)
+  })
+
+  it('ferme le dernier intervalle quand il est encore ouvert', () => {
+    const intervalles = [
+      { debut: 0, fin: 10 },
+      { debut: 20, fin: null },
+    ]
+    expect(fermerIntervalle(intervalles, 999)).toEqual([
+      { debut: 0, fin: 10 },
+      { debut: 20, fin: 999 },
+    ])
   })
 })

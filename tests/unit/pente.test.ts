@@ -158,6 +158,15 @@ describe('penteMaximale', () => {
       expect(texte!).toMatch(/pas mesurable|ne se mesure pas/i)
       // Et surtout : aucun pourcentage. C'est tout l'objet de l'issue.
       expect(texte!).not.toMatch(/\d\s*%/)
+      /*
+        Trouvé par mutation du 17/10 : la phrase est faite de trois
+        morceaux concaténés, et seul le premier contient « pas mesurable ».
+        Les deux assertions ci-dessus passaient encore si les deux autres
+        morceaux — qui disent *pourquoi* (le pas du modèle) — disparaissaient
+        complètement.
+      */
+      expect(texte!).toContain(`${String(PAS_MINIMAL_METRES)} m`)
+      expect(texte!).toMatch(/mesurerait le modèle|non le sol/i)
     })
 
     it('ne dit rien du tout quand il n’y a pas d’altitude', () => {
@@ -186,6 +195,20 @@ describe('penteMaximale', () => {
     // Seul le segment 0 → 200 subsiste : 30 m sur 200 m.
     expect(p.pourcent).toBeCloseTo(15, 1)
     expect(p.surMetres).toBe(200)
+  })
+
+  it('retient le plus long pas vu, même s’il n’est pas le dernier', () => {
+    /*
+      Trouvé par mutation du 17/10 : `pasLePlusLong = longueur` affecté sans
+      condition (au lieu de « si plus long ») laissait passer tous les tests
+      existants, parce qu'ils ne décrivaient que des pas croissants — où
+      affecter sans condition et affecter le maximum donnent le même
+      résultat. Ici le plus long segment (3 m) n'est pas le dernier (0,5 m).
+    */
+    const mesure = penteMaximale(profil([0, 3, 3.5], [100, 101, 102]))
+    expect(mesure.etat).toBe('trop-fine')
+    if (mesure.etat !== 'trop-fine') return
+    expect(mesure.pasLePlusLong).toBeCloseTo(3, 2)
   })
 
   it('ignore deux points à la même distance', () => {
@@ -226,5 +249,17 @@ describe('libellePente', () => {
   it('ne promet rien sur ce qui se passe entre deux points de mesure', () => {
     const texte = libelle({ pourcent: 3, surMetres: 500 })
     expect(texte.length).toBeGreaterThan(30)
+  })
+
+  it('arrondit le pourcentage à une décimale, pas à la précision brute', () => {
+    /*
+      Trouvé par mutation du 17/10 : remplacer les options de
+      `toLocaleString` par `{}` laissait passer les tests existants, parce
+      qu'aucun n'utilisait un pourcentage dont la troisième décimale change
+      le résultat affiché.
+    */
+    const texte = libelle({ pourcent: 12.345, surMetres: 50 })
+    expect(texte).toContain('12,3')
+    expect(texte).not.toContain('12,345')
   })
 })
