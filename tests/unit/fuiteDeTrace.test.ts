@@ -110,4 +110,19 @@ describe('corpsContientUnPoint', () => {
     expect(corpsContientUnPoint(null, ech)).toBe(false)
     expect(corpsContientUnPoint('45.412345|4.512345', [])).toBe(false)
   })
+
+  /*
+    Trouvé par une vague de mutation du 17/10 : aucun test ne postait un
+    point dans sa forme **arrondie**, alors que `formesDe` en garde deux
+    précisément pour ce cas (45.412345 s'arrondit à 45.41235 mais se
+    tronque à 45.41234 — les deux diffèrent). Une bibliothèque qui arrondit
+    une coordonnée avant de l'envoyer, plutôt que de la tronquer, ne
+    laissait aucun test vérifier qu'elle est quand même détectée. Sans la
+    forme arrondie, ce point précis serait une fuite réelle que le
+    compteur ne compterait pas.
+  */
+  it('reconnaît un point posté dans sa forme arrondie, pas seulement tronquée', () => {
+    const corps = JSON.stringify({ lon: 4.51234, lat: 45.41235 })
+    expect(corpsContientUnPoint(corps, ech)).toBe(true)
+  })
 })
