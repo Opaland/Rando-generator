@@ -181,6 +181,15 @@ seulement l'existence d'un type TypeScript sans vérifier le chemin de code
 réellement emprunté par Léa (§1bis) ; un numéro d'issue existant dans le
 code ne dit pas si l'issue elle-même est close.*
 
+**Corrigé depuis** (cette seconde moitié) : #541 (17/10) affiche « Source :
+{auteur} » dans « Mes itinéraires » dès qu'une attribution existe
+(`CustomItineraries.tsx`, via `attributionDe`), sans introduire de réseau
+distinct — `network: 'PERSO'` reste le réseau de tout import, le routage du
+matching et l'export GPX s'appuyant déjà sur cette étiquette pour un sens
+différent de « source institutionnelle ». Deux e2e (`tests/e2e/attribution-
+import.spec.ts`) couvrent le cas positif et l'absence de mention inventée.
+Reste ouvert : les PDIPR hors Isère (#20, #87).
+
 ## Ce que la seconde passe a trouvé
 
 ### Un bouton mort, introduit le jour même
@@ -384,6 +393,14 @@ Ce qui rend le défaut instructif : le dépôt **connaissait la règle** et
 l'appliquait déjà deux fois — le revêtement « autre » se distingue par les
 tirets, l'itinéraire déclaré parcouru aussi. Le réseau, lui, n'avait que la
 couleur.
+
+**Corrigé depuis**, en deux temps : la carte d'abord (09/09, #530) — deux
+couches tiretées (`trails-base-grp`/`trails-done-grp`) distinguent GRP sur
+le tracé — puis la légende (17/10), qui gardait une pastille pleine pour
+les deux réseaux malgré la carte déjà corrigée : même règle, oubliée au
+troisième endroit où elle s'applique (§4ter). `NETWORK_TIRETS`
+(`src/lib/networkDisplay.ts`) suit maintenant le même gabarit que
+`TERRAIN_TIRETS` dans `MapLegend.tsx`.
 
 ### Ahmed, 51 ans, tablette en paysage — issue #363
 
