@@ -142,9 +142,23 @@ if (muets.length > 0) {
   s'arrête au milieu de la fonction et manque l'attribut. C'est le genre de
   motif qui paraît juste et qui garde la moitié de ce qu'on croit.
 */
-const FICHE = 'src/components/ItineraryDetail.tsx'
+/*
+  Deux fichiers depuis le 17/10, pour la même raison que `PANNEAU` plus
+  haut : `PoiSection.tsx` porte maintenant les boutons des points
+  d'intérêt (dont `poi-deplier`), sortis d'`ItineraryDetail.tsx`. Mesuré en
+  le déplaçant sans toucher ce script : le compte des gestes d'interface
+  exemptés tombait de 2 à 1 sans qu'aucune erreur ne le signale — ce
+  contrôle ne garde que ce qu'il échoue à voir manquer, pas ce qu'il
+  compte en moins.
+*/
+const FICHE = [
+  'src/components/ItineraryDetail.tsx',
+  'src/components/PoiSection.tsx',
+]
 
-const sourceFiche = readFileSync(FICHE, 'utf8')
+const sourceFiche = FICHE.map((fichier) => readFileSync(fichier, 'utf8')).join(
+  '\n',
+)
 const boutonsDeLaFiche = [
   ...new Set(
     [...sourceFiche.matchAll(/data-testid="([a-z0-9-]+)"/g)]
@@ -159,8 +173,8 @@ const boutonsDeLaFiche = [
 
 if (boutonsDeLaFiche.length === 0) {
   console.error(
-    `Aucun bouton lu dans ${FICHE} : le motif de lecture ne correspond plus,` +
-      ` et ce contrôle ne garde donc plus rien.`,
+    `Aucun bouton lu dans ${FICHE.join(', ')} : le motif de lecture ne` +
+      ` correspond plus, et ce contrôle ne garde donc plus rien.`,
   )
   process.exit(1)
 }

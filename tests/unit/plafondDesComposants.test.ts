@@ -31,7 +31,10 @@ const PLAFONDS: Record<string, number> = {
   // (dette du 17/10, le plafond approchait 970 avec 5 lignes de marge).
   'ItineraryList.tsx': 625,
   'DiscoveryFiltersPanel.tsx': 410,
-  'ItineraryDetail.tsx': 965,
+  // Section « Points d'intérêt » sortie dans PoiSection.tsx (dette du
+  // 17/10, même mouvement que DiscoveryFiltersPanel.tsx).
+  'ItineraryDetail.tsx': 790,
+  'PoiSection.tsx': 250,
   'TrackManager.tsx': 580,
   'ElevationChart.tsx': 495,
   'ZonePicker.tsx': 400,
