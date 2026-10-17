@@ -365,3 +365,17 @@ describe('deux ports dont l’appel ne suffisait pas à dire qu’ils sont tenus
     ).toBe(true)
   })
 })
+
+describe('le journal des sorties réseau, câblé depuis le magasin réel', () => {
+  /*
+    Trouvé par mutation du 17/10 : `...trancheSortiesReseau({ set })` dans
+    l'état initial, remplacé par `...{}`, survivait à toute la suite.
+    `tests/unit/trancheSortiesReseau.test.ts` éprouve `trancheSortiesReseau`
+    comme une fonction pure, avec son propre `set` factice — jamais depuis
+    `useAppStore`, qui est le seul endroit où ce branchement peut casser.
+  */
+  it('noterSortieReseau est bien l’action du magasin réel, pas un trou', () => {
+    useAppStore.getState().noterSortieReseau('https://tile.openstreetmap.org/1/1/1.png', null)
+    expect(useAppStore.getState().sortiesReseau).toHaveLength(1)
+  })
+})
