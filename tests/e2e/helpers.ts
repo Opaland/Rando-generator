@@ -385,12 +385,21 @@ export type CleOnglet = (typeof ONGLETS)[number]
 /**
  * Se place sur un onglet — et ne fait rien si la barre n'existe pas.
  *
- * Le silence est délibéré. La barre n'apparaît qu'en dessous du point de
- * rupture, et l'ancienne disposition reste servie par
- * `?maquette=accordeons` : un test qui aurait à savoir dans laquelle il
- * tourne pour appeler cette fonction n'aurait rien gagné. Ici le même test
- * passe dans les deux, et n'exprime que ce qui l'intéresse — « je veux voir
- * les sorties », pas « je clique sur le deuxième bouton ».
+ * Le silence est délibéré. La barre existe à toutes les largeurs depuis le
+ * 23/08 (`App.tsx`) ; seul son *effet de filtrage* dépend de la largeur — sur
+ * grand écran, cliquer l'amène à sa première section sans rien cacher des
+ * autres. L'ancienne disposition en accordéons reste servie par
+ * `?maquette=accordeons`, où la barre n'existe pas du tout : un test qui
+ * aurait à savoir dans laquelle il tourne pour appeler cette fonction n'aurait
+ * rien gagné. Ici le même test passe dans les trois cas, et n'exprime que ce
+ * qui l'intéresse — « je veux voir les sorties », pas « je clique sur le
+ * deuxième bouton ».
+ *
+ * Cette phrase disait auparavant « la barre n'apparaît qu'en dessous du
+ * point de rupture » — vrai avant le 23/08, faux depuis, et personne ne
+ * l'avait relevé jusqu'à l'audit du 17/10 (`docs/AUDIT_APPLICATIF_17_10.md`) :
+ * un commentaire resté vrai en apparence mais faux en substance n'alerte
+ * personne (CLAUDE.md §4bis).
  */
 export async function ouvrirOnglet(page: Page, cle: CleOnglet): Promise<void> {
   const onglet = page.getByTestId(`onglet-${cle}`)
