@@ -14,11 +14,12 @@ parcouru 34 % du GR 7, 61 % des sentiers du Pilat ».
   IndexedDB pour les traces et les zones, en `localStorage` pour les sept
   réglages — dont l'écriture, elle, est synchrone (issue #203).
 - **Ce qui sort quand même** : afficher une carte, c'est demander des images à
-  quelqu'un. Overpass reçoit la zone ou la référence cherchée, la
-  Géoplateforme IGN les tuiles regardées et jusqu'à cent points de
-  l'itinéraire dont on ouvre le profil, l'API Adresse le nom de commune tapé,
-  et l'hébergeur la demande de la page. « À propos » le détaille dans
-  l'application (issue #168).
+  quelqu'un. Overpass reçoit la zone ou la référence cherchée, et la forme de
+  l'itinéraire dont on ouvre la fiche (pour les points d'intérêt à
+  proximité) ; la Géoplateforme IGN les tuiles regardées et jusqu'à cent
+  points de l'itinéraire dont on ouvre le profil ; l'API Adresse le nom de
+  commune tapé ; et l'hébergeur la demande de la page. « À propos » le
+  détaille dans l'application (issue #168).
 - **Données ouvertes uniquement** : itinéraires © les contributeurs
   OpenStreetMap (ODbL) via l'API Overpass ; boucles locales de la Métropole
   de Lyon © Métropole de Lyon (Licence Ouverte 2.0, jeu « Boucles communales

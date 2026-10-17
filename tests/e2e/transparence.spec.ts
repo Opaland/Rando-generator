@@ -35,6 +35,13 @@ test('« À propos » nomme chaque service tiers réellement contacté', async (
   // l'itinéraire consulté, y compris un itinéraire que vous avez importé.
   await expect(sortant).toContainText('altimétrie')
   await expect(sortant).toContainText('importé')
+  /*
+    Revue globale du 17/10 : ouvrir la fiche d'un itinéraire envoie aussi
+    sa forme à Overpass (recherche des points d'intérêt), y compris pour
+    un tracé importé — exactement le cas que la puce de l'altimétrie
+    décrivait déjà, mais que celle d'Overpass passait sous silence.
+  */
+  await expect(sortant).toContainText(/points? d.intérêt/i)
 })
 
 test('« À propos » distingue ce qui sort de ce qui ne sort jamais', async ({

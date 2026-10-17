@@ -103,6 +103,11 @@ export function About({
               <strong>référence tapée</strong> («&nbsp;GR&nbsp;7&nbsp;») ou un{' '}
               <strong>rayon autour d’un point</strong>, quand vous chargez une
               zone ou lancez une recherche. C’est de là que viennent les tracés.
+              Overpass reçoit aussi, en plusieurs boîtes qui suivent le
+              tracé, la <strong>forme de l’itinéraire dont vous ouvrez la
+              fiche</strong> — pour y chercher les points d’intérêt à
+              proximité. Cela vaut aussi pour un itinéraire que vous avez{' '}
+              <strong>importé</strong>.
             </li>
             <li>
               La <strong>Géoplateforme IGN</strong> reçoit les{' '}
