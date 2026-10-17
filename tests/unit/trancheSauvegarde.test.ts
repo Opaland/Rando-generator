@@ -8,8 +8,9 @@ import {
   buildBackup,
   serialiserBackup,
   compresserBackup,
+  lireArchiveBackup,
 } from '../../src/core/backup.ts'
-import type { Track } from '../../src/core/types.ts'
+import type { Itinerary, Track } from '../../src/core/types.ts'
 import type { ParcoursDeclare } from '../../src/core/declaratif.ts'
 
 /**
@@ -80,8 +81,43 @@ function etatInitial(): LectureSauvegarde {
   }
 }
 
+/**
+ * Une base factice, qui note ce qu'on lui demande d'enregistrer.
+ *
+ * `baseOuverte` rend `null` par défaut dans `banc()` : sans elle, les
+ * boucles d'enregistrement de `importerSauvegarde` (traces, itinéraires
+ * perso, déclarations) ne sont jamais exercées.
+ */
+function baseFactice() {
+  const tracksEnregistrees: string[] = []
+  const itinerairesEnregistres: number[] = []
+  const declarationsEnregistrees: number[] = []
+  return {
+    base: {
+      saveTrack: (t: Track) => {
+        tracksEnregistrees.push(t.id)
+        return Promise.resolve()
+      },
+      saveCustomItinerary: (i: Itinerary) => {
+        itinerairesEnregistres.push(i.osmRelationId)
+        return Promise.resolve()
+      },
+      declarerParcours: (d: ParcoursDeclare) => {
+        declarationsEnregistrees.push(d.itineraryId)
+        return Promise.resolve()
+      },
+    },
+    tracksEnregistrees,
+    itinerairesEnregistres,
+    declarationsEnregistrees,
+  }
+}
+
 /** Un banc d'essai : les dépendances, plus ce qu'elles ont enregistré. */
-function banc(etat: LectureSauvegarde = etatInitial()) {
+function banc(
+  etat: LectureSauvegarde = etatInitial(),
+  base: ReturnType<typeof baseFactice>['base'] | null = null,
+) {
   type Suivi = LectureSauvegarde & { backupMessage?: string | null }
   const journal: string[] = []
   const telechargements: { nom: string; contenu: Blob }[] = []
@@ -107,7 +143,10 @@ function banc(etat: LectureSauvegarde = etatInitial()) {
       journal.push('quitterLaDemonstration')
       return Promise.resolve()
     },
-    baseOuverte: () => Promise.resolve(null),
+    baseOuverte: () =>
+      Promise.resolve(
+        base as unknown as Awaited<ReturnType<DependancesSauvegarde['baseOuverte']>>,
+      ),
     recalculer: () => {
       journal.push('recalculer')
       return Promise.resolve()
@@ -132,13 +171,14 @@ function banc(etat: LectureSauvegarde = etatInitial()) {
 /** Une archive de sauvegarde, dans le format que l'application produit. */
 async function archive(parts: {
   tracks?: Track[]
+  customItineraries?: Itinerary[]
   toleranceMeters?: number
   completionPct?: number
   parcoursDeclares?: ParcoursDeclare[]
 }): Promise<File> {
   const backup = buildBackup({
     tracks: parts.tracks ?? [],
-    customItineraries: [],
+    customItineraries: parts.customItineraries ?? [],
     settings: {
       ...(parts.toleranceMeters !== undefined
         ? { toleranceMeters: parts.toleranceMeters }
@@ -180,6 +220,30 @@ describe('exporterSauvegarde', () => {
     expect(journal.indexOf('quitterLaDemonstration')).toBeLessThan(
       journal.indexOf('lire'),
     )
+  })
+
+  /*
+    Trouvé par mutation du 17/10 : le seul test de ce bloc ne vérifiait que
+    le nom et le type MIME du fichier téléchargé, jamais son contenu. Un
+    `Blob([])` vide, ou des réglages remplacés par `{}` avant la
+    construction de la sauvegarde, auraient porté le même nom et le même
+    type.
+  */
+  it('le fichier téléchargé porte vraiment les données et les réglages', async () => {
+    const { deps, telechargements } = banc({
+      ...etatInitial(),
+      tracks: [TRACE_A],
+      toleranceMeters: 42,
+      completionPct: 17,
+    })
+    await trancheSauvegarde(deps).exporterSauvegarde()
+    const [fichier] = telechargements
+    expect(fichier).toBeDefined()
+
+    const relu = await lireArchiveBackup(await fichier!.contenu.arrayBuffer())
+    expect(relu.tracks.map((t) => t.id)).toEqual(['a'])
+    expect(relu.settings.toleranceMeters).toBe(42)
+    expect(relu.settings.completionPct).toBe(17)
   })
 })
 
@@ -230,6 +294,38 @@ describe('importerSauvegarde', () => {
     expect(sansApport.journal).not.toContain('recalculer')
   })
 
+  it('recalcule aussi quand seul un itinéraire perso a été ajouté', async () => {
+    /*
+      Trouvé par mutation du 17/10 : `traces.ajoutees > 0 || persos.ajoutes
+      > 0` avec le second membre désactivé survivait au test précédent, qui
+      ne faisait varier que les traces — les deux cas y laissaient
+      `persos.ajoutes` à zéro, donc ne pouvaient pas le distinguer. Ici,
+      seul un itinéraire perso est apporté, aucune trace.
+    */
+    const itineraire: Itinerary = {
+      osmRelationId: -1,
+      ref: null,
+      name: 'Nouveau',
+      network: 'PERSO',
+      ways: [
+        {
+          osmWayId: -1000,
+          coords: [
+            [4.5, 45.4],
+            [4.51, 45.4],
+          ],
+        },
+      ],
+      totalMeters: 700,
+      fetchedAt: '2026-01-01T00:00:00Z',
+    }
+    const { deps, journal } = banc()
+    await trancheSauvegarde(deps).importerSauvegarde(
+      await archive({ customItineraries: [itineraire] }),
+    )
+    expect(journal).toContain('recalculer')
+  })
+
   it('garde la déclaration déjà faite plutôt que celle de la sauvegarde', async () => {
     /*
       Écraser ferait disparaître une déclaration faite depuis l'export —
@@ -276,6 +372,106 @@ describe('importerSauvegarde', () => {
     )
     expect(avecReglages.journal).toContain('tolerance:40')
     expect(avecReglages.journal).toContain('completion:60')
+  })
+
+  /*
+    Trouvé par mutation du 17/10 : `baseOuverte` rend toujours `null` dans ce
+    fichier — les boucles d'enregistrement en base (traces, itinéraires
+    perso, déclarations) n'étaient donc jamais exercées. Les mutants sur le
+    `.slice(avant...length)` qui ne garde que les nouveautés, et sur le
+    filtre des déclarations déjà là, en profitaient.
+  */
+  it('n’enregistre en base que ce que la fusion a vraiment ajouté', async () => {
+    const itineraireDejaLa: Itinerary = {
+      osmRelationId: -1,
+      ref: null,
+      name: 'Déjà là',
+      network: 'PERSO',
+      ways: [
+        {
+          osmWayId: -1000,
+          coords: [
+            [4.5, 45.4],
+            [4.51, 45.4],
+          ],
+        },
+      ],
+      totalMeters: 700,
+      fetchedAt: '2026-01-01T00:00:00Z',
+    }
+    const itineraireNouveau: Itinerary = {
+      ...itineraireDejaLa,
+      osmRelationId: -2,
+      name: 'Nouveau',
+      ways: [
+        {
+          osmWayId: -2000,
+          coords: [
+            [4.6, 45.5],
+            [4.61, 45.5],
+          ],
+        },
+      ],
+    }
+    const { base, tracksEnregistrees, itinerairesEnregistres } = baseFactice()
+    const { deps } = banc(
+      {
+        ...etatInitial(),
+        tracks: [TRACE_A],
+        customItineraries: [itineraireDejaLa],
+      },
+      base,
+    )
+
+    await trancheSauvegarde(deps).importerSauvegarde(
+      await archive({
+        tracks: [TRACE_A, TRACE_B],
+        customItineraries: [itineraireDejaLa, itineraireNouveau],
+      }),
+    )
+
+    // TRACE_A et itineraireDejaLa sont déjà là : seules les nouveautés
+    // doivent être écrites en base.
+    expect(tracksEnregistrees).toEqual(['b'])
+    expect(itinerairesEnregistres).toEqual([-2])
+  })
+
+  it('n’enregistre que les déclarations qui n’étaient pas déjà là', async () => {
+    /*
+      Deux déclarations déjà présentes, pas une seule : avec une seule,
+      `.some` et `.every` coïncident toujours (un tableau à un élément rend
+      le même résultat pour les deux), et le mutant `.every` survivait.
+    */
+    const { base, declarationsEnregistrees } = baseFactice()
+    const { deps } = banc(
+      {
+        ...etatInitial(),
+        parcoursDeclares: [
+          { itineraryId: 7, date: '2026-08-20', declareLe: '2026-08-20T10:00:00Z' },
+          { itineraryId: 8, date: '2026-08-21', declareLe: '2026-08-21T10:00:00Z' },
+        ],
+      },
+      base,
+    )
+
+    await trancheSauvegarde(deps).importerSauvegarde(
+      await archive({
+        parcoursDeclares: [
+          { itineraryId: 7, date: '2026-01-01', declareLe: '2026-01-01T10:00:00Z' },
+          { itineraryId: 9, date: '2026-02-02', declareLe: '2026-02-02T10:00:00Z' },
+        ],
+      }),
+    )
+
+    /*
+      Les déclarations enregistrées en base sont **toutes** celles du
+      résultat fusionné (7 et 8 les locales, 9 la nouvelle) — pas seulement
+      les neuves : `declaresFusionnes` est réécrit en entier à chaque
+      import. Avec `.every` à la place de `.some`, 7 serait réenregistrée
+      en double (la garde ne l'exclurait plus, puisque la liste locale a un
+      second élément, 8, qui ne correspond pas).
+    */
+    expect(declarationsEnregistrees.sort()).toEqual([7, 8, 9])
   })
 
   it('dit ce que la fusion a rapporté, même quand c’est rien', async () => {

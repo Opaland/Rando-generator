@@ -76,6 +76,19 @@ describe('emporter', () => {
     emporter(canal, ['https://a.test/1.png'], surProgres)
     canal.emettre({ type: MESSAGE_PROGRES, ...PAS })
     expect(surProgres).toHaveBeenCalledWith(PAS)
+    // Trouvé par mutation du 17/10 : un compte rendu qui n'annonce pas la
+    // fin ne doit pas débrancher l'écoute — `PAS.fini` vaut `false`.
+    expect(canal.ecouteurs).toBe(1)
+  })
+
+  it('transmet un nombre d’échecs non nul', () => {
+    // Trouvé par mutation du 17/10 : `?? 0` devenu `&& 0` ne se distinguait
+    // que pour un `echecs` non nul — `0 ?? 0` et `0 && 0` valent les deux 0.
+    const canal = fauxCanal()
+    const surProgres = vi.fn()
+    emporter(canal, ['https://a.test/1.png'], surProgres)
+    canal.emettre({ type: MESSAGE_PROGRES, ...PAS, echecs: 2 })
+    expect(surProgres).toHaveBeenCalledWith({ ...PAS, echecs: 2 })
   })
 
   it('ignore les messages qui ne le concernent pas', () => {
@@ -110,6 +123,9 @@ describe('emporter', () => {
     expect(arreter).not.toBeNull()
     arreter?.()
     expect(canal.envoyes.at(-1)).toEqual({ type: MESSAGE_ARRETER })
+    // Trouvé par mutation du 17/10 : rien ne vérifiait que `arreter` débranche
+    // aussi l'écoute, pas seulement le message envoyé.
+    expect(canal.ecouteurs).toBe(0)
   })
 
   it('ne réclame pas deux fois l’arrêt', () => {

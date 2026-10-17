@@ -108,6 +108,9 @@ describe('demarrerDemonstration', () => {
     expect(final()['demonstration']).toBe(true)
     expect(final()['zoneKey']).toBe('demonstration')
     expect(final()['itineraries']).toEqual(BOUCLES)
+    // Trouvé par mutation du 17/10 : rien ne lisait `zoneLoading` ici — la
+    // démonstration s'ouvre déjà chargée, il n'y a rien à attendre.
+    expect(final()['zoneLoading']).toBe(false)
   })
 
   it('date les sorties fictives de l’instant fourni', async () => {
@@ -226,6 +229,8 @@ describe('quitterDemonstration', () => {
     expect(premier?.zoneKey).toBeNull()
     expect(premier?.itineraries).toEqual([])
     expect(premier?.demonstration).toBe(false)
+    // Trouvé par mutation du 17/10 : `tracks` n'était pas relu ici.
+    expect(premier?.tracks).toEqual([])
   })
 
   it('tient sans base : la démonstration se quitte quand même', async () => {

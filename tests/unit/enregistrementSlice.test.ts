@@ -8,6 +8,8 @@ import {
   type TrancheSortie,
 } from '../../src/store/enregistrementSlice.ts'
 import { openSentiersDb, type SentiersDb } from '../../src/db/database.ts'
+import { entete } from '../../src/core/reprise.ts'
+import { enregistreurVide } from '../../src/core/recorder.ts'
 import type { Track } from '../../src/core/types.ts'
 import type { Veilleur } from '../../src/store/veilleGeo.ts'
 
@@ -120,6 +122,29 @@ async function marcher(n: number): Promise<void> {
   }
   await tranche.ecrituresTerminees()
 }
+
+describe('l’horloge par défaut', () => {
+  // Trouvé par mutation du 17/10 : chaque test de ce fichier fournit son
+  // propre `maintenant`, donc le repli sur `Date.now()` n'était jamais
+  // atteint.
+  it('utilise Date.now() quand aucune horloge n’est injectée', () => {
+    const avecHorloge = ports()
+    const sansHorloge = creerTrancheSortie({
+      lire: avecHorloge.lire,
+      poser: avecHorloge.poser,
+      base: avecHorloge.base,
+      rangerTrace: avecHorloge.rangerTrace,
+      quitterDemonstration: avecHorloge.quitterDemonstration,
+      veille: avecHorloge.veille,
+    })
+    const avant = Date.now()
+    sansHorloge.actions.demarrerSortie()
+    const apres = Date.now()
+    expect(etat.enregistrement.demarreA).not.toBeNull()
+    expect(etat.enregistrement.demarreA).toBeGreaterThanOrEqual(avant)
+    expect(etat.enregistrement.demarreA).toBeLessThanOrEqual(apres)
+  })
+})
 
 describe('démarrer', () => {
   it('ouvre la veille, quitte la démonstration, et part de zéro', async () => {
@@ -498,6 +523,17 @@ describe('la reprise au démarrage', () => {
   })
 
   it('ne trouve rien à reprendre sur une base neuve', async () => {
+    await tranche.reprendreAuDemarrage(base)
+    expect(etat.enregistrement.etat).toBe('repos')
+    expect(etat.sortieReprise).toBe(false)
+  })
+
+  it('ne trouve rien à reprendre quand l’en-tête ne décrit rien à reprendre', async () => {
+    // `if (!tete) return` protège l'absence totale d'en-tête ; ce cas-ci est
+    // différent — l'en-tête existe mais décrit un enregistreur « vide »
+    // (`demarreA: null`), que `reprendreApresInterruption` rend `null` à son
+    // tour.
+    await base.ecrireEntete(entete(enregistreurVide(), T0))
     await tranche.reprendreAuDemarrage(base)
     expect(etat.enregistrement.etat).toBe('repos')
     expect(etat.sortieReprise).toBe(false)

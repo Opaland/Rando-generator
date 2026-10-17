@@ -173,6 +173,9 @@ describe('deux fiches ouvertes coup sur coup', () => {
     profilsEnAttente[1]?.resoudre(profil(3))
     await laisserPasser()
     expect(b.etat().elevationProfile?.elevations).toHaveLength(3)
+    // Trouvé par mutation du 17/10 : rien ne lisait `elevationLoading`
+    // après une réponse acceptée.
+    expect(b.etat().elevationLoading).toBe(false)
   })
 
   it('une erreur de la fiche abandonnée ne s’affiche pas sur la suivante', async () => {

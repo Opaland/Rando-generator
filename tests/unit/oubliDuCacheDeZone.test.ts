@@ -157,6 +157,23 @@ describe.each(CHEMINS)('$nom, base déjà ouverte', ({ cle, lancer }) => {
     ).toEqual([cle])
   })
 
+  it('rapporte le message du service, pas un générique, sans cache pour amortir l’échec', async () => {
+    /*
+      Trouvé par mutation du 17/10 : `error instanceof OverpassError ||
+      error instanceof DbError` survivait muté en `&&` (une erreur ne peut
+      être les deux instances à la fois, donc la condition devient
+      toujours fausse) ou en `false`, parce qu'aucun test n'affirmait rien
+      sur `zoneError` ici — seulement sur les clés effacées du cache.
+      `fetchOverpass` est mockée plus haut pour rejeter avec une vraie
+      `OverpassError` ; ce test lit enfin le message qu'elle laisse.
+    */
+    const { actions, etat } = harnais({ baseOuverteDansLEtat: true })
+    await lancer(actions, false)
+    expect((etat as { zoneError?: string }).zoneError).toBe(
+      'miroirs injoignables (test)',
+    )
+  })
+
   it('ne l’oublie pas quand on ne force pas', async () => {
     const { actions, supprimees } = harnais({ baseOuverteDansLEtat: true })
     await lancer(actions, false)

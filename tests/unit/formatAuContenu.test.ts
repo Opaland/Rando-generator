@@ -105,4 +105,14 @@ describe('lireItineraires reconnaît aussi le contenu', () => {
     expect(lu.trails[0]?.lines[0]).toHaveLength(2)
     expect(lu.source).toBeNull()
   })
+
+  it('refuse avec un message lisible un fichier qui se prétend GeoJSON sans être du JSON valide', async () => {
+    // `looksLikeGeoJson` ne regarde que les quatre premiers kilo-octets à la
+    // recherche des mots-clés du format ; rien ne garantit que le JSON qui
+    // suit soit syntaxiquement valide.
+    const cassé = '{"type": "FeatureCollection", "features": [,]}'
+    await expect(
+      lireItineraires(new File([cassé], 'boucle.geojson')),
+    ).rejects.toThrow(/JSON valide/)
+  })
 })

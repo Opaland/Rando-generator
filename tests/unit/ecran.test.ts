@@ -113,4 +113,28 @@ describe('useEcranCompact', () => {
     demonter()
     expect(mql.ecouteurs.size).toBe(0)
   })
+
+  /*
+    Trouvé par mutation du 17/10 : le tableau de dépendances `[]` de
+    `useEffect` n'était jamais mis à l'épreuve d'un nouveau rendu — les
+    tests existants ne vérifient que l'état rendu, qui reste correct même
+    si l'effet se ré-exécute à chaque rendu (`window.matchMedia` renvoie
+    toujours le même faux objet). Seul le nombre d'appels à `matchMedia`
+    trahit un effet qui se réabonne à chaque rendu plutôt qu'une seule
+    fois au montage.
+  */
+  it('ne réabonne pas à `matchMedia` à chaque rendu', () => {
+    const { mql, demonter } = monterLeHook(false)
+    // Deux appels dès le montage : l'état initial, puis l'effet.
+    const auMontage = (window.matchMedia as unknown as { mock: { calls: unknown[] } })
+      .mock.calls.length
+    act(() => {
+      mql.emettre(true)
+    })
+    expect(
+      (window.matchMedia as unknown as { mock: { calls: unknown[] } }).mock.calls
+        .length,
+    ).toBe(auMontage)
+    demonter()
+  })
 })

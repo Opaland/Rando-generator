@@ -152,6 +152,19 @@ describe('resumeDeLObjectif', () => {
     expect(resume).not.toBeNull()
     expect(resume?.troncons.length).toBeGreaterThan(0)
   })
+
+  it('retrouve le bon itinéraire quand plusieurs sont chargés', () => {
+    // Avec un seul itinéraire en jeu, `.find` retrouve toujours le même
+    // élément qu'un prédicat toujours vrai — il en faut deux pour distinguer
+    // « cherché par id » de « le premier qui vient ».
+    const second: Itinerary = { ...GR7, osmRelationId: 99, network: 'PERSO' }
+    const b = banc({
+      itineraries: [GR7],
+      customItineraries: [second],
+      matching: matchResult([]),
+    })
+    expect(b.actions.resumeDeLObjectif(99)?.itineraryId).toBe(99)
+  })
 })
 
 describe('lireObjectifs', () => {
@@ -161,6 +174,12 @@ describe('lireObjectifs', () => {
 
   it('ignore ce qui n’est pas un tableau de nombres', () => {
     expect(lireObjectifs('["a","b"]')).toEqual([])
+  })
+
+  it('rend une liste vide pour du JSON valide qui n’est pas un tableau', () => {
+    // Du JSON valide (donc pas rattrapé par le `catch`) qui n'est pas un
+    // tableau — la branche `: []` jamais atteinte autrement.
+    expect(lireObjectifs('42')).toEqual([])
   })
 
   it('ne casse pas sur du JSON invalide', () => {

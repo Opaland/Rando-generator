@@ -621,7 +621,17 @@ describe('loadZone', () => {
 
     const etat = useAppStore.getState()
     expect(etat.itineraries).toHaveLength(0)
-    expect(etat.zoneError).toBeTruthy()
+    /*
+      Trouvé par mutation du 17/10 : `toBeTruthy()` passait encore si
+      `error instanceof OverpassError || error instanceof DbError`
+      devenait toujours fausse, puisque `fetchOverpass` enveloppe déjà
+      toute panne réseau dans une vraie `OverpassError` — son message
+      reste « vrai » même quand la branche qui le choisit a disparu. Il
+      faut le texte exact pour voir la différence.
+    */
+    expect(etat.zoneError).toBe(
+      'Impossible de joindre les serveurs de données OpenStreetMap (Overpass). Ils sont peut-être surchargés : réessayez dans quelques minutes.',
+    )
     // L'interface ne reste jamais bloquée en chargement.
     expect(etat.zoneLoading).toBe(false)
     expect(etat.zoneLoadStage).toBeNull()

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { developperArchives } from '../../src/store/lecture.ts'
 import { buildZip, buildZipTropGrand } from '../fixtures/zip.ts'
+import { listZipEntries } from '../../src/core/zip.ts'
 
 /**
  * Issue #466, second volet — ce que Léa lit quand une archive résiste.
@@ -149,6 +150,35 @@ describe('quand une archive résiste', () => {
     expect(fichiers.map((f) => f.name)).toEqual(['a.gpx', 'c.gpx'])
     expect(erreurs).toHaveLength(1)
     expect(erreurs[0]).toContain('b.gpx')
+  })
+
+  it('dit « extraction impossible » pour une entrée dont les données sont corrompues', async () => {
+    /*
+      `readZipEntry` ne lève un `ZipError` que sur un en-tête ou une taille
+      invalides. Des données compressées corrompues — l'en-tête reste
+      correct — font échouer `DecompressionStream` lui-même, avec une
+      erreur générique. C'est exactement le repli que ce message couvre,
+      et rien ne l'atteignait : les deux tests précédents corrompent des
+      signatures d'en-tête, jamais les octets de données.
+    */
+    const archive = new Uint8Array(await buildZip([
+      { nom: 'a.gpx', contenu: '<gpx>'.repeat(50), methode: 8 },
+    ]))
+    const [entree] = listZipEntries(archive.buffer)
+    const debutDonnees =
+      (entree?.localHeaderOffset ?? 0) + 30 + (entree?.name.length ?? 0)
+    // Un octet de tête de flux deflate invalide : l'en-tête ZIP reste
+    // correct, mais DecompressionStream rejette le contenu.
+    archive[debutDonnees] = 0xff
+    archive[debutDonnees + 1] = 0xff
+
+    const { fichiers, erreurs } = await developperArchives(
+      [new File([archive.buffer], 'corrompu.zip')],
+      () => undefined,
+    )
+
+    expect(fichiers).toEqual([])
+    expect(erreurs).toEqual(['a.gpx : extraction impossible.'])
   })
 
   it('annonce chaque entrée par son nom, dépliée de son dossier', async () => {

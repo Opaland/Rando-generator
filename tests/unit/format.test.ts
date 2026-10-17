@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest'
-import { formatChrono } from '../../src/lib/format.ts'
+import {
+  formatChrono,
+  formatDetour,
+  formatDistance,
+  formatPct,
+  displayName,
+} from '../../src/lib/format.ts'
+import type { Itinerary } from '../../src/core/types.ts'
 
 /**
  * Le chronomètre de l'écran de marche (issue #152, pierre 3).
@@ -29,5 +36,78 @@ describe('formatChrono', () => {
 
   it('ne rend jamais de temps négatif', () => {
     expect(formatChrono(-5_000)).toBe('0:00')
+  })
+})
+
+describe('formatPct', () => {
+  // Trouvé par mutation du 17/10 : jamais testé directement avec une valeur
+  // à plus d'une décimale, donc `maximumFractionDigits: 1` pouvait
+  // disparaître sans qu'aucun test ne s'en aperçoive.
+  it('arrondit à une décimale, pas plus', () => {
+    expect(formatPct(34.567)).toBe('34,6 %')
+  })
+})
+
+describe('formatDistance', () => {
+  // Trouvé par mutation du 17/10 : aucun test n'utilisait exactement 1 000 m,
+  // la frontière entre l'affichage en mètres et en kilomètres.
+  it('bascule en kilomètres à partir de 1 000 m, pas juste après', () => {
+    expect(formatDistance(1_000)).toBe('1 km')
+    expect(formatDistance(990)).toBe('990 m')
+  })
+
+  /*
+    Trouvé par mutation du 17/10 : aucun test n'utilisait une distance
+    négative ou infinie. La garde `Number.isFinite(meters) && meters > 0`
+    protège de deux défauts différents, et chacun a besoin de sa propre
+    valeur pour se révéler.
+  */
+  it('ne rend pas de distance négative', () => {
+    expect(formatDistance(-50)).toBe('0 m')
+  })
+
+  it('ne rend pas de distance infinie', () => {
+    expect(formatDistance(Number.POSITIVE_INFINITY)).toBe('0 m')
+  })
+})
+
+describe('formatDetour', () => {
+  // Trouvé par mutation du 17/10 : seul appelé depuis PoiSection.tsx, sans
+  // test unitaire direct — toute sa fonction (une délégation à
+  // formatDistance) avait une couverture nulle.
+  it('délègue à formatDistance', () => {
+    expect(formatDetour(150)).toBe('150 m')
+  })
+})
+
+describe('displayName', () => {
+  function itineraire(
+    ref: string | null,
+    name: string | null,
+    osmRelationId = 42,
+  ): Itinerary {
+    return {
+      osmRelationId,
+      ref,
+      name,
+      network: 'GR',
+      ways: [],
+      totalMeters: 0,
+      fetchedAt: '2026-01-01T00:00:00Z',
+    }
+  }
+
+  it('préfère la ref OSM', () => {
+    expect(displayName(itineraire('GR 7', 'Tour du Pilat'))).toBe('GR 7')
+  })
+
+  it('se replie sur le nom quand la ref manque', () => {
+    expect(displayName(itineraire(null, 'Tour du Pilat'))).toBe('Tour du Pilat')
+  })
+
+  // Trouvé par mutation du 17/10 : jamais testé avec ref ET nom absents —
+  // le seul cas qui atteint le dernier repli, l'identifiant OSM.
+  it('se replie sur l’identifiant quand ref et nom manquent tous deux', () => {
+    expect(displayName(itineraire(null, null, 42))).toBe('Itinéraire 42')
   })
 })

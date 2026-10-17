@@ -170,6 +170,36 @@ describe('le repli quand le Web Worker manque', () => {
     expect(course).toBe('résolu')
   })
 
+  it('ignore sans planter un message dont la requête n’est plus attendue', async () => {
+    /*
+      Trouvé par mutation du 17/10 : `if (resolve)` mis à `true` survivait,
+      parce qu'aucun test n'envoyait un message pour un `requestId` inconnu
+      du worker — un message en double, ou arrivé après coup. Sans la
+      garde, `resolve` vaudrait `undefined` et l'appeler planterait le
+      gestionnaire `onmessage` lui-même, sans qu'aucune promesse n'en soit
+      informée.
+    */
+    class WorkerQuiDouble extends WorkerQuiRepond {
+      override postMessage(requete: MatchRequest) {
+        super.postMessage(requete)
+        // Un second message pour la même requête, comme un worker qui
+        // répondrait deux fois — ou pour un identifiant jamais envoyé.
+        queueMicrotask(() => {
+          expect(() => {
+            this.onmessage?.({
+              data: { requestId: requete.requestId + 1000, result: VENU_DU_WORKER },
+            } as MessageEvent)
+          }).not.toThrow()
+        })
+      }
+    }
+    vi.stubGlobal('Worker', WorkerQuiDouble)
+    const { computeMatching } = await chargerLeClient()
+
+    const resultat = await computeMatching(ENTREE)
+    expect(resultat).toBe(VENU_DU_WORKER)
+  })
+
   it('rend à chaque calcul concurrent le résultat de sa propre requête', async () => {
     const envoyes: number[] = []
     class WorkerQuiCompte extends WorkerQuiRepond {

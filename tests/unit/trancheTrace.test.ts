@@ -118,6 +118,10 @@ describe('le graphe de routage n’est construit qu’à bon escient', () => {
     b.actions.addDrawPoint([4.5, 45.4])
     b.actions.addDrawPoint([4.503, 45.4])
     expect(b.etat().drawWaypointKeys).toHaveLength(2)
+    expect(b.etat().drawWaypoints).toEqual([
+      [4.5, 45.4],
+      [4.503, 45.4],
+    ])
     expect(
       construits.length,
       'le mémo du graphe ne touche plus : il est reconstruit à chaque clic',
@@ -297,6 +301,23 @@ describe('compléter un tracé', () => {
     expect(b.etat().drawWaypointKeys).toBe(avant)
   })
 
+  it('la boucle referme le tracé sur son point de départ', () => {
+    // `bouclerTrace` n'était exercé par aucun test unitaire — seulement par
+    // `tests/e2e/tracer.spec.ts`, que Stryker ne voit pas.
+    const b = banc([segment(1, [4.5, 45.4])])
+    b.actions.toggleDrawMode()
+    b.actions.addDrawPoint([4.5, 45.4])
+    b.actions.addDrawPoint([4.501, 45.4])
+    b.actions.addDrawPoint([4.502, 45.4])
+    const premiere = b.etat().drawWaypointKeys[0]
+    b.actions.bouclerTrace()
+    const keys = b.etat().drawWaypointKeys
+    expect(keys.at(-1)).toBe(premiere)
+    expect(keys).toHaveLength(4)
+    expect(b.etat().drawWaypoints[0]).toEqual([4.5, 45.4])
+    expect(b.etat().drawWaypoints.at(-1)).toEqual([4.5, 45.4])
+  })
+
   it('défaire retire la dernière étape et rien d’autre', () => {
     const b = banc([segment(1, [4.5, 45.4])])
     b.actions.toggleDrawMode()
@@ -306,8 +327,39 @@ describe('compléter un tracé', () => {
     expect(b.etat().drawWaypointKeys).toHaveLength(3)
     b.actions.undoDrawPoint()
     expect(b.etat().drawWaypointKeys).toHaveLength(2)
-    expect(b.etat().drawWaypoints).toHaveLength(2)
+    expect(b.etat().drawWaypoints).toEqual([
+      [4.5, 45.4],
+      [4.502, 45.4],
+    ])
     expect(b.etat().drawPath.length).toBeGreaterThan(0)
+  })
+
+  /**
+   * `TRACE_PERIMEE` existe pour ce cas précis : un tracé posé dans une zone,
+   * dont le réseau disparaît du graphe (changement de zone, ou — ici — perte
+   * d'un itinéraire perso). `routeThrough` ne trouve alors plus les nœuds
+   * des étapes restantes, et rend `null` ; `undoDrawPoint` doit quand même
+   * rendre un chemin, vide plutôt qu'absent.
+   */
+  it('défaire rend un chemin vide plutôt que planter quand le réseau a disparu', () => {
+    // Le tracé part entièrement d'un itinéraire perso, pour pouvoir le
+    // retirer ensuite sans toucher aux balises (fixes pour tout le banc).
+    const b = banc([])
+    b.actions.toggleDrawMode()
+    b.changerLesPerso([segment(1, [4.5, 45.4])])
+    b.actions.addDrawPoint([4.5, 45.4])
+    b.actions.addDrawPoint([4.502, 45.4])
+    b.actions.addDrawPoint([4.503, 45.4])
+    expect(b.etat().drawWaypointKeys).toHaveLength(3)
+
+    // Le réseau affiché change sous le tracé en cours (changement de zone,
+    // ou ici perte de l'itinéraire perso) : les nœuds des étapes restantes
+    // n'existent plus dans le graphe reconstruit.
+    b.changerLesPerso([])
+    expect(() => {
+      b.actions.undoDrawPoint()
+    }).not.toThrow()
+    expect(b.etat().drawPath).toEqual([])
   })
 
   /**
@@ -342,6 +394,24 @@ describe('estimer le dénivelé', () => {
     b.actions.addDrawPoint([4.503, 45.4])
     return b
   }
+
+  it('demande bien l’altimétrie pour un tracé d’exactement deux points', async () => {
+    // Trouvé par mutation du 17/10 : `drawPath.length < 2` devenu `<= 2`
+    // survivait, parce que `tracéDeDeuxPoints()` relie deux points
+    // distants de trois nœuds du réseau — `drawPath` y compte donc quatre
+    // points, jamais exactement deux. Deux points **adjacents** donnent un
+    // `drawPath` de longueur deux, la plus petite valeur qui ne doit pas
+    // être refusée.
+    const b = banc([segment(1, [4.5, 45.4])])
+    b.actions.toggleDrawMode()
+    b.actions.addDrawPoint([4.5, 45.4])
+    b.actions.addDrawPoint([4.501, 45.4])
+    expect(b.etat().drawPath).toHaveLength(2)
+    const attente = b.actions.estimerDeniveleTrace()
+    expect(altimetriesEnAttente).toHaveLength(1)
+    altimetriesEnAttente[0]?.resoudre({ elevations: [800, 810] })
+    await attente
+  })
 
   it('ne demande rien tant qu’il n’y a pas deux points', async () => {
     const b = banc([segment(1, [4.5, 45.4])])

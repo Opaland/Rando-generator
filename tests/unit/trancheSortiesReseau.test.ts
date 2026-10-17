@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { trancheSortiesReseau } from '../../src/store/trancheSortiesReseau.ts'
+import {
+  trancheSortiesReseau,
+  SORTIES_RESEAU_AU_REPOS,
+} from '../../src/store/trancheSortiesReseau.ts'
 import type { EntreeJournal } from '../../src/core/journalSortant.ts'
 import type { Track } from '../../src/core/types.ts'
 
@@ -44,6 +47,18 @@ function trace(points: Track['points']): Track {
     importedAt: '2026-01-01T00:00:00Z',
   }
 }
+
+describe('SORTIES_RESEAU_AU_REPOS', () => {
+  it('démarre vide, sans requête comptée', () => {
+    // Trouvé par mutation du 17/10 : seul `appStore.ts` lisait cette
+    // constante pour construire son état initial, et rien ne l'affirmait
+    // directement.
+    expect(SORTIES_RESEAU_AU_REPOS).toEqual({
+      sortiesReseau: [],
+      requetesAvecTrace: 0,
+    })
+  })
+})
 
 describe('trancheSortiesReseau', () => {
   it('journalise une requête ordinaire sans la compter comme une fuite', () => {
