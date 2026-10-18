@@ -219,3 +219,40 @@ décider depuis ce fichier (§2 de CLAUDE.md). Si la réponse est oui,
 `windowedSpeedMps` gagnerait à borner son balayage par un nombre de points
 plutôt que par un seul test d'écart — mais ce serait un correctif sur une
 hypothèse non mesurée, pas fait ici.
+
+> **Dépassé le 18/10** (commit `8e7e8e7`). Le balayage s'arrête maintenant
+> aussi dès que le temps recule (`tPrev > tB`, `tNext < tA`) : un
+> horodatage non monotone, quelle qu'en soit la cause, ne relance plus le
+> balayage jusqu'au bord du tableau. La garde est
+> `tests/unit/matching.perf.test.ts` (320 activités qui repartent toutes de
+> l'instant 0 : 519 ms avant, 46 ms après). Ce qui reste vrai : aucun export
+> réel n'a été regardé, donc on ne sait pas si le cas se présente — mais il
+> ne coûte plus rien s'il se présente.
+
+## Les 800 activités, enfin — 18/10
+
+La taille qui avait ouvert #539, et que le test n'avait jamais pu finir dans
+son plafond de 25 minutes. `MESURE_ACTIVITES=800 npm run mesure`, même banc,
+après `8e7e8e7` :
+
+| activités | import_ms | analyse_ms | correspondance_ms | ms/activité |
+|---:|---:|---:|---:|---:|
+| 200 (17/10) | 34 656 | — | 10 669 | 173 |
+| **800** | **155 846** | **96 429** | **50 997** | **195** |
+
+Le reste de la mesure : 800 traces affichées et 800 en base ; stockage
+100 478 158 octets sur un quota de 901 913 257 (11 %) ; sauvegarde de
+36 350 751 octets en 7 257 ms.
+
+Ce que ces deux points disent, et rien de plus : pour quatre fois plus
+d'activités, l'import coûte 4,5 fois plus et la correspondance 4,8 fois —
+proche du linéaire, un peu au-dessus. Deux points ne suffisent pas à
+nommer une courbe ; ils suffisent à dire que les « plusieurs heures » de
+l'ajustement quadratique du 16/10 ne se produisent pas.
+
+**L'ordre des phases s'est inversé.** À 800 activités, l'analyse des
+fichiers (62 %) pèse maintenant presque le double de la correspondance
+(33 %). Si l'import doit encore gagner, c'est là — et l'issue disait déjà
+qu'un Web Worker pour l'analyse demande sa propre mesure avant d'être
+décidé. Deux minutes et demie pour huit cents sorties, avec une barre
+d'avancement par fichier (#149), n'en appellent pas d'urgence.
