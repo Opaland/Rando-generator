@@ -360,6 +360,11 @@
      `ItineraryDetail.module.css`. */
   --largeur-fiche: 380px;
   --hauteur-fiche: min(50vh, 480px);
+  /* Même raison pour le panneau de tracé d'itinéraire (#544) : les commandes
+     de la carte s'écartent de lui en dérivant de ces nombres-ci, repris
+     tels quels par `RouteDrawer.module.css`. */
+  --largeur-trace: 340px;
+  --hauteur-trace: min(60vh, 460px);
   /* Hauteur de la feuille repliée : juste sa poignée. Posée ici parce que
      deux choses en dépendent — la feuille elle-même, et les commandes de la
      carte qui doivent rester au-dessus d'elle pour ne pas cacher

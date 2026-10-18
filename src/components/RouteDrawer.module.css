@@ -4,7 +4,7 @@
   right: 0;
   bottom: 0;
   z-index: var(--z-overlay-draw);
-  max-height: min(60vh, 460px);
+  max-height: var(--hauteur-trace);
   overflow-y: auto;
   background: var(--papier);
   border-top: 5px solid var(--encre);
@@ -80,8 +80,12 @@
   .panel {
     left: auto;
     right: 12px;
-    bottom: 12px;
-    width: min(340px, calc(100% - 24px));
+    /* Au-dessus du crédit de la carte, comme « Ma position » (#544). Posé à
+       douze pixels du bord, le panneau masquait 40 % de la ligne
+       d'attribution à 1 280 × 720 — mesuré le 18/10, 48 points peints sur
+       80. La bande est remesurée à l'exécution par `MapView`. */
+    bottom: calc(12px + var(--bande-attribution));
+    width: min(var(--largeur-trace), calc(100% - 24px));
     border-radius: var(--rayon-lg);
     border-top-width: 1px;
     border-left: 5px solid var(--encre);

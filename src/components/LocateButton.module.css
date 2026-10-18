@@ -37,6 +37,29 @@
   }
 }
 
+/*
+  Le panneau de tracé d'itinéraire occupe le même coin, et pour la même
+  raison les commandes s'en écartent (#544). Mesuré le 18/10 à 1 280 × 720 :
+  « Ma position » était peint par-dessus « Enregistrer », et « Démarrer une
+  sortie » par-dessus « Fermer la boucle » — le tracé ne pouvait plus être
+  enregistré qu'au clavier. Le cas avait été réglé pour la fiche, jamais
+  pour ce panneau-ci : aucun état des règles d'écran ne l'ouvrait.
+*/
+@media (min-width: 801px) {
+  :root[data-trace='ouvert'] .wrapper {
+    right: calc(12px + var(--largeur-trace) + 12px);
+  }
+}
+
+@media (max-width: 800px) {
+  /* Pleine largeur sous le point de rupture : les commandes passent
+     au-dessus, à sa hauteur maximale — réserver trop coûte quelques pixels,
+     recouvrir « Enregistrer » coûte le tracé. */
+  :root[data-trace='ouvert'] .wrapper {
+    bottom: calc(12px + var(--hauteur-trace));
+  }
+}
+
 @media (max-width: 800px) {
   :root[data-fiche='ouverte'] .wrapper {
     bottom: calc(

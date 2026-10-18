@@ -174,6 +174,7 @@ function App() {
   const panneauRef = useRef<HTMLElement>(null)
   const contenuRef = useRef<HTMLDivElement>(null)
   const detailOuvert = useAppStore((s) => s.detailItineraryId)
+  const traceOuvert = useAppStore((s) => s.drawMode)
   const compact = useEcranCompact()
   // La barre existe à toutes les largeurs depuis le 23/08 : sur PC aussi, la
   // navigation principale doit être visible sans qu'on la cherche.
@@ -231,6 +232,12 @@ function App() {
     if (detailOuvert !== null) racine.dataset['fiche'] = 'ouverte'
     else delete racine.dataset['fiche']
   }, [detailOuvert])
+  // Le panneau de tracé occupe le même coin que la fiche (#544).
+  useEffect(() => {
+    const racine = document.documentElement
+    if (traceOuvert) racine.dataset['trace'] = 'ouvert'
+    else delete racine.dataset['trace']
+  }, [traceOuvert])
   const [aboutOpen, setAboutOpen] = useState(false)
   /**
    * null = personne n'a touché la poignée, la position se déduit de l'état
