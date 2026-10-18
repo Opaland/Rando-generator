@@ -179,12 +179,20 @@ Dans cet ordre, parce que chacun suppose le précédent :
 Revérifié le 18/10 contre GitHub : **#160 est close** (#259, le lien
 « ouvrir dans OpenStreetMap »). Restent ouverts :
 
-- **#87 — les PDIPR ouverts des départements** (Ain, Isère, puis les
-  autres). C'est le plus gros gain de couverture pour le moins d'effort :
-  un jeu par département, déjà ouvert, déjà structuré. Codable sans séance
-  utilisateur ni décision produit — architecture déjà en place
-  (`src/core/boucles.ts`, réseau `LOCAL`, une source = une couche = son
-  attribution) ;
+- **#87 — les PDIPR ouverts des départements.** **Isère livrée le 18/10**
+  (`ed3c871`), en **réseau de fond** et non en itinéraires : ses 16 862
+  tronçons n'ont ni nom ni ref, Cédric a tranché qu'on les montre sans les
+  compter. Les 2 102 de Grenoble-Alpes Métropole sont écartés, l'export
+  les plaçant au large de l'Afrique. Restent :
+  - **Ain** — export data.gouv.fr injoignable le 18/10 (connexions
+    coupées) : à retenter, rien d'autre ne manque ;
+  - **Savoie** (PDIPR73) et **Haute-Savoie** (PDIPR 2023), trouvés sur
+    datARA le 18/10 — **bloqués sur une décision juridique de Cédric** :
+    leur condition n'est pas une licence nommée (« utilisation libre sous
+    réserve de mentionner la source et la date de sa dernière mise à
+    jour »), et la republication dans Sentiers est à lui de juger, comme
+    pour #88. Téléchargement par « panier » Prodige ; WFS pour la Savoie ;
+  - **Rhône** — l'API GeoJSON de datARA répond `403 Accès interdit` (#20) ;
 - **#88 — l'API Geotrek du Parc du Pilat**, ~200 circuits balisés.
   **Bloquée, pas juste en attente** : l'issue interdit d'intégrer quoi que
   ce soit avant d'avoir écrit au Parc pour la licence et vérifié les
