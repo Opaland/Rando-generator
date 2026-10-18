@@ -205,3 +205,14 @@ describe('le réseau balisé du Département', () => {
     expect(contenu.reseauDeFond).toBe(false)
   })
 })
+
+/*
+  Survivants équivalents de la vague du 18/10 sur `contenuLegende` (§6bis) :
+  - la garde `segment.famille === 'inconnu'` retirée : « inconnu » entre dans
+    l'ensemble, mais `ORDRE_TERRAIN` (dur, stabilisé, naturel, autre) ne le
+    contient pas, et le filtre qui suit l'écarte ;
+  - `terrains.length === 0` remplacé par `true` dans `vide` : un terrain
+    n'est nommé que pour l'itinéraire regardé, dont le réseau figure dans
+    `ORDRE_DES_RESEAUX` — qui porte les sept valeurs de `Network` — donc
+    `reseaux` n'est jamais vide quand `terrains` ne l'est pas.
+*/

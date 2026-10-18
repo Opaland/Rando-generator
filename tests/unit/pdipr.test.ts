@@ -102,6 +102,38 @@ describe('parseReseauPdipr', () => {
     expect(reseau.features).toHaveLength(1)
   })
 
+  it('écarte des coordonnées écrites en chaînes, même dans l’emprise', () => {
+    /*
+      Trouvé par mutation le 18/10 : sans la vérification des coordonnées,
+      `dansEmprise` laissait passer `'5.5' >= 5` — JavaScript compare une
+      chaîne à un nombre en la convertissant — et la carte recevait des
+      chaînes là où elle attend des nombres.
+    */
+    const reseau = parseReseauPdipr({
+      features: [
+        ligne([
+          ['5.5', '45.5'],
+          ['5.6', '45.6'],
+        ]),
+        // Un seul point en chaîne suffit : `some` à la place de `every`.
+        ligne([
+          ['5.5', '45.5'],
+          [5.6, 45.6],
+        ]),
+        ligne([
+          [5.5, 45.5],
+          [5.6, 45.6],
+        ]),
+      ],
+    }, EMPRISE)
+    expect(reseau.features.map((f) => f.geometry.coordinates)).toEqual([
+      [
+        [5.5, 45.5],
+        [5.6, 45.6],
+      ],
+    ])
+  })
+
   it('écarte un tronçon reprojeté de travers, même en WGS84 valide', () => {
     // Le cas réel du 18/10 : tout Grenoble-Alpes Métropole tombait à
     // 9,9° O, 8,3° N — des coordonnées valides, au large de l'Afrique.
@@ -233,4 +265,13 @@ describe('jeuPdiprPour', () => {
     // Une clé héritée d'Object.prototype n'est pas une zone.
     expect(jeuPdiprPour('toString')).toBeNull()
   })
+
+  /*
+    Survivants équivalents de la vague du 18/10 (§6bis) :
+    - `zoneKey === null ||` retiré de `jeuPdiprPour` : `Object.hasOwn`
+      convertit `null` en « null », clé absente — la même réponse ;
+    - `: []` remplacé par une liste non vide dans `parseReseauPdipr` : ce qui
+      n'est ni LineString ni MultiLineString donne alors une ligne qui n'est
+      pas un tableau, que `enLigne` écarte — la même réponse.
+  */
 })
