@@ -194,8 +194,13 @@ function addToCells(index: TrackIndex, segment: TrackSegment): void {
  * le balayage ne s'arrête plus avant le bord du tableau — trouvé sur #539,
  * où un horodatage qui reculait entre deux activités synthétiques rendait
  * la mise en correspondance quadratique plutôt que linéaire.
+ *
+ * Exporté pour `tests/unit/lissageDeVitesse.test.ts`, qui en éprouve les
+ * bornes sur des valeurs calculées à la main : à travers `runMatching`, une
+ * borne décalée d'un point ne change presque jamais un pourcentage, et une
+ * cinquantaine de mutants y survivaient (vague du 18/10).
  */
-function windowedSpeedMps(
+export function windowedSpeedMps(
   points: LonLat[],
   times: (number | null)[],
   i: number,
