@@ -25,6 +25,7 @@ import {
   type EtatSortie,
 } from './enregistrementSlice.ts'
 import { creerOubliDeZone } from './oubliDeZone.ts'
+import { creerIdentifiantsPerso } from './identifiantsPerso.ts'
 import {
   lireObjectifs,
   OBJECTIFS_AU_REPOS,
@@ -417,12 +418,10 @@ export const useAppStore = create<AppState>()((set, get) => {
     veille,
   })
 
-  /** Prochain identifiant libre pour un itinéraire perso (ids négatifs). */
-  function nextCustomId(): number {
-    return (
-      Math.min(0, ...get().customItineraries.map((i) => i.osmRelationId)) - 1
-    )
-  }
+  // Un seul distributeur de numéros perso, après la lecture de la base (#543).
+  const { lectureCommencee, identifiantsPerso } = creerIdentifiantsPerso(
+    () => get().customItineraries,
+  )
 
   async function recompute(): Promise<void> {
     const { itineraries, customItineraries, tracks, toleranceMeters } = get()
@@ -623,6 +622,7 @@ export const useAppStore = create<AppState>()((set, get) => {
     ...etatSortieInitial(),
 
     async init() {
+      const lectureFaite = lectureCommencee()
       let db: SentiersDb | null = null
       try {
         ouvertureBase = openSentiersDb()
@@ -636,7 +636,10 @@ export const useAppStore = create<AppState>()((set, get) => {
               : 'Le stockage local est indisponible : vos données ne seront pas conservées.',
         })
       }
-      if (!db) return
+      if (!db) {
+        lectureFaite()
+        return
+      }
 
       const [
         tracks,
@@ -662,7 +665,11 @@ export const useAppStore = create<AppState>()((set, get) => {
         db.getSetting('grosTexte'),
         db.getSetting('guideFerme'),
         db.getSetting('panneauReplie'),
-      ])
+      ]).catch((error: unknown) => {
+        // Une base illisible ne doit pas laisser un import attendre à vie.
+        lectureFaite()
+        throw error
+      })
       // Fusion, jamais remplacement : lire IndexedDB prend quelques centaines
       // de millisecondes, et l'utilisateur peut avoir déposé un fichier
       // entre-temps. Écraser la liste faisait disparaître sa trace sans un
@@ -736,6 +743,7 @@ export const useAppStore = create<AppState>()((set, get) => {
           etat.panneauReplie,
         ),
       }))
+      lectureFaite()
 
       await sortie.reprendreAuDemarrage(db)
 
@@ -950,6 +958,7 @@ export const useAppStore = create<AppState>()((set, get) => {
       fermerLaFicheSi: (id) => {
         if (get().detailItineraryId === id) get().closeItineraryDetail()
       },
+      identifiantsPerso,
     }),
 
     ...trancheDemonstration({
@@ -985,6 +994,7 @@ export const useAppStore = create<AppState>()((set, get) => {
       },
       quitterLaDemonstration: () => sortirDeLaDemonstration(get),
       baseOuverte,
+      identifiantsPerso,
       recalculer: recompute,
       setTolerance: (valeur) => get().setTolerance(valeur),
       setCompletionPct: (valeur) => get().setCompletionPct(valeur),
@@ -1014,7 +1024,7 @@ export const useAppStore = create<AppState>()((set, get) => {
         balises: get().itineraries,
         perso: get().customItineraries,
       }),
-      prochainIdentifiantPerso: nextCustomId,
+      identifiantsPerso,
       ficheOuverte: () => get().detailItineraryId !== null,
       fermerLaFiche: () => {
         get().closeItineraryDetail()

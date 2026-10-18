@@ -139,6 +139,10 @@ const PLAFONDS: Record<string, number> = {
   // plafond de 480 (#442). Mesuré, pas supposé — la prédiction inverse
   // avait déjà été fausse en #437.
   'epilogueDImport.ts': 80,
+  // 47 lignes dont 23 de commentaire : le distributeur de numéros perso et
+  // l'attente du démarrage (#543), sortis d'`appStore.ts` pour la même
+  // raison que les deux du dessus. De quoi une seconde règle, pas plus.
+  'identifiantsPerso.ts': 60,
   /*
     Relevé de 110 à 120 le 14/10 (sprint 8, analyse du 08/10) : la marge
     était tombée à 2 lignes sans qu'aucun sous-bloc ne s'en détache. Le

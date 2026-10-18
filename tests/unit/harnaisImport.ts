@@ -10,6 +10,7 @@
  * Ce fichier n'est pas une suite : `vite.config.ts` ne collecte que
  * `tests/unit/` en `*.test.ts`.
  */
+import { AllocateurPerso } from '../../src/core/identifiantsPerso.ts'
 import {
   IMPORT_AU_REPOS,
   type DependancesImport,
@@ -53,6 +54,7 @@ export function espionner(depart: Partial<EtatPartage> = {}): Espion {
     selectedItineraryId: null,
     ...depart,
   }
+  const allocateur = new AllocateurPerso()
   const appels: Appels = {
     protegerLeStockage: 0,
     recompute: 0,
@@ -124,6 +126,12 @@ export function espionner(depart: Partial<EtatPartage> = {}): Espion {
       },
       fermerLaFicheSi: (id) => {
         appels.fermerLaFicheSi.push(id)
+      },
+      // Le même contrat que le store : un seul distributeur, qui prend
+      // connaissance de l'état à chaque demande.
+      identifiantsPerso: () => {
+        allocateur.observer(etat.customItineraries)
+        return Promise.resolve(allocateur)
       },
     },
   }

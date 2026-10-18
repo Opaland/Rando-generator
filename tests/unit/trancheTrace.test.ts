@@ -1,3 +1,4 @@
+import { AllocateurPerso } from '../../src/core/identifiantsPerso.ts'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { Itinerary, LonLat } from '../../src/core/types.ts'
 
@@ -84,7 +85,7 @@ function banc(balises: Itinerary[], ficheOuverte = false) {
     },
     etatTrace: () => etat,
     itinerairesDuGraphe: () => ({ balises, perso }),
-    prochainIdentifiantPerso: () => -1,
+    identifiantsPerso: () => Promise.resolve(new AllocateurPerso()),
     ficheOuverte: () => ficheOuverte,
     fermerLaFiche: () => {
       fermetures += 1

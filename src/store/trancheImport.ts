@@ -40,6 +40,7 @@ import { TcxError } from '../core/tcx.ts'
 import { GeoJsonError } from '../core/geojson.ts'
 import { polylineLengthMeters } from '../core/sampling.ts'
 import { espacementTropGrand } from '../core/matching.ts'
+import type { AllocateurPerso } from '../core/identifiantsPerso.ts'
 import type { Itinerary, Track } from '../core/types.ts'
 import type { SentiersDb } from '../db/database.ts'
 import { deposerLeResultatDeLImport } from './epilogueDImport.ts'
@@ -148,6 +149,11 @@ export interface DependancesImport {
   sortirDeLaDemonstration: () => Promise<void>
   /** Ferme la fiche détail si elle montre l'itinéraire supprimé. */
   fermerLaFicheSi: (id: number) => void
+  /**
+   * Le distributeur de numéros perso du store, une fois la base lue (#543).
+   * Avant, la mémoire est vide et −1 peut déjà être pris en base.
+   */
+  identifiantsPerso: () => Promise<AllocateurPerso>
 }
 
 /** Les champs du store que la tranche lit et écrit sans les posséder. */
@@ -302,33 +308,6 @@ export function trancheImport(deps: DependancesImport): ActionsImport {
       await deps.sortirDeLaDemonstration()
       const errors: string[] = []
       const imported: Itinerary[] = []
-      let nextId = Math.min(
-        0,
-        ...deps.etat().customItineraries.map((i) => i.osmRelationId),
-      )
-      /*
-        Un compteur unique pour les chemins, partagé par tous les tracés et
-        tous les fichiers de l'import (issue #440).
-
-        L'ancienne forme réservait mille identifiants par itinéraire —
-        `nextId * 1_000 - index` — et se recouvrait au mille-et-unième
-        tronçon : un tracé et le suivant partageaient alors un numéro, la
-        carte dessinait l'un avec les coordonnées de l'autre, et la
-        progression se créditait au mauvais itinéraire. Un compteur sans
-        plafond n'a pas ce défaut, et n'oblige plus à choisir un nombre que
-        rien ne justifie (§2).
-
-        `reduce` plutôt qu'un `Math.min(...)` étalé : une bibliothèque déjà
-        fournie peut porter des milliers de chemins, et l'étalement les passe
-        tous en arguments d'un seul appel.
-      */
-      let nextWayId = deps
-        .etat()
-        .customItineraries.reduce(
-          (plancher, itin) =>
-            itin.ways.reduce((bas, way) => Math.min(bas, way.osmWayId), plancher),
-          0,
-        )
       const liste = [...files]
       for (const [index, file] of liste.entries()) {
         try {
@@ -359,16 +338,22 @@ export function trancheImport(deps: DependancesImport): ActionsImport {
             '',
           )
           const db = await deps.baseOuverte()
+          /*
+            Demandé à chaque fichier, et non une fois au départ : un
+            instantané pris avant la boucle ignorait ce qu'un second import
+            ou un tracé recevaient pendant ce temps (#543). Les chemins ont
+            leur propre compteur, sans plafond (#440).
+          */
+          const identifiants = await deps.identifiantsPerso()
           for (const [rang, trail] of exploitables.entries()) {
-            nextId -= 1
             const ways = trail.lines
               .filter((ligne) => ligne.length >= 2)
-              .map((ligne) => {
-                nextWayId -= 1
-                return { osmWayId: nextWayId, coords: ligne }
-              })
+              .map((ligne) => ({
+                osmWayId: identifiants.chemin(),
+                coords: ligne,
+              }))
             const itinerary: Itinerary = {
-              osmRelationId: nextId,
+              osmRelationId: identifiants.relation(),
               ref: null,
               // Un GeoJSON peut décrire cent sentiers : chacun garde son nom,
               // et à défaut le fichier suivi de son rang — sans quoi la liste

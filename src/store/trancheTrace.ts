@@ -32,6 +32,7 @@
  * qui la donnent, dont ceux qui exercent chacune des sept actions.
  */
 
+import type { AllocateurPerso } from '../core/identifiantsPerso.ts'
 import type { Itinerary, LonLat } from '../core/types.ts'
 import {
   buildRoutingGraph,
@@ -150,8 +151,13 @@ interface DependancesTrace {
    * compte donc les constructions.
    */
   itinerairesDuGraphe: () => { balises: Itinerary[]; perso: Itinerary[] }
-  /** Prochain identifiant libre pour un itinéraire perso (ids négatifs). */
-  prochainIdentifiantPerso: () => number
+  /**
+   * Le distributeur de numéros perso du store (#543). Le numéro de chemin
+   * n'est plus celui de la relation : l'import numérote ses chemins à part,
+   * et le premier tracé après un import à plusieurs tronçons tombait sur l'un
+   * d'eux.
+   */
+  identifiantsPerso: () => Promise<AllocateurPerso>
   etatTrace: () => EtatTrace
   /** Ferme la fiche détail, qui occupe la même zone d'écran. */
   fermerLaFiche: () => void
@@ -322,13 +328,13 @@ export function trancheTrace(deps: DependancesTrace): ActionsTrace {
     async saveDrawnItinerary(name) {
       const { drawPath } = deps.etatTrace()
       if (drawPath.length < 2) return
-      const id = deps.prochainIdentifiantPerso()
+      const identifiants = await deps.identifiantsPerso()
       const itineraire: Itinerary = {
-        osmRelationId: id,
+        osmRelationId: identifiants.relation(),
         ref: null,
         name: name.trim() || 'Itinéraire tracé',
         network: 'PERSO',
-        ways: [{ osmWayId: id, coords: drawPath }],
+        ways: [{ osmWayId: identifiants.chemin(), coords: drawPath }],
         totalMeters: polylineLengthMeters(drawPath),
         fetchedAt: new Date().toISOString(),
       }

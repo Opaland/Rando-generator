@@ -1,3 +1,4 @@
+import { AllocateurPerso } from '../../src/core/identifiantsPerso.ts'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
   trancheSauvegarde,
@@ -147,6 +148,7 @@ function banc(
       Promise.resolve(
         base as unknown as Awaited<ReturnType<DependancesSauvegarde['baseOuverte']>>,
       ),
+    identifiantsPerso: () => Promise.resolve(new AllocateurPerso()),
     recalculer: () => {
       journal.push('recalculer')
       return Promise.resolve()

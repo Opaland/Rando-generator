@@ -310,7 +310,8 @@ describe('deux ports dont l’appel ne suffisait pas à dire qu’ils sont tenus
 
   it('donne à chaque tracé un identifiant négatif, et jamais deux fois le même', async () => {
     /*
-      `nextCustomId` porte un commentaire — « ids négatifs » — et le §4bis dit
+      `nextCustomId` — devenu `AllocateurPerso` (#543), qui ne distribue que
+      sous zéro — portait un commentaire, « ids négatifs », et le §4bis dit
       qu'un commentaire qui justifie est une affirmation. Le signe n'est pas
       cosmétique : un identifiant perso positif entre en collision avec les
       identifiants de relation OSM, et deux itinéraires distincts se

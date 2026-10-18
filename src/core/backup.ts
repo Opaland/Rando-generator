@@ -1,3 +1,4 @@
+import { AllocateurPerso } from './identifiantsPerso.ts'
 import type { ParcoursDeclare } from './declaratif.ts'
 import { traverseAntimeridien } from './domaine.ts'
 import { trackFingerprint } from './gpx.ts'
@@ -375,17 +376,24 @@ function signature(itineraire: Itinerary): string {
  *
  * Leurs numéros sont attribués localement (−1, −2, …) : deux appareils
  * donnent le même à deux itinéraires différents. Sans renumérotation, l'import
- * écraserait celui de l'appareil d'accueil — et ses ways avec, puisqu'ils
- * dérivent du numéro de l'itinéraire.
+ * écraserait celui de l'appareil d'accueil.
+ *
+ * Les chemins se renumérotent à part, un par un (#543) : ils ne dérivent plus
+ * du numéro de l'itinéraire depuis #440, et la formule `id * 1 000 − index`
+ * qui restait ici tombait sur les chemins d'un import à mille tronçons. Un
+ * numéro apporté par la sauvegarde est gardé tant qu'il est libre.
+ *
+ * `allocateur` est celui du magasin quand il y en a un : il sait ce qu'un
+ * import en cours vient de recevoir sans l'avoir encore déposé.
  */
 export function fusionnerItineraires(
   existants: Itinerary[],
   entrants: Itinerary[],
+  allocateur: AllocateurPerso = new AllocateurPerso(),
 ): FusionItineraires {
+  allocateur.observer(existants)
   const signatures = new Set(existants.map(signature))
-  const ids = new Set(existants.map((i) => i.osmRelationId))
   const itineraries = [...existants]
-  let prochainId = Math.min(0, ...ids)
   let ajoutes = 0
   let ignores = 0
   for (const entrant of entrants) {
@@ -394,23 +402,15 @@ export function fusionnerItineraires(
       continue
     }
     signatures.add(signature(entrant))
-    if (!ids.has(entrant.osmRelationId)) {
-      ids.add(entrant.osmRelationId)
-      prochainId = Math.min(prochainId, entrant.osmRelationId)
-      itineraries.push(entrant)
-    } else {
-      prochainId -= 1
-      const id = prochainId
-      ids.add(id)
-      itineraries.push({
-        ...entrant,
-        osmRelationId: id,
-        ways: entrant.ways.map((way, index) => ({
-          ...way,
-          osmWayId: id * 1_000 - index,
-        })),
-      })
-    }
+    const id = allocateur.reserverRelation(entrant.osmRelationId)
+      ? entrant.osmRelationId
+      : allocateur.relation()
+    const ways = entrant.ways.map((way) =>
+      allocateur.reserverChemin(way.osmWayId)
+        ? way
+        : { ...way, osmWayId: allocateur.chemin() },
+    )
+    itineraries.push({ ...entrant, osmRelationId: id, ways })
     ajoutes += 1
   }
   return { itineraries, ajoutes, ignores }

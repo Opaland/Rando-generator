@@ -10,6 +10,7 @@ import {
   BackupError,
 } from '../core/backup.ts'
 import type { ParcoursDeclare } from '../core/declaratif.ts'
+import type { AllocateurPerso } from '../core/identifiantsPerso.ts'
 import type { Itinerary, Track } from '../core/types.ts'
 import type { SentiersDb } from '../db/database.ts'
 
@@ -100,6 +101,8 @@ export interface DependancesSauvegarde {
   /** Sortir de la démonstration si l'on y est, sans rien faire sinon. */
   quitterLaDemonstration: () => Promise<void>
   baseOuverte: () => Promise<SentiersDb | null>
+  /** Le distributeur de numéros perso du store, une fois la base lue (#543). */
+  identifiantsPerso: () => Promise<AllocateurPerso>
   recalculer: () => Promise<void>
   setTolerance: (valeur: number) => Promise<void>
   setCompletionPct: (valeur: number) => Promise<void>
@@ -169,11 +172,15 @@ export function trancheSauvegarde(
         return
       }
 
+      // Le distributeur d'abord : il attend que la base soit lue, et `avant`
+      // doit contenir ce qu'elle portait (#543).
+      const identifiants = await deps.identifiantsPerso()
       const avant = deps.lire()
       const traces = fusionnerTraces(avant.tracks, backup.tracks)
       const persos = fusionnerItineraires(
         avant.customItineraries,
         backup.customItineraries,
+        identifiants,
       )
 
       const db = await deps.baseOuverte()

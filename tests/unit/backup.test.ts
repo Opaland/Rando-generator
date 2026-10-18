@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { AllocateurPerso } from '../../src/core/identifiantsPerso.ts'
 import {
   BACKUP_FORMAT,
   BACKUP_VERSION,
@@ -346,6 +347,54 @@ describe('fusionnerItineraires', () => {
       i.ways.map((w) => w.osmWayId),
     )
     expect(new Set(tousLesWays).size).toBe(tousLesWays.length)
+  })
+
+  /*
+    #543. La renumérotation des chemins se faisait par `id * 1 000 − index`,
+    la formule que #440 a retirée de l'import : elle ignore les chemins déjà
+    en usage, qui depuis #440 se numérotent −1, −2… indépendamment des
+    relations. Un chemin importé à −2 000 — mille-et-un tronçons, un PDIPR —
+    tombe sur le premier chemin d'un entrant renuméroté −2.
+  */
+  it('ne renumérote pas un chemin sur un chemin déjà en usage', () => {
+    const ici: Itinerary = {
+      ...perso(-1, 'Réseau', [[4.5, 45.4], [4.52, 45.42]]),
+      ways: [{ osmWayId: -2000, coords: [[4.5, 45.4], [4.52, 45.42]] }],
+    }
+    const ailleurs = perso(-1, 'Tour du Mont Blanc', [[6.9, 45.9], [6.92, 45.92]])
+    const resultat = fusionnerItineraires([ici], [ailleurs])
+    const chemins = resultat.itineraries.flatMap((i) =>
+      i.ways.map((w) => w.osmWayId),
+    )
+    expect(new Set(chemins).size).toBe(chemins.length)
+  })
+
+  it('renumérote le chemin d’un entrant au numéro libre quand ce chemin est pris', () => {
+    // Le numéro de relation est libre, celui du chemin ne l'est pas : la
+    // fusion ne regardait que le premier.
+    const ici = perso(-1, 'Boucle du Pilat', [[4.5, 45.4], [4.52, 45.42]])
+    const ailleurs: Itinerary = {
+      ...perso(-3, 'Tour du Mont Blanc', [[6.9, 45.9], [6.92, 45.92]]),
+      ways: [{ osmWayId: -1000, coords: [[6.9, 45.9], [6.92, 45.92]] }],
+    }
+    const resultat = fusionnerItineraires([ici], [ailleurs])
+    expect(resultat.itineraries.map((i) => i.osmRelationId)).toEqual([-1, -3])
+    const chemins = resultat.itineraries.flatMap((i) =>
+      i.ways.map((w) => w.osmWayId),
+    )
+    expect(new Set(chemins).size).toBe(chemins.length)
+  })
+
+  it('ne donne pas à un entrant un numéro que le magasin vient de distribuer', () => {
+    // Un import en cours a reçu −2 sans l'avoir encore déposé : la liste
+    // `existants` l'ignore, l'allocateur partagé le sait.
+    const allocateur = new AllocateurPerso()
+    const ici = perso(-1, 'Ici', [[4.5, 45.4], [4.52, 45.42]])
+    allocateur.observer([ici])
+    expect(allocateur.relation()).toBe(-2)
+    const ailleurs = perso(-2, 'Ailleurs', [[6.9, 45.9], [6.92, 45.92]])
+    const resultat = fusionnerItineraires([ici], [ailleurs], allocateur)
+    expect(resultat.itineraries.map((i) => i.osmRelationId)).not.toContain(-2)
   })
 })
 
