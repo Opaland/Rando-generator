@@ -185,6 +185,15 @@ function addToCells(index: TrackIndex, segment: TrackSegment): void {
  * Rend `null` quand l'un des deux points du segment n'a pas d'horodatage :
  * le segment est alors jugé uniquement sur la distance (MAX_GAP_METERS),
  * comme avant cette option.
+ *
+ * Les deux balayages ci-dessous supposent `times` croissant à mesure qu'on
+ * s'éloigne de `i` dans le sens attendu — ce que l'appariement garantit
+ * pour une trace unique, mais pas pour un lot de plusieurs activités
+ * concaténées dont l'horodatage recommence plus tôt. Sans `tPrev > tB` /
+ * `tNext < tA`, un écart négatif ne dépasse jamais `windowMs` (positif) et
+ * le balayage ne s'arrête plus avant le bord du tableau — trouvé sur #539,
+ * où un horodatage qui reculait entre deux activités synthétiques rendait
+ * la mise en correspondance quadratique plutôt que linéaire.
  */
 function windowedSpeedMps(
   points: LonLat[],
@@ -198,13 +207,13 @@ function windowedSpeedMps(
   let lo = i - 1
   while (lo > 0) {
     const tPrev = times[lo - 1]
-    if (tPrev == null || tB - tPrev > windowMs) break
+    if (tPrev == null || tPrev > tB || tB - tPrev > windowMs) break
     lo--
   }
   let hi = i
   while (hi < points.length - 1) {
     const tNext = times[hi + 1]
-    if (tNext == null || tNext - tA > windowMs) break
+    if (tNext == null || tNext < tA || tNext - tA > windowMs) break
     hi++
   }
   const tLo = times[lo]
