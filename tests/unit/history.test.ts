@@ -257,6 +257,21 @@ describe('reperesHistogramme', () => {
     expect(reperes.moisRenseignes).toBe(1)
   })
 
+  it('garde le premier mois en cas d’égalité, pas le dernier', () => {
+    /*
+      Trouvé par une relecture du 18/10 : `>` remplacé par `>=` ne changeait
+      jamais `moisLePlusHaut` tant qu'aucun test ne mettait deux mois à
+      strictement la même distance — les deux désignent alors un mois
+      différent, puisque `moisLePlusHaut` porte l'identité du mois, pas
+      seulement sa distance.
+    */
+    const reperes = reperesHistogramme([
+      bucket('2026-06', 20_000),
+      bucket('2026-07', 20_000),
+    ])
+    expect(reperes.moisLePlusHaut).toBe('2026-06')
+  })
+
   it('ne désigne rien quand il n’y a rien à désigner', () => {
     expect(reperesHistogramme([])).toEqual({
       moisLePlusHaut: null,
