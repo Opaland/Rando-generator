@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { AllocateurPerso } from '../../src/core/identifiantsPerso.ts'
 import {
+  ajouterLesNeufs,
   BACKUP_FORMAT,
   BACKUP_VERSION,
   BackupError,
@@ -586,5 +587,25 @@ describe('parcours déclarés et sauvegarde (issue #158)', () => {
       ) as ArrayBuffer,
     )
     expect(relue.parcoursDeclares).toEqual([declare])
+  })
+})
+
+describe('ajouterLesNeufs', () => {
+  const cle = (x: { id: string }) => x.id
+  it('pose à la suite de l’état actuel ce que la fusion a ajouté, et seulement cela', () => {
+    const avant = [{ id: 'a' }]
+    const fusion = [...avant, { id: 'b' }, { id: 'c' }]
+    // Pendant ce temps : « a » retiré, « d » et « c » arrivés d'ailleurs.
+    const actuels = [{ id: 'd' }, { id: 'c' }]
+    expect(ajouterLesNeufs(actuels, fusion, avant.length, cle)).toEqual([
+      { id: 'd' },
+      { id: 'c' },
+      { id: 'b' },
+    ])
+  })
+
+  it('ne remet pas ce que la fusion avait déjà, même retiré entre-temps', () => {
+    const fusion = [{ id: 'a' }, { id: 'b' }]
+    expect(ajouterLesNeufs([], fusion, 1, cle)).toEqual([{ id: 'b' }])
   })
 })

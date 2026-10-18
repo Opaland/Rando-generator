@@ -119,7 +119,11 @@ const PLAFONDS: Record<string, number> = {
   // refusait le correctif de #454 — c'est la première des deux réponses
   // honnêtes que ce fichier nomme.
   'rechercheDeLieu.ts': 140,
-  'trancheSauvegarde.ts': 260,
+  // Relevé de 260 à 270 le 18/10 : la restauration dépose sur l'état
+  // d'après ses écritures, et non plus sur celui d'avant (242 → 266). La
+  // règle elle-même, `ajouterLesNeufs`, est sortie dans `core/backup.ts` ;
+  // ce qui reste ici est son appel sur les trois listes, et son pourquoi.
+  'trancheSauvegarde.ts': 270,
   'trancheDemonstration.ts': 230,
   'reseauxVisibles.ts': 100,
   'trancheAffichage.ts': 130,

@@ -352,6 +352,27 @@ export function fusionnerTraces(
   return { tracks, ajoutees, ignorees }
 }
 
+/**
+ * Ce qu'une fusion a ajouté après les `depuis` premiers éléments, posé à la
+ * suite de `actuels` sans ce qui y est déjà.
+ *
+ * Sert à la restauration, qui fusionne sur un état lu avant ses écritures en
+ * base et doit déposer sur celui d'après : ce qu'un import a ajouté entre les
+ * deux reste (voir `restaurationConcurrente.test.ts`).
+ */
+export function ajouterLesNeufs<T>(
+  actuels: T[],
+  fusion: T[],
+  depuis: number,
+  cle: (element: T) => string | number,
+): T[] {
+  const connus = new Set(actuels.map(cle))
+  return [
+    ...actuels,
+    ...fusion.slice(depuis).filter((e) => !connus.has(cle(e))),
+  ]
+}
+
 interface FusionItineraires {
   itineraries: Itinerary[]
   ajoutes: number

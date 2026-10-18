@@ -1,4 +1,5 @@
 import {
+  ajouterLesNeufs,
   backupFilename,
   buildBackup,
   compresserBackup,
@@ -216,10 +217,33 @@ export function trancheSauvegarde(
         }
       }
 
+      /*
+        Ajouter à l'état d'**maintenant**, pas poser celui d'avant les
+        écritures : entre les deux, plusieurs `await`, et un import déposé
+        pendant ce temps disparaissait de la liste — en base, absent de
+        l'écran jusqu'au rechargement. Relu sans `await` jusqu'au `set`.
+        Les clefs sont celles sous lesquelles la base range chaque élément.
+      */
+      const apres = deps.lire()
       deps.set({
-        tracks: traces.tracks,
-        customItineraries: persos.itineraries,
-        parcoursDeclares: declaresFusionnes,
+        tracks: ajouterLesNeufs(
+          apres.tracks,
+          traces.tracks,
+          avant.tracks.length,
+          (t) => t.id,
+        ),
+        customItineraries: ajouterLesNeufs(
+          apres.customItineraries,
+          persos.itineraries,
+          avant.customItineraries.length,
+          (i) => i.osmRelationId,
+        ),
+        parcoursDeclares: ajouterLesNeufs(
+          apres.parcoursDeclares,
+          declaresFusionnes,
+          avant.parcoursDeclares.length,
+          (d) => d.itineraryId,
+        ),
       })
       if (traces.ajoutees > 0 || persos.ajoutes > 0) await deps.recalculer()
 
