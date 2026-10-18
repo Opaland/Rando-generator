@@ -344,7 +344,11 @@ export function fusionnerTraces(
       continue
     }
     empreintes.add(empreinte)
-    const id = ids.has(entrante.id) ? `${entrante.id}-importee` : entrante.id
+    // Renommer jusqu'à trouver un nom libre : deux entrantes au même
+    // identifiant pris recevaient toutes deux `…-importee`, et la seconde
+    // écrasait la première en base (trouvé par mutation, 18/10).
+    let id = entrante.id
+    while (ids.has(id)) id = `${id}-importee`
     ids.add(id)
     tracks.push({ ...entrante, id })
     ajoutees += 1
