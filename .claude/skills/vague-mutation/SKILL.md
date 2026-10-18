@@ -19,6 +19,25 @@ npm run mutation          # ciblage dans stryker.config.mjs
 Cibler les modules du lot, pas tout `src/core` — une vague de sept modules
 tient en un quart d'heure, la totalité non.
 
+## Lire — et seulement un rapport frais
+
+```bash
+npm run survivants        # refuse un rapport plus vieux que l'arbre
+```
+
+Le 18/10, une vague a échoué au galop d'essai — un fichier de test ne se
+chargeait plus — et le script qui suivait a relu le rapport de la vague
+d'avant : 91 survivants, les mêmes qu'une heure plus tôt, lus comme un
+résultat. Seuls les numéros de ligne, inchangés malgré six lignes ajoutées,
+l'ont trahi. `npm run survivants` refuse de lire un rapport dès qu'un fichier
+de `src/` ou de `tests/unit/` est plus récent que lui, et nomme ce fichier.
+Il ne sait pas quels fichiers la vague visait : il affiche donc en tête la
+date du rapport et les fichiers qu'il couvre — à comparer avec ce qu'on a
+demandé.
+
+Ne pas relire `reports/mutation.json` à la main après une vague : c'est
+précisément le contrôle qu'il fallait penser à faire.
+
 ## Les deux chiffres, et pourquoi le second seul compte
 
 | Vague | Score | Survivants | Dont un résultat changé |

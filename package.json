@@ -24,6 +24,7 @@
     "og-image": "node scripts/og-image.mjs",
     "pdipr": "node scripts/preparer-pdipr.mjs",
     "mutation": "stryker run",
+    "survivants": "node scripts/survivants.mjs",
     "mesure": "MESURE=1 playwright test tests/e2e/mesure-bibliotheque.spec.ts --workers=1",
     "chargement": "CHARGEMENT=1 playwright test tests/e2e/premier-chargement.spec.ts --workers=1",
     "panneau": "PANNEAU=1 playwright test tests/e2e/mesure-panneau-zone.spec.ts --workers=1",
