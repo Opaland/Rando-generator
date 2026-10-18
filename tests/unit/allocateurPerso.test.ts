@@ -82,6 +82,16 @@ describe('AllocateurPerso', () => {
     // relation OpenStreetMap — la sauvegarde d'une version future, ou abîmée.
     const allocateur = new AllocateurPerso()
     expect(allocateur.reserverRelation(12)).toBe(false)
+    expect(allocateur.reserverRelation(0)).toBe(false)
     expect(allocateur.reserverChemin(0)).toBe(false)
   })
+
+  /*
+    Survivants équivalents de la vague du 18/10, écrits pour ne pas être
+    rechassés (§6bis) : dans `marquerRelation` et `marquerChemin`, retirer la
+    garde `id >= 0` ou la changer en `id > 0` laisse entrer un numéro positif
+    ou nul dans l'ensemble — sans effet observable, puisque `reserver*`
+    refuse ces numéros avant de consulter l'ensemble, et que `Math.min` avec
+    un positif ne déplace pas le plancher.
+  */
 })

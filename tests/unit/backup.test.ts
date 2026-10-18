@@ -295,6 +295,17 @@ describe('fusionnerItineraires', () => {
     const boucle = perso(-1, 'Ma boucle', [[4.5, 45.4], [4.52, 45.42]])
     const resultat = fusionnerItineraires([boucle], [{ ...boucle }])
     expect(resultat.ajoutes).toBe(0)
+    expect(resultat.ignores).toBe(1)
+    expect(resultat.itineraries).toHaveLength(1)
+  })
+
+  it('n’ajoute qu’une fois un itinéraire que la sauvegarde porte deux fois', () => {
+    // Trouvé par mutation le 18/10 : rien ne vérifiait que la signature d'un
+    // entrant ajouté écarte son jumeau du même fichier.
+    const boucle = perso(-4, 'Ma boucle', [[4.5, 45.4], [4.52, 45.42]])
+    const resultat = fusionnerItineraires([], [boucle, { ...boucle }])
+    expect(resultat.ajoutes).toBe(1)
+    expect(resultat.ignores).toBe(1)
     expect(resultat.itineraries).toHaveLength(1)
   })
 
