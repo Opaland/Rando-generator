@@ -86,10 +86,21 @@ export function useMapInstance(
     // Exposé en lecture pour les tests e2e (état du fond de carte et des sources).
     ;(window as { __sentiersMap?: MaplibreMap }).__sentiersMap = map
 
+    /*
+      Prête au premier style chargé, comme le dit `ready` — et non au seul
+      `load`, qui attend aussi les tuiles (#545). Mesuré le 18/10 : quand le
+      fond IGN échoue et que le repli `setStyle` part pendant le premier
+      chargement, MapLibre n'émet parfois jamais `load` (3 lancements sur
+      20). `ready` restait faux pour la session, et aucun effet de données
+      ne remettait rien à la carte : une carte vide pour qui ouvre
+      l'application quand l'IGN répond mal. `load` reste écouté : il ne
+      coûte rien, et couvre un style chargé avant que l'écouteur existe.
+    */
     map.on('load', () => {
       setReady(true)
     })
     map.on('style.load', () => {
+      setReady(true)
       setStyleEpoch((epoch) => epoch + 1)
     })
 

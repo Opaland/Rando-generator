@@ -104,6 +104,13 @@ export default {
       pilotent l'instance MapLibre réelle et n'ont aucun test unitaire —
       exclus pour la même raison que les six de `src/lib` ci-dessus.
 
+      Nuance du 18/10 : `useMapInstance.ts` a désormais un test, sur une
+      carte factice (`carteRendueSansLoad.test.ts`, #545) — mais d'un seul
+      contrat, « prête au premier style chargé ». Le repli du fond sur OSM
+      et le cas sans WebGL n'en ont aucun : le muter rendrait surtout des
+      « NoCoverage » sur eux. Il reste exclu tant qu'ils ne sont pas
+      éprouvés, et la phrase du dessus ne vaut plus, pour lui, qu'à moitié.
+
       `useMapSources.ts` reste dans le périmètre : contrairement aux trois
       exclus, `appliquerQuandPret` s'éprouve déjà avec une carte factice
       (`mapSources.test.ts`), et le crochet principal l'a rejoint le 18/10
