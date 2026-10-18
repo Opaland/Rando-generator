@@ -103,6 +103,15 @@ export default {
       (`useMapCamera.ts`, `useMapInstance.ts`, `useMapInteractions.ts`)
       pilotent l'instance MapLibre réelle et n'ont aucun test unitaire —
       exclus pour la même raison que les six de `src/lib` ci-dessus.
+
+      `useMapSources.ts` reste dans le périmètre : contrairement aux trois
+      exclus, `appliquerQuandPret` s'éprouve déjà avec une carte factice
+      (`mapSources.test.ts`), et le crochet principal l'a rejoint le 18/10
+      (`sourcesDeLaCarteReelle.test.ts`, carte factice + magasin réel via
+      `createRoot`/`act`) — mais seulement pour la fusion des itinéraires
+      persos et la source du terrain. Les trois autres `useEffect` du
+      fichier (dessin, position, repère d'altitude) restent sans test
+      dédié : un lot encore ouvert, pas un oubli caché.
     */
     'src/components/**/*.ts',
     '!src/components/map/useMapCamera.ts', //      pilote l'instance MapLibre réelle

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { poisToGeoJSON } from '../../src/components/map/style.ts'
+import { emptyCollection, poisToGeoJSON } from '../../src/components/map/style.ts'
 import { POI_COLORS } from '../../src/lib/poiDisplay.ts'
 import { NETWORK_COLORS } from '../../src/lib/networkDisplay.ts'
 import { baseStyle } from '../../src/components/map/style.ts'
@@ -41,6 +41,46 @@ describe('poisToGeoJSON', () => {
   it.each(KINDS)('donne à %s la couleur de son genre', (kind) => {
     const [feature] = poisToGeoJSON([poi(kind)]).features
     expect(feature?.properties?.['color']).toBe(POI_COLORS[kind])
+  })
+
+  it('place le point à ses propres coordonnées, pas un tableau vide', () => {
+    // Trouvé par mutation du 18/10 : rien ne lisait `geometry.coordinates`.
+    const point = poi('hut')
+    point.lon = 5.9
+    point.lat = 44.1
+    const [feature] = poisToGeoJSON([point]).features
+    expect(feature?.geometry).toEqual({ type: 'Point', coordinates: [5.9, 44.1] })
+  })
+
+  it('produit une collection et des entités du bon type GeoJSON', () => {
+    // Idem : les deux discriminants `type` ne sont que peu peints (MapLibre)
+    // mais sa validation en dépend — ils ne sont pas cosmétiques.
+    const collection = poisToGeoJSON([poi('hut')])
+    expect(collection.type).toBe('FeatureCollection')
+    expect(collection.features[0]?.type).toBe('Feature')
+  })
+})
+
+describe('emptyCollection', () => {
+  it('rend une collection sans aucune entité', () => {
+    // Trouvé par mutation du 18/10 : aucun test n'appelait cette fonction.
+    expect(emptyCollection()).toEqual({ type: 'FeatureCollection', features: [] })
+  })
+})
+
+describe('la couche pois lit la bonne propriété GeoJSON', () => {
+  it('peint « circle-color » depuis la propriété « color », pas une autre', () => {
+    /*
+      Trouvé par mutation du 18/10 : rien ne reliait la propriété écrite par
+      `poisToGeoJSON` (`properties.color`) à celle lue par la couche
+      MapLibre. Un décalage entre les deux rendrait tous les points
+      d'intérêt de la couleur de repli, en silence.
+    */
+    const style = baseStyle('https://exemple/{z}/{x}/{y}', 'attribution')
+    const pois = style.layers.find((c) => c.id === 'pois') as
+      | { paint?: Record<string, unknown> }
+      | undefined
+    expect(pois?.paint?.['circle-color']).toEqual(['get', 'color'])
   })
 })
 
