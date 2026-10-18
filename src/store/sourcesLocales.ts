@@ -23,39 +23,46 @@ const ZONES_WITH_LOCAL_BOUCLES = new Set(['rhone', 'trois'])
 const ZONES_WITH_GR_NORD = new Set(['nouvelle-caledonie'])
 
 /**
- * Fabrique un accès paresseux, mémorisé une fois, à un jeu d'itinéraires
- * embarqué avec le site (`public/data/*.json`) — le même besoin pour les
- * boucles de Lyon et pour le GR Nord : télécharger une fois, ne jamais
+ * Fabrique un accès paresseux, mémorisé une fois, à un jeu embarqué avec le
+ * site (`public/data/*.json`) — le même besoin pour les boucles de Lyon, le
+ * GR Nord et le réseau de fond PDIPR : télécharger une fois, ne jamais
  * relever un échec pour la session entière.
  *
  * Nommée plutôt que recopiée (CLAUDE.md §4) : la première version portait ce
  * mécanisme deux fois, une par source, avant même que la seconde existe —
- * c'est en écrivant le GR Nord que la règle recopiée s'est vue.
+ * c'est en écrivant le GR Nord que la règle recopiée s'est vue. Générique
+ * depuis le PDIPR (#87), qui n'est pas une liste d'itinéraires.
  */
-function fetchJsonItineraries(
+export function memoriserJson<T>(
   url: string,
-  parse: (data: unknown, fetchedAt: string) => Itinerary[],
-): () => Promise<Itinerary[]> {
-  let cached: Promise<Itinerary[]> | null = null
-  return function fetchCached(): Promise<Itinerary[]> {
+  parse: (data: unknown, fetchedAt: string) => T,
+  estVide: (resultat: T) => boolean,
+): () => Promise<T> {
+  let cached: Promise<T> | null = null
+  return function fetchCached(): Promise<T> {
+    // Un échec passe par l'analyseur comme une donnée illisible : chacun
+    // rend alors un résultat vide, sans lever (testé pour les trois).
     cached ??= fetch(url)
       .then((response) => (response.ok ? response.json() : null))
+      .catch(() => null)
       .then((data: unknown) => parse(data, new Date().toISOString()))
-      .catch(() => [])
-      .then((itineraries) => {
+      .then((resultat) => {
         // Un échec ne se mémorise pas. Hors ligne au premier chargement, la
         // source serait sinon absente pour toute la session, alors qu'un
         // simple changement de zone suffirait à la retrouver.
-        if (itineraries.length === 0) cached = null
-        return itineraries
+        if (estVide(resultat)) cached = null
+        return resultat
       })
     return cached
   }
 }
 
-const chargerBoucles = fetchJsonItineraries(
+const aucunItineraire = (itineraries: Itinerary[]) => itineraries.length === 0
+
+const chargerBoucles = memoriserJson(
   `${import.meta.env.BASE_URL}data/boucles-metropole-lyon.json`,
   parseBouclesGeoJSON,
+  aucunItineraire,
 )
 
 /**
@@ -68,7 +75,7 @@ const chargerBoucles = fetchJsonItineraries(
  * Fonction nommée plutôt que la constante directement issue de la fabrique :
  * `npm run ports` relie un port à une fonction par son **nom** dans la carte
  * de couverture, et une constante liée à la clôture générique que rend
- * `fetchJsonItineraries` n'en porte aucun qui corresponde — le port
+ * `memoriserJson` n'en porte aucun qui corresponde — le port
  * `bouclesLocales: fetchLocalBoucles` devenait irrésolu.
  */
 export function fetchLocalBoucles(): Promise<Itinerary[]> {
@@ -76,9 +83,10 @@ export function fetchLocalBoucles(): Promise<Itinerary[]> {
 }
 
 /** Le GR Nord (© Province Nord, Licence Ouverte 2.0) — voir `core/grNord.ts`. */
-const chargerGrNord = fetchJsonItineraries(
+const chargerGrNord = memoriserJson(
   `${import.meta.env.BASE_URL}data/gr-nord-province-nord.json`,
   parseGrNordGeoJSON,
+  aucunItineraire,
 )
 
 function fetchGrNord(): Promise<Itinerary[]> {
@@ -97,3 +105,4 @@ export function sourcesLocalesPour(
   if (ZONES_WITH_GR_NORD.has(zoneKey)) sources.push(fetchGrNord)
   return sources
 }
+

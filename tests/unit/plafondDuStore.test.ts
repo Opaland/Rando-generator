@@ -93,10 +93,19 @@ const PLAFONDS: Record<string, number> = {
   'trancheZone.ts': 480,
   /*
     Sorti de `trancheZone.ts` le 16/09 en écrivant le GR Nord : 85 lignes.
-    Le plafond laisse la place d'une troisième source (Ain, Isère — #87)
+    Le plafond laissait la place d'une troisième source (Ain, Isère — #87)
     avant de forcer une nouvelle décision.
+
+    Elle est venue le 18/10, et elle n'était pas une source d'itinéraires :
+    le PDIPR de l'Isère est un réseau de fond. Le chargeur mémorisé est
+    devenu générique ici (108 lignes), le PDIPR est parti dans
+    `reseauDeFond.ts` plutôt que de relever ce plafond — il en avait porté
+    le fichier à 142.
   */
   'sourcesLocales.ts': 110,
+  // 64 lignes : le réseau de fond PDIPR et ses deux lecteurs (carte,
+  // légende). La place d'un second département, pas d'une tranche.
+  'reseauDeFond.ts': 80,
   /*
     Le journal des sorties réseau (issue #178), sorti d'`appStore.ts` le
     07/09 (#445) : 113 lignes, la seule action qui était encore écrite en

@@ -73,7 +73,7 @@ largement hors de notre contrôle.
 |---|---|---|
 | Boucles communales de la Métropole de Lyon | ✅ | Fusionnées, licence citée |
 | Lire un GeoJSON de sentiers quelconque | ✅ #128 | Import générique, projection refusée si non WGS84 |
-| PDIPR départementaux (Ain, Isère, …) | ⏸️ #87 | **Bloqué** : sources injoignables depuis le conteneur ; le Rhône n'a pas activé le téléchargement chez le producteur |
+| PDIPR départementaux (Ain, Isère, …) | 🟡 #87 | **Isère livrée le 18/10, en réseau de fond** : 15 313 tronçons sans nom ni ref, montrés mais jamais comptés (décision de Cédric — en faire des itinéraires supposerait d'inventer leurs limites). Les 2 102 tronçons de Grenoble-Alpes Métropole sont écartés : l'export les place au large de l'Afrique. **Ain** : export data.gouv.fr injoignable le 18/10. Le Rhône n'a pas activé le téléchargement chez le producteur |
 | API Geotrek du Parc du Pilat (~200 circuits) | ⏸️ #88 | **Bloqué** : même raison |
 | Cartoguides du Rhône manquants dans OSM | ⏸️ #20 | **Bloqué** : demande d'interroger Overpass en vrai |
 

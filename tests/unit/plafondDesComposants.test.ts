@@ -38,7 +38,12 @@ const PLAFONDS: Record<string, number> = {
   'TrackManager.tsx': 580,
   'ElevationChart.tsx': 495,
   'ZonePicker.tsx': 400,
-  'About.tsx': 325,
+  // « Données et licences » sortie dans DonneesEtLicences.tsx le 18/10 : le
+  // PDIPR de l'Isère (#87) portait About.tsx à 342 lignes. Redescendu de 325
+  // à 270 (253 après) : un plafond qu'on ne redescend pas après un découpage
+  // autorise à reprendre ce qu'on vient de rendre.
+  'About.tsx': 270,
+  'DonneesEtLicences.tsx': 120,
   'Dashboard.tsx': 295,
   'Enregistreur.tsx': 225,
   // #541 : la source déclarée d'un import, visible dans la liste plutôt que
@@ -55,7 +60,10 @@ const PLAFONDS: Record<string, number> = {
   'DeclarerParcouru.tsx': 135,
   'SortiesReseau.tsx': 135,
   'ItineraryCard.tsx': 130,
-  'MapLegend.tsx': 120,
+  // Relevé de 120 à 135 le 18/10 : le réseau de fond PDIPR (#87) est une
+  // couche de plus sur la carte, et nommer ce qui est peint est exactement
+  // le travail de ce composant — l'entrée a sa place ici, pas ailleurs.
+  'MapLegend.tsx': 135,
   'OfflineBanner.tsx': 115,
   'NextOuting.tsx': 115,
   'EmptyState.tsx': 105,

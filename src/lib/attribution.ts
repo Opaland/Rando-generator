@@ -126,6 +126,23 @@ export const PROVINCE_NORD: Credit = {
   lien: 'https://data.gouv.nc/explore/dataset/gr-province-nord/',
 }
 
+/**
+ * Le réseau balisé de l'Isère (PDIPR, #87), versé par le Département.
+ *
+ * « Réseau balisé » et non « Itinéraires » : ce jeu n'en fournit aucun — il
+ * est peint en fond, sans nom ni ref (`core/pdipr.ts`). Le créditer comme
+ * des itinéraires dirait qu'on lui doit ce qu'on ne lui a pas pris.
+ *
+ * Absent de la feuille imprimée, pour la raison qui fait écrire
+ * `IGN_RELIEF` : la carte n'y est pas, le réseau de fond non plus.
+ */
+export const DEPARTEMENT_ISERE: Credit = {
+  quoi: 'Réseau balisé',
+  qui: "Département de l'Isère",
+  licence: 'Licence Ouverte 2.0',
+  lien: 'https://opendata.isere.fr/explore/dataset/plan-departemental-des-itineraires-de-promenades-et-de-randonnees-departement-de/',
+}
+
 /** Le fond **et** les itinéraires, quand le miroir OSM remplace l'IGN. */
 export const OSM_FOND_ET_TRACES: Credit = {
   ...OSM,

@@ -54,6 +54,13 @@ interface ContenuLegende {
    * occupe une ligne pour n'apprendre rien.
    */
   etats: boolean
+  /**
+   * Le réseau balisé du Département (PDIPR, #87) est-il peint ?
+   *
+   * Vrai seulement quand ses tronçons sont **reçus** : une zone qui pourrait
+   * en avoir un, hors ligne, n'en dessine aucun.
+   */
+  reseauDeFond: boolean
   /** Vrai quand il n'y a rien à nommer — la légende n'a alors pas à être là. */
   vide: boolean
 }
@@ -63,12 +70,15 @@ export function contenuLegende({
   itinerairesPerso,
   aDesTraces,
   itineraireRegarde = null,
+  reseauDeFond = false,
 }: {
   itineraires: Itinerary[]
   itinerairesPerso: Itinerary[]
   aDesTraces: boolean
   /** L'itinéraire dont la fiche est ouverte, seul à porter une bande. */
   itineraireRegarde?: number | null
+  /** Des tronçons PDIPR sont-ils effectivement peints ? */
+  reseauDeFond?: boolean
 }): ContenuLegende {
   const tous = [...itineraires, ...itinerairesPerso]
   const presents = new Set<Network>()
@@ -99,6 +109,11 @@ export function contenuLegende({
     reseaux,
     terrains,
     etats: aDesTraces,
-    vide: reseaux.length === 0 && !aDesTraces && terrains.length === 0,
+    reseauDeFond,
+    vide:
+      reseaux.length === 0 &&
+      !aDesTraces &&
+      terrains.length === 0 &&
+      !reseauDeFond,
   }
 }

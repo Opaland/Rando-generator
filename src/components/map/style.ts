@@ -16,6 +16,7 @@ import {
 } from '../../lib/couleursPartagees.ts'
 import {
   attributionHtml,
+  DEPARTEMENT_ISERE,
   IGN,
   METROPOLE,
   OSM,
@@ -49,11 +50,18 @@ export const OSM_TILES = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
   au caractère près — et les morceaux vivent désormais dans un seul fichier,
   d'où la feuille d'impression les tire aussi.
 */
-export const ATTRIBUTION = attributionHtml(IGN, OSM, METROPOLE, PROVINCE_NORD)
+export const ATTRIBUTION = attributionHtml(
+  IGN,
+  OSM,
+  METROPOLE,
+  PROVINCE_NORD,
+  DEPARTEMENT_ISERE,
+)
 export const ATTRIBUTION_OSM = attributionHtml(
   OSM_FOND_ET_TRACES,
   METROPOLE,
   PROVINCE_NORD,
+  DEPARTEMENT_ISERE,
 )
 
 /**
@@ -175,6 +183,7 @@ export function baseStyle(tiles: string, attribution: string): StyleSpecificatio
         maxzoom: 18,
         attribution,
       },
+      pdipr: { type: 'geojson', data: emptyCollection() },
       trails: { type: 'geojson', data: emptyCollection() },
       'trails-done': { type: 'geojson', data: emptyCollection() },
       'trails-declares': { type: 'geojson', data: emptyCollection() },
@@ -188,6 +197,30 @@ export function baseStyle(tiles: string, attribution: string): StyleSpecificatio
     },
     layers: [
       { id: 'basemap', type: 'raster', source: 'basemap' },
+      {
+        /*
+          Le réseau balisé du Département (PDIPR, #87) : un fond, pas des
+          itinéraires — ni pourcentage, ni appariement, ni clic.
+
+          Posé juste au-dessus du fond de carte et sous tout le reste : là où
+          un tracé OSM le recouvre, c'est le tracé suivi qu'on doit voir.
+          GRIS_VERT est déjà peint ailleurs (le repli de la table des
+          réseaux) : aucune couleur neuve à mesurer contre les vingt autres
+          (#335). Trait fin et plein, pour ne ressembler ni à une trace
+          importée (encre, pointillé), ni à un déclaré (tirets). Choix de
+          présentation, tranché au jugement (§2) : rien de calculé n'en
+          dépend.
+        */
+        id: 'pdipr-reseau',
+        type: 'line',
+        source: 'pdipr',
+        paint: {
+          'line-color': GRIS_VERT,
+          'line-width': 1.5,
+          'line-opacity': 0.7,
+        },
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+      },
       {
         // Liseré blanc sous les tracés : sans lui, un trait rouge sur un fond
         // topographique chargé devient illisible en plein soleil. Deux couches

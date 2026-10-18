@@ -5,6 +5,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import type { GeoJSONSource, Map as MaplibreMap } from 'maplibre-gl'
 import { useMapSources } from '../../src/components/map/useMapSources.ts'
 import { useAppStore } from '../../src/store/appStore.ts'
+import { useReseauDeFond } from '../../src/store/reseauDeFond.ts'
 import type { Itinerary, TrailWay } from '../../src/core/types.ts'
 
 /**
@@ -51,6 +52,7 @@ const SOURCES_CARTE = [
   'draw-points',
   'user-position',
   'elevation-hover',
+  'pdipr',
 ]
 
 function carteFactice() {
@@ -88,6 +90,9 @@ function monterLeHook(mapRef: RefObject<MaplibreMap | null>) {
 describe('useMapSources', () => {
   afterEach(() => {
     useAppStore.setState(etatInitial, true)
+    useReseauDeFond.setState({
+      reseau: { type: 'FeatureCollection', features: [] },
+    })
   })
 
   it('fusionne les itinéraires persos dans les sources trails/trails-done, sans les perdre', () => {
@@ -127,6 +132,30 @@ describe('useMapSources', () => {
       | { features: unknown[] }
       | undefined
     expect(revetement?.features).toEqual([])
+    demonter()
+  })
+
+  it('peint le réseau de fond PDIPR reçu dans la source « pdipr » (#87)', () => {
+    const reseau = {
+      type: 'FeatureCollection' as const,
+      features: [
+        {
+          type: 'Feature' as const,
+          properties: {},
+          geometry: {
+            type: 'LineString' as const,
+            coordinates: [
+              [5.7, 45.1],
+              [5.71, 45.11],
+            ],
+          },
+        },
+      ],
+    }
+    useReseauDeFond.setState({ reseau })
+    const { map, setData } = carteFactice()
+    const { demonter } = monterLeHook({ current: map })
+    expect(setData.get('pdipr')?.mock.calls.at(-1)?.[0]).toEqual(reseau)
     demonter()
   })
 })

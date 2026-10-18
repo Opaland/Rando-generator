@@ -50,7 +50,10 @@ describe('les crédits composés rendent ce qui était écrit à la main', () =>
         ' href="https://data.grandlyon.com/">Métropole de Lyon</a> (Licence' +
         ' Ouverte) · GR Nord © <a' +
         ' href="https://data.gouv.nc/explore/dataset/gr-province-nord/">Province' +
-        ' Nord</a> (Licence Ouverte 2.0)',
+        ' Nord</a> (Licence Ouverte 2.0)' +
+        ' · Réseau balisé © <a' +
+        ' href="https://opendata.isere.fr/explore/dataset/plan-departemental-des-itineraires-de-promenades-et-de-randonnees-departement-de/">Département' +
+        " de l'Isère</a> (Licence Ouverte 2.0)",
     )
   })
 
@@ -62,7 +65,10 @@ describe('les crédits composés rendent ce qui était écrit à la main', () =>
         ' href="https://data.grandlyon.com/">Métropole de Lyon</a> (Licence' +
         ' Ouverte) · GR Nord © <a' +
         ' href="https://data.gouv.nc/explore/dataset/gr-province-nord/">Province' +
-        ' Nord</a> (Licence Ouverte 2.0)',
+        ' Nord</a> (Licence Ouverte 2.0)' +
+        ' · Réseau balisé © <a' +
+        ' href="https://opendata.isere.fr/explore/dataset/plan-departemental-des-itineraires-de-promenades-et-de-randonnees-departement-de/">Département' +
+        " de l'Isère</a> (Licence Ouverte 2.0)",
     )
   })
 

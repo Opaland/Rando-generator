@@ -175,3 +175,33 @@ describe('les familles de terrain', () => {
     expect(contenu.vide).toBe(true)
   })
 })
+
+/**
+ * Le réseau balisé du Département (PDIPR, #87).
+ *
+ * Même règle : nommé quand il est **dessiné**, c'est-à-dire reçu — pas quand
+ * la zone pourrait en avoir un. Hors ligne, le fichier n'arrive pas ; une
+ * légende qui le nommerait quand même mentirait.
+ */
+describe('le réseau balisé du Département', () => {
+  it('est nommé quand des tronçons sont peints', () => {
+    const contenu = contenuLegende({
+      itineraires: [],
+      itinerairesPerso: [],
+      aDesTraces: false,
+      reseauDeFond: true,
+    })
+    expect(contenu.reseauDeFond).toBe(true)
+    // Seul sur la carte, il suffit à justifier la légende.
+    expect(contenu.vide).toBe(false)
+  })
+
+  it('n’est pas nommé quand rien n’est peint', () => {
+    const contenu = contenuLegende({
+      itineraires: [itineraire('GR')],
+      itinerairesPerso: [],
+      aDesTraces: false,
+    })
+    expect(contenu.reseauDeFond).toBe(false)
+  })
+})

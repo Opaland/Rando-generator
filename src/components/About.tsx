@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import styles from './About.module.css'
 import { SortiesReseau } from './SortiesReseau.tsx'
+import { DonneesEtLicences } from './DonneesEtLicences.tsx'
 
 /** Page À propos : licences, marques, engagement privacy. */
 export function About({
@@ -150,68 +151,7 @@ export function About({
           </p>
         </section>
 
-        <section>
-          <h3>Données et licences</h3>
-          <ul>
-            <li>
-              Les tracés d’itinéraires proviennent d’
-              <a
-                href="https://www.openstreetmap.org/copyright"
-                target="_blank"
-                rel="noreferrer"
-              >
-                OpenStreetMap
-              </a>{' '}
-              (© les contributeurs OpenStreetMap), sous licence{' '}
-              <a
-                href="https://opendatacommons.org/licenses/odbl/"
-                target="_blank"
-                rel="noreferrer"
-              >
-                ODbL
-              </a>
-              , via l’API Overpass.
-            </li>
-            <li>
-              La <strong>recherche par nom de ville</strong> interroge l’
-              <a
-                href="https://adresse.data.gouv.fr/"
-                target="_blank"
-                rel="noreferrer"
-              >
-                API Adresse
-              </a>{' '}
-              de la Base Adresse Nationale (© Etalab, Licence Ouverte). Seul le
-              texte que vous tapez est transmis&nbsp;: ni vos traces, ni votre
-              position.
-            </li>
-            <li>
-              Les <strong>boucles locales</strong> de la Métropole de Lyon
-              proviennent du jeu de données ouvert «&nbsp;Boucles communales de
-              randonnée&nbsp;» (©&nbsp;
-              <a
-                href="https://data.grandlyon.com/"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Métropole de Lyon
-              </a>
-              , Licence Ouverte 2.0).
-            </li>
-            <li>
-              Le fond de carte est le <strong>Plan IGN v2</strong> (© IGN),
-              diffusé par la Géoplateforme sous{' '}
-              <a
-                href="https://www.etalab.gouv.fr/licence-ouverte-open-licence/"
-                target="_blank"
-                rel="noreferrer"
-              >
-                licence ouverte Etalab 2.0
-              </a>
-              , avec repli sur les tuiles OpenStreetMap.
-            </li>
-          </ul>
-        </section>
+        <DonneesEtLicences />
 
         <section>
           <h3>GR, GR de Pays, PR : qu’est-ce que c’est&nbsp;?</h3>

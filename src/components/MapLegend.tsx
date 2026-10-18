@@ -11,6 +11,8 @@ import {
   TERRAIN_LABELS,
   TERRAIN_TIRETS,
 } from '../lib/revetementDisplay.ts'
+import { GRIS_VERT } from '../lib/couleursPartagees.ts'
+import { useReseauDeFond } from '../store/reseauDeFond.ts'
 import styles from './MapLegend.module.css'
 
 /**
@@ -29,11 +31,13 @@ export function MapLegend() {
   const itinerairesPerso = useAppStore((s) => s.customItineraries)
   const aDesTraces = useAppStore((s) => s.tracks.length > 0)
   const itineraireRegarde = useAppStore((s) => s.detailItineraryId)
+  const reseauDeFond = useReseauDeFond((s) => s.reseau.features.length > 0)
   const contenu = contenuLegende({
     itineraires,
     itinerairesPerso,
     aDesTraces,
     itineraireRegarde,
+    reseauDeFond,
   })
 
   // Rien à nommer : pas de cadre vide posé sur la carte.
@@ -94,6 +98,17 @@ export function MapLegend() {
             </li>
           ))}
         </ul>
+      )}
+      {contenu.reseauDeFond && (
+        /*
+          Le PDIPR (#87) : un fond, que rien ne permet de suivre ni de
+          compter — le libellé le dit, pour qu'on ne cherche pas pourquoi
+          ces chemins-là ne se cliquent pas.
+        */
+        <div className={styles.item} data-testid="legende-reseau-de-fond">
+          <span className={styles.swatch} style={{ background: GRIS_VERT }} />
+          réseau balisé du Département
+        </div>
       )}
       {contenu.etats && (
         <div className={styles.states} data-testid="legende-etats">
