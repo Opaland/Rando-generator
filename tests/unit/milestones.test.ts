@@ -108,7 +108,31 @@ describe('crossedMilestones', () => {
     )
     expect(franchis.map((f) => f.milestone)).toEqual([100, 25])
   })
+
+  it('départage deux franchissements du même jalon par l’identifiant, croissant', () => {
+    // Aucun test n'atteignait ce départage (vague de mutation du 19/10) :
+    // l'ordre d'arrivée des résultats décidait alors de l'annonce faite en
+    // premier. Les résultats arrivent ici à l'envers de l'ordre attendu.
+    const franchis = crossedMilestones(
+      new Map([
+        [9, 40],
+        [3, 40],
+      ]),
+      [result(9, 60), result(3, 60)],
+    )
+    expect(franchis.map((f) => f.itineraryId)).toEqual([3, 9])
+  })
 })
+
+/*
+  Survivants laissés, et pourquoi (§6bis) :
+  - `typeof valeur !== 'number'` forcé à faux, ou son `||` changé en `&&`,
+    dans `normalizeCompletionPct` : `Number.isFinite` refuse déjà tout ce qui
+    n'est pas un nombre, sans conversion. La garde est redondante, pas creuse ;
+  - `jalonAvant !== null` forcé à vrai, et `jalon !== null` dans
+    `franchissementTientEncore` : un nombre comparé à `null` le compare à
+    zéro, et aucun jalon ne vaut zéro.
+*/
 
 describe('seuil de complétion réglable', () => {
   it('propose trois seuils, dont celui par défaut', () => {
