@@ -5,6 +5,7 @@ import {
   isOffline,
   reduceConnectivity,
 } from '../core/connectivity.ts'
+import { conteneurServiceWorker } from '../lib/serviceWorker.ts'
 import styles from './OfflineBanner.module.css'
 
 /** Au-delà, on considère que le service worker ne répondra pas. */
@@ -23,7 +24,7 @@ interface ConnectivityMessage {
  */
 function demanderAuServiceWorker(): Promise<boolean> {
   return new Promise<boolean>((resolve) => {
-    const controleur = navigator.serviceWorker.controller
+    const controleur = conteneurServiceWorker()?.controller
     if (!controleur) {
       resolve(false)
       return
@@ -72,7 +73,8 @@ export function OfflineBanner() {
         dispatch('cache-fallback')
       }
     }
-    navigator.serviceWorker.addEventListener('message', surMessage)
+    const conteneur = conteneurServiceWorker()
+    conteneur?.addEventListener('message', surMessage)
 
     let vivant = true
     void demanderAuServiceWorker().then((secours) => {
@@ -83,7 +85,7 @@ export function OfflineBanner() {
       vivant = false
       window.removeEventListener('online', enLigne)
       window.removeEventListener('offline', horsLigne)
-      navigator.serviceWorker.removeEventListener('message', surMessage)
+      conteneur?.removeEventListener('message', surMessage)
     }
   }, [])
 

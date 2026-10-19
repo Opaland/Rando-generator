@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { conteneurServiceWorker } from '../lib/serviceWorker.ts'
 import styles from './UpdateBanner.module.css'
 
 /**
@@ -23,7 +24,8 @@ export function UpdateBanner() {
   const [disponible, setDisponible] = useState(false)
 
   useEffect(() => {
-    if (!('serviceWorker' in navigator)) return
+    const conteneur = conteneurServiceWorker()
+    if (!conteneur) return
 
     /*
       `controllerchange` se déclenche aussi à la toute première activation
@@ -33,17 +35,14 @@ export function UpdateBanner() {
       est une. Sans cette garde, le bandeau s'afficherait à chaque premier
       chargement.
     */
-    const avaitDejaUnControleur = navigator.serviceWorker.controller !== null
+    const avaitDejaUnControleur = conteneur.controller !== null
 
     const surChangement = () => {
       if (avaitDejaUnControleur) setDisponible(true)
     }
-    navigator.serviceWorker.addEventListener('controllerchange', surChangement)
+    conteneur.addEventListener('controllerchange', surChangement)
     return () => {
-      navigator.serviceWorker.removeEventListener(
-        'controllerchange',
-        surChangement,
-      )
+      conteneur.removeEventListener('controllerchange', surChangement)
     }
   }, [])
 

@@ -8,6 +8,7 @@ import {
 } from '../core/telechargement.ts'
 import type { LonLat } from '../core/types.ts'
 import { emporter, emporterPois } from '../lib/emporter.ts'
+import { conteneurServiceWorker } from '../lib/serviceWorker.ts'
 import { fetchPoisOuEchec } from '../core/poi.ts'
 import { useAppStore } from '../store/appStore.ts'
 import styles from './BoutonEmporter.module.css'
@@ -88,7 +89,7 @@ export function BoutonEmporter({
         disabled={adresses.length === 0 || enCours || fini}
         onClick={() => {
           const stop = emporter(
-            'serviceWorker' in navigator ? navigator.serviceWorker : undefined,
+            conteneurServiceWorker(),
             adresses,
             setProgres,
           )
