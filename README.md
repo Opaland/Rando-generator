@@ -119,9 +119,9 @@ par le CLI Playwright.
 4. **Créer « Mes itinéraires »** : importez le GPX d'un parcours *à faire*
    (cartoguide, Visorando, tracé maison…) — il devient un itinéraire local
    avec sa propre progression, hors statistiques des réseaux OSM. Ou
-   **tracez-le à la souris** (« Tracer sur la carte ») : chaque clic pose une
-   étape accrochée au sentier le plus proche, et le tracé **suit les chemins
-   affichés** entre les étapes (plus court chemin, calculé dans le
+   **tracez-le à la souris ou au doigt** (« Tracer sur la carte ») : chaque
+   clic pose une étape accrochée au sentier le plus proche, et le tracé
+   **suit les chemins affichés** entre les étapes (plus court chemin, calculé dans le
    navigateur).
 5. **Voir ses sorties** : la section « Mes sorties » totalise le nombre de
    sorties, les kilomètres et le D+, et trace un histogramme des distances
