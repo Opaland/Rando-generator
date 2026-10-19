@@ -38,6 +38,18 @@ demandé.
 Ne pas relire `reports/mutation.json` à la main après une vague : c'est
 précisément le contrôle qu'il fallait penser à faire.
 
+**`Sv0!` : un survivant contre lequel aucun test n'a tourné.** Le 19/10,
+`normalize('')`, `toLocaleDateString('')` et des options `Intl` vidées
+étaient comptés survivants : ils lèvent au chargement du fichier de test, la
+suite tombe en « no tests », et Stryker ne le voit pas comme un échec. Le
+script les marque sans les reclasser — on les réinjecte à la main avant de
+les compter dans un sens ou dans l'autre.
+
+Et un survivant se situe **à la colonne**, pas à la ligne : sur
+`if (a === null) return b === null ? 0 : 1`, les mutants du `if` étaient
+tués, ceux de la ternaire intérieure survivaient, et la ligne seule laissait
+croire que le test ne servait à rien. Le script affiche donc `ligne:colonne`.
+
 ## Les deux chiffres, et pourquoi le second seul compte
 
 | Vague | Score | Survivants | Dont un résultat changé |

@@ -87,6 +87,7 @@ if (plusRecent) {
 }
 
 const rapport = JSON.parse(readFileSync(RAPPORT, 'utf8'))
+let aucunTestJuge = 0
 console.log(
   `Rapport du ${new Date(dateDuRapport).toISOString()}, sur : ${Object.keys(rapport.files).join(', ')}\n`,
 )
@@ -98,9 +99,26 @@ for (const [fichier, { source, mutants }] of Object.entries(rapport.files)) {
   for (const m of mutants) {
     if (m.status !== 'Survived' && m.status !== 'NoCoverage') continue
     const ligne = m.location.start.line
+    const colonne = m.location.start.column
     const remplacement = JSON.stringify(m.replacement ?? '').slice(0, 45)
+    /*
+      Un survivant qu'aucun test n'a jugé : `testsCompleted` à zéro. Vu le
+      19/10 sur `normalize('')` et des options `Intl` vidées — le mutant lève
+      au chargement du fichier de test, la suite tombe en « no tests », et
+      Stryker le range pourtant parmi les survivants. Ce n'est pas un tué
+      pour autant tant qu'on ne l'a pas vu échouer : on le marque, on ne le
+      reclasse pas.
+    */
+    const statut =
+      m.status === 'Survived' && m.testsCompleted === 0 ? 'Sv0!' : m.status.slice(0, 4)
+    if (statut === 'Sv0!') aucunTestJuge += 1
     console.log(
-      `   ${m.status.slice(0, 4)} ${String(ligne)} ${m.mutatorName.slice(0, 14)} ${remplacement} | ${(lignes[ligne - 1] ?? '').trim().slice(0, 70)}`,
+      `   ${statut} ${String(ligne)}:${String(colonne)} ${m.mutatorName.slice(0, 14)} ${remplacement} | ${(lignes[ligne - 1] ?? '').trim().slice(0, 70)}`,
     )
   }
+}
+if (aucunTestJuge > 0) {
+  console.log(
+    `\n${String(aucunTestJuge)} survivant(s) « Sv0! » : aucun test n'a tourné contre eux — le plus souvent, le mutant lève au chargement. À réinjecter à la main avant de les compter dans un sens ou dans l'autre.`,
+  )
 }
