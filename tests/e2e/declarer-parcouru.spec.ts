@@ -76,6 +76,7 @@ test('une déclaration se retire, et ne laisse rien derrière', async ({
   await expect(page.getByTestId('global-declare')).toBeVisible()
 
   await page.getByTestId('declare-retirer').click()
+  await page.getByTestId('declare-retirer-confirm').click()
   await expect(page.getByTestId('declare-ouvrir')).toBeVisible()
   await expect(page.getByTestId('global-declare')).toHaveCount(0)
 })
@@ -177,6 +178,7 @@ test('un itinéraire coché est dessiné à part sur la carte', async ({ page })
   await expect.poll(declares, { timeout: 15_000 }).toBeGreaterThan(0)
 
   await page.getByTestId('declare-retirer').click()
+  await page.getByTestId('declare-retirer-confirm').click()
   await expect.poll(declares, { timeout: 15_000 }).toBe(0)
 })
 

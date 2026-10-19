@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAppStore } from '../store/appStore.ts'
+import { ConfirmDeleteButton } from './ConfirmDeleteButton.tsx'
 import styles from './DeclarerParcouru.module.css'
 
 /**
@@ -43,16 +44,17 @@ export function DeclarerParcouru({ itineraryId }: { itineraryId: number }) {
           Déclaré, pas mesuré : ce parcours n’entre pas dans votre pourcentage
           et n’apparaît pas dans les tronçons restants.
         </p>
-        <button
-          type="button"
-          className="btn-link"
-          data-testid="declare-retirer"
-          onClick={() => {
+        {/* La même voie que « Mes sorties », confirmation comprise : un
+            double-clic sur « Valider » faisait apparaître ce bouton sous le
+            curseur, et le second clic retirait la déclaration (#551). */}
+        <ConfirmDeleteButton
+          label="Retirer cette déclaration"
+          texte="Retirer cette déclaration"
+          testId="declare-retirer"
+          onConfirm={() => {
             void retirer(itineraryId)
           }}
-        >
-          Retirer cette déclaration
-        </button>
+        />
       </div>
     )
   }
