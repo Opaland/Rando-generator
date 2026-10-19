@@ -340,6 +340,9 @@ function App() {
         ) {
           setFeuille('repliee')
         }
+        // Même geste pour le tracé (#546) : on trace sur la carte, la
+        // feuille à mi-course recouvrait le panneau de tracé tout entier.
+        if (etat.drawMode && !precedent.drawMode) setFeuille('repliee')
       }),
     [],
   )

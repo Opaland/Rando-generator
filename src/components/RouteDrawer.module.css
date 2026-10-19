@@ -2,7 +2,18 @@
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 0;
+  /*
+    Sous le point de rupture, au-dessus de la poignée et de la barre
+    d'onglets, comme la fiche (voir ItineraryDetail.module.css) : posé à
+    `bottom: 0`, le panneau passait sous le plan de la feuille, et même
+    repliée elle peignait par-dessus le nom et « Enregistrer » — 0 point sur
+    80 mesuré à 390 × 844 le 18/10 (#546). Monter le plan du panneau aurait
+    recouvert la navigation ; c'est donc à lui de laisser leur bande.
+  */
+  bottom: calc(
+    var(--hauteur-poignee) + var(--hauteur-onglets) +
+      env(safe-area-inset-bottom, 0px)
+  );
   z-index: var(--z-overlay-draw);
   max-height: var(--hauteur-trace);
   overflow-y: auto;

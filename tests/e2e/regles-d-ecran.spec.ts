@@ -155,6 +155,14 @@ const ETATS = [
   */
   'sorties ouvert',
   'reglages ouvert',
+  /*
+    #544 puis #546 : le panneau de tracé ne s'ouvre qu'à la demande, et
+    aucun des états précédents ne l'ouvrait. Sur grand écran, « Ma position »
+    était posé sur « Enregistrer » ; sur téléphone, la feuille du panneau.
+    Deux défauts trouvés à la main dans le même panneau, la même semaine —
+    c'est l'état que la sonde aurait dû avoir (§6quinquies).
+  */
+  'tracé ouvert',
 ] as const
 type Etat = (typeof ETATS)[number]
 
@@ -283,6 +291,16 @@ async function atteindre(
   }
   await afficherTousLesReseaux(page)
   if (etat === 'zone chargée' || etat === 'mode simple') return
+
+  if (etat === 'tracé ouvert') {
+    if (compact) await ouvrirOnglet(page, 'sorties')
+    await page.getByTestId('custom-draw').click()
+    // On prouve que le panneau est ouvert, pour la même raison que les
+    // filtres : sans cela, un clic resté muet ferait remesurer « zone
+    // chargée » sous un autre nom.
+    await expect(page.getByTestId('route-drawer-save')).toBeVisible()
+    return
+  }
 
   if (etat === 'filtres ouverts') {
     /*
@@ -834,6 +852,21 @@ for (const vue of LARGEURS) {
         dessus,
         `fiche recouverte à ${vue.nom} par ${JSON.stringify(dessus)}`,
       ).toEqual([])
+    })
+
+    /*
+      L'état « tracé ouvert » seul ne gardait rien : vérifié le 19/10 en
+      remettant le panneau à `bottom: 0`, les quatre questions d'écran sont
+      restées vertes, aucune ne regardait ce panneau. C'est cette question-ci
+      qui devait le voir (#546).
+    */
+    test('le panneau de tracé reste entièrement atteignable', async ({ page }) => {
+      await atteindre(page, 'tracé ouvert', vue.tactile)
+      await expect
+        .poll(() => recouvrementsDe(page, 'route-drawer'), {
+          message: `panneau de tracé recouvert à ${vue.nom}`,
+        })
+        .toEqual([])
     })
   })
 }

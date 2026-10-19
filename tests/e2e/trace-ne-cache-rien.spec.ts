@@ -16,13 +16,12 @@ import {
  * (le clic était intercepté), « Démarrer une sortie » couvrait « Fermer la
  * boucle », et le panneau masquait 32 des 80 points de la ligne
  * d'attribution. Le cas était réglé pour la fiche depuis le 24/08, jamais
- * pour ce panneau-ci : aucun des dix états des règles d'écran ne l'ouvre
+ * pour ce panneau-ci : aucun des dix états des règles d'écran ne l'ouvrait
  * (§6quinquies — ce qui ne s'ouvre qu'à la demande est ce qu'une sonde
- * oublie).
+ * oublie). Ils sont onze depuis le 19/10, le onzième est « tracé ouvert ».
  *
  * Grand écran seulement : sous le point de rupture, c'est la feuille du
- * panneau qui recouvre le tracé, un défaut à part (#546), qui demande de
- * décider comment les deux se partagent l'écran.
+ * panneau qui recouvrait le tracé (#546), gardé par `trace-au-doigt.spec.ts`.
  */
 test.use({ viewport: { width: 1280, height: 720 } })
 
