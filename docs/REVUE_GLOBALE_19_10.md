@@ -61,6 +61,14 @@ occurrence qui parle du tracé.
 - **Injections HTML** : toujours un seul point, `poiPopupHtml`
   (`src/components/map/poiPopup.ts`), échappé dans ses deux branches.
 - **`npm audit --omit=dev`** : zéro vulnérabilité.
+- **`npm audit` complet** : deux vulnérabilités modérées dans `qs`, qui n'est
+  utilisé que par Stryker, via `typed-rest-client@2.3.1`, qui l'épingle en
+  version exacte 6.15.1. `npm audit fix` n'y peut donc rien. **Laissé en
+  l'état, sur décision de Cédric (19/10).** `qs` ne sert qu'à envoyer des
+  rapports au tableau de bord en ligne de Stryker, ce qu'on ne fait pas, et
+  rien de livré n'en dépend. L'autre voie aurait été un `overrides` qui
+  impose à Stryker une version qu'il n'a pas testée. À revoir quand Stryker
+  mettra sa dépendance à jour.
 - **Surface d'API de `src/core`** : deux exports « orphelins » au premier
   passage, `FLAT_KMH` et `ASCENT_METERS_PER_HOUR`, et le premier résultat
   était faux, comme la skill le prévient. Les deux sont lus par
