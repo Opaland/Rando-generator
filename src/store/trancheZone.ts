@@ -110,8 +110,10 @@ export interface DependancesZone {
   /** Retient la zone affichée, pour la rouvrir au prochain démarrage. */
   persistLastZone: (zoneKey: string) => Promise<void>
   /**
-   * Jette la ligne en cache d'une zone, pour qu'un rechargement forcé
-   * reparte vraiment d'Overpass. Les trois chemins forcés la recopiaient, et
+   * Jette la ligne en cache d'une zone, une fois qu'un rechargement forcé a
+   * obtenu sa réponse et avant de l'écrire — jamais avant, sans quoi un
+   * échec réseau détruisait la copie hors ligne (#548). Les trois chemins
+   * forcés la recopiaient, et
    * deux la recopiaient mal — sur un `db` qui vaut `null` pendant
    * l'ouverture (#437 ; `tests/unit/oubliDuCacheDeZone.test.ts` garde l'accord).
    */
@@ -255,6 +257,9 @@ export function trancheZone(deps: DependancesZone): ActionsZone {
         */
         const partielle = data.remark !== undefined
         const perdues = relationsPerdues(data, itineraries).length
+        // Oublier après la réponse, jamais avant : hors réseau, l'effacement
+        // préalable détruisait la copie hors ligne (#548 ; voir oubliDeZone.ts).
+        if (force) await deps.oublierLaZoneEnCache(zoneKey)
         const db = await deps.baseOuverte()
         if (db) {
           try {
@@ -367,7 +372,6 @@ export function trancheZone(deps: DependancesZone): ActionsZone {
       const zone = ZONES.find((z) => z.id === zoneId)
       if (!zone) return
       const force = options.force ?? false
-      if (force) await deps.oublierLaZoneEnCache(zoneId)
       await loadFromOverpass(zoneId, zone.label, buildZoneQuery(zoneId), force)
       await mergeLocalBoucles(zoneId)
     },
@@ -411,7 +415,6 @@ export function trancheZone(deps: DependancesZone): ActionsZone {
       if (!trimmed) return
       const force = options.force ?? false
       const zoneKey = `ref:${trimmed.toUpperCase()}`
-      if (force) await deps.oublierLaZoneEnCache(zoneKey)
       await loadFromOverpass(zoneKey, trimmed, buildRefQuery(trimmed), force)
     },
 
@@ -426,7 +429,6 @@ export function trancheZone(deps: DependancesZone): ActionsZone {
       const [lon, lat] = lieu.center
       const zoneKey = `autour:${lon.toFixed(4)},${lat.toFixed(4)}`
       const force = options.force ?? false
-      if (force) await deps.oublierLaZoneEnCache(zoneKey)
       deps.oublierLesLieux()
       await loadFromOverpass(
         zoneKey,
