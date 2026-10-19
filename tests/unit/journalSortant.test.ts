@@ -352,3 +352,28 @@ describe('l’origine qui sert l’application', () => {
     ).toBe('site')
   })
 })
+
+/**
+ * Les deux replis de `classerSortie`, qu'aucun test n'atteignait (vague de
+ * mutation du 19/10).
+ */
+describe('classerSortie, quand une adresse ne se lit pas', () => {
+  it('classe encore les tiers quand l’origine fournie est illisible', () => {
+    // Le repli sur `http://localhost` ne rend pas la fonction fausse : un
+    // tiers reste un tiers.
+    expect(classerSortie('https://data.geopf.fr/wmts?LAYER=X', 'pas une origine').destination).toBe(
+      'fond-de-carte',
+    )
+  })
+
+  it('ne compte pas comme une sortie une adresse impossible à analyser', () => {
+    /*
+      `fetch('http://[')` est refusé avant tout réseau (ERR_INVALID_URL,
+      vérifié le 19/10) : rien n'a quitté l'appareil, et la ranger parmi les
+      tiers dirait le contraire. Elle va donc avec les fichiers du site, sans
+      hôte — pas parmi les destinations non répertoriées, qui sont des
+      requêtes réellement parties vers un inconnu.
+    */
+    expect(classerSortie('http://[')).toEqual({ destination: 'site', hote: '' })
+  })
+})
