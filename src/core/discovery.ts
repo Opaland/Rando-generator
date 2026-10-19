@@ -121,7 +121,7 @@ export const ALL_FILTERS: DiscoveryFilters = {
  * les deux en ont besoin, donc ni l'un ni l'autre ne peut en garder la seule
  * copie (§4ter).
  */
-export interface Plage {
+interface Plage {
   label: string
   minKm: number | null
   maxKm: number | null

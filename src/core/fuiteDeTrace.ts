@@ -53,12 +53,6 @@ import type { LonLat } from './types.ts'
  */
 export const PRECISION_MINIMALE = 5
 
-/** Un point de l'échantillon : ses deux coordonnées, à pleine précision. */
-export interface PointSurveille {
-  lon: string
-  lat: string
-}
-
 /**
  * Les écritures d'une coordonnée qu'on saura reconnaître.
  *

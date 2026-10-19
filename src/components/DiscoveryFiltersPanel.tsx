@@ -22,7 +22,7 @@ import styles from './ItineraryList.module.css'
  * principale rendue à côté de ce panneau — le déplacer ici aurait demandé de
  * le faire remonter par un événement, pour rien.
  */
-export interface DiscoveryFiltersPanelProps {
+interface DiscoveryFiltersPanelProps {
   filtresActifs: boolean
   question: string
   setQuestion: (valeur: string) => void

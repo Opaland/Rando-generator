@@ -17,7 +17,7 @@ import styles from './ItineraryDetail.module.css'
  * en a besoin pour le reste de son rendu — déplacer l'état ici n'aurait fait
  * que le faire remonter par un événement, pour rien.
  */
-export interface PoiSectionProps {
+interface PoiSectionProps {
   poisLoading: boolean
   mentionEmport: string | null
   pois: PoiSitue[]

@@ -39,11 +39,6 @@ import type { SentiersDb } from '../db/database.ts'
  * la tient maintenant hors du store.
  */
 
-/** Ce que la démonstration ajoute à l'état du store. */
-export interface EtatDemonstration {
-  demonstration: boolean
-}
-
 /** Ce que la démonstration ajoute aux actions du store. */
 interface ActionsDemonstration {
   demarrerDemonstration: () => Promise<void>
