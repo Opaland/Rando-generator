@@ -92,7 +92,9 @@ export function echantillonDeTrace(
   const pris: LonLat[] = []
   if (coords.length <= combien) pris.push(...coords)
   else {
-    const pas = (coords.length - 1) / (combien - 1)
+    // Un seul point demandé : le départ. Sans ce cas, le pas valait
+    // `(n − 1) / 0`, et `0 × ∞` donnait NaN pour indice.
+    const pas = combien === 1 ? 0 : (coords.length - 1) / (combien - 1)
     for (let i = 0; i < combien; i += 1) {
       pris.push(coords[Math.round(i * pas)] as LonLat)
     }
