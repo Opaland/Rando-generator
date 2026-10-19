@@ -62,6 +62,17 @@ import {
  * Trouvé en corrigeant : les hauteurs restaient à 32 px après un correctif
  * qui les portait à 44, et c'était le test qui avait tort.
  */
+/**
+ * Ce qui se touche : la liste que la question 4 mesure, et dont
+ * `commandesRecouvertesDans` éprouve les recouvrements.
+ *
+ * Une seule fois, et nommée : `npm run listes` la compare aux genres que
+ * `src/index.css` plancherise (§4ter). Une seconde liste, écrite à la main
+ * pour #554, avait déjà oublié `summary` et `[role="button"]`.
+ */
+const CIBLES_TACTILES =
+  'button, a[href], summary, [role="button"], select, textarea, input'
+
 const LARGEURS = [
   { nom: 'téléphone', width: 390, height: 844, tactile: true },
   { nom: 'point de rupture', width: 800, height: 900, tactile: true },
@@ -422,6 +433,64 @@ async function recouvrementsDe(page: Page, testId: string) {
 }
 
 /**
+ * Les commandes d'un panneau dont une partie est peinte par autre chose.
+ *
+ * La grille de `recouvrementsDuSelecteur` échantillonne quatre colonnes :
+ * à 390 px, aucune ne tombait entre x 338 et 382, et « Ma position » a pu
+ * peindre le « × » du tracé sans qu'elle le voie (#554). La grille se pose
+ * donc sur chaque commande, plutôt que sur le panneau entier.
+ *
+ * Neuf points par commande, et pas son seul centre : mesuré le 19/10, le
+ * bouton descendait jusqu'à y 372 sur un « × » centré en y 375. Le centre
+ * restait libre, le tiers haut du « × » lançait la géolocalisation.
+ *
+ * Une commande défilée hors du panneau n'est pas recouverte : elle est
+ * ailleurs, et seul ce qui tombe dans la partie visible du panneau compte.
+ */
+async function commandesRecouvertesDans(page: Page, testId: string) {
+  return page.evaluate(
+    ({ id, liste }: { id: string; liste: string }) => {
+      const panneau = document.querySelector(`[data-testid="${id}"]`)
+      if (!panneau) return []
+      const cadre = panneau.getBoundingClientRect()
+      const trouves: { commande: string; quoi: string }[] = []
+      for (const commande of panneau.querySelectorAll(liste)) {
+        const r = commande.getBoundingClientRect()
+        if (r.width === 0 || r.height === 0) continue
+        let dessus: Element | null = null
+        for (const fx of [0.2, 0.5, 0.8]) {
+          for (const fy of [0.2, 0.5, 0.8]) {
+            const x = r.x + r.width * fx
+            const y = r.y + r.height * fy
+            if (x < cadre.left || x > cadre.right) continue
+            if (y < cadre.top || y > cadre.bottom) continue
+            if (x < 0 || y < 0 || x > innerWidth || y > innerHeight) continue
+            const peint = document.elementFromPoint(x, y)
+            if (!peint || commande === peint || commande.contains(peint)) {
+              continue
+            }
+            dessus = peint
+          }
+        }
+        if (!dessus) continue
+        trouves.push({
+          commande:
+            commande.getAttribute('data-testid') ??
+            commande.getAttribute('aria-label') ??
+            commande.tagName.toLowerCase(),
+          quoi:
+            dessus.getAttribute('data-testid') ??
+            dessus.closest('[data-testid]')?.getAttribute('data-testid') ??
+            dessus.tagName.toLowerCase(),
+        })
+      }
+      return trouves
+    },
+    { id: testId, liste: CIBLES_TACTILES },
+  )
+}
+
+/**
  * La même question, posée à un sélecteur quelconque.
  *
  * `recouvrementsDe` ne savait viser qu'un `data-testid`, et c'est ce qui a
@@ -776,12 +845,10 @@ for (const vue of LARGEURS) {
             // Le geste décide, pas la place : une tablette large se touche.
             const plancherHaut = vue.tactile ? 44 : 24
             const resultat = await page.evaluate(
-              ({ plancher }: { plancher: number }) => {
+              ({ plancher, liste }: { plancher: number; liste: string }) => {
                 const notres: { quoi: string; l: number; h: number }[] = []
                 const maplibre: { quoi: string; l: number; h: number }[] = []
-                const cibles = document.querySelectorAll(
-                  'button, a[href], summary, [role="button"], select, textarea, input',
-                )
+                const cibles = document.querySelectorAll(liste)
                 for (const el of Array.from(cibles)) {
                   const propre = el.getBoundingClientRect()
                   if (propre.width < 2 || propre.height < 2) continue
@@ -814,7 +881,7 @@ for (const vue of LARGEURS) {
                 }
                 return { notres, maplibre }
               },
-              { plancher: plancherHaut },
+              { plancher: plancherHaut, liste: CIBLES_TACTILES },
             )
 
             // Ce que la bibliothèque rend, relevé mais pas bloquant : voir
@@ -867,7 +934,37 @@ for (const vue of LARGEURS) {
           message: `panneau de tracé recouvert à ${vue.nom}`,
         })
         .toEqual([])
+      // Chaque commande, que la grille du panneau pouvait manquer (#554).
+      await expect
+        .poll(() => commandesRecouvertesDans(page, 'route-drawer'), {
+          message: `commande du tracé recouverte à ${vue.nom}`,
+        })
+        .toEqual([])
     })
+
+    /*
+      #554 encore : sous 801 px, la règle `top: 224px` s'ajoutait au `bottom`
+      du tracé ouvert, et « Ma position » s'étirait en capsule — 44 × 88 à
+      390, 44 × 144 à 800. Ni recouvrement ni débordement : aucune des
+      questions d'écran ne regardait la forme d'un bouton rond. La fiche
+      ouverte pose son propre `bottom` par la même mécanique : elle est
+      mesurée avec.
+    */
+    for (const etat of ['tracé ouvert', 'fiche ouverte'] as const) {
+      test(`« Ma position » garde sa forme, ${etat}`, async ({ page }) => {
+        await atteindre(page, etat, vue.tactile)
+        await expect
+          .poll(
+            () =>
+              page.getByTestId('locate-toggle').evaluate((el) => {
+                const r = el.getBoundingClientRect()
+                return Math.round(r.height)
+              }),
+            { message: `hauteur de « Ma position » à ${vue.nom}, ${etat}` },
+          )
+          .toBeLessThanOrEqual(48)
+      })
+    }
   })
 }
 

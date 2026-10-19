@@ -66,8 +66,10 @@ function genresPlancherises(cssBrut) {
 
 /** Les sélecteurs que la question 4 des règles d'écran interroge. */
 function genresMesures(sonde) {
-  const appel =
-    /querySelectorAll\(\s*\n?\s*'([^']*(?:button|select)[^']*)'/.exec(sonde);
+  // La liste est nommée une fois dans la sonde, et passée aux mesures qui
+  // s'en servent. Lire « le premier `querySelectorAll` » a pris pour elle
+  // une seconde liste écrite à la main pour #554.
+  const appel = /const CIBLES_TACTILES =\s*'([^']*)'/.exec(sonde);
   if (!appel) throw new Error(`Liste des cibles introuvable dans ${SONDE}`);
   const genres = new Set();
   for (const selecteur of virgulesDePremierNiveau(appel[1])) {

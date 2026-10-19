@@ -55,8 +55,17 @@
   /* Pleine largeur sous le point de rupture : les commandes passent
      au-dessus, à sa hauteur maximale — réserver trop coûte quelques pixels,
      recouvrir « Enregistrer » coûte le tracé. */
+  /* Le panneau est posé au-dessus de la poignée et de la barre d'onglets
+     depuis #546 : le bouton doit compter la même bande, sans quoi il
+     redescendait de 108 px sur le « × » du panneau (#554). Et `top: auto`,
+     parce que la règle `top: 224px` plus bas s'ajoutait à ce `bottom` et
+     étirait le bouton en capsule — 44 × 88 à 390 px, 44 × 144 à 800. */
   :root[data-trace='ouvert'] .wrapper {
-    bottom: calc(12px + var(--hauteur-trace));
+    top: auto;
+    bottom: calc(
+      12px + var(--hauteur-trace) + var(--hauteur-poignee) +
+        var(--hauteur-onglets) + env(safe-area-inset-bottom, 0px)
+    );
   }
 }
 
