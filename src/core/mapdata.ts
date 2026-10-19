@@ -101,7 +101,15 @@ function chainerLeTrace(itinerary: Itinerary): TraceChainee {
       if (saut >= MIN_GAP_METERS) {
         interruptions.push({ debutMetres: cumul, finMetres: cumul + saut })
       }
-      cumul += saut
+      /*
+        Le saut n'est pas ajouté à `cumul` ici : la boucle qui suit repart
+        du premier point du morceau (il n'est pas collé), et compte la
+        distance depuis le dernier point posé — c'est-à-dire le saut. Il était
+        ajouté deux fois, et chaque interruption après la première tombait
+        plus loin sur l'axe de la somme des trous précédents : sur trois
+        morceaux et deux trous de 300 et 400 m, la seconde à 2 293 m au lieu
+        de 1 994 (trouvé le 19/10 en écrivant donneesDeCarte.test.ts).
+      */
     }
     for (let i = colle ? 1 : 0; i < points.length; i += 1) {
       const point = points[i] as LonLat
