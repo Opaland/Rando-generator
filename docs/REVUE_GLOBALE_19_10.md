@@ -78,8 +78,13 @@ occurrence qui parle du tracé.
   `cumulativeDistances`, `graphSize`, `metresDuNiveau`,
   `HOTES_CONTACTES`) sont des outils de test ou des gardes : le dernier
   est la liste que la CSP doit couvrir.
-- **Promesse de confidentialité** : cherchée par sa formule dans le README,
-  `docs/`, `src/` et `public/`. Cohérente partout.
+- ~~**Promesse de confidentialité** : cherchée par sa formule dans le README,
+  `docs/`, `src/` et `public/`. Cohérente partout.~~ **Faux, et retiré le
+  jour même.** La seconde passe (ci-dessous) a trouvé « Rien ne quitte votre
+  navigateur » sur l'écran d'import de « Mes itinéraires », et un compteur de
+  fuites aveugle aux URL GET (#558). Chercher la formule « ne quitte » n'a
+  pas vu la phrase écrite en « Rien ne quitte » sur une autre ligne. C'est
+  exactement ce que le §3 dit des `grep` mémorisés.
 - **Poids livré** : `MapView` à 958 Ko / 247 Ko gzip, contre 956 / 247 au
   28/08. `index` à 411 Ko / 132 Ko gzip.
 
@@ -106,3 +111,69 @@ Les tests ont grossi deux fois plus vite que le code (+58 % contre
 - Les personas : je n'ai pas relu une à une les fiches datées depuis le
   28/08 contre ce qui a été livré. La revue est donc incomplète sur ce
   point, et je le dis plutôt que de laisser croire le contraire.
+
+## Seconde passe, le même jour : application entière, 24 issues
+
+Demandée par Cédric le 19/10 au soir. Elle porte sur tout : code, design,
+patterns, UX et QA. Cinq angles ont tourné en parallèle :
+- l'interface, mesurée à quatre largeurs et en gros texte ;
+- le code, relu en adversaire ;
+- les promesses faites à l'utilisateur ;
+- les règles jumelles ;
+- un QA exploratoire par parcours réels.
+
+Chaque constat a été reproduit ou mesuré, et les majeurs ont été revérifiés
+à la main avant d'être retenus.
+
+**Majeurs**
+- #548 : « Actualiser les tracés » efface la copie hors ligne avant de
+  savoir si le réseau répond (régression de #437).
+- #549 : un itinéraire perso neuf hérite de la déclaration et de l'objectif
+  d'un supprimé, par réutilisation d'id.
+- #550 : la zone restaurée au démarrage saute les gardes (partielle, schéma,
+  âge), §4.
+- #551 : un double-clic supprime sans confirmation, et annule une
+  déclaration.
+- #552 : l'impression sort la barre d'onglets et les boutons, et des lignes
+  se chevauchent.
+- #553 : la fiche recouvre le crédit de la carte (licence) et les boutons de
+  zoom.
+- #554 : **régression de mon #546 du jour**. « Ma position » recouvre le
+  « × » du panneau de tracé à 390 px, et ma sonde ne pouvait pas le voir.
+- #555 : un tap sur ⓘ lance une sortie à 390 px.
+- #556 : gros texte à 390 px, des commandes deviennent inatteignables et
+  l'onglet « Progression » est coupé.
+- #557 : attribution perdue (tracé dessiné, GPX réimporté, crédit imprimé
+  figé).
+- #558 : « Rien ne quitte votre navigateur » est faux à l'import, et le
+  compteur de fuites est aveugle aux requêtes GET.
+- #559 : sauvegarde, avec les déclarations seules, les réglages écrasés et
+  des points hors du globe.
+- #560 : enregistrement, avec une trace perdue si l'écriture échoue, une
+  alerte GPS qui reste, et une pause comptée dans l'historique.
+- #561 : page blanche sans service worker.
+- #562 : le glisser-déposer ignore FIT, TCX et ZIP.
+- #563 : le service worker perd la réponse quand `cache.put` échoue.
+
+**Moyens et mineurs**
+- #564 : deux longueurs par itinéraire, et un pourcentage déclaré au-delà
+  de 100 %.
+- #565 : une date UTC contre une date locale autour de minuit.
+- #566 : « 95 % » affiché sans la coche « bouclé ».
+- #567 : une balise vide devient 0, et « Invalid Date » s'affiche.
+- #568 : focus, Échap et bouton Retour.
+- #569 : quatre défauts mineurs de code.
+- #570 : quatre défauts mineurs de mise en page.
+- #571 : inventaire des textes et commentaires faux.
+
+**Ce que cette passe dit des sondes.** Les e2e étaient verts sur tout cela.
+Le défaut n'est pas l'absence de tests, c'est leur angle. Il fallait :
+- un vrai `page.pdf` pour l'impression ;
+- `elementFromPoint` sur les commandes de la carte quand la fiche est
+  ouverte ;
+- le gros texte sur plus d'un état ;
+- un contexte non sécurisé pour le service worker ;
+- un double-clic.
+
+Chacun de ces angles mérite d'entrer dans la sonde quand son correctif sera
+fait (§6quinquies).
