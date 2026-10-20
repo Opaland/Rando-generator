@@ -54,9 +54,10 @@ export function gpxAttributionFor(network: Network): GpxAttribution | null {
         type de sentier, pas sa provenance — et les confondre produisait un
         export muet.
 
-        La provenance se lit maintenant sur l'itinéraire (`attributionDe`).
-        Ce repli-ci ne vaut donc que pour ce qui a réellement été dessiné
-        dans l'application.
+        La provenance se lit maintenant sur l'itinéraire (`attributionDe`) —
+        y compris pour un tracé dessiné, qui porte celle des sentiers qu'il
+        suit (#557). Ce repli ne vaut donc que pour un `PERSO` dont on ne
+        sait rien.
       */
       return null
   }
@@ -80,8 +81,10 @@ export function attributionDe(itinerary: Itinerary): GpxAttribution | null {
  *
  * On ne l'invente pas — une attribution fausse est pire qu'absente. On
  * prévient que l'export sera muet, et la personne décide de ce qu'elle en
- * fait. Rien à dire pour un tracé dessiné à la main : il n'a pas de source
- * manquante, il n'en a pas.
+ * fait. Rien à dire pour un tracé dessiné dans l'application : il porte
+ * la source des sentiers qu'il suit (`attributionDuTrace`, #557). Ce
+ * commentaire le disait « sans source », et c'était faux — le crayon suit
+ * la géométrie du graphe, il ne la dessine pas.
  */
 export function mentionDeSource(itinerary: Itinerary): string | null {
   if (attributionDe(itinerary)) return null

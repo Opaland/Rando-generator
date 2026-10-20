@@ -47,6 +47,7 @@ import {
   fetchElevationProfile,
   ElevationError,
 } from '../core/elevation.ts'
+import { attributionDuTrace } from '../core/attributionDuTrace.ts'
 import { polylineLengthMeters } from '../core/sampling.ts'
 
 /** Ce que le tracé ajoute à l'état du store. */
@@ -336,6 +337,9 @@ export function trancheTrace(deps: DependancesTrace): ActionsTrace {
       const { drawPath } = deps.etatTrace()
       if (drawPath.length < 2) return
       const identifiants = await deps.identifiantsPerso()
+      const { balises, perso } = deps.itinerairesDuGraphe()
+      // La source des sentiers suivis : le crayon copie leur géométrie (#557).
+      const attribution = attributionDuTrace(drawPath, [...balises, ...perso])
       const itineraire: Itinerary = {
         osmRelationId: identifiants.relation(),
         ref: null,
@@ -344,6 +348,7 @@ export function trancheTrace(deps: DependancesTrace): ActionsTrace {
         ways: [{ osmWayId: identifiants.chemin(), coords: drawPath }],
         totalMeters: polylineLengthMeters(drawPath),
         fetchedAt: new Date().toISOString(),
+        ...(attribution && { attribution }),
       }
       await deps.enregistrerLeTrace(itineraire)
     },

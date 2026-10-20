@@ -270,10 +270,15 @@ describe('buildSummary — les provenances dont les chiffres sont tirés', () =>
   })
 
   /*
-    Et un tracé réellement dessiné à la main ne doit rien. Sans ce cas, un
+    Et un `PERSO` dont on ne sait rien ne remonte rien. Sans ce cas, un
     repli « toujours OpenStreetMap » passerait tous les autres.
+
+    Ce test s'appelait « un tracé dessiné à la main ne doit rien » jusqu'au
+    20/10 : faux, le crayon suit la géométrie des sentiers et en porte la
+    source (#557, test suivant). Le cas reste juste, son titre ne l'était
+    plus.
   */
-  it('ne remonte aucune provenance pour un tracé dessiné à la main', () => {
+  it('ne remonte aucune provenance pour un PERSO sans source connue', () => {
     const bilan = buildSummary({
       global,
       results: [result(9, 30)],
@@ -281,5 +286,32 @@ describe('buildSummary — les provenances dont les chiffres sont tirés', () =>
       tracks: [],
     })
     expect(bilan.sources).toEqual([])
+  })
+
+  it('crédite à part chaque source d’un tracé dessiné sur plusieurs', () => {
+    const trace: Itinerary = {
+      ...itinerary(9, 'Mon tour', 'PERSO'),
+      attribution: {
+        author: 'les contributeurs OpenStreetMap ; Métropole de Lyon',
+        license:
+          'https://opendatacommons.org/licenses/odbl/ ; https://www.etalab.gouv.fr/licence-ouverte-open-licence',
+      },
+    }
+    const bilan = buildSummary({
+      global,
+      results: [result(9, 30)],
+      itineraries: [trace],
+      tracks: [],
+    })
+    expect(bilan.sources).toEqual([
+      {
+        author: 'les contributeurs OpenStreetMap',
+        license: 'https://opendatacommons.org/licenses/odbl/',
+      },
+      {
+        author: 'Métropole de Lyon',
+        license: 'https://www.etalab.gouv.fr/licence-ouverte-open-licence',
+      },
+    ])
   })
 })

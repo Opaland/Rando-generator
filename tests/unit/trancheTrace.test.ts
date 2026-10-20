@@ -1,6 +1,7 @@
 import { AllocateurPerso } from '../../src/core/identifiantsPerso.ts'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { Itinerary, LonLat } from '../../src/core/types.ts'
+import { gpxAttributionFor } from '../../src/core/gpxExport.ts'
 
 /**
  * La tranche « tracé » du store (issue #155).
@@ -221,6 +222,21 @@ describe('enregistrer un tracé', () => {
     expect(itineraire.network).toBe('PERSO')
     expect(itineraire.osmRelationId).toBeLessThan(0)
     expect(itineraire.totalMeters).toBeGreaterThan(0)
+  })
+
+  /*
+    Issue #557 : le tracé suit la géométrie du GR, et s'exportait sans
+    l'ODbL. Il porte maintenant la source de ce qu'il suit.
+  */
+  it('porte l’attribution des sentiers qu’il suit', async () => {
+    const b = banc([segment(1, [4.5, 45.4])])
+    b.actions.toggleDrawMode()
+    b.actions.addDrawPoint([4.5, 45.4])
+    b.actions.addDrawPoint([4.503, 45.4])
+    await b.actions.saveDrawnItinerary('Mon tour')
+    expect((b.enregistres[0] as Itinerary).attribution).toEqual(
+      gpxAttributionFor('GR'),
+    )
   })
 
   /** Un nom vide ne doit pas produire un itinéraire sans nom dans la liste. */
