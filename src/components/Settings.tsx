@@ -6,6 +6,10 @@ import {
   type NiveauTolerance,
 } from '../core/tolerance.ts'
 import { MIN_TOLERANCE, MAX_TOLERANCE, useAppStore } from '../store/appStore.ts'
+import {
+  creerReglageDiffere,
+  type ReglageDiffere,
+} from '../lib/reglageDiffere.ts'
 import styles from './Settings.module.css'
 
 /** Réglage de la tolérance de matching (25–100 m) avec recalcul. */
@@ -23,27 +27,30 @@ export function Settings() {
   const [ouvert, setOuvert] = useState<boolean | null>(null)
   // Valeur en cours de réglage ; null = suivre la valeur du store.
   const [draft, setDraft] = useState<number | null>(null)
-  const commitTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  useEffect(
-    () => () => {
-      if (commitTimer.current) clearTimeout(commitTimer.current)
-    },
-    [],
-  )
+  // Petit délai pour ne pas recalculer à chaque cran du curseur. Le
+  // brouillon et le minuteur vivent dans `lib/reglageDiffere`, où leurs
+  // deux défauts de #569 sont tenus par des tests.
+  // Créé dans l'effet, pas au rendu : sous `StrictMode`, l'effet est joué,
+  // défait puis rejoué, et une instance démontée ne rendrait plus jamais la
+  // main au magasin.
+  const reglage = useRef<ReglageDiffere | null>(null)
+  useEffect(() => {
+    const instance = creerReglageDiffere({
+      delaiMs: 250,
+      ecrire: setTolerance,
+      brouillon: setDraft,
+    })
+    reglage.current = instance
+    return () => {
+      instance.demonter()
+    }
+  }, [setTolerance])
 
   const shown = draft ?? toleranceMeters
   const niveauActuel: NiveauTolerance | null = niveauDesMetres(shown)
 
   const onChange = (next: number) => {
-    setDraft(next)
-    if (commitTimer.current) clearTimeout(commitTimer.current)
-    // Petit délai pour ne pas recalculer à chaque cran du curseur.
-    commitTimer.current = setTimeout(() => {
-      void setTolerance(next).then(() => {
-        setDraft(null)
-      })
-    }, 250)
+    reglage.current?.changer(next)
   }
 
   return (
