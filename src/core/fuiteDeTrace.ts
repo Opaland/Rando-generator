@@ -154,14 +154,38 @@ export function requeteContientUnPoint(
   corps: string | null | undefined,
   echantillon: readonly string[],
 ): boolean {
+  if (corpsContientUnPoint(corps, echantillon)) return true
+  const paires = pairesDeLAdresse(url)
+  if (paires) {
+    return paires.some((paire) => corpsContientUnPoint(paire, echantillon))
+  }
   let adresse = url
   try {
     adresse = decodeURIComponent(url)
   } catch {
     // Mal encodée : on la lit telle quelle.
   }
-  return (
-    corpsContientUnPoint(corps, echantillon) ||
-    corpsContientUnPoint(adresse, echantillon)
-  )
+  return corpsContientUnPoint(adresse, echantillon)
+}
+
+/**
+ * Les points d'une adresse `lon=a|b|…&lat=x|y|…`, remis par paires.
+ *
+ * Les cent longitudes y viennent d'un bloc, les cent latitudes d'un autre :
+ * chercher la longitude d'un point et sa latitude dans toute l'adresse ne
+ * vérifie pas qu'elles forment **un** point (revue du 20/10). Quelqu'un qui
+ * a marché le GR et ouvre son profil pouvait voir crier à la fuite. `null`
+ * quand l'adresse n'a pas cette forme.
+ */
+function pairesDeLAdresse(url: string): string[] | null {
+  let parametres: URLSearchParams
+  try {
+    parametres = new URL(url).searchParams
+  } catch {
+    return null
+  }
+  const lons = parametres.get('lon')?.split('|')
+  const lats = parametres.get('lat')?.split('|')
+  if (!lons || !lats || lons.length !== lats.length) return null
+  return lons.map((lon, i) => `${lon} ${lats[i] ?? ''}`)
 }

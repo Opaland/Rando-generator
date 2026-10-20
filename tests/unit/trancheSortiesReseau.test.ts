@@ -165,3 +165,34 @@ describe('ce que le compteur regarde (issue #558)', () => {
     expect(lire().requetesAvecTrace).toBe(1)
   })
 })
+
+/*
+  Revue du 20/10 : dans une URL d'altimétrie, les cent longitudes viennent
+  d'un bloc et les cent latitudes d'un autre. Chercher la longitude d'un
+  point et sa latitude séparément dans toute l'adresse ne vérifie pas
+  qu'elles forment **un** point : quelqu'un qui a marché le GR et ouvre son
+  profil pouvait voir crier à la fuite.
+*/
+describe('une URL lon=…&lat=… se lit par paires', () => {
+  it('un point dont la longitude et la latitude sont dans deux paires différentes ne compte pas', () => {
+    const { actions, lire } = harnais({
+      tracks: [trace([[4.512345, 45.412345], [4.7, 45.7]])],
+    })
+    actions.noterSortieReseau(
+      'https://data.geopf.fr/altimetrie/1.0/calcul/alti/rest/elevationLine.json?lon=4.512345|4.6&lat=45.5|45.412345',
+      null,
+    )
+    expect(lire().requetesAvecTrace).toBe(0)
+  })
+
+  it('la même paire, au même rang, compte', () => {
+    const { actions, lire } = harnais({
+      tracks: [trace([[4.512345, 45.412345], [4.7, 45.7]])],
+    })
+    actions.noterSortieReseau(
+      'https://data.geopf.fr/altimetrie/1.0/calcul/alti/rest/elevationLine.json?lon=4.6|4.512345&lat=45.5|45.412345',
+      null,
+    )
+    expect(lire().requetesAvecTrace).toBe(1)
+  })
+})
