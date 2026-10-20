@@ -1,20 +1,24 @@
 import { test, expect } from '@playwright/test'
 import pilatFixture from '../fixtures/overpass/pilat.json' with { type: 'json' }
-import { afficherTousLesReseaux, mockTiles, MIRROR_1, MIRROR_2 } from './helpers.ts'
+import {
+  afficherTousLesReseaux,
+  mockTiles,
+  retenirLaReponse,
+  MIRROR_1,
+  MIRROR_2,
+} from './helpers.ts'
 
 test('le chargement d’une zone peut être annulé sans bloquer l’UI', async ({
   page,
 }) => {
   await mockTiles(page)
-  const pending: { resolve: (() => void) | null } = { resolve: null }
-  await page.route('**/api/interpreter', async (route) => {
-    // Requête volontairement suspendue : on veut observer l'état « en cours »
-    // assez longtemps pour cliquer Annuler avant qu'elle n'aboutisse.
-    await new Promise<void>((resolve) => {
-      pending.resolve = resolve
-    })
-    await route.fulfill({ json: pilatFixture })
-  })
+  // Requête volontairement suspendue : on veut observer l'état « en cours »
+  // assez longtemps pour cliquer Annuler avant qu'elle n'aboutisse.
+  const relacher = await retenirLaReponse(
+    page,
+    '**/api/interpreter',
+    (route) => route.fulfill({ json: pilatFixture }),
+  )
   await page.goto('/')
 
   await page.getByTestId('zone-pilat').click()
@@ -30,7 +34,7 @@ test('le chargement d’une zone peut être annulé sans bloquer l’UI', async 
 
   // La requête suspendue finit par aboutir en arrière-plan : elle ne doit
   // plus ressusciter l'état de chargement ni faire planter l'app.
-  pending.resolve?.()
+  relacher()
   await page.waitForTimeout(300)
   await expect(page.getByTestId('zone-loading')).toHaveCount(0)
   await expect(
@@ -40,13 +44,11 @@ test('le chargement d’une zone peut être annulé sans bloquer l’UI', async 
 
 test('l’attente dissuade de recharger la page', async ({ page }) => {
   await mockTiles(page)
-  const pending: { resolve: (() => void) | null } = { resolve: null }
-  await page.route('**/api/interpreter', async (route) => {
-    await new Promise<void>((resolve) => {
-      pending.resolve = resolve
-    })
-    await route.fulfill({ json: pilatFixture })
-  })
+  const relacher = await retenirLaReponse(
+    page,
+    '**/api/interpreter',
+    (route) => route.fulfill({ json: pilatFixture }),
+  )
   await page.goto('/')
 
   await page.getByTestId('zone-pilat').click()
@@ -59,7 +61,7 @@ test('l’attente dissuade de recharger la page', async ({ page }) => {
   await expect(loading).toContainText(/gardée sur votre appareil/i)
   await expect(page.getByTestId('zone-cancel')).toBeVisible()
 
-  pending.resolve?.()
+  relacher()
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })
@@ -81,41 +83,18 @@ test('la bascule de miroir affiche un message de nouvelle tentative', async ({
   // deux sondages de Playwright : le test a rougi une fois dans une suite
   // complète, jamais isolé, et n'a pas été reproductible en cinq essais.
   // Un état transitoire ne se guette pas, il se retient.
-  /*
-    Le relâchement porte un drapeau, et pas seulement une fonction.
-
-    La version précédente posait `ouvrir` **depuis le gestionnaire de
-    route**, et le test l'appelait ensuite avec `?.()`. Si le gestionnaire
-    n'avait pas encore tourné — le message « nouvelle tentative » naît quand
-    l'application lance la requête, pas quand Playwright l'intercepte —
-    `ouvrir` valait encore `null`, l'appel ne faisait rien en silence, et le
-    second miroir restait bloqué à jamais. Mesuré : un échec sur la suite
-    complète du 23/08, jamais reproduit isolément en trois essais.
-
-    C'est la même faute que dans `fermerLeGuide` le matin même : un test qui
-    suppose un ordre que rien ne garantit. Le drapeau supprime l'ordre au
-    lieu de parier dessus.
-  */
-  const relachement: { demande: boolean; ouvrir: (() => void) | null } = {
-    demande: false,
-    ouvrir: null,
-  }
-  await page.route(MIRROR_2, async (route) => {
-    if (!relachement.demande) {
-      await new Promise<void>((resolve) => {
-        relachement.ouvrir = resolve
-      })
-    }
-    await route.fulfill({ json: pilatFixture })
-  })
+  // Le relâchement porte un drapeau : voir `retenirLaReponse`, où cette
+  // correction du 23/08 vit désormais pour les trois tests du fichier.
+  const relacher = await retenirLaReponse(page, MIRROR_2, (route) =>
+    route.fulfill({ json: pilatFixture }),
+  )
   await page.goto('/')
 
   await page.getByTestId('zone-pilat').click()
   await expect(page.getByTestId('zone-loading')).toContainText(
     /nouvelle tentative/i,
   )
-  relachement.demande = true
-  relachement.ouvrir?.()
+  relacher()
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
     timeout: 15_000,
   })

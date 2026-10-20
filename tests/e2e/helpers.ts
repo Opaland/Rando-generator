@@ -1,4 +1,4 @@
-import { expect, type Locator, type Page } from '@playwright/test'
+import { expect, type Locator, type Page, type Route } from '@playwright/test'
 import pilatFixture from '../fixtures/overpass/pilat.json' with { type: 'json' }
 import poiFixture from '../fixtures/overpass/poi.json' with { type: 'json' }
 
@@ -44,6 +44,41 @@ export async function waitForMapReady(page: Page): Promise<void> {
     undefined,
     { timeout: 30_000 },
   )
+}
+
+/**
+ * Retient les réponses à `motif` jusqu'à ce qu'on les relâche.
+ *
+ * Le relâchement porte un drapeau, et pas seulement une fonction. Poser
+ * `ouvrir` depuis le gestionnaire de route puis l'appeler avec `?.()`
+ * suppose que Playwright a déjà intercepté la requête — or l'état
+ * « chargement » que le test attend naît quand l'application **lance** la
+ * requête. Si le gestionnaire n'a pas encore tourné, l'appel ne fait rien
+ * en silence, et la réponse reste bloquée à jamais. Le défaut a été corrigé
+ * dans un test de `loading.spec.ts` le 23/08, pas dans ses deux voisins :
+ * l'un d'eux est tombé le 20/10 (CLAUDE.md §4 et §6ter).
+ */
+export async function retenirLaReponse(
+  page: Page,
+  motif: string,
+  repondre: (route: Route) => Promise<void>,
+): Promise<() => void> {
+  const etat: { relache: boolean; ouvrir: (() => void) | null } = {
+    relache: false,
+    ouvrir: null,
+  }
+  await page.route(motif, async (route) => {
+    if (!etat.relache) {
+      await new Promise<void>((resolve) => {
+        etat.ouvrir = resolve
+      })
+    }
+    await repondre(route)
+  })
+  return () => {
+    etat.relache = true
+    etat.ouvrir?.()
+  }
 }
 
 /**
