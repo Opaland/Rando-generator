@@ -8,9 +8,20 @@ export function formatKm(meters: number): string {
   return `${kmFormat.format(meters / 1000)} km`
 }
 
-/** « 34,5 % » à partir d'un pourcentage 0–100. */
+/**
+ * « 34,5 % » à partir d'un pourcentage 0–100, **tronqué** au dixième.
+ *
+ * Choix de présentation, tranché au jugement (§2) le 20/10, issue #566 :
+ * l'arrondi au plus proche affichait « 95 % » à 94,95 % — sans la coche
+ * d'un seuil à 95 — et « 100 % » avec 100 m restants, parce que
+ * `isCompleted` et les jalons comparent la valeur brute. Tronquer fait
+ * dire à l'écran la même chose qu'au calcul : un seuil n'est affiché
+ * qu'une fois atteint. Écarté : arrondir aussi la valeur comparée par
+ * `isCompleted`, qui changerait ce qui est calculé — une sortie serait
+ * dite bouclée à 94,95 %.
+ */
 export function formatPct(pct: number): string {
-  return `${pctFormat.format(pct)} %`
+  return `${pctFormat.format(Math.floor(pct * 10) / 10)} %`
 }
 
 const moFormat = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 })

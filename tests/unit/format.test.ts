@@ -7,6 +7,11 @@ import {
   displayName,
 } from '../../src/lib/format.ts'
 import type { Itinerary } from '../../src/core/types.ts'
+import {
+  COMPLETION_CHOICES,
+  MILESTONES,
+  isCompleted,
+} from '../../src/core/milestones.ts'
 
 /**
  * Le chronomètre de l'écran de marche (issue #152, pierre 3).
@@ -43,8 +48,37 @@ describe('formatPct', () => {
   // Trouvé par mutation du 17/10 : jamais testé directement avec une valeur
   // à plus d'une décimale, donc `maximumFractionDigits: 1` pouvait
   // disparaître sans qu'aucun test ne s'en aperçoive.
-  it('arrondit à une décimale, pas plus', () => {
-    expect(formatPct(34.567)).toBe('34,6 %')
+  it('garde une décimale, pas plus', () => {
+    expect(formatPct(34.567)).toBe('34,5 %')
+    expect(formatPct(34)).toBe('34 %')
+  })
+
+  /*
+    Issue #566 : `formatPct` arrondissait au plus proche, `isCompleted` et
+    les jalons comparent la valeur brute. À 94,95 %, l'écran affichait
+    « 95 % » sans la coche d'un seuil à 95 ; à 99,95 %, « 100 % » avec
+    100 m restants. L'affichage et le seuil doivent dire la même chose,
+    pour toute valeur — d'où une grille fine plutôt que deux exemples.
+  */
+  it('n’affiche jamais un seuil que le calcul n’a pas atteint', () => {
+    expect(formatPct(94.95)).toBe('94,9 %')
+    expect(formatPct(99.95)).toBe('99,9 %')
+    const seuils = [...new Set([...COMPLETION_CHOICES, ...MILESTONES])]
+    for (let milliemes = 0; milliemes <= 100_000; milliemes += 7) {
+      const pct = milliemes / 1_000
+      const affiche = Number(formatPct(pct).replace(' %', '').replace(',', '.'))
+      for (const seuil of seuils) {
+        expect(affiche >= seuil, `${String(pct)} % contre ${String(seuil)}`).toBe(
+          isCompleted(pct, seuil),
+        )
+      }
+    }
+  })
+
+  it('affiche bien le seuil quand il est atteint', () => {
+    expect(formatPct(95)).toBe('95 %')
+    expect(formatPct(100)).toBe('100 %')
+    expect(formatPct(54.5)).toBe('54,5 %')
   })
 })
 
