@@ -1,4 +1,5 @@
 import { polylineLengthMeters } from './sampling.ts'
+import { segmentsDe } from './segmentsDeTrace.ts'
 import type { Track } from './types.ts'
 
 /**
@@ -28,9 +29,12 @@ interface HistoryStats {
   lastDate: string | null
 }
 
-/** Longueur d'une trace, en mètres. */
+/** Longueur marchée d'une trace, en mètres : sans le trait entre deux tronçons (#560). */
 export function trackDistanceMeters(track: Track): number {
-  return polylineLengthMeters(track.points)
+  return segmentsDe(track).reduce(
+    (total, segment) => total + polylineLengthMeters(segment),
+    0,
+  )
 }
 
 /** Mois UTC « AAAA-MM » d'une date ISO, ou null si elle est illisible. */

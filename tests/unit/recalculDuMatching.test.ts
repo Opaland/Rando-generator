@@ -149,3 +149,50 @@ describe('init — l’ouverture de la base échoue', () => {
     )
   })
 })
+
+/*
+  Issue #560 : le magasin transmet les coupures à l'appariement. Le calcul
+  lui-même est éprouvé dans `matchingQuality.test.ts` ; ici, c'est le fil
+  entre `assemblerPourLAppariement` et `computeMatching` — l'oublier rendrait
+  la coupure inopérante sans qu'aucun test du cœur ne le voie.
+*/
+describe('les coupures d’une trace arrivent jusqu’à l’appariement', () => {
+  it('ne crédite pas le trou d’une pause sous le kilomètre', async () => {
+    const LAT = 45.4
+    const points: [number, number][] = []
+    for (let lon = 4.5; lon <= 4.6 + 1e-9; lon += 0.0002) {
+      // Un trou de ~470 m, entre 4,540 et 4,546 : la pause.
+      if (lon > 4.54 + 1e-9 && lon < 4.546 - 1e-9) continue
+      points.push([Number(lon.toFixed(7)), LAT])
+    }
+    const debut = points.findIndex(([lon]) => lon >= 4.546 - 1e-9)
+    useAppStore.setState({
+      itineraries: [
+        {
+          osmRelationId: 1,
+          ref: 'GR test',
+          name: null,
+          network: 'GR',
+          ways: [{ osmWayId: 10, coords: [[4.5, LAT], [4.6, LAT]] }],
+          totalMeters: 7800,
+          fetchedAt: '2026-08-19T00:00:00Z',
+        },
+      ],
+      tracks: [
+        {
+          id: 'sortie-1',
+          filename: 'Sortie enregistrée',
+          points,
+          date: null,
+          importedAt: '',
+          debutsDeSegment: [debut],
+        },
+      ],
+    })
+
+    await useAppStore.getState().setTolerance(50)
+
+    const pct = useAppStore.getState().matching?.global.pct ?? 100
+    expect(pct).toBeLessThan(96)
+  })
+})

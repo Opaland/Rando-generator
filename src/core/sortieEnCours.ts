@@ -109,6 +109,19 @@ function segmentCompte(
 }
 
 /**
+ * Où la trace d'une sortie se coupe : là où l'écran ne comptait pas le pas
+ * — la même règle (`segmentCompte`), pour que l'historique, la carte et
+ * l'export disent ce que l'écran disait (#560 : 2 km à l'écran de fin,
+ * 7 km dans l'historique). Partagée par la trace rangée et la provisoire.
+ */
+function debutsDeSegment(e: Enregistrement): number[] {
+  return e.points.flatMap((point, i) => {
+    const avant = e.points[i - 1]
+    return avant && !segmentCompte(avant, point, e.intervalles) ? [i] : []
+  })
+}
+
+/**
  * Découpe les points en tronçons continus, coupés aux pauses et aux trous
  * GPS silencieux (`segmentCompte`) — pour que le dénivelé se calcule
  * segment par segment, comme la distance et le profil, plutôt que sur la
@@ -224,6 +237,7 @@ export function versTrace(e: Enregistrement, id: string): Track | null {
     times: e.points.map((point) => point.instant),
     hdops: null,
     precisionsMetres: e.points.map((point) => point.precisionMetres),
+    debutsDeSegment: debutsDeSegment(e),
   }
 }
 
@@ -297,6 +311,7 @@ export function traceProvisoire(e: Enregistrement): Track | null {
     times: e.points.map((point) => point.instant),
     hdops: null,
     precisionsMetres: e.points.map((point) => point.precisionMetres),
+    debutsDeSegment: debutsDeSegment(e),
   }
 }
 

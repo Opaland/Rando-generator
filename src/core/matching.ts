@@ -112,6 +112,12 @@ interface MatchOptions {
    * comme avant cette option.
    */
   trackTimes?: (number | null)[] | undefined
+  /**
+   * Les indices `i` de `trackPoints` où le pas `i − 1 → i` n'a pas été
+   * marché : une pause, la jonction entre deux traces (#560). Jamais
+   * reliés, même sous MAX_GAP_METERS. `core/segmentsDeTrace.ts` les calcule.
+   */
+  coupures?: readonly number[] | undefined
 }
 
 /**
@@ -245,6 +251,7 @@ export function windowedSpeedMps(
 function buildTrackIndex(
   points: LonLat[],
   times?: (number | null)[],
+  coupures: ReadonlySet<number> = new Set(),
 ): TrackIndex {
   const index: TrackIndex = new Map()
   if (points.length === 0) return index
@@ -256,7 +263,7 @@ function buildTrackIndex(
   for (let i = 1; i < points.length; i++) {
     const a = points[i - 1] as LonLat
     const b = points[i] as LonLat
-    const tropLoin = distanceMeters(a, b) > MAX_GAP_METERS
+    const tropLoin = coupures.has(i) || distanceMeters(a, b) > MAX_GAP_METERS
     const tropRapide =
       times != null &&
       (windowedSpeedMps(points, times, i) ?? 0) > MAX_WALK_SPEED_MPS
@@ -703,7 +710,11 @@ export function runMatching(
 ): MatchResult {
   const stepMeters = options.stepMeters ?? STEP_METERS
   const samples = buildSamples(itineraries, stepMeters)
-  const index = buildTrackIndex(trackPoints, options.trackTimes)
+  const index = buildTrackIndex(
+    trackPoints,
+    options.trackTimes,
+    new Set(options.coupures),
+  )
   matchSamples(samples, index, options.toleranceMeters)
   const confirmMeters = options.toleranceMeters * CONFIRM_FACTOR
   const passages = applyContinuity(samples, {

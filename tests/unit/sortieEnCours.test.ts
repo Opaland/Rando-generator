@@ -21,7 +21,8 @@ import {
   type PointBrut,
 } from '../../src/core/recorder.ts'
 import { distanceMeters } from '../../src/core/geo.ts'
-import type { LonLat } from '../../src/core/types.ts'
+import type { LonLat, Track } from '../../src/core/types.ts'
+import { trackDistanceMeters } from '../../src/core/history.ts'
 
 /**
  * Issue #152, pierre 3 — ce que l'écran de marche a le droit d'afficher.
@@ -382,6 +383,37 @@ describe('la trace produite à la fin', () => {
     const trace = versTrace(e, 'sortie-1')
     expect(trace?.hdops ?? null).toBeNull()
     expect(trace?.precisionsMetres).toEqual([8, 8, 8])
+  })
+
+  /*
+    Issue #560, sous-point 3, mesuré par la revue : 1 km à pied, pause,
+    reprise 5 km plus loin, 1 km à pied. L'écran de fin disait 2 km,
+    l'historique 7 : la trace rangée reliait les deux bouts de la pause.
+    La règle qui coupe est celle de l'écran (`segmentCompte`), pas une
+    seconde (§4ter).
+  */
+  it('coupe la trace à la pause, et l’historique dit ce que l’écran disait', () => {
+    let e = demarrer(enregistreurVide(), T0)
+    e = ajouterPoint(e, point(0, T0 + 1_000))
+    e = ajouterPoint(e, point(1, T0 + 2_000))
+    e = suspendre(e, T0 + 3_000)
+    e = reprendre(e, T0 + 900_000)
+    e = ajouterPoint(e, point(60, T0 + 901_000))
+    e = ajouterPoint(e, point(61, T0 + 902_000))
+    e = terminer(e, T0 + 903_000)
+
+    const trace = versTrace(e, 'sortie-1')
+    expect(trace?.debutsDeSegment).toEqual([2])
+    expect(trackDistanceMeters(trace as Track)).toBeCloseTo(
+      distanceParcourue(e),
+      6,
+    )
+  })
+
+  it('ne coupe pas une sortie faite d’une traite', () => {
+    let e = sortieDeTroisPoints()
+    e = terminer(e, T0 + 4_000)
+    expect(versTrace(e, 'sortie-1')?.debutsDeSegment).toEqual([])
   })
 
   it('nomme la trace de façon reconnaissable, sans nom de fichier inventé', () => {

@@ -94,6 +94,26 @@ describe('scénarios adverses du matching', () => {
     expect(pctOf(traceParallele(0, 0.0064))).toBeCloseTo(100, 0)
   })
 
+  /*
+    Issue #560 : une coupure marquée (une pause, la jonction entre deux
+    traces) n'est pas reliée, même à moins d'un kilomètre — rien ne dit
+    qu'on ait marché entre les deux. Ici, un trou de ~470 m.
+  */
+  it('une coupure marquée n’est pas reliée, même sous le kilomètre', () => {
+    const avant = traceParallele(0).filter(([lon]) => lon <= 4.54 + 1e-9)
+    const apres = traceParallele(0).filter(([lon]) => lon >= 4.546 - 1e-9)
+    const points = [...avant, ...apres]
+    const options = { toleranceMeters: 50, computedAt: '2026-08-19T00:00:00Z' }
+    const relie = runMatching(sentier(), points, options).global.pct
+    const coupe = runMatching(sentier(), points, {
+      ...options,
+      coupures: [avant.length],
+    }).global.pct
+    expect(relie).toBeCloseTo(100, 0)
+    expect(coupe).toBeLessThan(96)
+    expect(coupe).toBeGreaterThan(90)
+  })
+
   it('un vrai saut (plus d’un kilomètre) n’est pas considéré parcouru', () => {
     // Deux extrémités du sentier, rien entre les deux : trajet en voiture ou
     // appareil éteint. Seuls les abords des deux points comptent, et la

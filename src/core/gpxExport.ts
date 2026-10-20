@@ -1,4 +1,5 @@
 import type { Itinerary, LonLat, Network, Track } from './types.ts'
+import { tranchesDe } from './segmentsDeTrace.ts'
 
 /**
  * Export GPX : de quoi charger un itinéraire dans une montre, un GPS ou une
@@ -120,6 +121,8 @@ interface GpxExportOptions {
    * d'un itinéraire-cible, qui n'a jamais été marché.
    */
   pointTimes?: (string | null)[]
+  /** Où commence chaque tronçon, aligné sur `coords` (#560). */
+  debutsDeSegment?: number[]
 }
 
 function escapeXml(text: string): string {
@@ -149,6 +152,17 @@ export function buildGpxDocument(options: GpxExportOptions): string {
         : ''
       return `      <trkpt lat="${lat.toFixed(7)}" lon="${lon.toFixed(7)}">${balise}</trkpt>`
     })
+  // Un <trkseg> par tronçon : la coupure d'une pause survit à l'export, et
+  // l'application qui relira le fichier ne reliera pas ce qu'on n'a pas
+  // marché (#560).
+  const segments = tranchesDe({
+    points: coords,
+    ...(options.debutsDeSegment && { debutsDeSegment: options.debutsDeSegment }),
+  })
+    .map(
+      ([debut, fin]) =>
+        `    <trkseg>\n${points.slice(debut, fin).join('\n')}\n    </trkseg>`,
+    )
     .join('\n')
 
   // L'ordre des éléments de <metadata> est imposé par le schéma GPX 1.1 :
@@ -182,9 +196,7 @@ ${copyright}    <time>${escapeXml(createdAt)}</time>
   </metadata>
 ${blocReperes}  <trk>
     <name>${safeName}</name>
-    <trkseg>
-${points}
-    </trkseg>
+${segments}
   </trk>
 </gpx>
 `
@@ -221,6 +233,7 @@ export function gpxDocumentFromTrack(track: Track): string {
   return buildGpxDocument({
     name: trackDisplayName(track),
     coords: track.points,
+    ...(track.debutsDeSegment && { debutsDeSegment: track.debutsDeSegment }),
     attribution: null,
     // La date de la sortie plutôt que celle de son rangement en base ; à
     // défaut (trace importée sans date lisible), le moment de l'import

@@ -35,7 +35,7 @@ import {
 } from './trancheObjectifs.ts'
 import { creerVeilleGeo } from './veilleGeo.ts'
 import { GEO_OPTIONS, geolocationErrorMessage } from '../core/geolocation.ts'
-import type { Itinerary, LonLat, Track, UserPosition } from '../core/types.ts'
+import type { Itinerary, Track, UserPosition } from '../core/types.ts'
 import { DEFAULT_TOLERANCE_METERS, STEP_METERS } from '../core/types.ts'
 import {
   openSentiersDb,
@@ -86,6 +86,7 @@ import {
   type EtatImport,
 } from './trancheImport.ts'
 import { computeMatching } from './matchingClient.ts'
+import { assemblerPourLAppariement } from '../core/segmentsDeTrace.ts'
 import {
   trancheSortiesReseau,
   SORTIES_RESEAU_AU_REPOS,
@@ -438,17 +439,15 @@ export const useAppStore = create<AppState>()((set, get) => {
     // synchrone. `performance.mark` ne dépend d'aucun rendu.
     performance.mark('sentiers:recompute:debut')
     set({ matchingBusy: true })
-    const trackPoints: LonLat[] = tracks.flatMap((t) => t.points)
-    // Même longueur et alignement que trackPoints : une trace sans
-    // horodatage (#149) contribue des `null`, pas un décalage.
-    const trackTimes: (number | null)[] = tracks.flatMap(
-      (t) => t.times ?? t.points.map(() => null),
-    )
+    // Bout à bout, sans relier deux traces ni deux tronçons (#560).
+    const { trackPoints, trackTimes, coupures } =
+      assemblerPourLAppariement(tracks)
     const computedAt = new Date().toISOString()
     const result = await computeMatching({
       itineraries,
       trackPoints,
       trackTimes,
+      coupures,
       toleranceMeters,
       stepMeters: STEP_METERS,
       computedAt,
@@ -461,6 +460,7 @@ export const useAppStore = create<AppState>()((set, get) => {
             itineraries: customItineraries,
             trackPoints,
             trackTimes,
+            coupures,
             toleranceMeters,
             stepMeters: STEP_METERS,
             computedAt,
@@ -890,8 +890,7 @@ export const useAppStore = create<AppState>()((set, get) => {
       const computedAt = new Date().toISOString()
       const resultat = await computeMatching({
         itineraries: tous,
-        trackPoints: track.points,
-        trackTimes: track.times,
+        ...assemblerPourLAppariement([track]),
         toleranceMeters,
         stepMeters: STEP_METERS,
         computedAt,

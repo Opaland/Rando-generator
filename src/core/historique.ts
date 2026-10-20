@@ -1,4 +1,4 @@
-import { polylineLengthMeters } from './sampling.ts'
+import { trackDistanceMeters } from './history.ts'
 import type { Track } from './types.ts'
 
 /**
@@ -66,7 +66,9 @@ export function preparerHistorique(tracks: Track[]): EntreeHistorique[] {
     const date = valide ? new Date(instant) : null
     return {
       track,
-      metres: polylineLengthMeters(track.points),
+      // La même longueur que les totaux de `history.ts` : deux calculs
+      // auraient divergé dès la première trace coupée (#560, §4ter).
+      metres: trackDistanceMeters(track),
       annee: date ? date.getFullYear() : null,
       instant: valide ? instant : null,
       // La date telle qu'elle est affichée fait partie du texte cherchable :

@@ -1,6 +1,7 @@
 import { slicePolyline } from './sampling.ts'
 import { chainWays, MIN_GAP_METERS } from './chainage.ts'
 import { distanceMeters } from './geo.ts'
+import { segmentsDe } from './segmentsDeTrace.ts'
 import type { Itinerary, LonLat, Network, Sample, Track } from './types.ts'
 import { STEP_METERS } from './types.ts'
 
@@ -347,8 +348,12 @@ export function buildTracksGeoJSON(
 ): LineCollection<TrackProperties> {
   return {
     type: 'FeatureCollection',
-    features: tracks
-      .filter((t) => t.points.length >= 2)
-      .map((t) => lineFeature(t.points, { trackId: t.id })),
+    // Un trait par tronçon : relier les deux bouts d'une pause dessinait un
+    // trajet que personne n'a marché (#560).
+    features: tracks.flatMap((t) =>
+      segmentsDe(t)
+        .filter((segment) => segment.length >= 2)
+        .map((segment) => lineFeature(segment, { trackId: t.id })),
+    ),
   }
 }
