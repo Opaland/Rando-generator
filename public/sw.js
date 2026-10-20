@@ -241,12 +241,32 @@ async function limiterTuiles(cache) {
  */
 const OPTIONS_MATCH = { ignoreVary: true }
 
+/**
+ * Range une copie de la réponse, sans jamais en priver la page.
+ *
+ * Appareil plein, `cache.put` lève `QuotaExceededError` — alors que le
+ * réseau, lui, a répondu. La réponse était perdue avec la copie : la page ne
+ * s'ouvrait pas, la tuile restait grise (#563). Ne pas pouvoir la ranger
+ * n'est pas une raison de ne pas la servir. Les deux stratégies passent par
+ * ici plutôt que de garder chacune son `put` (§4) ; `precharger` non, et
+ * c'est voulu : emporter, c'est ranger, et un rangement refusé y est un
+ * échec à compter.
+ */
+async function rangerSansBloquer(cache, request, reponse) {
+  try {
+    await cache.put(request, reponse.clone())
+    return true
+  } catch {
+    return false
+  }
+}
+
 /** Réseau d'abord, cache en secours : l'application reste à jour si possible. */
 async function reseauPuisCache(request, cacheName, secours) {
   const cache = await caches.open(cacheName)
   try {
     const reponse = await fetch(request)
-    if (reponse && reponse.ok) await cache.put(request, reponse.clone())
+    if (reponse && reponse.ok) await rangerSansBloquer(cache, request, reponse)
     secoursCache = false
     return reponse
   } catch (erreur) {
@@ -288,8 +308,7 @@ async function cachePuisReseau(request, cacheName) {
   // Une tuile tierce peut être « opaque » (sans en-têtes CORS) : elle reste
   // stockable et réutilisable telle quelle.
   if (reponse && (reponse.ok || reponse.type === 'opaque')) {
-    await cache.put(request, reponse.clone())
-    void limiterTuiles(cache)
+    if (await rangerSansBloquer(cache, request, reponse)) void limiterTuiles(cache)
   }
   return reponse
 }
