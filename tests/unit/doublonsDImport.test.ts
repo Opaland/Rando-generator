@@ -119,3 +119,28 @@ describe('un second fichier qui ressemble à un déjà importé', () => {
     expect(etat().importDoublons).toEqual([])
   })
 })
+
+/*
+  Issue #559, point 5, même forme que la restauration : `importerDoublon`
+  retirait le doublon de la liste **avant** d'écrire. Une écriture refusée
+  (appareil plein) le faisait disparaître de la liste comme de la base,
+  sans un mot, et l'exception remontait jusqu'au clic.
+*/
+describe('accepter un doublon quand la base refuse d’écrire', () => {
+  it('le laisse en attente, ne l’ajoute pas, et le dit', async () => {
+    const { deps, etat, actions } = await deuxFoisLeMemeTrace()
+    const [doublon] = etat().importDoublons
+    expect(doublon).toBeDefined()
+    deps.baseOuverte = () =>
+      Promise.resolve({
+        saveTrack: () =>
+          Promise.reject(new DOMException('plein', 'QuotaExceededError')),
+      } as unknown as Awaited<ReturnType<typeof deps.baseOuverte>>)
+
+    await expect(actions.importerDoublon(doublon!.id)).resolves.toBeUndefined()
+
+    expect(etat().importDoublons.map((d) => d.id)).toEqual([doublon!.id])
+    expect(etat().tracks).toHaveLength(1)
+    expect(etat().importErrors.join(' ')).toMatch(/b\.gpx/)
+  })
+})

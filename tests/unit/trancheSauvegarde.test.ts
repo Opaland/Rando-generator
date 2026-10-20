@@ -493,3 +493,61 @@ describe('clearBackupMessage', () => {
     expect(ecrits).toEqual([{ backupMessage: null }])
   })
 })
+
+/*
+  Issue #559, point 5 : une restauration interrompue laissait un état à
+  moitié écrit. Sur une erreur de quota au deuxième `saveTrack` : une trace
+  en base, aucune en mémoire, et aucun message — `Backup.tsx` lance
+  l'import en `void …finally()`, l'exception ne remontait nulle part.
+
+  Ce qui est attendu : l'écran montre ce que la base a reçu, ni plus ni
+  moins, et le dit.
+*/
+describe('une restauration qui s’arrête en route', () => {
+  function baseQuiCede(apres: number) {
+    const ecrites: string[] = []
+    return {
+      ecrites,
+      base: {
+        saveTrack: (t: Track) => {
+          if (ecrites.length >= apres) {
+            return Promise.reject(new DOMException('plein', 'QuotaExceededError'))
+          }
+          ecrites.push(t.id)
+          return Promise.resolve()
+        },
+        saveCustomItinerary: () => Promise.resolve(),
+        declarerParcours: () => Promise.resolve(),
+      },
+    }
+  }
+
+  it('montre ce que la base a reçu, et pas le reste', async () => {
+    const { base, ecrites } = baseQuiCede(1)
+    const { deps, etat } = banc(etatInitial(), base)
+    await trancheSauvegarde(deps).importerSauvegarde(
+      await archive({ tracks: [TRACE_A, TRACE_B] }),
+    )
+    expect(ecrites).toEqual(['a'])
+    expect(etat().tracks.map((t) => t.id)).toEqual(['a'])
+  })
+
+  it('le dit, au lieu de se taire', async () => {
+    const { base } = baseQuiCede(1)
+    const { deps, etat } = banc(etatInitial(), base)
+    await trancheSauvegarde(deps).importerSauvegarde(
+      await archive({ tracks: [TRACE_A, TRACE_B] }),
+    )
+    expect(etat().backupMessage).toMatch(/interrompue/)
+    expect(etat().backupMessage).toMatch(/1 trace ajoutée/)
+  })
+
+  it('ne touche pas aux réglages quand elle s’est arrêtée', async () => {
+    const { base } = baseQuiCede(0)
+    const { deps, journal } = banc(etatInitial(), base)
+    await trancheSauvegarde(deps).importerSauvegarde(
+      await archive({ tracks: [TRACE_A], toleranceMeters: 60 }),
+    )
+    expect(journal).not.toContain('tolerance:60')
+  })
+})

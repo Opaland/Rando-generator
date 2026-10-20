@@ -435,12 +435,25 @@ export function trancheImport(deps: DependancesImport): ActionsImport {
     async importerDoublon(id) {
       const doublon = deps.etat().importDoublons.find((d) => d.id === id)
       if (!doublon) return
+      // Écrire d'abord, retirer ensuite (#559) : retiré avant une écriture
+      // refusée — appareil plein —, le doublon disparaissait de la liste
+      // comme de la base, sans un mot. Il reste proposé, et on le dit.
+      const db = await deps.baseOuverte()
+      try {
+        if (db) await db.saveTrack(doublon.track)
+      } catch {
+        deps.set((state) => ({
+          importErrors: [
+            ...state.importErrors,
+            `${doublon.filename} : le navigateur a refusé de l’enregistrer.`,
+          ],
+        }))
+        return
+      }
       deps.set((state) => ({
         importDoublons: state.importDoublons.filter((d) => d.id !== id),
+        tracks: [...state.tracks, doublon.track],
       }))
-      const db = await deps.baseOuverte()
-      if (db) await db.saveTrack(doublon.track)
-      deps.set((state) => ({ tracks: [...state.tracks, doublon.track] }))
       await deps.recompute()
     },
 

@@ -130,6 +130,10 @@ const PLAFONDS: Record<string, number> = {
   // règle elle-même, `ajouterLesNeufs`, est sortie dans `core/backup.ts` ;
   // ce qui reste ici est son appel sur les trois listes, et son pourquoi.
   'trancheSauvegarde.ts': 270,
+  // Sorti de trancheSauvegarde le 20/10 (#559, point 5) : ce que la base a
+  // reçu d'une restauration interrompue. Le correctif portait la tranche à
+  // 301 lignes pour un plafond de 270.
+  'ecrireLaRestauration.ts': 90,
   'trancheDemonstration.ts': 230,
   'reseauxVisibles.ts': 100,
   'trancheAffichage.ts': 130,

@@ -3,7 +3,6 @@ import {
   backupFilename,
   buildBackup,
   compresserBackup,
-  resumeFusion,
   fusionnerItineraires,
   fusionnerTraces,
   lireArchiveBackup,
@@ -14,6 +13,7 @@ import type { ParcoursDeclare } from '../core/declaratif.ts'
 import type { AllocateurPerso } from '../core/identifiantsPerso.ts'
 import type { Itinerary, Track } from '../core/types.ts'
 import type { SentiersDb } from '../db/database.ts'
+import { ecrireLaRestauration, resumeDeRestauration } from './ecrireLaRestauration.ts'
 
 /**
  * La sauvegarde, sortie du store (issue #155).
@@ -185,16 +185,8 @@ export function trancheSauvegarde(
       )
 
       const db = await deps.baseOuverte()
-      if (db) {
-        for (const track of traces.tracks.slice(avant.tracks.length)) {
-          await db.saveTrack(track)
-        }
-        for (const itin of persos.itineraries.slice(
-          avant.customItineraries.length,
-        )) {
-          await db.saveCustomItinerary(itin)
-        }
-      }
+      const neufsTraces = traces.tracks.slice(avant.tracks.length)
+      const neufsPersos = persos.itineraries.slice(avant.customItineraries.length)
 
       /*
         Les déclarations se fusionnent comme le reste : ce qui est déjà là
@@ -211,11 +203,12 @@ export function trancheSauvegarde(
             ),
         ),
       ]
-      if (db) {
-        for (const declaration of declaresFusionnes) {
-          await db.declarerParcours(declaration)
-        }
-      }
+      // Ce que la base a reçu, et seulement cela (#559, point 5).
+      const ecrit = await ecrireLaRestauration(
+        db,
+        { traces: neufsTraces, persos: neufsPersos },
+        declaresFusionnes,
+      )
 
       /*
         Ajouter à l'état d'**maintenant**, pas poser celui d'avant les
@@ -228,24 +221,33 @@ export function trancheSauvegarde(
       deps.set({
         tracks: ajouterLesNeufs(
           apres.tracks,
-          traces.tracks,
+          [...avant.tracks, ...ecrit.traces],
           avant.tracks.length,
           (t) => t.id,
         ),
         customItineraries: ajouterLesNeufs(
           apres.customItineraries,
-          persos.itineraries,
+          [...avant.customItineraries, ...ecrit.persos],
           avant.customItineraries.length,
           (i) => i.osmRelationId,
         ),
         parcoursDeclares: ajouterLesNeufs(
           apres.parcoursDeclares,
-          declaresFusionnes,
+          ecrit.declarations ? declaresFusionnes : avant.parcoursDeclares,
           avant.parcoursDeclares.length,
           (d) => d.itineraryId,
         ),
       })
-      if (traces.ajoutees > 0 || persos.ajoutes > 0) await deps.recalculer()
+      if (ecrit.traces.length > 0 || ecrit.persos.length > 0) {
+        await deps.recalculer()
+      }
+
+      const resume = resumeDeRestauration(ecrit, traces, persos)
+      // Interrompue : sans les réglages (voir `resumeDeRestauration`).
+      if (ecrit.interrompue) {
+        deps.set({ backupMessage: resume })
+        return
+      }
 
       // Les réglages ne sont repris que s'ils sont présents : une sauvegarde
       // ne doit pas remettre la tolérance à zéro parce qu'elle est ancienne.
@@ -256,7 +258,7 @@ export function trancheSauvegarde(
         await deps.setCompletionPct(backup.settings.completionPct)
       }
 
-      deps.set({ backupMessage: resumeFusion(traces, persos) })
+      deps.set({ backupMessage: resume })
     },
 
     clearBackupMessage() {
