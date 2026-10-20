@@ -1,6 +1,7 @@
 import { AllocateurPerso } from './identifiantsPerso.ts'
 import type { ParcoursDeclare } from './declaratif.ts'
 import { traverseAntimeridien } from './domaine.ts'
+import { isWgs84Coordinate } from './geo.ts'
 import { trackFingerprint } from './gpx.ts'
 import type { Itinerary, LonLat, Track } from './types.ts'
 
@@ -160,13 +161,14 @@ function champs(valeur: unknown): Record<string, unknown> | null {
     : null
 }
 
+/**
+ * Un point, et un point **sur le globe** (#559). `estPoint` ne vérifiait
+ * que deux nombres : `[4.5, 95]` passait, et une trace de 2 780 km venue
+ * d'une sauvegarde modifiée à la main restait en base. GPX, TCX, FIT et
+ * l'enregistreur appellent la même règle.
+ */
 function estPoint(valeur: unknown): boolean {
-  return (
-    Array.isArray(valeur) &&
-    valeur.length === 2 &&
-    typeof valeur[0] === 'number' &&
-    typeof valeur[1] === 'number'
-  )
+  return Array.isArray(valeur) && valeur.length === 2 && isWgs84Coordinate(valeur)
 }
 
 function estTrace(valeur: unknown): valeur is Track {
@@ -222,7 +224,13 @@ function estItineraire(valeur: unknown): valeur is Itinerary {
       // Vérifier chaque coordonnée, pas seulement que `coords` est un
       // tableau : un `null` glissé là se propageait jusqu'au calcul de
       // longueur et au rendu de la carte, très loin d'ici (issue #166).
-      return Array.isArray(coords) && coords.length > 0 && coords.every(estPoint)
+      return (
+        Array.isArray(coords) &&
+        coords.length > 0 &&
+        coords.every(estPoint) &&
+        // La garde de la trace (#170) manquait à l'itinéraire perso (#559).
+        !traverseAntimeridien(coords as LonLat[])
+      )
     })
   )
 }

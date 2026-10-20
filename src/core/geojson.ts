@@ -1,3 +1,4 @@
+import { verifierDomaine } from './domaine.ts'
 import { isWgs84Coordinate } from './geo.ts'
 import type { LonLat, SourceItineraire } from './types.ts'
 
@@ -99,7 +100,12 @@ function lignesDe(geometry: Geometrie | null | undefined): LonLat[][] {
     }
     // Une ligne d'un seul point ne trace rien : on l'écarte sans bruit.
     if (ligne.length < 2 || !ligne.every(isWgs84Coordinate)) continue
-    lignes.push(ligne.map((p) => [p[0], p[1]] as LonLat))
+    const points = ligne.map((p) => [p[0], p[1]] as LonLat)
+    // Même garde, et même message, que GPX, TCX, FIT et la restauration :
+    // ce chemin-ci l'avait oubliée (#559, §4).
+    const horsDomaine = verifierDomaine(points)
+    if (horsDomaine) throw new GeoJsonError(horsDomaine)
+    lignes.push(points)
   }
   return lignes
 }

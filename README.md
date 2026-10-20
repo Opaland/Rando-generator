@@ -333,9 +333,12 @@ mathématique, et elle écarterait La Réunion, les Antilles ou la Guyane, où c
 calcul est parfaitement sain. Ce qui est refusé, c'est ce qu'on ne sait pas
 mesurer.
 
-Les quatre chemins par lesquels des coordonnées entrent portent la même garde,
-par la même fonction nommée : les lecteurs GPX, TCX et FIT, et la restauration
-de sauvegarde.
+Les cinq chemins par lesquels des coordonnées entrent portent la même garde,
+par la même fonction nommée : les lecteurs GPX, TCX et FIT, le GeoJSON déposé
+dans « Mes itinéraires », et la restauration de sauvegarde — traces comme
+itinéraires persos. Le GeoJSON et les itinéraires d'une sauvegarde l'avaient
+oubliée jusqu'au 20/10 (#559) : cette phrase en comptait quatre, et les
+disait tous gardés.
 
 Le hachage spatial du matching, lui, a été corrigé plutôt que borné : il
 découpe l'espace en carrés **de degrés**, et une cellule qui fait 118 m de

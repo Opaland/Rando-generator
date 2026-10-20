@@ -15,6 +15,7 @@ import {
   serialiserBackup,
 } from '../../src/core/backup.ts'
 import type { Itinerary, Track } from '../../src/core/types.ts'
+import { makeItinerary } from '../fixtures/synthetic.ts'
 
 /**
  * Sauvegarde complète (issue #132).
@@ -499,6 +500,72 @@ describe('domaine de validité à la restauration (issue #170)', () => {
     })
     const relue = await lireArchiveBackup(archive)
     expect(relue.tracks).toHaveLength(0)
+  })
+
+  /*
+    Issue #559, point 4 (QA, vu trois fois) : une sauvegarde portant
+    `points: [[4.5,95],[4.6,120]]` donnait « 1 trace ajoutée », de
+    2 779,9 km, toujours là après rechargement. `estPoint` vérifiait des
+    nombres, pas un lieu : GPX, TCX, FIT et l'enregistreur appellent
+    `estDansLeMonde`, la restauration non.
+  */
+  it('écarte une trace dont les points sont hors du globe', async () => {
+    const archive = await archiveDe({
+      tracks: [
+        {
+          id: 'nulle-part',
+          filename: 'pole.gpx',
+          points: [
+            [4.5, 95],
+            [4.6, 120],
+          ],
+          date: null,
+          importedAt: '2026-01-01T00:00:00Z',
+        },
+      ],
+      customItineraries: [],
+      settings: {},
+    })
+    const relue = await lireArchiveBackup(archive)
+    expect(relue.tracks).toHaveLength(0)
+  })
+
+  it('écarte un itinéraire perso hors du globe, ou qui franchit 180°', async () => {
+    const archive = await archiveDe({
+      tracks: [],
+      customItineraries: [
+        makeItinerary(-1, [
+          {
+            osmWayId: 1,
+            coords: [
+              [4.5, 45.4],
+              [4.5, 95],
+            ],
+          },
+        ]),
+        makeItinerary(-2, [
+          {
+            osmWayId: 2,
+            coords: [
+              [179.999, -17],
+              [-179.999, -17],
+            ],
+          },
+        ]),
+        makeItinerary(-3, [
+          {
+            osmWayId: 3,
+            coords: [
+              [4.5, 45.4],
+              [4.501, 45.4],
+            ],
+          },
+        ]),
+      ],
+      settings: {},
+    })
+    const relue = await lireArchiveBackup(archive)
+    expect(relue.customItineraries.map((i) => i.osmRelationId)).toEqual([-3])
   })
 
   it('garde une trace qui longe l’antiméridien sans le franchir', async () => {

@@ -1,3 +1,4 @@
+import { estDansLeMonde } from './coordonnees.ts'
 import { CELL_SIZE_DEG, type LonLat } from './types.ts'
 
 export const EARTH_RADIUS_METERS = 6_371_000
@@ -84,12 +85,13 @@ export function interpolate(a: LonLat, b: LonLat, t: number): LonLat {
  * plutôt qu'après coup.
  */
 export function isWgs84Coordinate(value: unknown): value is LonLat {
+  // Les bornes sont celles d'`estDansLeMonde`, et par lui : la même règle
+  // était écrite ici une seconde fois (§4ter, #559).
   return (
     Array.isArray(value) &&
     typeof value[0] === 'number' &&
     typeof value[1] === 'number' &&
-    Math.abs(value[0]) <= 180 &&
-    Math.abs(value[1]) <= 90
+    estDansLeMonde(value[0], value[1])
   )
 }
 
