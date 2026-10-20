@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test'
 import {
   afficherTousLesReseaux,
   buildGpx,
+  compterEnBase,
   fermerLeGuide,
   mockExternalNetwork,
 } from './helpers.ts'
@@ -76,7 +77,12 @@ test('un double-clic sur « Valider » déclare l’itinéraire, sans le retirer
   await expect(page.getByTestId('declare-etat')).toBeVisible()
   await expect(page.getByTestId('global-declare')).toBeVisible()
 
-  // La déclaration est écrite, pas seulement affichée.
+  // La déclaration est écrite, pas seulement affichée. On attend l'écriture
+  // avant de recharger : l'état part en premier et la base suit (#203), et
+  // recharger dans cet intervalle mesurait la latence d'écriture.
+  await expect
+    .poll(() => compterEnBase(page, 'parcoursDeclares'), { timeout: 10_000 })
+    .toBe(1)
   await page.reload()
   await expect(page.getByTestId('global-declare')).toBeVisible({
     timeout: 15_000,

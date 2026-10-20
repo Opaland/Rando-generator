@@ -792,8 +792,18 @@ export async function suivisDePosition(page: Page): Promise<number> {
  * mesure alors la latence d'écriture en croyant mesurer la reprise.
  */
 export async function pointsEnBase(page: Page): Promise<number> {
+  return compterEnBase(page, 'enregistrementPoints')
+}
+
+/**
+ * Combien d'enregistrements un magasin d'IndexedDB contient, ou −1 s'il est
+ * illisible. Même raison que `pointsEnBase` : une écriture s'attend, elle ne
+ * se devine pas — `double-clic.spec.ts` rechargeait avant que la
+ * déclaration soit écrite, et échouait deux fois sur trois.
+ */
+export async function compterEnBase(page: Page, magasin: string): Promise<number> {
   return page.evaluate(
-    () =>
+    (magasin) =>
       new Promise<number>((resolve) => {
         const ouverture = indexedDB.open('sentiers')
         ouverture.onerror = () => {
@@ -801,14 +811,14 @@ export async function pointsEnBase(page: Page): Promise<number> {
         }
         ouverture.onsuccess = () => {
           const base = ouverture.result
-          if (!base.objectStoreNames.contains('enregistrementPoints')) {
+          if (!base.objectStoreNames.contains(magasin)) {
             base.close()
             resolve(-1)
             return
           }
           const compte = base
-            .transaction('enregistrementPoints', 'readonly')
-            .objectStore('enregistrementPoints')
+            .transaction(magasin, 'readonly')
+            .objectStore(magasin)
             .count()
           compte.onsuccess = () => {
             base.close()
@@ -820,6 +830,7 @@ export async function pointsEnBase(page: Page): Promise<number> {
           }
         }
       }),
+    magasin,
   )
 }
 
