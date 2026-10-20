@@ -88,20 +88,30 @@ export function messageDeRepliSurCache(faits: FaitsDeZone): string {
 /**
  * Le message de la zone restaurée au démarrage (#550, quatrième chemin).
  *
- * Elle se montre même trop vieille ou d'un schéma ancien : aucune requête
- * ne part au démarrage sans un geste, et une copie qu'on dit vieille vaut
- * mieux qu'un écran vide hors réseau. C'est un choix de présentation (§2),
- * pas un seuil : l'âge et le schéma sont jugés par `zoneUtilisable`
- * (`db/database.ts`), la même garde que le chemin normal, et l'appelant en
- * passe le verdict dans `aJour`.
+ * Elle se montre même trop vieille ou d'un autre format : aucune requête ne
+ * part au démarrage sans un geste, et une copie datée vaut mieux qu'un écran
+ * vide hors réseau. C'est un choix de présentation (§2), pas un seuil : le
+ * verdict vient de `pourquoiPerimee` (`db/database.ts`), la règle du chemin
+ * normal, et l'appelant le passe dans `perimee`.
+ *
+ * Une date et une raison, comme Mousse de Poche (« extrait du … ») : une
+ * « copie ancienne » ne disait ni de quand, ni ce qui manque.
  */
 export function messageDeRestauration(
-  faits: FaitsDeZone & { aJour: boolean },
+  faits: FaitsDeZone & {
+    perimee: 'ancienne' | 'future' | 'age' | null
+    telechargeeLe: string
+  },
 ): string | null {
   const diagnostic = messageDeZone(faits)
-  if (faits.aJour) return diagnostic
-  return (
-    'Ces tracés viennent d’une copie ancienne, ou enregistrée par une version précédente de Sentiers : certaines informations peuvent manquer ou avoir changé. « Actualiser les tracés » la met à jour.' +
-    (diagnostic === null ? '' : ` ${diagnostic}`)
-  )
+  if (faits.perimee === null) return diagnostic
+  const le = new Date(faits.telechargeeLe).toLocaleDateString('fr-FR')
+  const raison = {
+    age: `Tracés téléchargés le ${le}. « Actualiser les tracés » ira chercher les corrections apportées depuis.`,
+    // Schéma 1 : sans le balisage peint ; avant : sans le revêtement non plus
+    // (`SCHEMA_ZONE`). « comme » reste vrai pour l'un et l'autre.
+    ancienne: `Tracés enregistrés par une version précédente de Sentiers, le ${le} : des informations ajoutées depuis, comme le balisage peint, n’y figurent pas. « Actualiser les tracés » les ajoute.`,
+    future: `Tracés enregistrés par une version plus récente de Sentiers, le ${le}. Rechargez la page pour passer à cette version, ou utilisez « Actualiser les tracés » pour les relire avec celle-ci.`,
+  }[faits.perimee]
+  return raison + (diagnostic === null ? '' : ` ${diagnostic}`)
 }

@@ -235,7 +235,24 @@ interface SentiersSchema extends DBSchema {
  * reproduire au prochain enrichissement de la requête (CLAUDE.md §4).
  */
 export function zoneUtilisable(zone: CachedZone, nowIso: string): boolean {
-  return zone.schema === SCHEMA_ZONE && isFresh(zone.fetchedAt, nowIso)
+  return pourquoiPerimee(zone, nowIso) === null
+}
+
+/**
+ * Pourquoi une copie ne répond plus, ou `null` si elle répond — la même
+ * règle que `zoneUtilisable`, qui la consulte, avec sa raison pour la dire
+ * (#550). Le format passe avant l'âge : une copie d'un autre format manque
+ * d'informations quel que soit son âge. `future` est la copie écrite par une
+ * version plus récente, relue par un onglet resté sur l'ancienne.
+ */
+export function pourquoiPerimee(
+  zone: CachedZone,
+  nowIso: string,
+): 'ancienne' | 'future' | 'age' | null {
+  const schema = zone.schema ?? 0
+  if (schema < SCHEMA_ZONE) return 'ancienne'
+  if (schema > SCHEMA_ZONE) return 'future'
+  return isFresh(zone.fetchedAt, nowIso) ? null : 'age'
 }
 
 /** Vrai si un horodatage ISO a moins de CACHE_TTL_MS d'ancienneté à `nowIso`. */

@@ -1,7 +1,7 @@
 import { messageDeRestauration } from '../core/messageDeZone.ts'
 import { libelleDeZone } from '../core/overpass.ts'
 import type { Itinerary } from '../core/types.ts'
-import { zoneUtilisable, type SentiersDb } from '../db/database.ts'
+import { pourquoiPerimee, type SentiersDb } from '../db/database.ts'
 
 /**
  * Au démarrage, la dernière zone revient depuis le cache uniquement : jamais
@@ -41,7 +41,8 @@ export async function restaurerLaDerniereZone(
       itineraires: cached.itineraries.length,
       partielle: cached.partielle,
       perdues: cached.perdues,
-      aJour: zoneUtilisable(cached, new Date().toISOString()),
+      perimee: pourquoiPerimee(cached, new Date().toISOString()),
+      telechargeeLe: cached.fetchedAt,
     }),
   )
   return true

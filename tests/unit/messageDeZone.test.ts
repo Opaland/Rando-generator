@@ -14,29 +14,79 @@ import {
  * c'est la phrase.
  */
 describe('la zone restaurée au démarrage', () => {
+  /*
+    Formulé comme Mousse de Poche (« extrait du … ») à la demande de Cédric
+    le 20/10 : une date et une raison, plutôt qu'un « copie ancienne » qui
+    ne dit ni de quand ni ce qui manque.
+  */
+  const LE_12_JUILLET = '2026-07-12T09:00:00.000Z'
+
   it('ne dit rien d’une copie à jour et entière', () => {
-    expect(messageDeRestauration({ itineraires: 12, aJour: true })).toBeNull()
+    expect(
+      messageDeRestauration({
+        itineraires: 12,
+        perimee: null,
+        telechargeeLe: LE_12_JUILLET,
+      }),
+    ).toBeNull()
   })
 
   it('dit ce que la zone a de travers, comme au chargement', () => {
     expect(
-      messageDeRestauration({ itineraires: 12, partielle: true, aJour: true }),
+      messageDeRestauration({
+        itineraires: 12,
+        partielle: true,
+        perimee: null,
+        telechargeeLe: LE_12_JUILLET,
+      }),
     ).toBe(messageDeZone({ itineraires: 12, partielle: true }))
   })
 
-  it('dit qu’une copie trop vieille ou d’une version précédente est à actualiser', () => {
-    const message = messageDeRestauration({ itineraires: 12, aJour: false })
+  it('date une copie trop vieille', () => {
+    const message = messageDeRestauration({
+      itineraires: 12,
+      perimee: 'age',
+      telechargeeLe: LE_12_JUILLET,
+    })
+    expect(message).toMatch(/^Tracés téléchargés le 12\/07\/2026\./)
     expect(message).toMatch(/Actualiser les tracés/)
-    expect(message).toMatch(/version précédente/)
+    expect(message).not.toMatch(/version précédente/)
+  })
+
+  it('dit ce qui manque à une copie d’une version précédente', () => {
+    const message = messageDeRestauration({
+      itineraires: 12,
+      perimee: 'ancienne',
+      telechargeeLe: LE_12_JUILLET,
+    })
+    expect(message).toMatch(/version précédente de Sentiers, le 12\/07\/2026/)
+    expect(message).toMatch(/balisage/)
+    expect(message).toMatch(/Actualiser les tracés/)
+  })
+
+  /*
+    Mousse traite ce cas à part (« une version plus récente a gardé vos
+    favoris ») : un onglet resté sur l'ancienne version relit une copie
+    écrite par la nouvelle. « Version précédente » y serait faux.
+  */
+  it('ne prend pas une copie d’une version plus récente pour une ancienne', () => {
+    const message = messageDeRestauration({
+      itineraires: 12,
+      perimee: 'future',
+      telechargeeLe: LE_12_JUILLET,
+    })
+    expect(message).toMatch(/version plus récente de Sentiers/)
+    expect(message).not.toMatch(/précédente/)
   })
 
   it('dit les deux quand la copie est vieille et tronquée', () => {
     const message = messageDeRestauration({
       itineraires: 12,
       partielle: true,
-      aJour: false,
+      perimee: 'age',
+      telechargeeLe: LE_12_JUILLET,
     })
-    expect(message).toMatch(/Actualiser les tracés/)
+    expect(message).toMatch(/12\/07\/2026/)
     expect(message).toMatch(/surestimés/)
   })
 })

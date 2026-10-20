@@ -4,6 +4,7 @@ import {
   openSentiersDb,
   isFresh,
   zoneUtilisable,
+  pourquoiPerimee,
   SCHEMA_ZONE,
   CACHE_TTL_MS,
   DB_VERSION,
@@ -214,6 +215,24 @@ describe('zoneUtilisable', () => {
   it('refuse une version qu’elle ne connaît pas', () => {
     expect(zoneUtilisable({ ...zone, schema: SCHEMA_ZONE + 1 }, bientot)).toBe(
       false,
+    )
+  })
+
+  /*
+    La raison du refus, pour la dire (#550). Le format passe avant l'âge :
+    une copie d'un autre format manque d'informations, quel que soit son
+    âge, et c'est ce qui change le plus ce qu'on voit.
+  */
+  it('dit pourquoi elle refuse', () => {
+    const actuelle = { ...zone, schema: SCHEMA_ZONE }
+    expect(pourquoiPerimee(actuelle, bientot)).toBeNull()
+    expect(pourquoiPerimee(actuelle, plusTard)).toBe('age')
+    expect(pourquoiPerimee(zone, plusTard)).toBe('ancienne')
+    expect(pourquoiPerimee({ ...zone, schema: SCHEMA_ZONE - 1 }, bientot)).toBe(
+      'ancienne',
+    )
+    expect(pourquoiPerimee({ ...zone, schema: SCHEMA_ZONE + 1 }, bientot)).toBe(
+      'future',
     )
   })
 })
