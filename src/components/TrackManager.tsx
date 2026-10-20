@@ -113,9 +113,10 @@ export function TrackManager() {
   const onDrop = (event: DragEvent) => {
     event.preventDefault()
     setDragOver(false)
-    const files = Array.from(event.dataTransfer.files).filter((f) =>
-      f.name.toLowerCase().endsWith('.gpx'),
-    )
+    // Aucun tri à l'extension : la lecture reconnaît GPX, FIT, TCX et les
+    // archives au contenu (`store/lecture.ts`), et dit ce qu'elle n'a pas su
+    // lire. Le filtre `.gpx` d'ici perdait les FIT en silence (#562).
+    const files = Array.from(event.dataTransfer.files)
     if (files.length > 0) void runImport(files)
   }
 
