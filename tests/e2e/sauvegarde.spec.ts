@@ -207,3 +207,39 @@ test('une date illisible dans une sauvegarde s’affiche « date inconnue »', a
   await expect(liste.getByText('date inconnue')).toBeVisible()
   await expect(liste).not.toContainText('Invalid Date')
 })
+
+/*
+  Issue #559, point 1 : quelqu'un qui n'a que des déclarations ne pouvait
+  pas sauvegarder. Le bouton ne regardait que les traces et les
+  itinéraires perso — « Rien à sauvegarder pour l'instant » —, alors que
+  le README dit « les déclarations partent dans la sauvegarde ». C'est le
+  profil le plus nombreux (#158) : quinze PR dans la tête, aucun fichier.
+*/
+test('une déclaration seule se sauvegarde', async ({ page }) => {
+  await mockExternalNetwork(page)
+  await page.goto('/')
+  await page.getByTestId('zone-pilat').click()
+  await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
+    timeout: 15_000,
+  })
+  await afficherTousLesReseaux(page)
+  await page
+    .getByTestId('itinerary-list')
+    .getByRole('button', { name: /GR 7/ })
+    .first()
+    .click()
+  await page.getByTestId('itinerary-card-detail-link').click()
+  await page.getByTestId('declare-ouvrir').click()
+  await page.getByTestId('declare-valider').click()
+  await expect(page.getByTestId('declare-etat')).toBeVisible()
+
+  await page.getByTestId('backup').locator('summary').click()
+  await expect(page.getByTestId('backup-export')).toBeEnabled()
+  const { contenu } = await telecharger(page)
+  const json = JSON.parse(gunzipSync(contenu).toString('utf-8')) as {
+    tracks: unknown[]
+    parcoursDeclares: unknown[]
+  }
+  expect(json.tracks).toHaveLength(0)
+  expect(json.parcoursDeclares).toHaveLength(1)
+})
