@@ -1,4 +1,5 @@
-import { parseGpx, type ParsedGpx } from '../core/gpx.ts'
+import { GpxError, parseGpx, type ParsedGpx } from '../core/gpx.ts'
+import { pourquoiIllisible } from '../core/contenuIllisible.ts'
 import { looksLikeFit, parseFit } from '../core/fit.ts'
 import { looksLikeTcx, parseTcx } from '../core/tcx.ts'
 import {
@@ -60,6 +61,10 @@ export async function parseTraceFile(file: File): Promise<ParsedGpx> {
   // reste lisible, et un fichier mal nommé ne fait pas échouer l'import.
   const texte = new TextDecoder().decode(buffer)
   if (looksLikeTcx(texte)) return parseTcx(texte, new DOMParser())
+  // Ni FIT ni TCX : le lecteur GPX ne doit recevoir que ce qui ressemble à
+  // du XML, sans quoi son message parle d'un export GPX à un ZIP vide (#567).
+  const illisible = pourquoiIllisible(buffer, texte)
+  if (illisible) throw new GpxError(illisible)
   return parseGpx(texte, new DOMParser())
 }
 
