@@ -836,6 +836,14 @@ details[open] > .acc-summary::after {
     width: 44px;
     height: 44px;
   }
+
+  /* Le « (i) » du crédit tombe sous le plancher de `button` ci-dessus, mais
+     son icône est une image de fond de 24 px que MapLibre laisse en
+     `repeat` : porté à 44 px, il la répétait en 2 × 2 — quatre ⓘ (#555). */
+  .maplibregl-map .maplibregl-ctrl-attrib-button {
+    background-repeat: no-repeat;
+    background-position: center;
+  }
 }
 
 /* Un champ de saisie garde par défaut la largeur de vingt caractères, quelle
