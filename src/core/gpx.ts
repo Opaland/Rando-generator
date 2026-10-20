@@ -3,7 +3,7 @@ import { verifierDomaine } from './domaine.ts'
 import { elevationStats, HYSTERESIS_ALTIMETRIQUE_METRES } from './elevation.ts'
 import { instantDe, nombreLu } from './valeurLue.ts'
 import { tranchesDe } from './segmentsDeTrace.ts'
-import type { LonLat } from './types.ts'
+import type { LonLat, SourceItineraire } from './types.ts'
 
 /** Erreur de lecture d'un fichier GPX, message affichable tel quel à l'utilisateur. */
 export class GpxError extends Error {
@@ -62,6 +62,13 @@ export interface ParsedGpx {
    * Absent pour les formats qui ne le portent pas (FIT, TCX).
    */
   debutsDeSegment?: number[]
+  /**
+   * La source que le fichier déclare dans `<metadata><copyright>` (#557).
+   * Sentiers l'écrit dans chaque export d'une donnée sous licence ; sans la
+   * relire, réimporter un export coupait la chaîne d'attribution. Absent
+   * pour les formats qui ne la portent pas (FIT, TCX).
+   */
+  source?: SourceItineraire | null
   /**
    * Précision horizontale en **mètres**, alignée sur `points`. C'est ce que
    * rapporte le FIT (`gps_accuracy`), et le GPX ne la porte pas — d'où
@@ -143,6 +150,7 @@ export function parseGpx(xmlText: string, parser: XmlParser): ParsedGpx {
     // Le GPX rapporte un HDOP, jamais une précision en mètres.
     precisionsMetres: null,
     debutsDeSegment,
+    source: copyrightDe(doc),
     // Une date illisible ne vaut pas mieux qu'une date absente : elle
     // s'affichait « Invalid Date » (#567).
     date:
@@ -151,6 +159,18 @@ export function parseGpx(xmlText: string, parser: XmlParser): ParsedGpx {
         : firstPointDate,
     pointsHorsLimites,
   }
+}
+
+/** `<copyright author="…"><license>…</license></copyright>`, s'il est complet. */
+function copyrightDe(doc: Document): SourceItineraire | null {
+  const copyright = doc
+    .getElementsByTagName('metadata')[0]
+    ?.getElementsByTagName('copyright')[0]
+  const author = copyright?.getAttribute('author')?.trim()
+  const license = copyright
+    ?.getElementsByTagName('license')[0]
+    ?.textContent.trim()
+  return author && license ? { author, license } : null
 }
 
 interface ExtractedPoints {
