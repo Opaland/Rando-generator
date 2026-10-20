@@ -129,8 +129,8 @@ export function BoutonEmporter({
       {progres === null && !sansServiceWorker && (
         <p className={styles.aide}>
           Fond de carte et relief, gardés pour le jour où vous n’aurez pas de
-          réseau. Le poids dépend du terrain : il s’affiche pendant le
-          téléchargement.
+          réseau. Le poids annoncé est une estimation, qui dépend du
+          terrain&nbsp;; le poids réel s’affiche pendant le téléchargement.
         </p>
       )}
       {enCours && (

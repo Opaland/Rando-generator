@@ -173,7 +173,11 @@ export function ecrireReglage(
   }
 }
 
-/** Efface un réglage. Sert au nettoyage d'une sauvegarde réimportée. */
+/**
+ * Efface un réglage. Aucun appelant dans l'application : seuls les tests s'en
+ * servent, pour repartir d'un magasin propre. Ce commentaire disait qu'il
+ * « sert au nettoyage d'une sauvegarde réimportée » (#571, §4bis).
+ */
 export function effacerReglage(clef: SettingKey): void {
   magasin()?.removeItem(PREFIXE + clef)
 }

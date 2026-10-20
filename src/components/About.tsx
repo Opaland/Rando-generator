@@ -250,6 +250,15 @@ export function About({
             tolérance choisie (50 m par défaut). La progression est le rapport
             des points parcourus sur l’ensemble, converti en kilomètres.
           </p>
+          <p>
+            Trois règles évitent de compter ce qui n’a pas été marché&nbsp;: un
+            passage ne compte qu’à partir de trois points consécutifs, environ
+            300&nbsp;m — couper un sentier n’est pas le parcourir&nbsp;; au moins
+            un quart de ces points doit être frôlé, à moins de 40&nbsp;% de la
+            tolérance — longer un sentier à distance ne suffit pas&nbsp;; et ce
+            qui est parcouru à plus de 28,5&nbsp;km/h, en voiture par exemple,
+            ne compte pas.
+          </p>
         </section>
       </div>
     </dialog>

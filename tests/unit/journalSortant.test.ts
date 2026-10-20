@@ -4,6 +4,7 @@ import {
   noterSortie,
   resumerJournal,
   libelleDestination,
+  HOTES_CONTACTES,
   type EntreeJournal,
 } from '../../src/core/journalSortant.ts'
 
@@ -375,5 +376,24 @@ describe('classerSortie, quand une adresse ne se lit pas', () => {
       requêtes réellement parties vers un inconnu.
     */
     expect(classerSortie('http://[')).toEqual({ destination: 'site', hote: '' })
+  })
+})
+
+/*
+  Issue #571 : `HOTES_CONTACTES` se disait « dérivée de `CONNUS` » et
+  c'était un tableau écrit à la main. `csp.test.ts` comparait donc la
+  politique à une liste que rien ne tenait d'accord avec le classement.
+  Elle est dérivée ; reste à garder que chaque hôte qu'elle contient soit
+  bien reconnu par la règle à côté de laquelle il est écrit.
+*/
+describe('les hôtes contactés et le classement disent la même chose', () => {
+  it('chaque hôte contacté est reconnu, et pas comme un inconnu', () => {
+    expect(HOTES_CONTACTES.length).toBeGreaterThan(0)
+    for (const hote of HOTES_CONTACTES) {
+      expect(
+        classerSortie(`https://${hote}/`, 'https://exemple.test').destination,
+        hote,
+      ).not.toBe('inconnue')
+    }
   })
 })

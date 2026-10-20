@@ -257,9 +257,11 @@ export function parseElevationGain(denivele: string | null): number | null {
 }
 
 /**
- * Estimation de durée : marche à plat plus temps de montée. Volontairement
- * simple et arrondie au quart d'heure près — annoncer « 2 h 07 » donnerait
- * une fausse impression de précision sur une donnée qui n'en a pas.
+ * Estimation de durée : marche à plat plus temps de montée, volontairement
+ * simple, **arrondie à la minute**. Ce commentaire la disait « au quart
+ * d'heure près » (#571) : 155 min s'affichent bien « 2 h 35 ». Arrondir au
+ * quart d'heure changerait aussi ce que filtre la durée — une décision, pas
+ * une correction de commentaire (§2).
  */
 export function estimateMinutes(
   meters: number,

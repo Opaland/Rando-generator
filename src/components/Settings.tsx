@@ -22,8 +22,9 @@ export function Settings() {
     (s) => s.itineraries.length > 0 || s.tracks.length > 0,
   )
   // null = suivre l'état des données ; dès que l'utilisateur ouvre ou ferme
-  // la section, c'est son choix qui prime. Régler la précision de suivi GPS
-  // avant d'avoir la moindre trace n'a aucun sens : la section reste repliée.
+  // la section, c'est son choix qui prime. Elle reste repliée tant qu'aucune
+  // zone ni trace n'est chargée (`aDesDonnees`) — le commentaire disait
+  // « avant toute trace », mais une zone chargée suffit à l'ouvrir (#571).
   const [ouvert, setOuvert] = useState<boolean | null>(null)
   // Valeur en cours de réglage ; null = suivre la valeur du store.
   const [draft, setDraft] = useState<number | null>(null)

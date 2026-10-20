@@ -366,10 +366,11 @@ async function reseauPuisTerrain(request) {
  * La page envoie la liste des adresses, le service worker les récupère une
  * par une et rend compte à chaque pas. Deux choix méritent d'être écrits :
  *
- * - **on compte les octets réellement reçus**, on ne les estime pas. Le
- *   nombre de tuiles est connu d'avance et exact ; leur poids ne l'est pas,
- *   et personne ici n'a mesuré ce que pèse une tuile de la Géoplateforme.
- *   Annoncer « environ 40 Mo » serait inventer un nombre que rien n'appuie ;
+ * - **on compte ici les octets réellement reçus.** Le nombre de tuiles est
+ *   connu d'avance et exact ; leur poids, lui, n'est connu qu'en
+ *   l'approchant. Le bouton « Emporter » l'annonce avant, en estimation,
+ *   depuis la mesure du 29/08 (`docs/MESURE_TUILES.md`, #397) ; le service
+ *   worker rend le vrai, pendant ;
  * - **une adresse qui échoue n'arrête pas les autres.** Une randonnée à
  *   laquelle il manque trois tuiles reste une randonnée emportée ; s'arrêter
  *   à la première erreur rendrait le bouton inutile sur un réseau moyen.
