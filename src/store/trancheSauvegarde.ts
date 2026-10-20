@@ -194,20 +194,15 @@ export function trancheSauvegarde(
         déclaration faite depuis l'export, exactement comme cela arrivait
         aux traces avant qu'on le corrige.
       */
-      const declaresFusionnes = [
-        ...avant.parcoursDeclares,
-        ...backup.parcoursDeclares.filter(
-          (d) =>
-            !avant.parcoursDeclares.some(
-              (deja) => deja.itineraryId === d.itineraryId,
-            ),
-        ),
-      ]
+      const neufsDeclares = backup.parcoursDeclares.filter(
+        (d) =>
+          !avant.parcoursDeclares.some((deja) => deja.itineraryId === d.itineraryId),
+      )
       // Ce que la base a reçu, et seulement cela (#559, point 5).
       const ecrit = await ecrireLaRestauration(
         db,
-        { traces: neufsTraces, persos: neufsPersos },
-        declaresFusionnes,
+        { traces: neufsTraces, persos: neufsPersos, declarations: neufsDeclares },
+        avant.parcoursDeclares,
       )
 
       /*
@@ -233,7 +228,7 @@ export function trancheSauvegarde(
         ),
         parcoursDeclares: ajouterLesNeufs(
           apres.parcoursDeclares,
-          ecrit.declarations ? declaresFusionnes : avant.parcoursDeclares,
+          [...avant.parcoursDeclares, ...ecrit.declarations],
           avant.parcoursDeclares.length,
           (d) => d.itineraryId,
         ),

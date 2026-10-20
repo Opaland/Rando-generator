@@ -25,6 +25,23 @@ export function nombreLu(texte: string | null | undefined): number | null {
  */
 export function instantDe(date: unknown): number | null {
   if (typeof date !== 'string' || date.trim() === '') return null
+  /*
+    Une date sans heure — « AAAA-MM-JJ », celle que range « Déclarer
+    parcouru » — est un **jour**, pas un instant. `Date.parse` la lit comme
+    minuit UTC : formatée en heure locale à l'ouest de Greenwich, elle
+    tombait la veille (revue du 20/10 : choisir le 15 en Guadeloupe, lire
+    le 14). Elle se lit à minuit **local**.
+  */
+  const jour = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date.trim())
+  if (jour) {
+    const [annee, mois, quantieme] = jour.slice(1).map(Number) as [
+      number,
+      number,
+      number,
+    ]
+    const local = new Date(annee, mois - 1, quantieme).getTime()
+    return Number.isFinite(local) ? local : null
+  }
   const instant = Date.parse(date)
   return Number.isFinite(instant) ? instant : null
 }

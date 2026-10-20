@@ -8,8 +8,11 @@ import type { Track } from './types.ts'
  * n'exploitait. Regrouper par mois donne la seule chose qu'un compteur de
  * complétion ne montre pas — le rythme, et les mois où l'on n'est pas sorti.
  *
- * Les mois sont calculés en UTC : sinon la même trace changerait de mois
- * selon le fuseau où l'on ouvre l'application.
+ * Les mois sont calculés en heure locale depuis le 20/10 (#565), comme la
+ * liste, le libellé et les années : ce commentaire disait « en UTC, sinon
+ * la même trace changerait de mois selon le fuseau » — vrai, mais
+ * l'histogramme était alors seul de son avis, et la trace changeait de
+ * mois d'un écran à l'autre.
  */
 
 interface MonthBucket {

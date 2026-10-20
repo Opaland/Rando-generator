@@ -551,3 +551,54 @@ describe('une restauration qui s’arrête en route', () => {
     expect(journal).not.toContain('tolerance:60')
   })
 })
+
+/*
+  Revue du 20/10, sur #559 point 5 lui-même :
+  (a) les déclarations n'étaient pas suivies une à une — un refus à la
+      troisième sur quatre laissait deux déclarations en base et aucune à
+      l'écran, contre « l'écran montre ce que la base a reçu » ;
+  (b) une sauvegarde qui ne portait que des déclarations — ce que #559
+      point 1 vient de rendre possible — se restaurait avec « Cette
+      sauvegarde ne contenait rien de nouveau ».
+*/
+describe('les déclarations d’une restauration', () => {
+  const declaration = (id: number): ParcoursDeclare => ({
+    itineraryId: id,
+    date: null,
+    declareLe: '2026-08-20T10:00:00Z',
+  })
+
+  it('l’écran montre les déclarations que la base a reçues, pas plus', async () => {
+    const ecrites: number[] = []
+    const base = {
+      saveTrack: () => Promise.resolve(),
+      saveCustomItinerary: () => Promise.resolve(),
+      declarerParcours: (d: ParcoursDeclare) => {
+        if (ecrites.length >= 2) {
+          return Promise.reject(new DOMException('plein', 'QuotaExceededError'))
+        }
+        ecrites.push(d.itineraryId)
+        return Promise.resolve()
+      },
+    }
+    const { deps, etat } = banc(etatInitial(), base)
+    await trancheSauvegarde(deps).importerSauvegarde(
+      await archive({
+        parcoursDeclares: [1, 2, 3, 4].map(declaration),
+      }),
+    )
+    expect(ecrites).toEqual([1, 2])
+    expect(etat().parcoursDeclares.map((d) => d.itineraryId)).toEqual([1, 2])
+    expect(etat().backupMessage).toMatch(/interrompue/)
+  })
+
+  it('une sauvegarde de déclarations seules dit ce qu’elle a ajouté', async () => {
+    const { base } = baseFactice()
+    const { deps, etat } = banc(etatInitial(), base)
+    await trancheSauvegarde(deps).importerSauvegarde(
+      await archive({ parcoursDeclares: [declaration(7)] }),
+    )
+    expect(etat().backupMessage).not.toMatch(/rien de nouveau/)
+    expect(etat().backupMessage).toMatch(/1 déclaration ajoutée/)
+  })
+})

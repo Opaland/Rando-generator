@@ -106,3 +106,36 @@ describe('jourLocal et moisLocal', () => {
     expect(moisLocal(null)).toBeNull()
   })
 })
+
+/*
+  Revue du 20/10 : une date sans heure, « AAAA-MM-JJ » — celle que range
+  « Déclarer parcouru » —, était lue par `Date.parse` comme minuit **UTC**.
+  Formatée en heure locale à l'ouest de Greenwich, elle tombait la veille :
+  choisir le 15 en Guadeloupe, lire le 14.
+*/
+describe('une date sans heure est un jour, pas un instant UTC', () => {
+  it('reste le même jour à l’ouest de Greenwich', async () => {
+    const { dateAffichee, moisLocal } = await dansLeFuseau('America/Guadeloupe')
+    expect(dateAffichee('2026-06-15')).toBe('15/06/2026')
+    expect(moisLocal('2026-06-01')).toBe('2026-06')
+  })
+
+  it('et à l’est aussi', async () => {
+    const { dateAffichee } = await dansLeFuseau('Pacific/Noumea')
+    expect(dateAffichee('2026-06-15')).toBe('15/06/2026')
+  })
+
+  it('le nom du fichier de sauvegarde suit le jour local, comme le bilan', async () => {
+    env.TZ = 'America/Guadeloupe'
+    vi.resetModules()
+    const { backupFilename } = await import('../../src/core/backup.ts')
+    const { summaryFilename } = await import('../../src/core/summary.ts')
+    // 16/06 à 2 h UTC = 15/06 au soir en Guadeloupe.
+    expect(backupFilename('2026-06-16T02:00:00Z')).toBe(
+      'sauvegarde-sentiers-2026-06-15.json.gz',
+    )
+    expect(summaryFilename('2026-06-16T02:00:00Z')).toBe(
+      'bilan-sentiers-2026-06-15.png',
+    )
+  })
+})

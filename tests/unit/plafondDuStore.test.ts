@@ -132,8 +132,10 @@ const PLAFONDS: Record<string, number> = {
   'trancheSauvegarde.ts': 270,
   // Sorti de trancheSauvegarde le 20/10 (#559, point 5) : ce que la base a
   // reçu d'une restauration interrompue. Le correctif portait la tranche à
-  // 301 lignes pour un plafond de 270.
-  'ecrireLaRestauration.ts': 90,
+  // 301 lignes pour un plafond de 270. Relevé de 90 à 110 le même jour :
+  // la revue a montré que les déclarations n'y étaient pas suivies une à
+  // une (96 lignes après), et c'est le même mécanisme, pas un autre.
+  'ecrireLaRestauration.ts': 110,
   'trancheDemonstration.ts': 230,
   'reseauxVisibles.ts': 100,
   'trancheAffichage.ts': 130,

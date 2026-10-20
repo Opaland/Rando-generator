@@ -1,6 +1,7 @@
 import { AllocateurPerso } from './identifiantsPerso.ts'
 import type { ParcoursDeclare } from './declaratif.ts'
 import { traverseAntimeridien } from './domaine.ts'
+import { instantDe, jourLocal } from './valeurLue.ts'
 import { isWgs84Coordinate } from './geo.ts'
 import { trackFingerprint } from './gpx.ts'
 import type { Itinerary, LonLat, Track } from './types.ts'
@@ -80,9 +81,16 @@ export function serialiserBackup(backup: Backup): string {
   return JSON.stringify(backup)
 }
 
-/** Nom du fichier téléchargé, daté du jour de l'export. */
+/**
+ * Nom du fichier téléchargé, daté du jour **local** de l'export — comme le
+ * bilan (#565). Il lisait le début de la chaîne ISO, c'est-à-dire le jour
+ * UTC : un même soir en Guadeloupe, « sauvegarde-…-16 » et « bilan-…-15 ».
+ */
 export function backupFilename(isoNow: string): string {
-  const jour = /^(\d{4}-\d{2}-\d{2})/.exec(isoNow)?.[1]
+  // Un horodatage ISO, et seulement lui : `Date.parse` lit aussi
+  // « le 2026-08-20 », et le nom ne doit rien dater d'une chaîne quelconque.
+  const instant = /^\d{4}-\d{2}-\d{2}/.test(isoNow) ? instantDe(isoNow) : null
+  const jour = instant === null ? null : jourLocal(instant)
   return jour
     ? `sauvegarde-sentiers-${jour}.json.gz`
     : 'sauvegarde-sentiers.json.gz'
@@ -459,6 +467,9 @@ export function fusionnerItineraires(
 export function resumeFusion(
   traces: FusionTraces,
   itineraires: FusionItineraires,
+  // Les déclarations comptent aussi : une sauvegarde qui n'en portait que
+  // des nouvelles se disait « rien de nouveau » (revue du 20/10).
+  declarationsAjoutees = 0,
 ): string {
   const morceaux: string[] = []
   if (traces.ajoutees > 0) {
@@ -471,6 +482,13 @@ export function resumeFusion(
       itineraires.ajoutes === 1
         ? '1 itinéraire ajouté'
         : `${itineraires.ajoutes} itinéraires ajoutés`,
+    )
+  }
+  if (declarationsAjoutees > 0) {
+    morceaux.push(
+      declarationsAjoutees === 1
+        ? '1 déclaration ajoutée'
+        : `${String(declarationsAjoutees)} déclarations ajoutées`,
     )
   }
   const dejaLa = traces.ignorees + itineraires.ignores

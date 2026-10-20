@@ -24,23 +24,33 @@ export type BaseDeRestauration = Pick<
 export interface RestaurationEcrite {
   traces: Track[]
   persos: Itinerary[]
-  /** Toutes les déclarations ont-elles été écrites ? */
-  declarations: boolean
+  /**
+   * Les déclarations **nouvelles** que la base a reçues, une à une. C'était
+   * un booléen « toutes écrites » : refusée à la troisième sur quatre, la
+   * restauration en laissait deux en base et aucune à l'écran (revue du
+   * 20/10).
+   */
+  declarations: ParcoursDeclare[]
   interrompue: boolean
 }
 
 export async function ecrireLaRestauration(
   db: BaseDeRestauration | null,
-  neufs: { traces: Track[]; persos: Itinerary[] },
-  declarations: ParcoursDeclare[],
+  neufs: {
+    traces: Track[]
+    persos: Itinerary[]
+    declarations: ParcoursDeclare[]
+  },
+  /** Les déclarations déjà là, réécrites en tête comme avant. */
+  declarationsDejaLa: ParcoursDeclare[],
 ): Promise<RestaurationEcrite> {
   if (!db) {
-    return { ...neufs, declarations: true, interrompue: false }
+    return { ...neufs, interrompue: false }
   }
   const ecrit: RestaurationEcrite = {
     traces: [],
     persos: [],
-    declarations: false,
+    declarations: [],
     interrompue: false,
   }
   try {
@@ -52,10 +62,13 @@ export async function ecrireLaRestauration(
       await db.saveCustomItinerary(itin)
       ecrit.persos.push(itin)
     }
-    for (const declaration of declarations) {
+    for (const declaration of declarationsDejaLa) {
       await db.declarerParcours(declaration)
     }
-    ecrit.declarations = true
+    for (const declaration of neufs.declarations) {
+      await db.declarerParcours(declaration)
+      ecrit.declarations.push(declaration)
+    }
   } catch {
     ecrit.interrompue = true
   }
@@ -75,6 +88,7 @@ export function resumeDeRestauration(
   const resume = resumeFusion(
     { ...traces, ajoutees: ecrit.traces.length },
     { ...persos, ajoutes: ecrit.persos.length },
+    ecrit.declarations.length,
   )
   return ecrit.interrompue
     ? `Restauration interrompue : le navigateur a refusé d’enregistrer la suite. ${resume}`
