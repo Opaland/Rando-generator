@@ -25,6 +25,8 @@ export interface Appels {
   sortirDeLaDemonstration: number
   /** Les identifiants passés à `fermerLaFicheSi`, dans l'ordre. */
   fermerLaFicheSi: number[]
+  /** Les identifiants passés à `oublierLesReferences`, dans l'ordre. */
+  oublies: number[]
   /** Les identifiants effacés de la base, dans l'ordre. */
   effaces: (string | number)[]
   /** Les identifiants enregistrés en base, dans l'ordre. */
@@ -60,6 +62,7 @@ export function espionner(depart: Partial<EtatPartage> = {}): Espion {
     recompute: 0,
     sortirDeLaDemonstration: 0,
     fermerLaFicheSi: [],
+    oublies: [],
     effaces: [],
     enregistres: [],
   }
@@ -126,6 +129,10 @@ export function espionner(depart: Partial<EtatPartage> = {}): Espion {
       },
       fermerLaFicheSi: (id) => {
         appels.fermerLaFicheSi.push(id)
+      },
+      oublierLesReferences: (id) => {
+        appels.oublies.push(id)
+        return Promise.resolve()
       },
       // Le même contrat que le store : un seul distributeur, qui prend
       // connaissance de l'état à chaque demande.

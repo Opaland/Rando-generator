@@ -26,6 +26,7 @@ import {
 } from './enregistrementSlice.ts'
 import { creerOubliDeZone } from './oubliDeZone.ts'
 import { creerIdentifiantsPerso } from './identifiantsPerso.ts'
+import { numerosDesignes, oublierLesReferences } from './referencesPerso.ts'
 import {
   lireObjectifs,
   OBJECTIFS_AU_REPOS,
@@ -425,6 +426,7 @@ export const useAppStore = create<AppState>()((set, get) => {
   // Un seul distributeur de numéros perso, après la lecture de la base (#543).
   const { lectureCommencee, identifiantsPerso } = creerIdentifiantsPerso(
     () => get().customItineraries,
+    () => numerosDesignes(get()),
   )
 
   async function recompute(): Promise<void> {
@@ -954,15 +956,15 @@ export const useAppStore = create<AppState>()((set, get) => {
         La fiche se ferme si elle montre l'itinéraire qu'on supprime.
 
         Passé en dépendance nommée plutôt que lu depuis `get()` : la tranche
-        n'a pas à savoir que la fiche détail existe, encore moins comment
-        elle s'appelle. C'est ce qui a rendu le couplage visible en écrivant
-        cette liste — l'import touche à sept choses distinctes, et il fallait
-        les nommer une à une pour s'en apercevoir.
+        n'a pas à savoir que la fiche détail existe. C'est ce qui a rendu le
+        couplage visible en écrivant cette liste — l'import touche à bien des
+        choses distinctes, et il fallait les nommer pour s'en apercevoir.
       */
       fermerLaFicheSi: (id) => {
         if (get().detailItineraryId === id) get().closeItineraryDetail()
       },
       identifiantsPerso,
+      oublierLesReferences: (id) => oublierLesReferences(id, get(), baseOuverte),
     }),
 
     ...trancheDemonstration({

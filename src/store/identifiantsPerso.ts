@@ -14,7 +14,11 @@ import type { Itinerary } from '../core/types.ts'
  * Sorti d'`appStore.ts`, qui passait de 1 088 à 1 112 lignes pour un
  * plafond de 1 105 : c'est une règle à part entière, pas de la composition.
  */
-export function creerIdentifiantsPerso(persos: () => Itinerary[]) {
+export function creerIdentifiantsPerso(
+  persos: () => Itinerary[],
+  /** Les numéros encore désignés par une déclaration ou un objectif (#549). */
+  designes: () => readonly number[] = () => [],
+) {
   let allocateur = new AllocateurPerso()
   let lecture: Promise<void> | null = null
 
@@ -40,6 +44,7 @@ export function creerIdentifiantsPerso(persos: () => Itinerary[]) {
   async function identifiantsPerso(): Promise<AllocateurPerso> {
     if (lecture) await lecture
     allocateur.observer(persos())
+    allocateur.observerRelations(designes())
     return allocateur
   }
 

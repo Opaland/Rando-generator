@@ -70,6 +70,7 @@ describe('supprimer un itinéraire perso', () => {
     expect(appels.effaces).toEqual([1])
     expect(etat().customItineraries.map((i) => i.osmRelationId)).toEqual([2])
     expect(appels.fermerLaFicheSi).toEqual([1])
+    expect(appels.oublies).toEqual([1])
     expect(etat().selectedItineraryId).toBeNull()
   })
 

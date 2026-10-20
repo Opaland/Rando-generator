@@ -34,6 +34,15 @@ export class AllocateurPerso {
     }
   }
 
+  /**
+   * Prend connaissance de numéros de relation que quelque chose désigne
+   * encore sans itinéraire derrière — une déclaration ou un objectif laissés
+   * par une suppression d'avant #549. Les redonner les transmettrait.
+   */
+  observerRelations(ids: readonly number[]): void {
+    for (const id of ids) this.marquerRelation(id)
+  }
+
   /** Un numéro de relation que personne n'a encore. */
   relation(): number {
     const id = this.plusBasseRelation - 1

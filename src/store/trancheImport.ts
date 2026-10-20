@@ -150,6 +150,11 @@ export interface DependancesImport {
   /** Ferme la fiche détail si elle montre l'itinéraire supprimé. */
   fermerLaFicheSi: (id: number) => void
   /**
+   * Oublie la déclaration, l'objectif et les POI emportés d'un itinéraire
+   * supprimé — sans quoi son numéro, redonné, les transmet (#549).
+   */
+  oublierLesReferences: (id: number) => Promise<void>
+  /**
    * Le distributeur de numéros perso du store, une fois la base lue (#543).
    * Avant, la mémoire est vide et −1 peut déjà être pris en base.
    */
@@ -406,6 +411,7 @@ export function trancheImport(deps: DependancesImport): ActionsImport {
       const db = await deps.baseOuverte()
       if (db) await db.deleteCustomItinerary(id)
       deps.fermerLaFicheSi(id)
+      await deps.oublierLesReferences(id)
       deps.set((state) => ({
         customItineraries: state.customItineraries.filter(
           (i) => i.osmRelationId !== id,

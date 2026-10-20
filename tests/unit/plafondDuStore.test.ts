@@ -106,6 +106,9 @@ const PLAFONDS: Record<string, number> = {
   // 64 lignes : le réseau de fond PDIPR et ses deux lecteurs (carte,
   // légende). La place d'un second département, pas d'une tranche.
   'reseauDeFond.ts': 80,
+  // 39 lignes : ce qui désigne un itinéraire perso sans en faire partie
+  // (#549). La place d'une quatrième référence, pas d'une tranche.
+  'referencesPerso.ts': 55,
   /*
     Le journal des sorties réseau (issue #178), sorti d'`appStore.ts` le
     07/09 (#445) : 113 lignes, la seule action qui était encore écrite en
