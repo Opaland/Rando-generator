@@ -111,7 +111,14 @@ export function useMapCamera(
     const map = mapRef.current
     if (!map || !ready) return
     if (!view3D || detailItineraryId === null) {
-      map.easeTo({ pitch: 0, bearing: 0, duration: 600 })
+      // Ne remettre à plat que ce qui ne l'est pas. L'effet repart dès que
+      // `itineraries` change d'identité — l'altimétrie qui arrive après
+      // l'ouverture de la fiche, par exemple — et un `easeTo` lancé sur une
+      // carte déjà à plat coupait en plein vol le `fitBounds` de la fiche et
+      // celui de la zone : mesuré, zoom final 10,0 au lieu de 14,2 (#572).
+      if (map.getPitch() !== 0 || map.getBearing() !== 0) {
+        map.easeTo({ pitch: 0, bearing: 0, duration: 600 })
+      }
       return
     }
     const itin =

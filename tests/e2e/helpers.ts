@@ -9,6 +9,8 @@ export interface MapLike {
   getCenter: () => { lng: number; lat: number }
   getPitch: () => number
   isMoving: () => boolean
+  getCanvas: () => HTMLCanvasElement
+  jumpTo: (options: { center: [number, number] }) => void
 }
 
 /** Vrai si la carte a pu s'initialiser (WebGL disponible dans ce navigateur). */
@@ -44,7 +46,17 @@ export async function waitForMapReady(page: Page): Promise<void> {
   )
 }
 
-/** Clique un point géographique sur la carte (coordonnées carte → écran). */
+/**
+ * Clique un point géographique sur la carte (coordonnées carte → écran).
+ *
+ * Un point projeté peut tomber sous une commande — le crédit, le zoom, une
+ * feuille : le clic part alors dans le bouton, pas dans le tracé. Tant que la
+ * caméra s'arrêtait au zoom 9 (#572), le point visé tombait dans la carte par
+ * hasard ; cadrée jusqu'au bout, la zone le pose sous le crédit. On demande
+ * donc ce qui est **peint** au point (CLAUDE.md §1bis) et, si ce n'est pas
+ * la carte, on la recentre dessus — ce que ferait quelqu'un qui fait glisser
+ * la carte avant de toucher le tracé.
+ */
 export async function clickOnMap(
   page: Page,
   lon: number,
@@ -55,25 +67,49 @@ export async function clickOnMap(
   // La caméra peut encore finir un fitBounds animé : attendre l'arrêt avant
   // de projeter, sinon le point calculé dérive de la ligne (tolérance de
   // clic quasi nulle sur une géométrie « line » de 2 px).
-  await page.waitForFunction(
-    () =>
-      !(
-        window as unknown as { __sentiersMap?: MapLike }
-      ).__sentiersMap?.isMoving(),
-  )
-  const mapBox = await page.getByTestId('map').boundingBox()
-  if (!mapBox) throw new Error('Carte introuvable')
-  const point = await page.evaluate(
-    ([lonArg, latArg]) => {
-      const map = (window as unknown as { __sentiersMap?: MapLike })
-        .__sentiersMap
-      if (!map) return null
-      return map.project([lonArg, latArg])
-    },
-    [lon, lat] as const,
-  )
+  const immobile = () =>
+    page.waitForFunction(
+      () =>
+        !(
+          window as unknown as { __sentiersMap?: MapLike }
+        ).__sentiersMap?.isMoving(),
+    )
+  const projeter = () =>
+    page.evaluate(
+      ([lonArg, latArg]) => {
+        const map = (window as unknown as { __sentiersMap?: MapLike })
+          .__sentiersMap
+        if (!map) return null
+        const p = map.project([lonArg, latArg])
+        const cadre = map.getCanvas().getBoundingClientRect()
+        const x = cadre.x + p.x
+        const y = cadre.y + p.y
+        const peint = document.elementFromPoint(x, y) === map.getCanvas()
+        return { x, y, peint }
+      },
+      [lon, lat] as const,
+    )
+  await immobile()
+  let point = await projeter()
   if (!point) throw new Error('Carte non initialisée (WebGL indisponible ?)')
-  await page.mouse.click(mapBox.x + point.x, mapBox.y + point.y)
+  if (!point.peint) {
+    await page.evaluate(
+      ([lonArg, latArg]) => {
+        const map = (window as unknown as { __sentiersMap?: MapLike })
+          .__sentiersMap
+        map?.jumpTo({ center: [lonArg, latArg] })
+      },
+      [lon, lat] as const,
+    )
+    await immobile()
+    point = await projeter()
+    if (!point?.peint) {
+      throw new Error(
+        `${String(lon)}, ${String(lat)} reste sous une commande, même au centre de la carte`,
+      )
+    }
+  }
+  await page.mouse.click(point.x, point.y)
 }
 
 /**

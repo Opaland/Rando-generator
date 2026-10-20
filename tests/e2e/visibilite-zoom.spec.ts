@@ -5,6 +5,7 @@ import {
   mockElevation,
   mockExternalNetwork,
   mockTilesOk,
+  type MapLike,
 } from './helpers.ts'
 
 /**
@@ -130,6 +131,21 @@ test('la bande de revêtement ne se peint qu’à partir d’un certain zoom', a
   await expect(page.getByTestId('itinerary-detail')).toBeVisible({
     timeout: 15_000,
   })
+  // La fiche cadre le GR 7 jusqu'au bout — zoom 14,2 mesuré à 1 280 px.
+  // Avant #572, la remise à plat de la vue 3D coupait ce `fitBounds` en vol
+  // et la carte restait à 10,0, où la bande ne se peint pas. L'attendre,
+  // c'est aussi ne pas couper le cadrage par le `setZoom` ci-dessous : le
+  // centre resterait au milieu de la zone, d'où le GR 7 sort du cadre au
+  // zoom 14.
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const carte = (window as unknown as { __sentiersMap?: MapLike })
+          .__sentiersMap
+        return carte && !carte.isMoving() ? carte.getZoom() : 0
+      }),
+    )
+    .toBeGreaterThan(13)
 
   const rendues = (zoom: number) =>
     page.evaluate((z) => {
