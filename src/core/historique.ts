@@ -1,5 +1,6 @@
 import { trackDistanceMeters } from './history.ts'
 import type { Track } from './types.ts'
+import { instantDe } from './valeurLue.ts'
 
 /**
  * Rendre consultable un historique qui a grossi (issue #175).
@@ -61,16 +62,15 @@ function normaliser(texte: string): string {
 
 export function preparerHistorique(tracks: Track[]): EntreeHistorique[] {
   return tracks.map((track) => {
-    const instant = track.date ? Date.parse(track.date) : Number.NaN
-    const valide = Number.isFinite(instant)
-    const date = valide ? new Date(instant) : null
+    const instant = instantDe(track.date)
+    const date = instant === null ? null : new Date(instant)
     return {
       track,
       // La même longueur que les totaux de `history.ts` : deux calculs
       // auraient divergé dès la première trace coupée (#560, §4ter).
       metres: trackDistanceMeters(track),
       annee: date ? date.getFullYear() : null,
-      instant: valide ? instant : null,
+      instant,
       // La date telle qu'elle est affichée fait partie du texte cherchable :
       // la liste montre « 15/06/2026 », le chercher doit fonctionner.
       cherchable: normaliser(

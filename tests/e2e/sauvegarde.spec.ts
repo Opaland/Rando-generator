@@ -150,3 +150,60 @@ test('un fichier qui n’est pas une sauvegarde est refusé, en le disant', asyn
   // Et rien n'a été touché au passage.
   await expect(page.getByTestId('tracks-empty')).toBeVisible()
 })
+
+/*
+  Issue #567 : une sauvegarde modifiée à la main peut porter une date
+  illisible — `core/backup.ts` ne revalide que les points. La liste
+  affichait « gr7.gpx · Invalid Date · 2,3 km », et encore après
+  rechargement. Le lecteur GPX écarte désormais une telle date à l'import :
+  seule une sauvegarde peut encore l'amener jusqu'à la liste.
+*/
+test('une date illisible dans une sauvegarde s’affiche « date inconnue »', async ({
+  page,
+}) => {
+  await mockExternalNetwork(page)
+  await page.goto('/')
+
+  await page.getByTestId('gpx-input').setInputFiles({
+    name: 'gr7.gpx',
+    mimeType: 'application/gpx+xml',
+    buffer: Buffer.from(buildGpx(15), 'utf-8'),
+  })
+  await expect(page.getByTestId('tracks-list')).toContainText('gr7.gpx')
+  await page.getByTestId('backup').locator('summary').click()
+  const { contenu } = await telecharger(page)
+  const json = JSON.parse(gunzipSync(contenu).toString('utf-8')) as {
+    tracks: { date: unknown }[]
+  }
+  for (const trace of json.tracks) trace.date = 'pas une date'
+
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        const requete = indexedDB.deleteDatabase('sentiers')
+        requete.onsuccess = () => {
+          resolve()
+        }
+        requete.onerror = () => {
+          resolve()
+        }
+        requete.onblocked = () => {
+          resolve()
+        }
+      }),
+  )
+  await page.reload()
+  await page.getByTestId('backup').locator('summary').click()
+  await page.getByTestId('backup-input').setInputFiles({
+    name: 'sauvegarde.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(json), 'utf-8'),
+  })
+  await expect(page.getByTestId('backup-message')).toContainText(
+    '1 trace ajoutée',
+  )
+
+  const liste = page.getByTestId('tracks-list')
+  await expect(liste.getByText('date inconnue')).toBeVisible()
+  await expect(liste).not.toContainText('Invalid Date')
+})

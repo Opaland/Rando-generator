@@ -2,6 +2,7 @@ import type { AggregateStats } from './matching.ts'
 import { DEFAULT_COMPLETION_PCT, isCompleted } from './milestones.ts'
 import type { CompletionResult, Itinerary, Track } from './types.ts'
 import { attributionDe, type GpxAttribution } from './gpxExport.ts'
+import { instantDe } from './valeurLue.ts'
 
 /**
  * Bilan partageable : le chiffre qu'on a envie de montrer.
@@ -61,9 +62,8 @@ interface SummaryInput {
 }
 
 function isoDay(date: string | null): string | null {
-  if (!date) return null
-  const time = Date.parse(date)
-  return Number.isNaN(time) ? null : new Date(time).toISOString().slice(0, 10)
+  const time = instantDe(date)
+  return time === null ? null : new Date(time).toISOString().slice(0, 10)
 }
 
 /**

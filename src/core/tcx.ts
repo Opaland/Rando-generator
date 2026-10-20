@@ -1,6 +1,7 @@
 import { estDansLeMonde } from './coordonnees.ts'
 import { verifierDomaine } from './domaine.ts'
 import type { ParsedGpx, XmlParser } from './gpx.ts'
+import { instantDe, nombreLu } from './valeurLue.ts'
 import type { LonLat } from './types.ts'
 
 /**
@@ -40,8 +41,8 @@ function enfants(element: Element | Document, nom: string): Element[] {
   return Array.from(element.getElementsByTagNameNS('*', nom))
 }
 
-function nombre(element: Element | undefined): number {
-  return Number(element ? element.textContent.trim() : Number.NaN)
+function nombre(element: Element | undefined): number | null {
+  return nombreLu(element?.textContent)
 }
 
 export function parseTcx(xmlText: string, parser: XmlParser): ParsedGpx {
@@ -76,12 +77,14 @@ export function parseTcx(xmlText: string, parser: XmlParser): ParsedGpx {
     // L'heure est relevée avant la position : un point non localisé dit quand
     // la sortie a commencé, même s'il ne dit pas où.
     const time = enfants(trackpoint, 'Time')[0]?.textContent.trim()
-    if (premiereDate === null && time) premiereDate = time
+    if (premiereDate === null && time && instantDe(time) !== null) {
+      premiereDate = time
+    }
     const position = enfants(trackpoint, 'Position')[0]
     if (!position) continue
     const lat = nombre(enfants(position, 'LatitudeDegrees')[0])
     const lon = nombre(enfants(position, 'LongitudeDegrees')[0])
-    if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue
+    if (lat === null || lon === null) continue
     // Le TCX partageait mot pour mot le trou du GPX : seul `Number.isFinite`
     // filtrait des degrés (issue #167).
     if (!estDansLeMonde(lon, lat)) {
@@ -89,12 +92,10 @@ export function parseTcx(xmlText: string, parser: XmlParser): ParsedGpx {
       continue
     }
     points.push([lon, lat])
-    const altitude = nombre(enfants(trackpoint, 'AltitudeMeters')[0])
-    elevations.push(Number.isFinite(altitude) ? altitude : null)
+    elevations.push(nombre(enfants(trackpoint, 'AltitudeMeters')[0]))
     // Poussé ici et non plus haut : un point horodaté mais non localisé ne
     // doit pas décaler le temps du premier point qui l'est.
-    const instant = time ? Date.parse(time) : Number.NaN
-    times.push(Number.isFinite(instant) ? instant : null)
+    times.push(instantDe(time))
   }
 
   // Même garde que dans le lecteur GPX, et par la même fonction nommée : un
@@ -117,7 +118,8 @@ export function parseTcx(xmlText: string, parser: XmlParser): ParsedGpx {
     // SensorState. Ni l'une ni l'autre : `null` des deux côtés (#149).
     hdops: null,
     precisionsMetres: null,
-    date: idActivite ?? premiereDate,
+    date:
+      idActivite && instantDe(idActivite) !== null ? idActivite : premiereDate,
     pointsHorsLimites,
   }
 }

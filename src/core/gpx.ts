@@ -1,6 +1,7 @@
 import { estDansLeMonde } from './coordonnees.ts'
 import { verifierDomaine } from './domaine.ts'
 import { elevationStats, HYSTERESIS_ALTIMETRIQUE_METRES } from './elevation.ts'
+import { instantDe, nombreLu } from './valeurLue.ts'
 import { tranchesDe } from './segmentsDeTrace.ts'
 import type { LonLat } from './types.ts'
 
@@ -142,7 +143,12 @@ export function parseGpx(xmlText: string, parser: XmlParser): ParsedGpx {
     // Le GPX rapporte un HDOP, jamais une précision en mètres.
     precisionsMetres: null,
     debutsDeSegment,
-    date: metadataTime ?? firstPointDate,
+    // Une date illisible ne vaut pas mieux qu'une date absente : elle
+    // s'affichait « Invalid Date » (#567).
+    date:
+      metadataTime && instantDe(metadataTime) !== null
+        ? metadataTime
+        : firstPointDate,
     pointsHorsLimites,
   }
 }
@@ -174,11 +180,12 @@ function extractPoints(doc: Document, tagName: 'trkpt' | 'rtept'): ExtractedPoin
   const debutsDeSegment: number[] = []
   let segmentDuDernierGarde: Element | null = null
   for (const pt of Array.from(doc.getElementsByTagName(tagName))) {
-    const lat = Number(pt.getAttribute('lat'))
-    const lon = Number(pt.getAttribute('lon'))
-    // Une coordonnée illisible (`lat="nord"`) est un fichier cassé, pas un
-    // point mal placé : la compter fausserait le message rendu à l'utilisateur.
-    if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue
+    const lat = nombreLu(pt.getAttribute('lat'))
+    const lon = nombreLu(pt.getAttribute('lon'))
+    // Une coordonnée illisible (`lat="nord"`) ou absente est un fichier
+    // cassé, pas un point mal placé — et surtout pas un point sur
+    // l'équateur (#567) : la compter fausserait le message rendu.
+    if (lat === null || lon === null) continue
     if (!estDansLeMonde(lon, lat)) {
       pointsHorsLimites += 1
       continue
@@ -188,24 +195,20 @@ function extractPoints(doc: Document, tagName: 'trkpt' | 'rtept'): ExtractedPoin
     }
     segmentDuDernierGarde = pt.parentElement
     points.push([lon, lat])
-    const ele = Number(
-      pt.getElementsByTagName('ele')[0]?.textContent.trim() ?? NaN,
+    elevations.push(
+      nombreLu(pt.getElementsByTagName('ele')[0]?.textContent),
     )
-    elevations.push(Number.isFinite(ele) ? ele : null)
 
     // Les quatre tableaux avancent ensemble, y compris quand un point est
     // écarté : un décalage d'un cran rendrait la vitesse calculée absurde.
     const time = pt.getElementsByTagName('time')[0]?.textContent.trim()
     // Un <time> illisible ne vaut pas mieux qu'un <time> absent : NaN
     // décalerait toute vitesse calculée à partir de lui.
-    const instant = time ? Date.parse(time) : Number.NaN
-    times.push(Number.isFinite(instant) ? instant : null)
-    if (firstPointDate === null && time) firstPointDate = time
+    const instant = instantDe(time)
+    times.push(instant)
+    if (firstPointDate === null && time && instant !== null) firstPointDate = time
 
-    const hdop = Number(
-      pt.getElementsByTagName('hdop')[0]?.textContent.trim() ?? NaN,
-    )
-    hdops.push(Number.isFinite(hdop) ? hdop : null)
+    hdops.push(nombreLu(pt.getElementsByTagName('hdop')[0]?.textContent))
   }
   return {
     points,

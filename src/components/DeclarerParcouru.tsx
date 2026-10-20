@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAppStore } from '../store/appStore.ts'
 import { ConfirmDeleteButton } from './ConfirmDeleteButton.tsx'
 import styles from './DeclarerParcouru.module.css'
+import { dateAffichee } from '../core/valeurLue.ts'
 
 /**
  * « Je l'ai fait » — cocher un itinéraire sans trace GPX (issue #158).
@@ -31,9 +32,7 @@ export function DeclarerParcouru({ itineraryId }: { itineraryId: number }) {
   )
 
   if (declaration) {
-    const quand = declaration.date
-      ? new Date(declaration.date).toLocaleDateString('fr-FR')
-      : null
+    const quand = dateAffichee(declaration.date)
     return (
       <div className={styles.bloc} data-testid="declare-etat">
         <p className={styles.fait}>

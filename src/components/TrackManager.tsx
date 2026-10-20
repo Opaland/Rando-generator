@@ -23,6 +23,7 @@ import {
 } from '../core/gpxExport.ts'
 import { downloadTextFile } from '../lib/download.ts'
 import styles from './TrackManager.module.css'
+import { dateAffichee } from '../core/valeurLue.ts'
 
 const SUCCESS_TIMEOUT_MS = 4000
 
@@ -414,9 +415,7 @@ export function TrackManager() {
                 <span className={styles.itemInfo}>
                   <span className={styles.filename}>{d.nom}</span>
                   <span className={styles.itemMeta}>
-                    {d.date
-                      ? new Date(d.date).toLocaleDateString('fr-FR')
-                      : 'date inconnue'}
+                    {dateAffichee(d.date) ?? 'date inconnue'}
                     {' · '}
                     {formatKm(d.metres)}
                   </span>
@@ -463,9 +462,7 @@ function ItemTrace({
       >
         <span className={styles.filename}>{track.filename}</span>
         <span className={styles.itemMeta}>
-          {track.date
-            ? new Date(track.date).toLocaleDateString('fr-FR')
-            : 'date inconnue'}
+          {dateAffichee(track.date) ?? 'date inconnue'}
           {' · '}
           {formatKm(entree.metres)}
           {typeof track.elevationGain === 'number' &&
