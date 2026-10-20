@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import {
   afficherTousLesReseaux,
+  mockElevation,
   mockExternalNetwork,
   estAlEcran,
 } from './helpers.ts'
@@ -29,8 +30,13 @@ import {
  * papier ne déborde pas.
  */
 
-async function ouvrirUneFiche(page: import('@playwright/test').Page) {
+async function ouvrirUneFiche(
+  page: import('@playwright/test').Page,
+  avecAltimetrie = false,
+) {
   await mockExternalNetwork(page)
+  // Après le réseau, pas avant : la dernière route posée l'emporte.
+  if (avecAltimetrie) await mockElevation(page)
   await page.goto('/')
   await page.getByTestId('zone-pilat').click()
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
@@ -301,4 +307,37 @@ test('ce crédit ne se montre qu’au papier', async ({ page }) => {
     masquage ci-dessus retirerait le seul crédit de la page.
   */
   await expect(page.getByTestId('pied-panneau')).toContainText('ODbL')
+})
+
+/*
+  Issue #552 : cinq commandes de l'écran sortaient sur le papier. La barre
+  d'onglets, en `position: fixed`, au bas de **chaque** page, par-dessus
+  les commandes de zoom du profil — `pdftotext` y lisait « Carte Sorties
+  Progression Réglages » ; « Démarrer » (▶), dont le cadre coupait une
+  ligne ; « Ma position » ; la croix de la fiche ; le zoom du profil.
+
+  L'existence d'abord, et à l'écran : `toBeHidden()` est satisfait par
+  l'absence, et c'est exactement ainsi que l'en-tête a passé des semaines
+  « masqué » sur un sélecteur vide (#385).
+*/
+test('les commandes de l’écran ne sortent pas sur le papier', async ({
+  page,
+}) => {
+  // Le profil, et son zoom, n'existent qu'avec une altimétrie.
+  await ouvrirUneFiche(page, true)
+  const commandes = [
+    'barre-onglets',
+    'demarrer-rapide',
+    'locate-toggle',
+    'itinerary-detail-close',
+    'profil-zoom',
+  ]
+  await expect(page.getByTestId('profil-zoom')).toBeVisible({ timeout: 10_000 })
+  for (const id of commandes) {
+    await expect(page.getByTestId(id), `${id} à l’écran`).toBeVisible()
+  }
+  await page.emulateMedia({ media: 'print' })
+  for (const id of commandes) {
+    await expect(page.getByTestId(id), `${id} sur le papier`).toBeHidden()
+  }
 })
