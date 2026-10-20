@@ -158,10 +158,31 @@ describe('monthlyBuckets', () => {
     ])
   })
 
-  it('utilise le fuseau UTC, pour que le mois ne dépende pas du lieu de lecture', () => {
-    // 23 h 30 le 31 janvier en UTC reste janvier, où qu'on ouvre l'app.
-    const buckets = monthlyBuckets([track('a', '2026-01-31T23:30:00Z', 1000)])
-    expect(buckets[0]!.month).toBe('2026-01')
+  /*
+    Ce test disait l'inverse jusqu'au 20/10 : « utilise le fuseau UTC, pour
+    que le mois ne dépende pas du lieu de lecture ». La raison tenait, mais
+    l'histogramme était alors seul de son avis — la liste, le libellé et
+    les années comptaient en heure locale, et une même sortie changeait de
+    mois d'un écran à l'autre (#565). Tranché pour l'heure locale partout ;
+    le cas qui reste, lire ses sorties depuis un autre fuseau que celui où
+    on les a faites, déplace désormais tous les écrans ensemble.
+  */
+  it('compte le mois en heure locale, comme le reste de l’application', () => {
+    const env = (
+      globalThis as unknown as {
+        process: { env: Record<string, string | undefined> }
+      }
+    ).process.env
+    const avant = env.TZ
+    try {
+      // 23 h 30 le 31 janvier en UTC, 0 h 30 le 1ᵉʳ février à Paris.
+      env.TZ = 'Europe/Paris'
+      const buckets = monthlyBuckets([track('a', '2026-01-31T23:30:00Z', 1000)])
+      expect(buckets[0]!.month).toBe('2026-02')
+    } finally {
+      if (avant === undefined) delete env.TZ
+      else env.TZ = avant
+    }
   })
 
   it('retourne une liste vide sans sortie datée', () => {

@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useAppStore } from '../store/appStore.ts'
 import { ConfirmDeleteButton } from './ConfirmDeleteButton.tsx'
 import styles from './DeclarerParcouru.module.css'
-import { dateAffichee } from '../core/valeurLue.ts'
+import { dateAffichee, jourLocal } from '../core/valeurLue.ts'
+import { useHorloge } from '../lib/useHorloge.ts'
 
 /**
  * « Je l'ai fait » — cocher un itinéraire sans trace GPX (issue #158).
@@ -26,6 +27,9 @@ export function DeclarerParcouru({ itineraryId }: { itineraryId: number }) {
   const retirer = useAppStore((s) => s.retirerParcoursDeclare)
   const [saisieOuverte, setSaisieOuverte] = useState(false)
   const [date, setDate] = useState('')
+  // L'heure du montage suffit pour borner le champ : pas besoin d'un
+  // battement par seconde pour savoir quel jour on est.
+  const maintenant = useHorloge(false)
 
   const declaration = parcoursDeclares.find(
     (d) => d.itineraryId === itineraryId,
@@ -89,7 +93,7 @@ export function DeclarerParcouru({ itineraryId }: { itineraryId: number }) {
         className={styles.date}
         data-testid="declare-date"
         value={date}
-        max={new Date().toISOString().slice(0, 10)}
+        max={jourLocal(maintenant)}
         onChange={(e) => {
           setDate(e.target.value)
         }}

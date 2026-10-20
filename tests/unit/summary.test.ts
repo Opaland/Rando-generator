@@ -162,7 +162,10 @@ describe('buildSummary', () => {
 
 describe('summaryFilename', () => {
   it('nomme le fichier par la date du jour', () => {
-    expect(summaryFilename('2026-08-19T22:15:00Z')).toBe(
+    // Midi UTC : le même jour dans tous les fuseaux habités, de −11 à +11.
+    // À 22 h 15 UTC, ce test ne passait que sur une machine réglée en UTC —
+    // le jour est désormais local (#565, voir `tests/unit/jourLocal.test.ts`).
+    expect(summaryFilename('2026-08-19T12:00:00Z')).toBe(
       'bilan-sentiers-2026-08-19.png',
     )
   })

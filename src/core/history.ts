@@ -1,5 +1,6 @@
 import { polylineLengthMeters } from './sampling.ts'
 import { segmentsDe } from './segmentsDeTrace.ts'
+import { instantDe, moisLocal } from './valeurLue.ts'
 import type { Track } from './types.ts'
 
 /**
@@ -37,15 +38,6 @@ export function trackDistanceMeters(track: Track): number {
   )
 }
 
-/** Mois UTC « AAAA-MM » d'une date ISO, ou null si elle est illisible. */
-function monthOf(date: string | null): string | null {
-  if (!date) return null
-  const parsed = new Date(date)
-  if (Number.isNaN(parsed.getTime())) return null
-  const mois = String(parsed.getUTCMonth() + 1).padStart(2, '0')
-  return `${parsed.getUTCFullYear()}-${mois}`
-}
-
 /** Totaux de l'ensemble des sorties. */
 export function historyStats(tracks: Track[]): HistoryStats {
   let distanceMeters = 0
@@ -61,12 +53,12 @@ export function historyStats(tracks: Track[]): HistoryStats {
     if (typeof track.elevationGain === 'number') {
       elevationGain += track.elevationGain
     }
-    const time = track.date ? new Date(track.date).getTime() : Number.NaN
-    if (Number.isNaN(time)) {
+    const time = instantDe(track.date)
+    if (time === null || track.date === null) {
       undatedCount += 1
       continue
     }
-    const iso = track.date as string
+    const iso = track.date
     if (!first || time < first.time) first = { iso, time }
     if (!last || time > last.time) last = { iso, time }
   }
@@ -97,7 +89,7 @@ function nextMonth(month: string): string {
 export function monthlyBuckets(tracks: Track[]): MonthBucket[] {
   const parMois = new Map<string, MonthBucket>()
   for (const track of tracks) {
-    const month = monthOf(track.date)
+    const month = moisLocal(track.date)
     if (!month) continue
     const bucket = parMois.get(month) ?? {
       month,

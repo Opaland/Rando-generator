@@ -34,3 +34,32 @@ export function dateAffichee(date: unknown): string | null {
   const instant = instantDe(date)
   return instant === null ? null : new Date(instant).toLocaleDateString('fr-FR')
 }
+
+/*
+  Le jour et le mois d'une sortie, en heure **locale** (#565).
+
+  Choix de présentation, tranché au jugement (§2) le 20/10 : l'histogramme,
+  la carte de bilan et le `max` de « Déclarer parcouru » comptaient en UTC,
+  le libellé, la liste et l'historique en heure locale. Une sortie du
+  31 décembre à 23 h 30 UTC était « le 1 janvier 2026 » dans la liste et
+  « déc. 2025 » dans l'histogramme ; à Nouméa, on ne pouvait pas déclarer
+  « aujourd'hui » avant 11 h. L'heure locale l'emporte : une sortie faite le
+  1ᵉʳ septembre à 7 h à Nouméa a été faite le 1ᵉʳ septembre. Écarté : l'UTC
+  partout, qui aurait mis cette sortie en août sur tous les écrans.
+*/
+
+/** « AAAA-MM-JJ » du jour **local** d'un instant. */
+export function jourLocal(instant: number): string {
+  const d = new Date(instant)
+  return `${String(d.getFullYear())}-${deuxChiffres(d.getMonth() + 1)}-${deuxChiffres(d.getDate())}`
+}
+
+/** « AAAA-MM » du mois **local** d'une date, ou `null` si elle est illisible. */
+export function moisLocal(date: unknown): string | null {
+  const instant = instantDe(date)
+  return instant === null ? null : jourLocal(instant).slice(0, 7)
+}
+
+function deuxChiffres(n: number): string {
+  return String(n).padStart(2, '0')
+}
