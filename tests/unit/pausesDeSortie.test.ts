@@ -56,9 +56,6 @@ describe('distanceParcourue', () => {
 
 /*
   Survivants laissés, et pourquoi (§6bis) :
-  - `if (courant.length > 0)` forcé à vrai dans `segmentsMarches` : un
-    tronçon vide ne porte aucune altitude, le dénivelé n'en tient pas
-    compte ;
   - `GEO_OPTIONS.timeout ?? 20_000` en `&&` : `GEO_OPTIONS.timeout` vaut
     20 000, les deux formes rendent le même nombre.
 */

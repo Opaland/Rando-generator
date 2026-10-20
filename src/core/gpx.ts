@@ -1,6 +1,7 @@
 import { estDansLeMonde } from './coordonnees.ts'
 import { verifierDomaine } from './domaine.ts'
 import { elevationStats, HYSTERESIS_ALTIMETRIQUE_METRES } from './elevation.ts'
+import { tranchesDe } from './segmentsDeTrace.ts'
 import type { LonLat } from './types.ts'
 
 /** Erreur de lecture d'un fichier GPX, message affichable tel quel à l'utilisateur. */
@@ -54,6 +55,13 @@ export interface ParsedGpx {
    */
   hdops: (number | null)[] | null
   /**
+   * Où commence chaque `<trkseg>` (ou `<trk>`), en indice de `points` (#560).
+   * Le schéma GPX 1.1 dit qu'un segment est une suite continue de points :
+   * une montre en ouvre un nouveau après une pause ou une perte de signal.
+   * Absent pour les formats qui ne le portent pas (FIT, TCX).
+   */
+  debutsDeSegment?: number[]
+  /**
    * Précision horizontale en **mètres**, alignée sur `points`. C'est ce que
    * rapporte le FIT (`gps_accuracy`), et le GPX ne la porte pas — d'où
    * `null` chez ce dernier.
@@ -105,7 +113,7 @@ export function parseGpx(xmlText: string, parser: XmlParser): ParsedGpx {
   // sacrifier ni les données ni ce qu'on doit dire à leur sujet.
   const parcours =
     trace.points.length === 0 ? extractPoints(doc, 'rtept') : null
-  const { points, elevations, times, hdops, firstPointDate } =
+  const { points, elevations, times, hdops, firstPointDate, debutsDeSegment } =
     parcours ?? trace
   const pointsHorsLimites =
     trace.pointsHorsLimites + (parcours?.pointsHorsLimites ?? 0)
@@ -133,12 +141,14 @@ export function parseGpx(xmlText: string, parser: XmlParser): ParsedGpx {
     hdops,
     // Le GPX rapporte un HDOP, jamais une précision en mètres.
     precisionsMetres: null,
+    debutsDeSegment,
     date: metadataTime ?? firstPointDate,
     pointsHorsLimites,
   }
 }
 
 interface ExtractedPoints {
+  debutsDeSegment: number[]
   points: LonLat[]
   elevations: (number | null)[]
   times: (number | null)[]
@@ -158,6 +168,11 @@ function extractPoints(doc: Document, tagName: 'trkpt' | 'rtept'): ExtractedPoin
   const hdops: (number | null)[] = []
   let firstPointDate: string | null = null
   let pointsHorsLimites = 0
+  // La coupure se pose au premier point **gardé** d'un nouveau segment : un
+  // point écarté ne doit ni la décaler, ni en créer une pour un segment
+  // dont rien ne reste.
+  const debutsDeSegment: number[] = []
+  let segmentDuDernierGarde: Element | null = null
   for (const pt of Array.from(doc.getElementsByTagName(tagName))) {
     const lat = Number(pt.getAttribute('lat'))
     const lon = Number(pt.getAttribute('lon'))
@@ -168,6 +183,10 @@ function extractPoints(doc: Document, tagName: 'trkpt' | 'rtept'): ExtractedPoin
       pointsHorsLimites += 1
       continue
     }
+    if (points.length > 0 && pt.parentElement !== segmentDuDernierGarde) {
+      debutsDeSegment.push(points.length)
+    }
+    segmentDuDernierGarde = pt.parentElement
     points.push([lon, lat])
     const ele = Number(
       pt.getElementsByTagName('ele')[0]?.textContent.trim() ?? NaN,
@@ -195,6 +214,7 @@ function extractPoints(doc: Document, tagName: 'trkpt' | 'rtept'): ExtractedPoin
     hdops,
     firstPointDate,
     pointsHorsLimites,
+    debutsDeSegment,
   }
 }
 
@@ -215,6 +235,24 @@ export function elevationGainMeters(
   thresholdMeters = HYSTERESIS_ALTIMETRIQUE_METRES,
 ): number | null {
   return elevationStats(elevations, thresholdMeters)?.gain ?? null
+}
+
+/**
+ * Le dénivelé positif d'une trace en plusieurs tronçons, chacun compté à
+ * part. Une seule règle pour la trace importée et la sortie enregistrée
+ * (`deniveleParcouru` l'appelle) : sans elle, la montée faite en voiture
+ * entre deux `<trkseg>` comptait en D+ (#560).
+ * `null` quand aucun tronçon n'a d'altitude exploitable.
+ */
+export function deniveleParTroncons(
+  elevations: (number | null)[],
+  debutsDeSegment: number[] | undefined,
+): number | null {
+  const gains = tranchesDe({ points: elevations, debutsDeSegment }).map(
+    ([debut, fin]) => elevationGainMeters(elevations.slice(debut, fin)),
+  )
+  const connus = gains.filter((g): g is number => g !== null)
+  return connus.length === 0 ? null : connus.reduce((a, b) => a + b, 0)
 }
 
 /**

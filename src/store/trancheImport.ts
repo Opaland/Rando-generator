@@ -34,7 +34,7 @@
  * choses distinctes.
  */
 
-import { GpxError, elevationGainMeters, trackFingerprint } from '../core/gpx.ts'
+import { GpxError, deniveleParTroncons, trackFingerprint } from '../core/gpx.ts'
 import { FitError } from '../core/fit.ts'
 import { TcxError } from '../core/tcx.ts'
 import { GeoJsonError } from '../core/geojson.ts'
@@ -244,8 +244,14 @@ export function trancheImport(deps: DependancesImport): ActionsImport {
             points: parsed.points,
             date: parsed.date,
             importedAt: new Date().toISOString(),
-            elevationGain: elevationGainMeters(parsed.elevations),
+            elevationGain: deniveleParTroncons(
+              parsed.elevations,
+              parsed.debutsDeSegment,
+            ),
             times: parsed.times,
+            ...(parsed.debutsDeSegment && {
+              debutsDeSegment: parsed.debutsDeSegment,
+            }),
             hdops: parsed.hdops,
             precisionsMetres: parsed.precisionsMetres,
             // La zone du moment, si une zone est chargée (#206). Rien

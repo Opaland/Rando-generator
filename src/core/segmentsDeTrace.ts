@@ -10,6 +10,12 @@ import type { LonLat, Track } from './types.ts'
  * plutôt que de relire le champ à sa façon (§4).
  */
 
+/** Une suite de points, quels qu'ils soient, et où elle se coupe. */
+interface Decoupable {
+  points: readonly unknown[]
+  debutsDeSegment?: number[] | undefined
+}
+
 /**
  * Les indices où commence un nouveau tronçon, assainis.
  *
@@ -18,7 +24,7 @@ import type { LonLat, Track } from './types.ts'
  * la fin, en double ou non entière est écartée plutôt que d'inventer un
  * tronçon vide.
  */
-function coupuresDe(trace: Pick<Track, 'points' | 'debutsDeSegment'>): number[] {
+function coupuresDe(trace: Decoupable): number[] {
   const n = trace.points.length
   return [...new Set(trace.debutsDeSegment ?? [])]
     .filter((i) => Number.isInteger(i) && i > 0 && i < n)
@@ -26,12 +32,11 @@ function coupuresDe(trace: Pick<Track, 'points' | 'debutsDeSegment'>): number[] 
 }
 
 /**
- * Les tranches `[début, fin)` de chaque tronçon. Exportée pour l'export
- * GPX, qui découpe des `<trkpt>` déjà écrits et non des coordonnées.
+ * Les tranches `[début, fin)` de chaque tronçon. Exportée pour ce qui
+ * découpe autre chose que des coordonnées alignées sur elles : l'export
+ * GPX, des `<trkpt>` déjà écrits ; le dénivelé, des altitudes.
  */
-export function tranchesDe(
-  trace: Pick<Track, 'points' | 'debutsDeSegment'>,
-): [number, number][] {
+export function tranchesDe(trace: Decoupable): [number, number][] {
   const bornes = [0, ...coupuresDe(trace), trace.points.length]
   return bornes.slice(1).map((fin, k) => [bornes[k] ?? 0, fin])
 }

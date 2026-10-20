@@ -1,6 +1,6 @@
 import { distanceMeters } from './geo.ts'
 import { GEO_OPTIONS } from './geolocation.ts'
-import { elevationGainMeters } from './gpx.ts'
+import { deniveleParTroncons } from './gpx.ts'
 import {
   dureeEnMarche,
   dureeTotale,
@@ -122,28 +122,6 @@ function debutsDeSegment(e: Enregistrement): number[] {
 }
 
 /**
- * Découpe les points en tronçons continus, coupés aux pauses et aux trous
- * GPS silencieux (`segmentCompte`) — pour que le dénivelé se calcule
- * segment par segment, comme la distance et le profil, plutôt que sur la
- * suite brute des altitudes.
- */
-function segmentsMarches(e: Enregistrement): PointBrut[][] {
-  const segments: PointBrut[][] = []
-  let courant: PointBrut[] = []
-  let avant: PointBrut | null = null
-  for (const point of e.points) {
-    if (avant !== null && !segmentCompte(avant, point, e.intervalles)) {
-      segments.push(courant)
-      courant = []
-    }
-    courant.push(point)
-    avant = point
-  }
-  if (courant.length > 0) segments.push(courant)
-  return segments
-}
-
-/**
  * Le dénivelé positif cumulé, ou `null` si aucun point ne porte d'altitude.
  *
  * L'hystérésis de 3 m est celle qu'applique déjà `elevationGainMeters` à
@@ -155,22 +133,19 @@ function segmentsMarches(e: Enregistrement): PointBrut[][] {
  * 25/09, `elevationGainMeters` délègue réellement à `elevationStats` : il
  * n'existe plus qu'une seule formule, donc plus rien à diverger.
  *
- * Calculé segment par segment (`segmentsMarches`) depuis le 25/09 : c'était
+ * Calculé tronçon par tronçon depuis le 25/09 — coupé par
+ * `debutsDeSegment`, la règle de la trace rangée, et additionné par
+ * `deniveleParTroncons`, celle de la trace importée (#560) : c'était
  * le seul des trois chiffres de l'écran de marche à ignorer `segmentCompte`
  * — `distanceParcourue` et `profilDeSortie` le consultaient déjà, lui non,
  * et un trou GPS silencieux (écran verrouillé) pouvait ajouter au dénivelé
  * la différence d'altitude entre deux points qu'aucune marche ne relie.
  */
 export function deniveleParcouru(e: Enregistrement): number | null {
-  let gain = 0
-  let hasData = false
-  for (const segment of segmentsMarches(e)) {
-    const gainDuSegment = elevationGainMeters(segment.map((p) => p.altitude))
-    if (gainDuSegment === null) continue
-    hasData = true
-    gain += gainDuSegment
-  }
-  return hasData ? gain : null
+  return deniveleParTroncons(
+    e.points.map((p) => p.altitude),
+    debutsDeSegment(e),
+  )
 }
 
 interface ChiffresSortie {
