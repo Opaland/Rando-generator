@@ -84,3 +84,24 @@ export function messageDeRepliSurCache(faits: FaitsDeZone): string {
     (diagnostic === null ? '' : ` ${diagnostic}`)
   )
 }
+
+/**
+ * Le message de la zone restaurée au démarrage (#550, quatrième chemin).
+ *
+ * Elle se montre même trop vieille ou d'un schéma ancien : aucune requête
+ * ne part au démarrage sans un geste, et une copie qu'on dit vieille vaut
+ * mieux qu'un écran vide hors réseau. C'est un choix de présentation (§2),
+ * pas un seuil : l'âge et le schéma sont jugés par `zoneUtilisable`
+ * (`db/database.ts`), la même garde que le chemin normal, et l'appelant en
+ * passe le verdict dans `aJour`.
+ */
+export function messageDeRestauration(
+  faits: FaitsDeZone & { aJour: boolean },
+): string | null {
+  const diagnostic = messageDeZone(faits)
+  if (faits.aJour) return diagnostic
+  return (
+    'Ces tracés viennent d’une copie ancienne, ou enregistrée par une version précédente de Sentiers : certaines informations peuvent manquer ou avoir changé. « Actualiser les tracés » la met à jour.' +
+    (diagnostic === null ? '' : ` ${diagnostic}`)
+  )
+}

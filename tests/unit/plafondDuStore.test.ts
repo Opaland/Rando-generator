@@ -109,6 +109,9 @@ const PLAFONDS: Record<string, number> = {
   // 39 lignes : ce qui désigne un itinéraire perso sans en faire partie
   // (#549). La place d'une quatrième référence, pas d'une tranche.
   'referencesPerso.ts': 55,
+  // 48 lignes : la zone restaurée au démarrage, sortie d'`appStore.ts` pour
+  // y appliquer les gardes des trois autres chemins (#550).
+  'restaurationDeZone.ts': 60,
   /*
     Le journal des sorties réseau (issue #178), sorti d'`appStore.ts` le
     07/09 (#445) : 113 lignes, la seule action qui était encore écrite en

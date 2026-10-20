@@ -19,6 +19,7 @@ import {
 import pilat from '../fixtures/overpass/pilat.json' with { type: 'json' }
 import { buildZip, gzip } from '../fixtures/zip.ts'
 import { buildBackup, serialiserBackup } from '../../src/core/backup.ts'
+import type { CachedZone } from '../../src/db/database.ts'
 
 /**
  * Tests du store (issue #9). Sa logique est riche et n'était couverte que par
@@ -261,6 +262,50 @@ describe('init', () => {
     await useAppStore.getState().init()
     expect(useAppStore.getState().tracks).toHaveLength(1)
     expect(useAppStore.getState().toleranceMeters).toBe(80)
+  })
+
+  /*
+    Issue #550 : le quatrième chemin d'une zone en cache sautait les gardes
+    des trois autres. Une zone tronquée restaurée au démarrage cachait
+    « vos pourcentages sont surestimés » ; une copie de schéma 1 ou de
+    90 jours passait pour fraîche.
+  */
+  describe('la zone restaurée au démarrage dit ce qu’elle vaut (#550)', () => {
+    async function restaurer(zone: Partial<CachedZone>): Promise<string | null> {
+      await useAppStore.getState().init()
+      await useAppStore.getState().loadZone('pilat')
+      const db = useAppStore.getState().db
+      const cache = await db?.getZone('pilat')
+      if (!db || !cache) throw new Error('la zone devait être en cache')
+      await db.saveZone({ ...cache, ...zone })
+      const appels = fetchMock.mock.calls.length
+
+      useAppStore.setState(etatInitial, true)
+      oublierReglagesTouches()
+      await useAppStore.getState().init()
+      expect(useAppStore.getState().zoneKey).toBe('pilat')
+      expect(fetchMock.mock.calls.length).toBe(appels)
+      return useAppStore.getState().zoneError
+    }
+
+    it('ne dit rien d’une zone fraîche et entière', async () => {
+      expect(await restaurer({})).toBeNull()
+    })
+
+    it('dit qu’une zone tronquée surestime les pourcentages', async () => {
+      expect(await restaurer({ partielle: true })).toMatch(/surestimés/)
+    })
+
+    it('dit qu’une copie d’un ancien schéma est à actualiser', async () => {
+      expect(await restaurer({ schema: 1 })).toMatch(/Actualiser les tracés/)
+    })
+
+    it('dit qu’une copie trop vieille est à actualiser', async () => {
+      const ilYa90Jours = new Date(Date.now() - 90 * 86_400_000).toISOString()
+      expect(await restaurer({ fetchedAt: ilYa90Jours })).toMatch(
+        /Actualiser les tracés/,
+      )
+    })
   })
 
   it('restaure la dernière zone depuis le cache, sans requête réseau', async () => {

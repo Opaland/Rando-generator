@@ -2,7 +2,44 @@ import { describe, it, expect } from 'vitest'
 import {
   messageDeZone,
   messageDeRepliSurCache,
+  messageDeRestauration,
 } from '../../src/core/messageDeZone.ts'
+
+/**
+ * Issue #550 — le quatrième chemin : la zone restaurée au démarrage.
+ *
+ * Elle s'affichait sans rien dire, ni de ce qu'elle a de travers, ni de son
+ * âge ou de son schéma — trois gardes que les autres chemins appliquent. On
+ * la montre quand même (aucun réseau ne part au démarrage) : ce qui manquait,
+ * c'est la phrase.
+ */
+describe('la zone restaurée au démarrage', () => {
+  it('ne dit rien d’une copie à jour et entière', () => {
+    expect(messageDeRestauration({ itineraires: 12, aJour: true })).toBeNull()
+  })
+
+  it('dit ce que la zone a de travers, comme au chargement', () => {
+    expect(
+      messageDeRestauration({ itineraires: 12, partielle: true, aJour: true }),
+    ).toBe(messageDeZone({ itineraires: 12, partielle: true }))
+  })
+
+  it('dit qu’une copie trop vieille ou d’une version précédente est à actualiser', () => {
+    const message = messageDeRestauration({ itineraires: 12, aJour: false })
+    expect(message).toMatch(/Actualiser les tracés/)
+    expect(message).toMatch(/version précédente/)
+  })
+
+  it('dit les deux quand la copie est vieille et tronquée', () => {
+    const message = messageDeRestauration({
+      itineraires: 12,
+      partielle: true,
+      aJour: false,
+    })
+    expect(message).toMatch(/Actualiser les tracés/)
+    expect(message).toMatch(/surestimés/)
+  })
+})
 
 /**
  * Issue #404 — ce qu'une zone a de travers, et où cette phrase se compose.

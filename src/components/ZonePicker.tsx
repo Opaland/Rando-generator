@@ -85,7 +85,9 @@ export function ZonePicker() {
     void chercherLieu(lieuInput)
   }
 
-  const deplie = ouvert ?? !zoneRestoredAtStartup
+  // Repliée sur une zone restaurée, sauf si elle a quelque chose à en dire :
+  // l'alerte vit dedans, et repliée elle ne se voit pas (#550).
+  const deplie = ouvert ?? (!zoneRestoredAtStartup || zoneError !== null)
 
   return (
     <section className={styles.section} aria-labelledby="zone-title">

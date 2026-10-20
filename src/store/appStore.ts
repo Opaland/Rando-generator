@@ -1,5 +1,4 @@
 import { create } from 'zustand'
-import { libelleDeZone } from '../core/overpass.ts'
 import type { Lieu } from '../core/geocode.ts'
 import type { ParcoursDeclare } from '../core/declaratif.ts'
 import { outingHighlights, type OutingHighlight } from '../core/outing.ts'
@@ -43,6 +42,7 @@ import {
   DbError,
   type SentiersDb,
 } from '../db/database.ts'
+import { restaurerLaDerniereZone } from './restaurationDeZone.ts'
 import {
   creerEnregistreurDeReglage,
   oublierReglagesTouches,
@@ -783,22 +783,18 @@ export const useAppStore = create<AppState>()((set, get) => {
         }
       }
 
-      // Au démarrage, on restaure la dernière zone depuis le cache uniquement
-      // (jamais d'appel réseau externe sans action de l'utilisateur — les
-      // boucles locales sont un fichier du site, pas un service tiers).
-      // Même raison : restaurer la zone en cache par-dessus une
-      // démonstration mêlerait de vrais itinéraires à des sorties fictives.
+      // La dernière zone, depuis le cache seul (`restaurationDeZone.ts`) —
+      // jamais par-dessus une démonstration, qui mêlerait de vrais
+      // itinéraires à des sorties fictives. Les boucles locales sont un
+      // fichier du site, pas un service tiers.
       if (typeof lastZoneKey === 'string' && !get().demonstration) {
-        const cached = await db.getZone(lastZoneKey)
-        if (cached) {
-          setItineraries(
-            lastZoneKey,
-            libelleDeZone(lastZoneKey, cached.label),
-            cached.itineraries,
-            cached.fetchedAt,
-          )
-          set({ zoneRestoredAtStartup: true })
-        }
+        const restauree = await restaurerLaDerniereZone(db, lastZoneKey, {
+          setItineraries,
+          poserMessage: (zoneError) => {
+            set({ zoneError })
+          },
+        })
+        if (restauree) set({ zoneRestoredAtStartup: true })
       }
       await recompute()
       if (typeof lastZoneKey === 'string' && !get().demonstration) {
