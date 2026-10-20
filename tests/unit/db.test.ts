@@ -1,5 +1,5 @@
 import 'fake-indexeddb/auto'
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import {
   openSentiersDb,
   isFresh,
@@ -175,6 +175,40 @@ describe('réglages', () => {
     expect(await db.getSetting('toleranceMeters')).toBeUndefined()
     await db.setSetting('toleranceMeters', 25)
     expect(await db.getSetting('toleranceMeters')).toBe(25)
+  })
+
+  /*
+    Issue #569, point 4 — la sonde de la revue : `relu = 40 (attendu 80) |
+    valeur dans IDB = 80`. Quand `localStorage` refuse d'écrire, la valeur
+    part dans IndexedDB ; mais `getSetting` lit d'abord `localStorage`, qui
+    gardait l'ancienne. Le réglage semblait revenir en arrière tout seul.
+  */
+  it('relit la valeur écrite en repli, pas l’ancienne restée en localStorage', async () => {
+    const boite = new Map<string, string>([
+      ['sentiers.reglage.toleranceMeters', '40'],
+    ])
+    vi.stubGlobal('localStorage', {
+      get length() {
+        return boite.size
+      },
+      clear: () => {
+        boite.clear()
+      },
+      getItem: (k: string) => boite.get(k) ?? null,
+      setItem: () => {
+        throw new DOMException('plein', 'QuotaExceededError')
+      },
+      removeItem: (k: string) => {
+        boite.delete(k)
+      },
+      key: (i: number) => [...boite.keys()][i] ?? null,
+    })
+    try {
+      await db.setSetting('toleranceMeters', 80)
+      expect(await db.getSetting('toleranceMeters')).toBe(80)
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 })
 

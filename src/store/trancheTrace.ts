@@ -284,10 +284,16 @@ export function trancheTrace(deps: DependancesTrace): ActionsTrace {
       const { drawPath, drawGainLoading } = deps.etatTrace()
       if (drawPath.length < 2 || drawGainLoading) return
       deps.set({ drawGainLoading: true, drawError: null })
+      // Le tracé peut changer pendant l'attente, et ce changement remet déjà
+      // le D+ à `null`. La réponse d'un tracé qui n'est plus à l'écran ne
+      // doit pas l'écraser : elle affichait 400 m sous un tracé dont ce
+      // n'était pas le dénivelé (#569). Même règle pour la panne.
+      const perime = () => deps.etatTrace().drawPath !== drawPath
       try {
         // Une seule requête, à la fin : une par clic ferait vingt appels
         // pour un chiffre qui n'intéresse qu'au moment d'enregistrer.
         const profile = await fetchElevationProfile(drawPath)
+        if (perime()) return
         const stats = elevationStats(profile.elevations)
         deps.set({
           drawGainMeters: stats ? Math.round(stats.gain) : null,
@@ -301,6 +307,7 @@ export function trancheTrace(deps: DependancesTrace): ActionsTrace {
               }),
         })
       } catch (error) {
+        if (perime()) return
         deps.set({
           drawGainMeters: null,
           drawError:

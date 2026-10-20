@@ -446,6 +446,38 @@ describe('estimer le dénivelé', () => {
     expect(b.etat().drawGainLoading).toBe(false)
   })
 
+  /*
+    Issue #569, point 3 — la sonde de la revue : `drawPath.length = 3,
+    drawGainMeters = 400`, alors que 400 m était le D+ du tracé d'avant.
+    Un tracé qui change pendant l'attente remet déjà le D+ à `null` ; la
+    réponse en retard ne doit pas l'écraser avec le chiffre d'un autre.
+  */
+  it('une réponse arrivée après un changement de tracé est écartée', async () => {
+    const b = tracéDeDeuxPoints()
+    const ancienTrace = b.etat().drawPath
+    const attente = b.actions.estimerDeniveleTrace()
+    b.actions.addDrawPoint([4.504, 45.4])
+    const nouveauTrace = b.etat().drawPath
+    // Le tracé a bien changé : sans cela, le test passerait pour rien.
+    expect(nouveauTrace.length).toBeGreaterThan(ancienTrace.length)
+    altimetriesEnAttente[0]?.resoudre({ elevations: [400, 800] })
+    await attente
+    expect(b.etat().drawPath).toBe(nouveauTrace)
+    expect(b.etat().drawGainMeters).toBeNull()
+    expect(b.etat().drawGainLoading).toBe(false)
+  })
+
+  it('une panne arrivée après un changement de tracé ne s’affiche pas', async () => {
+    const b = tracéDeDeuxPoints()
+    const attente = b.actions.estimerDeniveleTrace()
+    const avant = b.etat().drawPath
+    b.actions.addDrawPoint([4.504, 45.4])
+    expect(b.etat().drawPath).not.toBe(avant)
+    altimetriesEnAttente[0]?.rejeter(new Error('réseau'))
+    await attente
+    expect(b.etat().drawError).toBeNull()
+  })
+
   it('une panne du service laisse le tracé enregistrable', async () => {
     const b = tracéDeDeuxPoints()
     const attente = b.actions.estimerDeniveleTrace()
