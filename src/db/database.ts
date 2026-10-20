@@ -1,4 +1,5 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
+import { DUREE_DE_VIE_MS, estFrais } from '../core/fraicheur.ts'
 import type { Itinerary, Track } from '../core/types.ts'
 import type { PointBrut } from '../core/recorder.ts'
 import type { EnteteEnregistrement } from '../core/reprise.ts'
@@ -21,8 +22,8 @@ export class DbError extends Error {
 export const DB_NAME = 'sentiers'
 export const DB_VERSION = 5
 
-/** Durée de vie du cache des tracés : 30 jours. */
-export const CACHE_TTL_MS = 30 * 24 * 3600 * 1000
+/** Durée de vie du cache des tracés : celle de `core/fraicheur.ts`. */
+export const CACHE_TTL_MS = DUREE_DE_VIE_MS
 
 /** Zone (ou recherche par ref) mise en cache avec ses itinéraires. */
 export interface CachedZone {
@@ -255,13 +256,8 @@ export function pourquoiPerimee(
   return isFresh(zone.fetchedAt, nowIso) ? null : 'age'
 }
 
-/** Vrai si un horodatage ISO a moins de CACHE_TTL_MS d'ancienneté à `nowIso`. */
-export function isFresh(fetchedAtIso: string, nowIso: string): boolean {
-  const fetchedAt = Date.parse(fetchedAtIso)
-  const now = Date.parse(nowIso)
-  if (Number.isNaN(fetchedAt) || Number.isNaN(now)) return false
-  return now - fetchedAt < CACHE_TTL_MS
-}
+/** Vrai si une copie a moins de 30 jours : la règle de `core/fraicheur.ts`. */
+export const isFresh = estFrais
 
 export interface SentiersDb {
   raw: IDBPDatabase<SentiersSchema>
