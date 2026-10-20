@@ -21,7 +21,12 @@ export function formatKm(meters: number): string {
  * dite bouclée à 94,95 %.
  */
 export function formatPct(pct: number): string {
-  return `${pctFormat.format(Math.floor(pct * 10) / 10)} %`
+  // La tolérance n'arrondit rien : elle absorbe l'erreur flottante.
+  // `57 / 100 * 100` vaut 56,99999999999999 — tronqué sans elle, « 56,9 % »
+  // (trouvé à la revue du 20/10, 512 paires sur les totaux jusqu'à 2 000).
+  // Un millionième de point est très en deçà du plus petit écart réel entre
+  // deux pourcentages d'échantillons, qui est de 100 / total.
+  return `${pctFormat.format(Math.floor(pct * 10 + 1e-6) / 10)} %`
 }
 
 const moFormat = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 })

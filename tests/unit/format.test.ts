@@ -145,3 +145,29 @@ describe('displayName', () => {
     expect(displayName(itineraire(null, null, 42))).toBe('Itinéraire 42')
   })
 })
+
+/*
+  Revue du 20/10 : tronquer sans tolérance prenait l'erreur flottante pour
+  une valeur. `57 / 100 * 100` vaut 56,99999999999999 — « 56,9 % » au lieu
+  de « 57 % », et 512 paires (fait, total) sur les totaux jusqu'à 2 000.
+*/
+describe('formatPct et l’erreur flottante', () => {
+  it('57 sur 100 s’affiche 57 %', () => {
+    expect(formatPct((57 / 100) * 100)).toBe('57 %')
+    expect(formatPct((29 / 100) * 100)).toBe('29 %')
+    expect(formatPct((23 / 40) * 100)).toBe('57,5 %')
+  })
+
+  it('aucune fraction exacte au dixième ne perd son dernier chiffre', () => {
+    for (let total = 1; total <= 400; total++) {
+      for (let fait = 0; fait <= total; fait++) {
+        const exact = (fait * 1000) / total
+        if (!Number.isInteger(exact)) continue
+        const attendu = new Intl.NumberFormat('fr-FR', {
+          maximumFractionDigits: 1,
+        }).format(exact / 10)
+        expect(formatPct((fait / total) * 100), `${String(fait)}/${String(total)}`).toBe(`${attendu} %`)
+      }
+    }
+  })
+})
