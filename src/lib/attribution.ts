@@ -28,7 +28,9 @@
  * licence à la main.
  */
 
-import type { GpxAttribution } from '../core/gpxExport.ts'
+import { attributionDe, type GpxAttribution } from '../core/gpxExport.ts'
+import { sourcesDe } from '../core/attributionDuTrace.ts'
+import type { Itinerary } from '../core/types.ts'
 
 /** Un crédit : à qui, pour quoi, sous quelle licence, et où lire celle-ci. */
 interface Credit {
@@ -114,7 +116,7 @@ export const IGN_RELIEF: Credit = {
 export const METROPOLE: Credit = {
   quoi: 'Boucles locales',
   qui: 'Métropole de Lyon',
-  licence: 'Licence Ouverte',
+  licence: 'Licence Ouverte 2.0',
   lien: 'https://data.grandlyon.com/',
 }
 
@@ -237,4 +239,25 @@ export function creditsDesSources(
     }
   }
   return credits
+}
+
+/**
+ * Le crédit de la feuille imprimée (#557, point 3) : les sources de la
+ * fiche ouverte — ou, sans fiche, de ce qui est chargé —, et le relief de
+ * l'IGN, dont vient le profil.
+ *
+ * Il était écrit en dur dans `App.tsx` : `OSM, IGN_RELIEF, METROPOLE,
+ * PROVINCE_NORD`. Une fiche de GR créditait la Métropole et la Province
+ * Nord, et un PDIPR importé n'avait pas son producteur sur le papier —
+ * exactement ce que `creditsDesSources` existe pour éviter.
+ */
+export function creditsImprimes(
+  fiche: Itinerary | null,
+  charges: readonly Itinerary[],
+): Credit[] {
+  const sources = (fiche ? [fiche] : charges).flatMap((itineraire) => {
+    const attribution = attributionDe(itineraire)
+    return attribution ? sourcesDe(attribution) : []
+  })
+  return [...creditsDesSources(sources), IGN_RELIEF]
 }

@@ -263,6 +263,14 @@ test('la feuille porte le crédit de ses sources, en toutes lettres', async ({
   await expect(credit).toContainText('ODbL')
   await expect(credit).toContainText('les contributeurs OpenStreetMap')
   await expect(credit).toContainText('IGN')
+  /*
+    Issue #557, point 3 : le crédit était écrit en dur, et une fiche de GR
+    imprimée créditait aussi la Métropole de Lyon et la Province Nord —
+    quand un PDIPR importé n'avait pas son producteur sur le papier. Il
+    suit maintenant les sources de la fiche.
+  */
+  await expect(credit).not.toContainText('Métropole')
+  await expect(credit).not.toContainText('Province Nord')
 })
 
 test('ce crédit ne se montre qu’au papier', async ({ page }) => {

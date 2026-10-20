@@ -41,7 +41,7 @@ export function DonneesEtLicences() {
           >
             API Adresse
           </a>{' '}
-          de la Base Adresse Nationale (© Etalab, Licence Ouverte). Seul le
+          de la Base Adresse Nationale (© Etalab, Licence Ouverte 2.0). Seul le
           texte que vous tapez est transmis&nbsp;: ni vos traces, ni votre
           position.
         </li>

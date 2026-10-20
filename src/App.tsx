@@ -55,12 +55,10 @@ import { useAppStore } from './store/appStore.ts'
 import styles from './App.module.css'
 import {
   attributionTexte,
+  creditsImprimes,
   IGN,
-  IGN_RELIEF,
   MARQUES_FFRANDONNEE,
-  METROPOLE,
   OSM,
-  PROVINCE_NORD,
 } from './lib/attribution.ts'
 
 // La carte (MapLibre, ~900 kB) est chargée à part : le tableau de bord et les
@@ -174,6 +172,8 @@ function App() {
   const panneauRef = useRef<HTMLElement>(null)
   const contenuRef = useRef<HTMLDivElement>(null)
   const detailOuvert = useAppStore((s) => s.detailItineraryId)
+  const itineraires = useAppStore((s) => s.itineraries)
+  const itinerairesPerso = useAppStore((s) => s.customItineraries)
   const traceOuvert = useAppStore((s) => s.drawMode)
   const compact = useEcranCompact()
   // La barre existe à toutes les largeurs depuis le 23/08 : sur PC aussi, la
@@ -673,7 +673,15 @@ function App() {
         className={styles.attributionImpression}
         data-testid="attribution-impression"
       >
-        {attributionTexte(OSM, IGN_RELIEF, METROPOLE, PROVINCE_NORD)} ·{' '}
+        {attributionTexte(
+          ...creditsImprimes(
+            [...itineraires, ...itinerairesPerso].find(
+              (i) => i.osmRelationId === detailOuvert,
+            ) ?? null,
+            [...itineraires, ...itinerairesPerso],
+          ),
+        )}{' '}
+        ·{' '}
         {MARQUES_FFRANDONNEE}
       </footer>
 

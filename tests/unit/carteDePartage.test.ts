@@ -96,7 +96,7 @@ describe('la carte de partage crédite ce qu’elle affiche', () => {
   */
   it('crédite la Métropole quand elle montre une de ses boucles', () => {
     expect(creditEcrit(bilan({ sources: DE_LA_METROPOLE === null ? [] : [DE_LA_METROPOLE] }))).toBe(
-      'Boucles locales © Métropole de Lyon (Licence Ouverte)',
+      'Boucles locales © Métropole de Lyon (Licence Ouverte 2.0)',
     )
   })
 
@@ -105,7 +105,7 @@ describe('la carte de partage crédite ce qu’elle affiche', () => {
         sources: [DE_L_OSM, DE_LA_METROPOLE].filter((s) => s !== null),
       }))).toBe(
       'Itinéraires © les contributeurs OpenStreetMap (ODbL) · Boucles' +
-        ' locales © Métropole de Lyon (Licence Ouverte)',
+        ' locales © Métropole de Lyon (Licence Ouverte 2.0)',
     )
   })
 

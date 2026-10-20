@@ -3,6 +3,7 @@ import {
   attributionHtml,
   attributionTexte,
   creditsDesSources,
+  creditsImprimes,
   IGN,
   IGN_RELIEF,
   MARQUES_FFRANDONNEE,
@@ -48,7 +49,7 @@ describe('les crédits composés rendent ce qui était écrit à la main', () =>
         ' href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' +
         ' (ODbL) · Boucles locales © <a' +
         ' href="https://data.grandlyon.com/">Métropole de Lyon</a> (Licence' +
-        ' Ouverte) · GR Nord © <a' +
+        ' Ouverte 2.0) · GR Nord © <a' +
         ' href="https://data.gouv.nc/explore/dataset/gr-province-nord/">Province' +
         ' Nord</a> (Licence Ouverte 2.0)' +
         ' · Réseau balisé © <a' +
@@ -63,7 +64,7 @@ describe('les crédits composés rendent ce qui était écrit à la main', () =>
         ' href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' +
         ' (ODbL) · Boucles locales © <a' +
         ' href="https://data.grandlyon.com/">Métropole de Lyon</a> (Licence' +
-        ' Ouverte) · GR Nord © <a' +
+        ' Ouverte 2.0) · GR Nord © <a' +
         ' href="https://data.gouv.nc/explore/dataset/gr-province-nord/">Province' +
         ' Nord</a> (Licence Ouverte 2.0)' +
         ' · Réseau balisé © <a' +
@@ -88,7 +89,7 @@ describe('les crédits composés rendent ce qui était écrit à la main', () =>
     expect(attributionTexte(IGN_RELIEF, OSM, METROPOLE)).toBe(
       'Relief © IGN (Plan IGN, licence ouverte Etalab 2.0) · Itinéraires © les' +
         ' contributeurs OpenStreetMap (ODbL) · Boucles locales © Métropole' +
-        ' de Lyon (Licence Ouverte)',
+        ' de Lyon (Licence Ouverte 2.0)',
     )
   })
 })
@@ -261,5 +262,43 @@ describe('chaque provenance du cœur trouve son habillage', () => {
       license: 'https://www.etalab.gouv.fr/licence-ouverte-open-licence',
     }
     expect(creditsDesSources([ain, { ...ain }])).toHaveLength(1)
+  })
+})
+
+/*
+  Issue #557, point 3 : le crédit imprimé était écrit en dur dans
+  `App.tsx` — `attributionTexte(OSM, IGN_RELIEF, METROPOLE, PROVINCE_NORD)`.
+  Une fiche de GR créditait la Métropole et la Province Nord ; un PDIPR
+  importé n'avait pas son producteur sur le papier. Ce module interdit
+  pourtant exactement cela, et fournit `creditsDesSources`.
+*/
+describe('creditsImprimes', () => {
+  const gr = makeItinerary(1, [{ osmWayId: 1, coords: straightLine(4.5, 45.4, 1000, 100) }])
+  const pdipr = makeItinerary(-2, [{ osmWayId: 2, coords: straightLine(4.6, 45.4, 1000, 100) }], {
+    network: 'PERSO',
+    attribution: { author: 'Département de l’Ain', license: 'https://www.etalab.gouv.fr/licence-ouverte-open-licence' },
+  })
+  const boucle = makeItinerary(3, [{ osmWayId: 3, coords: straightLine(4.7, 45.4, 1000, 100) }], {
+    network: 'LOCAL',
+  })
+
+  it('une fiche de GR crédite OpenStreetMap et le relief, rien d’autre', () => {
+    const texte = attributionTexte(...creditsImprimes(gr, [gr, pdipr, boucle]))
+    expect(texte).toContain('OpenStreetMap')
+    expect(texte).toContain('IGN')
+    expect(texte).not.toContain('Métropole')
+    expect(texte).not.toContain('Ain')
+  })
+
+  it('un PDIPR importé a son producteur sur le papier', () => {
+    const texte = attributionTexte(...creditsImprimes(pdipr, [gr, pdipr]))
+    expect(texte).toContain('Département de l’Ain')
+    expect(texte).not.toContain('OpenStreetMap')
+  })
+
+  it('sans fiche ouverte, les sources de ce qui est chargé', () => {
+    const texte = attributionTexte(...creditsImprimes(null, [gr, boucle]))
+    expect(texte).toContain('OpenStreetMap')
+    expect(texte).toContain('Métropole de Lyon')
   })
 })
