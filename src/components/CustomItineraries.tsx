@@ -74,8 +74,10 @@ export function CustomItineraries() {
       </summary>
       <p className={styles.hint}>
         Importez un parcours <strong>à faire</strong> (cartoguide, Visorando,
-        tracé maison…) et suivez votre progression dessus. Rien ne quitte
-        votre navigateur.
+        tracé maison…) et suivez votre progression dessus. Il est rangé dans
+        ce navigateur&nbsp;; ouvrir sa fiche envoie sa forme à l’IGN pour
+        l’altitude et à Overpass pour les points d’intérêt — le détail est
+        dans «&nbsp;À propos&nbsp;».
       </p>
       <p className={styles.hint}>
         GPX, FIT et TCX pour un parcours ; <strong>GeoJSON</strong> pour un jeu

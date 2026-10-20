@@ -15,6 +15,7 @@ import type { Track } from '../../src/core/types.ts'
 
 interface EtatDeTest {
   tracks: Track[]
+  enregistrement?: { points: { lon: number; lat: number }[] }
   sortiesReseau: EntreeJournal[]
   requetesAvecTrace: number
 }
@@ -105,5 +106,62 @@ describe('trancheSortiesReseau', () => {
     // deux entrées — voir `core/journalSortant.ts`.
     expect(lire().sortiesReseau).toHaveLength(1)
     expect(lire().sortiesReseau[0]?.nombre).toBe(2)
+  })
+})
+
+/*
+  Issue #558, points 2 et 3 — le compteur « 0 requête contenait vos
+  traces », annoncé comme mesuré, avait deux angles morts qu'il ne disait
+  pas :
+  - il comparait le **corps** de chaque requête, jamais l'**URL**. Or la
+    seule voie par laquelle des coordonnées partent en clair est une URL
+    GET — l'altimétrie, `lon=…&lat=…`. Preuve de la revue : un point de
+    trace dans l'URL, corps `null`, donnait 0 ;
+  - l'échantillon venait de `tracks` seules : la sortie en cours
+    d'enregistrement n'était pas surveillée, alors qu'« À propos » promet
+    qu'elle n'est envoyée à personne, « ni pendant, ni après ».
+*/
+describe('ce que le compteur regarde (issue #558)', () => {
+  const point: [number, number] = [4.512345, 45.412345]
+
+  it('un point de trace dans l’URL compte', () => {
+    const { actions, lire } = harnais({ tracks: [trace([point, [4.6, 45.5]])] })
+    actions.noterSortieReseau(
+      'https://data.geopf.fr/altimetrie/1.0/calcul/alti/rest/elevationLine.json?lon=4.512345|4.6&lat=45.412345|45.5',
+      null,
+    )
+    expect(lire().requetesAvecTrace).toBe(1)
+  })
+
+  it('même encodé dans l’URL', () => {
+    const { actions, lire } = harnais({ tracks: [trace([point, [4.6, 45.5]])] })
+    actions.noterSortieReseau(
+      'https://exemple.test/?lon=4.512345%7C4.6&lat=45.412345%7C45.5',
+      null,
+    )
+    expect(lire().requetesAvecTrace).toBe(1)
+  })
+
+  it('une URL mal encodée ne fait pas tomber le compteur', () => {
+    const { actions, lire } = harnais({ tracks: [trace([point, [4.6, 45.5]])] })
+    actions.noterSortieReseau('https://exemple.test/?q=%E0%A4%A', null)
+    expect(lire().sortiesReseau).toHaveLength(1)
+    expect(lire().requetesAvecTrace).toBe(0)
+  })
+
+  it('un point de la sortie en cours d’enregistrement compte', () => {
+    const { actions, lire } = harnais({
+      enregistrement: {
+        points: [
+          { lon: point[0], lat: point[1] },
+          { lon: 4.6, lat: 45.5 },
+        ],
+      },
+    })
+    actions.noterSortieReseau(
+      'https://exemple.test/api',
+      JSON.stringify({ position: [point[0], point[1]] }),
+    )
+    expect(lire().requetesAvecTrace).toBe(1)
   })
 })

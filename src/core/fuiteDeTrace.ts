@@ -18,13 +18,16 @@
  *
  * ## Ce que ce module garde, et ce qu'il ne garde pas
  *
- * Il **garde** : un point de vos traces, écrit à pleine précision, dans le
- * corps d'une requête que l'application envoie.
+ * Il **garde** : un point de vos traces — ou de la sortie en cours —, écrit
+ * à pleine précision, dans le corps **ou l'adresse** d'une requête que
+ * l'application envoie (l'adresse depuis #558).
  *
  * Il ne garde pas :
  *
  * - ce que le navigateur envoie lui-même — images, polices, feuilles de
  *   style — qui ne passe ni par `fetch` ni par XHR ;
+ * - ce que demande le service worker, qui a son propre `fetch` : les
+ *   tuiles du corridor qu'on emporte, notamment (#558) ;
  * - un corps binaire ou compressé, qu'on ne lit pas ;
  * - une trace transformée avant d'être envoyée — arrondie, projetée,
  *   chiffrée. Un détecteur qui prétendrait attraper ça mentirait.
@@ -133,4 +136,32 @@ export function corpsContientUnPoint(
     if (corps.includes(lon) && corps.includes(lat)) return true
   }
   return false
+}
+
+/**
+ * Cette requête emporte-t-elle un point de l'échantillon — dans son corps,
+ * **ou dans son adresse** ?
+ *
+ * Le compteur ne regardait que le corps (#558). Or la seule voie par
+ * laquelle des coordonnées partent aujourd'hui en clair est une URL GET :
+ * l'altimétrie, `lon=…&lat=…`. Un point placé là, corps `null`, donnait
+ * zéro. L'adresse est lue décodée — `%7C` est un `|` — et telle quelle si
+ * elle est mal encodée : une URL cassée ne doit pas faire tomber le
+ * compteur, ni lui faire manquer ce qu'elle porte en clair.
+ */
+export function requeteContientUnPoint(
+  url: string,
+  corps: string | null | undefined,
+  echantillon: readonly string[],
+): boolean {
+  let adresse = url
+  try {
+    adresse = decodeURIComponent(url)
+  } catch {
+    // Mal encodée : on la lit telle quelle.
+  }
+  return (
+    corpsContientUnPoint(corps, echantillon) ||
+    corpsContientUnPoint(adresse, echantillon)
+  )
 }

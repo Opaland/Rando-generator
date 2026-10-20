@@ -109,11 +109,12 @@ export function SortiesReseau({ ouvert }: { ouvert: boolean }) {
 
       <p className={styles.note}>
         Ce compteur porte sur les requêtes émises par l’application. Le second
-        chiffre est <strong>mesuré</strong>&nbsp;: le contenu de chaque requête
-        est comparé à des points prélevés dans vos traces, du départ à
-        l’arrivée. Ce qu’il ne voit pas est écrit dans{' '}
-        <code>src/core/fuiteDeTrace.ts</code>&nbsp;: un envoi binaire, ou une
-        trace transformée avant de partir.
+        chiffre est <strong>mesuré</strong>&nbsp;: l’adresse et le contenu de
+        chaque requête sont comparés à des points prélevés dans vos traces, du
+        départ à l’arrivée, et dans la sortie en cours. Ce qu’il ne voit pas
+        est écrit dans <code>src/core/fuiteDeTrace.ts</code>&nbsp;: un envoi
+        binaire, une trace transformée avant de partir, et ce que demande le
+        service worker — les tuiles d’un itinéraire qu’on emporte.
       </p>
     </section>
   )

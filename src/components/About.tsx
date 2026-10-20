@@ -116,7 +116,9 @@ export function About({
               La <strong>Géoplateforme IGN</strong> reçoit les{' '}
               <strong>coordonnées des tuiles que vous regardez</strong>, en
               continu tant que la carte est affichée. Autrement dit&nbsp;: où
-              vous préparez vos sorties.
+              vous préparez vos sorties. Quand vous <strong>emportez</strong>{' '}
+              un itinéraire, elle reçoit aussi celles de tout son corridor,
+              que vous ne regardez pas.
             </li>
             <li>
               <strong>OpenStreetMap</strong> reçoit la même chose, mais
