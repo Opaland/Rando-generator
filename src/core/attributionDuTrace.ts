@@ -58,11 +58,15 @@ export function attributionDuTrace(
   }
 
   const sources: GpxAttribution[] = []
-  for (const { source } of rencontrees.sort((x, y) => x.rang - y.rang)) {
-    const deja = sources.some(
-      (s) => s.author === source.author && s.license === source.license,
-    )
-    if (!deja) sources.push(source)
+  // Source par source : un itinéraire importé peut porter des sources déjà
+  // réunies, et les comparer en bloc répétait l'ODbL (revue du 20/10).
+  for (const { source: reunie } of rencontrees.sort((x, y) => x.rang - y.rang)) {
+    for (const source of sourcesDe(reunie)) {
+      const deja = sources.some(
+        (s) => s.author === source.author && s.license === source.license,
+      )
+      if (!deja) sources.push(source)
+    }
   }
   if (sources.length === 0) return null
   if (sources.length === 1) return sources[0] ?? null

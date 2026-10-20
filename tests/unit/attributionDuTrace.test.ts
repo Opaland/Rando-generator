@@ -125,3 +125,26 @@ describe('sourcesDe', () => {
     expect(sourcesDe(PDIPR)).toEqual([PDIPR])
   })
 })
+
+/*
+  Revue du 20/10 : un itinéraire importé portant déjà des sources réunies
+  (« OSM ; Métropole »), puis un tracé qui suit aussi un GR — le
+  dédoublonnage comparait les chaînes entières, et l'ODbL sortait deux fois.
+*/
+describe('une source déjà réunie ne se répète pas', () => {
+  it('se dédoublonne source par source', () => {
+    const osm = gpxAttributionFor('GR')
+    const metropole = gpxAttributionFor('LOCAL')
+    if (!osm || !metropole) throw new Error('attributions de réseau')
+    const reunie = {
+      author: `${osm.author} ; ${metropole.author}`,
+      license: `${osm.license} ; ${metropole.license}`,
+    }
+    const chemin: LonLat[] = [...GR, ...BOUCLE.slice(1)]
+    const attribution = attributionDuTrace(chemin, [
+      itineraire(-1, 'PERSO', GR, reunie),
+      itineraire(2, 'PR', BOUCLE),
+    ])
+    expect(attribution && sourcesDe(attribution)).toEqual([osm, metropole])
+  })
+})
