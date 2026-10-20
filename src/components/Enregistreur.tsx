@@ -67,19 +67,19 @@ export function Enregistreur() {
     <section className={styles.section} data-testid="enregistreur">
       <h2 className={styles.titre}>Enregistrer une sortie</h2>
 
+      {/*
+        Au repos aussi : une sortie que le disque a refusée se dit encore
+        après « Terminer » (#560) — sans la promesse de la seconde phrase.
+      */}
+      {sortieErreur !== null && (
+        <p className={styles.erreur} role="alert" data-testid="sortie-erreur">
+          {sortieErreur}
+          {auRepos ? '' : ' Ce qui a été marché est enregistré.'}
+        </p>
+      )}
+
       {auRepos ? (
         <>
-          {/*
-            Au repos aussi : une sortie qui n'a pas pu être rangée, ou un
-            navigateur sans localisation, se disent ici — l'écran de la
-            sortie a déjà disparu (#560). Sans la phrase « ce qui a été
-            marché est enregistré », qui n'y serait pas vraie.
-          */}
-          {sortieErreur !== null && (
-            <p className={styles.erreur} role="alert" data-testid="sortie-erreur">
-              {sortieErreur}
-            </p>
-          )}
           <button
             type="button"
             className={`btn-primary ${styles.demarrer}`}
@@ -94,6 +94,12 @@ export function Enregistreur() {
             Sentiers retient par où vous passez, et rien d’autre. La position
             ne quitte pas l’appareil, même pendant l’enregistrement.
           </p>
+          {/* Pixel 7 verrouillé : GPS suspendu 25 min sans erreur (sortieEnCours.ts, #560). */}
+          <p className={styles.aide} data-testid="sortie-ecran-allume">
+            Gardez l’écran allumé pendant la marche : sur certains
+            téléphones, un écran verrouillé suspend la localisation sans
+            prévenir.
+          </p>
         </>
       ) : (
         <>
@@ -102,11 +108,6 @@ export function Enregistreur() {
               Sortie retrouvée. Elle est <strong>en pause</strong> : l’appli
               s’est arrêtée en cours de route et personne ne sait ce qui s’est
               passé depuis. Reprenez si vous marchez toujours.
-            </p>
-          )}
-          {sortieErreur !== null && (
-            <p className={styles.erreur} role="alert" data-testid="sortie-erreur">
-              {sortieErreur} Ce qui a été marché est enregistré.
             </p>
           )}
 

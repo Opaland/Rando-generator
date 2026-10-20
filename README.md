@@ -103,7 +103,10 @@ par le CLI Playwright.
    **survit à un onglet tué** : rouverte, elle est retrouvée en pause, parce
    qu'entre la mort de l'onglet et le retour, personne ne sait ce qui s'est
    passé. La position relevée **ne quitte jamais le navigateur**, y compris
-   pendant l'enregistrement. La consommation de batterie n'est pas encore
+   pendant l'enregistrement. **L'écran doit rester allumé** : sur certains
+   téléphones, dont Android (mesuré sur un Pixel 7), un écran verrouillé
+   suspend la localisation sans erreur ; l'écran de la sortie, « À propos »
+   et `pourquoi.html` le disent. La consommation de batterie n'est pas encore
    mesurée, donc pas encore annoncée : `docs/PROTOCOLE_BATTERIE.md` dit ce
    qu'il faut relever.
 3. **Importer des GPX** (multi-fichiers, drag & drop). Les traces sont listées

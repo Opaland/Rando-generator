@@ -65,7 +65,9 @@ export function About({
             <strong>sortie que vous enregistrez</strong>. Pendant
             l’enregistrement, votre position est relevée toutes les quelques
             secondes et écrite dans le stockage de votre navigateur, pour qu’une
-            sortie survive à un écran verrouillé ou à un onglet fermé.
+            sortie survive à un onglet fermé. Gardez l’écran allumé&nbsp;: sur
+            certains téléphones, dont Android, un écran verrouillé suspend la
+            localisation, et le chemin fait pendant ce temps n’est pas compté.
             <strong> Elle n’est envoyée à personne</strong>, ni pendant, ni
             après. Aucun serveur n’est contacté pour enregistrer, et il n’y a
             rien à désactiver pour que ce soit vrai&nbsp;: il n’existe pas de

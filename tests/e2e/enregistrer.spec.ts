@@ -62,6 +62,12 @@ test("enregistrer une sortie, la mettre en pause, la terminer", async ({
   await ouvrir(page);
   const listeDesTraces = page.getByTestId("tracks-list").getByRole("listitem");
   const tracesAvant = await listeDesTraces.count();
+  // Un écran verrouillé suspend le GPS sur Android : c'est dit avant de
+  // démarrer, là où l'on décide (#560). Peint, pas seulement présent.
+  await page.getByTestId("sortie-ecran-allume").scrollIntoViewIfNeeded();
+  await expect
+    .poll(() => estAlEcran(page, "sortie-ecran-allume"))
+    .toBe(true);
 
   await page.getByTestId("sortie-demarrer").click();
   // Les chiffres apparaissent avant la première position : la sortie a
