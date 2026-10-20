@@ -11,7 +11,7 @@ parcouru 34 % du GR 7, 61 % des sentiers du Pilat ».
 - **Vos traces restent chez vous** : vos GPX ne quittent jamais votre
   navigateur, et le calcul de complétion s'y fait de bout en bout. Aucun
   compte, aucun backend, aucune télémétrie. La persistance se fait en
-  IndexedDB pour les traces et les zones, en `localStorage` pour les sept
+  IndexedDB pour les traces et les zones, en `localStorage` pour les huit
   réglages — dont l'écriture, elle, est synchrone (issue #203).
 - **Ce qui sort quand même** : afficher une carte, c'est demander des images à
   quelqu'un. Overpass reçoit la zone ou la référence cherchée, et la forme de
@@ -111,7 +111,8 @@ par le CLI Playwright.
    qu'il faut relever.
 3. **Importer des GPX** (multi-fichiers, drag & drop). Les traces sont listées
    avec nom, date, distance et D+, persistées localement ; un double import
-   du même fichier est détecté et refusé. Sur un lot de fichiers, l'import
+   du même fichier est détecté et mis de côté : il vous est proposé, et
+   c'est vous qui l'ajoutez ou l'écartez. Sur un lot de fichiers, l'import
    annonce celui qu'il est en train de lire. **Déplier une trace** montre ce
    que cette sortie-là a fait avancer : quels itinéraires balisés, et de
    combien (un simple croisement de sentier, sous 300 m, n'est pas compté).
@@ -160,7 +161,8 @@ par le CLI Playwright.
 
    Sélectionner un itinéraire dans la liste **zoome dessus** sur la carte.
    Un itinéraire parcouru à
-   **95 % ou plus est « bouclé »** — exiger 100 % punirait le randonneur pour
+   **95 % ou plus est « bouclé »** — par défaut : le seuil se règle à 90, 95
+   ou 100 %. Exiger 100 % punirait le randonneur pour
    des tronçons impraticables ou une géométrie OSM imparfaite ; le seuil est
    toujours annoncé, jamais présenté comme du 100 %. Les autres affichent ce
    qu'il reste avant le prochain jalon (25, 50, 75, 90, 100 %).
@@ -168,19 +170,20 @@ par le CLI Playwright.
 7. **Trouver une sortie** : le panneau « Trouver une sortie » filtre par
    longueur, durée, dénivelé, forme (boucle ou aller simple, déduite de la
    géométrie du tracé), **sol**, **eau sur le chemin** et proximité de votre
-   position. Aucun filtre ne s'applique à une donnée absente : un dénivelé
-   inconnu n'est pas un dénivelé nul, et l'écarter ferait disparaître en
-   silence la plupart des tracés OSM.
+   position. Longueur, durée, dénivelé, forme et proximité ne s'appliquent
+   pas à une donnée absente : un dénivelé inconnu n'est pas un dénivelé nul,
+   et l'écarter ferait disparaître en silence la plupart des tracés OSM.
 
    **Deux d'entre eux méritent leur libellé exact.** Le filtre de sol dit
    « entièrement dur ou stabilisé » et non « accessible » : le second
-   promettrait un jugement qu'on n'est pas en mesure de porter. Et il est le
-   seul à **écarter ce qu'on ignore** plutôt que de le laisser passer —
+   promettrait un jugement qu'on n'est pas en mesure de porter. Et, avec
+   l'eau, il **écarte ce qu'on ignore** plutôt que de le laisser passer —
    partir en fauteuil tout-terrain sur un sentier dont personne n'a renseigné
    le sol coûte une journée, là où les autres filtres ne coûtent qu'une
-   surprise. L'eau, elle, se choisit en **détour** (250 m, 500 m, 1 km, 2 km)
-   et jamais en « avec / sans » : un point absent d'OpenStreetMap ne veut pas
-   dire qu'il n'y a pas d'eau, il veut dire que personne ne l'a saisi.
+   surprise. L'eau, elle, se choisit en **détour** (250 m, 500 m ou 1 km)
+   et jamais en « avec / sans » : un itinéraire écarté est un itinéraire où
+   l'on n'a pas trouvé d'eau dans ce rayon, pas un itinéraire sans eau — un
+   point absent d'OpenStreetMap veut dire que personne ne l'a saisi.
 
    **Ou dites-le en une phrase.** « Une boucle facile de moins de 12 km, pas
    plus de 400 m de dénivelé, à 30 km de chez moi » remplit les listes
@@ -216,9 +219,10 @@ par le CLI Playwright.
 
     Une fiche s'**imprime** aussi, par son bouton : sur le papier, la fiche
     seule — sans la carte, sans les panneaux, sans les commandes, et sur fond
-    blanc plutôt que sur le beige de l'écran. C'est le seul chemin hors de
-    l'appareil qui ne trahisse pas la promesse : sans compte ni serveur, il
-    n'y a pas de « partager par mail ».
+    blanc plutôt que sur le beige de l'écran. Comme l'export GPX, l'image du
+    bilan et la sauvegarde, c'est un chemin hors de l'appareil qui passe par
+    vous et non par un serveur : sans compte ni serveur, il n'y a pas de
+    « partager par mail ».
 
 ### Déclarer un parcours, sans trace GPX
 
@@ -305,11 +309,19 @@ coupures se lisent dessus (issue #161).
 
 ### Une grosse bibliothèque
 
-Mesuré le 23/08/2026 sur **800 activités** de 2 h 30 à un point par seconde,
-soit 7,2 millions de points : import en **94,7 s**, **91 Mo** occupés dans
-IndexedDB (9 % du quota), sauvegarde de **36,7 Mo** produite en 6,4 s, et
-aucune trace perdue. Le détail et ce que la mesure ne dit pas :
-`docs/MESURE_BIBLIOTHEQUE.md`. Reproductible avec `npm run mesure`.
+**Ce n'est pas encore tenu.** Mesuré le 08/10/2026 sur des activités de
+2 h 30 à un point par seconde : 100 activités s'importent en **6,1 min**, et
+800 n'ont **pas fini en 25 min**, le plafond du test
+(`docs/MESURE_BIBLIOTHEQUE_08_10.md`). Le 14/10, la mesure a dit où :
+l'analyse des fichiers est rapide et linéaire, c'est le calcul de
+correspondance qui domine — 98,6 % du temps à 200 activités — et il croît
+plus vite que le carré du nombre de points
+(`docs/MESURE_BIBLIOTHEQUE_SPRINT9.md`). Le pourquoi, à l'intérieur de
+`core/matching.ts`, reste à établir. Reproductible avec `npm run mesure`.
+
+Le chiffre qui figurait ici — 800 activités en 94,7 s, le 23/08
+(`docs/MESURE_BIBLIOTHEQUE.md`) — n'a pas résisté aux deux mesures
+suivantes.
 
 ### Deux onglets, une seule base
 
@@ -396,7 +408,9 @@ cours. Rien n'est perdu en rechargeant quand même : une sortie non terminée
 se retrouve en pause, comme après un onglet tué.
 
 Sur téléphone, la carte occupe tout le cadre et le panneau de contrôle devient
-une feuille glissante à trois positions : repliée sur sa seule poignée — qui
+une feuille à trois positions, qu'on fait passer de l'une à l'autre en
+touchant sa poignée — on ne la fait pas glisser : repliée sur cette seule
+poignée — qui
 affiche le pourcentage global —, à mi-hauteur, ou presque plein écran. Elle
 s'ouvre à mi-hauteur à la première visite, quand il n'y a rien à voir sur la
 carte et tout à faire dans le panneau, et reste basse au retour, quand la zone
@@ -437,7 +451,7 @@ src/
 │  └─ mapdata.ts   # GeoJSON des couches carte (base / parcouru / traces)
 ├─ store/       # Zustand + client du worker de matching
 ├─ db/          # IndexedDB (idb), versionnée, TTL 30 jours
-│               # + reglages.ts : les sept réglages, en écriture synchrone
+│               # + reglages.ts : les huit réglages, en écriture synchrone
 ├─ workers/     # matching.worker.ts (repli synchrone si Worker indisponible)
 └─ components/  # MapView (MapLibre) + map/ (style, sources, caméra),
                 # ZonePicker, TrackManager, Dashboard, NextOuting, History,
@@ -591,7 +605,7 @@ fait faute d'un corpus réel pour poser un seuil sans l'inventer.
   **réessaient le clic avec l'assertion dans la boucle**, plutôt que de parier
   sur un seul essai (la CI masquait ces échecs derrière ses relances).
 - CI GitHub Actions : `lint`, **`listes`**, **`textes`**, **`chemins`**,
-  `typecheck`, tests (couverture), `build`, `e2e`. Les trois en gras sont des
+  `typecheck`, tests (couverture), `ports`, `build`, `e2e`. Les trois en gras sont des
   gardes nées d'un raté daté, et chacune échoue en nommant ce qui manque :
   - `listes` — le CSS et la sonde d'écran plancherisent la même liste de
     commandes, écrite deux fois ; elles avaient le même trou ;

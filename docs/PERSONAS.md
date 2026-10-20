@@ -155,9 +155,9 @@ que la seconde lecture a trouvé, et qui n'existait pas avant.
 | Camille — préparer hors connexion | **Levé** (#153) : service worker + bouton « Emporter cette randonnée » |
 | Sylvie — « j'ai fait celui-là » sans trace GPX | **Levé** (#158) : `DeclarerParcouru.tsx`, itinéraire déclaré parcouru |
 | Camille — étapes calées sur les refuges, export du plan | **Levé** (#161) : `calerLesEtapesSurLesCouchages` dans `core/stages.ts` |
-| Karim — grosse archive jamais mesurée | **Levé** (#159) |
+| Karim — grosse archive jamais mesurée | **Mesuré, pas levé** (#159, #539) : 800 activités ne s'importent pas en 25 min (`MESURE_BIBLIOTHEQUE_08_10.md`) ; le calcul de correspondance domine (`MESURE_BIBLIOTHEQUE_SPRINT9.md`) |
 | Marc — le constat ne mène à aucune action | **Levé** (#160) : `core/lienOsm.ts`, lien direct vers la relation OSM |
-| Léa — l'export GPX ne portait pas d'attribution | **Levé**, dans #87 : `attribution: lecture.source` posé sur l'itinéraire à l'import (`src/store/trancheImport.ts:398`, commentaire qui la cite nommément), affiché sur la fiche et porté dans l'export GPX (`attributionDe`/`mentionDeSource`, `ItineraryDetail.tsx`). |
+| Léa — l'export GPX ne portait pas d'attribution | **Levé**, dans #87 : `attribution: lecture.source` posé sur l'itinéraire à l'import (`src/store/trancheImport.ts`, `importCustomGpx` — commentaire qui la cite nommément), affiché sur la fiche et porté dans l'export GPX (`attributionDe`/`mentionDeSource`, `ItineraryDetail.tsx`). |
 
 *Six de ces sept lignes correspondent à des issues réellement fermées
 (#131, #132, #133, #145, #153, #158, #159, #160, #161), retrouvées closes

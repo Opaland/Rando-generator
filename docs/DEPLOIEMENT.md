@@ -16,8 +16,9 @@ L'en-tête de chaque écran dit :
 
 Cette phrase reste vraie sur un serveur, à une condition : que le serveur ne
 fasse que **servir des fichiers**. Il n'y a ni base de données, ni compte, ni
-API, ni journal d'usage. Un visiteur télécharge une application ; ensuite,
-elle tourne chez lui.
+API, ni mesure d'audience. Un visiteur télécharge une application ; ensuite,
+elle tourne chez lui. Le seul journal est celui des accès de nginx, et il
+contient les adresses IP : le §6 dit ce qu'il coûte et comment le réduire.
 
 Le mot « serveur » de la promesse ne veut pas dire « aucune machine ne sert
 la page » — GitHub Pages est déjà une machine. Il veut dire **aucun serveur
@@ -33,13 +34,16 @@ d'opérations.
 
 ## 2. Ce que le serveur apporte — et que GitHub Pages ne permettait pas
 
-**Les en-têtes.** Pages n'en laisse poser aucun. La promesse était donc une
-affirmation, gardée par des tests et par la bonne volonté. Avec nginx, elle
-devient une règle appliquée par le navigateur :
+**Les en-têtes.** Pages ne laisse poser aucun en-tête HTTP. Depuis #375, la
+politique de sécurité y passe quand même, par une balise `<meta>` dans la
+page — mais une balise ne porte pas tout : `frame-ancestors`, notamment, n'y
+est pas lu. Avec nginx, la politique devient un en-tête entier, appliqué par
+le navigateur :
 
 ```
-connect-src 'self' https://data.geopf.fr https://overpass-api.de
-            https://overpass.kumi.systems https://api-adresse.data.gouv.fr
+connect-src 'self' https://data.geopf.fr https://tile.openstreetmap.org
+            https://overpass-api.de https://overpass.kumi.systems
+            https://api-adresse.data.gouv.fr
 ```
 
 Une requête vers un autre hôte est **refusée avant de partir**. Si une
