@@ -69,6 +69,17 @@ export function Enregistreur() {
 
       {auRepos ? (
         <>
+          {/*
+            Au repos aussi : une sortie qui n'a pas pu être rangée, ou un
+            navigateur sans localisation, se disent ici — l'écran de la
+            sortie a déjà disparu (#560). Sans la phrase « ce qui a été
+            marché est enregistré », qui n'y serait pas vraie.
+          */}
+          {sortieErreur !== null && (
+            <p className={styles.erreur} role="alert" data-testid="sortie-erreur">
+              {sortieErreur}
+            </p>
+          )}
           <button
             type="button"
             className={`btn-primary ${styles.demarrer}`}

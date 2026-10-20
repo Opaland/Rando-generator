@@ -403,14 +403,18 @@ export const useAppStore = create<AppState>()((set, get) => {
     rangerTrace: async (trace) => {
       set((etat) => ({ tracks: [...etat.tracks, trace] }))
       const base = get().db
+      let ecrite = false
       if (base) {
         try {
           await base.saveTrack(trace)
+          ecrite = true
         } catch {
-          // Quota dépassé : la trace reste en mémoire pour cette session.
+          // Quota dépassé : la trace reste en mémoire pour cette session, et
+          // la tranche garde le tampon qui permettra de la retrouver (#560).
         }
       }
       await recompute()
+      return ecrite
     },
     quitterDemonstration: () => {
       void sortirDeLaDemonstration(get)

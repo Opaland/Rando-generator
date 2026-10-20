@@ -109,6 +109,67 @@ test("enregistrer une sortie, la mettre en pause, la terminer", async ({
   await expect(listeDesTraces.last()).toContainText("Sortie enregistrée");
 });
 
+/**
+ * Issue #560 — le tampon était vidé avant que la trace soit écrite. Un quota
+ * plein au moment de « Terminer » perdait la sortie entière au rechargement,
+ * sans un mot.
+ *
+ * L'échec est provoqué au plus près du disque : `put` sur le magasin
+ * `tracks` lève l'erreur que lève un quota plein. Le tampon, lui, s'écrit
+ * normalement.
+ */
+test("une sortie que le disque refuse est dite, et reproposée au rechargement", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    // Rappelée plus bas avec `apply`, sur le bon `this`.
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    const put = IDBObjectStore.prototype.put;
+    IDBObjectStore.prototype.put = function (
+      this: IDBObjectStore,
+      ...args: Parameters<IDBObjectStore["put"]>
+    ) {
+      if (
+        this.name === "tracks" &&
+        sessionStorage.getItem("quota-plein") === "1"
+      ) {
+        throw new DOMException("quota (test)", "QuotaExceededError");
+      }
+      return put.apply(this, args);
+    };
+  });
+  await ouvrir(page);
+  await page.evaluate(() => {
+    sessionStorage.setItem("quota-plein", "1");
+  });
+  await page.getByTestId("sortie-demarrer").click();
+  await marcher(page, 4);
+  await expect.poll(() => pointsEnBase(page), { timeout: 10_000 }).toBe(4);
+
+  await page.getByTestId("sortie-terminer").click();
+  await expect(page.getByTestId("sortie-demarrer")).toBeVisible();
+  const alerte = page.getByTestId("sortie-erreur");
+  await expect(alerte).toContainText("reproposée");
+  await expect.poll(() => estAlEcran(page, "sortie-erreur")).toBe(true);
+  // Le tampon est resté : c'est lui qui garde la sortie.
+  expect(await pointsEnBase(page)).toBe(4);
+
+  await page.evaluate(() => {
+    sessionStorage.removeItem("quota-plein");
+  });
+  await page.reload();
+  await fermerLeGuide(page);
+  await expect(page.getByTestId("sortie-reprise")).toBeVisible({
+    timeout: 15_000,
+  });
+
+  // Rangée cette fois, elle quitte le tampon.
+  await page.getByTestId("sortie-terminer").click();
+  await expect(page.getByTestId("sortie-demarrer")).toBeVisible();
+  await expect(page.getByTestId("sortie-erreur")).toHaveCount(0);
+  await expect.poll(() => pointsEnBase(page), { timeout: 10_000 }).toBe(0);
+});
+
 test("une sortie abandonnée ne laisse aucune trace", async ({ page }) => {
   await ouvrir(page);
   await expect(page.getByTestId("tracks-empty")).toBeVisible();
