@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { echapPourLaCarte } from '../lib/echapPourLaCarte.ts'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import '../lib/maplibreSetup.ts'
 import { useAppStore } from '../store/appStore.ts'
@@ -104,9 +105,10 @@ export function MapView() {
   }, [ready])
 
   useEffect(() => {
-    // Échap désélectionne l'itinéraire (navigation clavier).
+    // Échap désélectionne l'itinéraire (navigation clavier) — sauf quand il
+    // sert déjà à autre chose : une boîte ouverte, un champ (#568).
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') selectItinerary(null)
+      if (echapPourLaCarte(e)) selectItinerary(null)
     }
     window.addEventListener('keydown', onKey)
     return () => {

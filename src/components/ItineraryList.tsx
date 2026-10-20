@@ -487,6 +487,8 @@ export function ItineraryList() {
                 type="button"
                 className={selected ? styles.rowSelected : styles.row}
                 aria-pressed={selected}
+                // Où revient le focus quand sa fiche se ferme (#568).
+                data-itineraire={itin.osmRelationId}
                 onClick={() => {
                   selectItinerary(selected ? null : itin.osmRelationId)
                 }}

@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import { useFocusDeLaFiche } from '../lib/focusDeLaFiche.ts'
 import { useAppStore } from '../store/appStore.ts'
 import { replierLesPois } from '../core/lisibilite.ts'
 import { useDeborde } from '../lib/deborde.ts'
@@ -64,6 +65,7 @@ export function ItineraryDetail() {
     qui garde l'ordre des crochets stable d'un rendu à l'autre.
   */
   const [poserLePanneau, deborde] = useDeborde()
+  const panneau = useRef<HTMLElement | null>(null)
   /*
     Quelle fiche a été dépliée, et non « est-elle dépliée » (#322, volet 1).
 
@@ -96,6 +98,9 @@ export function ItineraryDetail() {
   const toggleView3D = useAppStore((s) => s.toggleView3D)
   const focusOn = useAppStore((s) => s.focusOn)
   const focusOnBounds = useAppStore((s) => s.focusOnBounds)
+
+  // Le focus entre dans la fiche et revient d'où il venait (#568).
+  useFocusDeLaFiche(detailItineraryId, panneau)
 
   if (detailItineraryId === null) return null
   const itin =
@@ -248,7 +253,10 @@ export function ItineraryDetail() {
 
   return (
     <aside
-      ref={poserLePanneau}
+      ref={(element) => {
+        panneau.current = element
+        poserLePanneau(element)
+      }}
       className={styles.panel}
       aria-label={`Détail de ${displayName(itin)}`}
       data-testid="itinerary-detail"
@@ -259,7 +267,9 @@ export function ItineraryDetail() {
          les flèches ne font rien et le contenu caché le reste (WCAG 2.1.1).
          Focalisable seulement quand il y a réellement à défiler — un arrêt
          de tabulation qui ne mène nulle part est du bruit. */
-      tabIndex={deborde ? 0 : undefined}
+      // -1 sans débordement : pas d'arrêt de tabulation, mais le focus
+      // peut y être posé à l'ouverture (#568).
+      tabIndex={deborde ? 0 : -1}
     >
       {/*
         Le titre tient sa ligne, l'action passe en dessous.
