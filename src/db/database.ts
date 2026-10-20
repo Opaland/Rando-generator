@@ -272,6 +272,8 @@ export interface SentiersDb {
   lirePoisEmportes(itineraryId: number): Promise<PoisEmportes | undefined>
   /** Oublie ce qu'on avait emporté — quand l'itinéraire disparaît. */
   effacerPoisEmportes(itineraryId: number): Promise<void>
+  /** Les itinéraires pour lesquels des POI sont emportés (#549). */
+  listerPoisEmportes(): Promise<number[]>
   /** Coche un itinéraire comme parcouru, sans trace (issue #158). */
   declarerParcours(parcours: ParcoursDeclare): Promise<void>
   /** Tous les itinéraires cochés à la main. */
@@ -495,6 +497,9 @@ export async function openSentiersDb(
     },
     async effacerPoisEmportes(itineraryId) {
       await raw.delete('poisEmportes', itineraryId)
+    },
+    listerPoisEmportes() {
+      return raw.getAllKeys('poisEmportes')
     },
     async declarerParcours(parcours) {
       await raw.put('parcoursDeclares', parcours)

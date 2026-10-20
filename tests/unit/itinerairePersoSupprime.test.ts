@@ -140,4 +140,25 @@ describe('un orphelin laissé par une version précédente', () => {
 
     expect(idDe('C')).not.toBe(orphelin)
   })
+
+  /*
+    Le même orphelin, porté par les seuls POI emportés : ni déclaration ni
+    objectif ne le désignent en mémoire, et les POI ne sont lus qu'en base.
+    Laissé ouvert à la fermeture de #549, fait à la demande de Cédric.
+  */
+  it('n’est pas redonné quand seuls des POI emportés le désignent', async () => {
+    await useAppStore.getState().init()
+    await useAppStore.getState().importCustomGpx([gpxPerso('A')])
+    const orphelin = idDe('A') - 1
+    await useAppStore.getState().db?.ecrirePoisEmportes({
+      itineraryId: orphelin,
+      pois: [],
+      recuperesLe: '2026-10-19T10:00:00.000Z',
+    })
+
+    await recharger()
+    await useAppStore.getState().importCustomGpx([gpxPerso('C', 2)])
+
+    expect(idDe('C')).not.toBe(orphelin)
+  })
 })

@@ -659,6 +659,7 @@ export const useAppStore = create<AppState>()((set, get) => {
         grosTexteBrut,
         guideFermeBrut,
         panneauReplieBrut,
+        poisEmportes,
       ] = await Promise.all([
         db.listTracks(),
         db.listCustomItineraries(),
@@ -671,6 +672,7 @@ export const useAppStore = create<AppState>()((set, get) => {
         db.getSetting('grosTexte'),
         db.getSetting('guideFerme'),
         db.getSetting('panneauReplie'),
+        db.listerPoisEmportes(),
       ]).catch((error: unknown) => {
         // Une base illisible ne doit pas laisser un import attendre à vie.
         lectureFaite()
@@ -749,7 +751,7 @@ export const useAppStore = create<AppState>()((set, get) => {
           etat.panneauReplie,
         ),
       }))
-      lectureFaite()
+      lectureFaite(poisEmportes)
 
       await sortie.reprendreAuDemarrage(db)
 

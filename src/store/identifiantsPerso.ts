@@ -25,15 +25,20 @@ export function creerIdentifiantsPerso(
   /**
    * À appeler à l'ouverture de la base. Rend la fonction qui dit « les
    * itinéraires de la base sont en mémoire » ; l'appeler deux fois est sans
-   * effet.
+   * effet. Elle reçoit les numéros que la base seule désigne encore — ceux
+   * des POI emportés, qui ne vivent pas en mémoire (#549).
    */
-  function lectureCommencee(): () => void {
+  function lectureCommencee(): (enBase?: readonly number[]) => void {
     let faite = (): void => {}
     allocateur = new AllocateurPerso()
+    const celuiCi = allocateur
     lecture = new Promise<void>((resolve) => {
       faite = resolve
     })
-    return faite
+    return (enBase = []) => {
+      celuiCi.observerRelations(enBase)
+      faite()
+    }
   }
 
   /**
