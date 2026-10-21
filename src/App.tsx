@@ -548,6 +548,15 @@ function App() {
                 <ItineraryList />
               </Ancre>
             )}
+            {/*
+              « Affichage » juste avant les réglages, et hors de toute
+              condition de section : au téléphone, il arrive ainsi en tête de
+              l'onglet Réglages (#576, tranché par Cédric le 21/10 — Jeanine
+              le trouvait en dernier), et reste visible dans les deux modes,
+              sans quoi le mode simple serait un piège dont on ne sort pas.
+              Sur les autres onglets, il reste au bas du panneau.
+            */}
+            <ModeSwitch />
             {sections.reglages && visible('reglages') && (
               <Ancre section="reglages">
                 <Settings />
@@ -558,7 +567,6 @@ function App() {
                 <Backup />
               </Ancre>
             )}
-            <ModeSwitch />
             <InstallButton />
             <footer className={styles.footer} data-testid="pied-panneau">
               <a

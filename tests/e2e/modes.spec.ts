@@ -42,7 +42,6 @@ test('le mode simple cache le jargon sans retirer la tâche', async ({
   await page.goto('/')
   await avecUneZoneEtUneTrace(page)
 
-  await page.getByTestId('mode-affichage').locator(':scope > summary').click()
   await cocher(page.getByTestId('mode-simple'))
 
   // Ce qui répond à « montre où on a marché » reste : la carte, les traces,
@@ -67,7 +66,6 @@ test('le mode simple cache le jargon sans retirer la tâche', async ({
 test('le mode choisi survit au rechargement', async ({ page }) => {
   await mockExternalNetwork(page)
   await page.goto('/')
-  await page.getByTestId('mode-affichage').locator(':scope > summary').click()
   await cocher(page.getByTestId('mode-simple'))
   await expect(page.getByTestId('settings')).toHaveCount(0)
 
@@ -90,7 +88,6 @@ test('le gros texte agrandit tout, y compris hors du panneau', async ({
       ),
   )
 
-  await page.getByTestId('mode-affichage').locator(':scope > summary').click()
   await cocher(page.getByTestId('gros-texte'))
 
   const tailleApres = await page.evaluate(
@@ -119,7 +116,6 @@ test('à 200 %, rien ne déborde sur un écran de 360 px', async ({ page }) => {
   await fermerLeGuide(page)
   await avecUneZoneEtUneTrace(page)
 
-  await page.getByTestId('mode-affichage').locator(':scope > summary').click()
   await cocher(page.getByTestId('gros-texte'))
   // Le gros texte s'ajoute au zoom du navigateur, il ne le remplace pas :
   // quelqu'un qui a déjà réglé son téléphone à 200 % garde ce réglage.
@@ -188,7 +184,6 @@ test('le mode simple ne peut pas enfermer, ni faire perdre une trace', async ({
   // un mode qui laisse déposer une trace invisible en est un autre.
   await mockExternalNetwork(page)
   await page.goto('/')
-  await page.getByTestId('mode-affichage').locator(':scope > summary').click()
   await cocher(page.getByTestId('mode-simple'))
 
   // On arrive en mode simple sans rien avoir : la tâche complète doit
@@ -216,7 +211,6 @@ test('la sauvegarde reste exportable après un passage en mode simple', async ({
   await page.goto('/')
   await avecUneZoneEtUneTrace(page)
 
-  await page.getByTestId('mode-affichage').locator(':scope > summary').click()
   await cocher(page.getByTestId('mode-simple'))
   await expect(page.getByTestId('backup')).toHaveCount(0)
 

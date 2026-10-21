@@ -45,6 +45,11 @@
   margin-top: var(--espace-4);
 }
 
+/* La bascule passe désormais avant les modes (#576) : l'écart les sépare. */
+.bascule + .fieldset {
+  margin-top: var(--espace-4);
+}
+
 .mode:has(input:checked),
 .bascule:has(input:checked) {
   border-color: var(--encre);

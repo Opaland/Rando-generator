@@ -69,7 +69,9 @@ test('depuis la carte, chaque onglet montre son contenu', async ({ page }) => {
   const attendu = {
     sorties: 'enregistreur',
     progression: 'global-pct',
-    reglages: 'settings-title',
+    // Depuis le 21/10 (#576, décision de Cédric), Réglages s'ouvre sur
+    // « Affichage » : le gros texte avant la précision GPS.
+    reglages: 'affichage-title',
   } as const
 
   for (const [onglet, cible] of Object.entries(attendu)) {

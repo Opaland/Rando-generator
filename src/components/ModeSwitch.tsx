@@ -16,10 +16,35 @@ export function ModeSwitch() {
   const setGrosTexte = useAppStore((s) => s.setGrosTexte)
 
   return (
-    <details className={styles.section} data-testid="mode-affichage">
+    // Déplié d'emblée (#576, 21/10) : replié, le gros texte demandait un
+    // geste qu'on ne devine pas, à la personne qui en a le plus besoin.
+    <details className={styles.section} data-testid="mode-affichage" open>
       <summary className="acc-summary">
-        <h2 className={styles.title}>Affichage</h2>
+        <h2 className={styles.title} data-testid="affichage-title">
+          Affichage
+        </h2>
       </summary>
+
+      {/* Le gros texte d'abord : c'est lui qu'on vient chercher quand on lit
+          mal, et placé après les deux modes il tombait sous le bas visible
+          de la feuille au téléphone (#576, 21/10). */}
+      <label className={styles.bascule}>
+        <input
+          type="checkbox"
+          checked={grosTexte}
+          data-testid="gros-texte"
+          onChange={(e) => {
+            void setGrosTexte(e.target.checked)
+          }}
+        />
+        <span>
+          <span className={styles.modeNom}>Gros texte et contrastes</span>
+          <span className={styles.modeTexte}>
+            Agrandit tout, y compris les libellés portés par la carte, et
+            renforce les contrastes.
+          </span>
+        </span>
+      </label>
 
       <fieldset className={styles.fieldset}>
         <legend className={styles.legend}>Ce qui est à l’écran</legend>
@@ -44,24 +69,6 @@ export function ModeSwitch() {
           ))}
         </div>
       </fieldset>
-
-      <label className={styles.bascule}>
-        <input
-          type="checkbox"
-          checked={grosTexte}
-          data-testid="gros-texte"
-          onChange={(e) => {
-            void setGrosTexte(e.target.checked)
-          }}
-        />
-        <span>
-          <span className={styles.modeNom}>Gros texte et contrastes</span>
-          <span className={styles.modeTexte}>
-            Agrandit tout, y compris les libellés portés par la carte, et
-            renforce les contrastes.
-          </span>
-        </span>
-      </label>
     </details>
   )
 }
