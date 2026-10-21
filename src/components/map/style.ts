@@ -213,14 +213,20 @@ export function baseStyle(tiles: string, attribution: string): StyleSpecificatio
           importée (encre, pointillé), ni à un déclaré (tirets). Choix de
           présentation, tranché au jugement (§2) : rien de calculé n'en
           dépend.
+
+          Fin de loin, plus franc de près : à 1,5 px partout, le réseau
+          disparaissait à l'échelle de la marche — quatre lignes rendues
+          autour de Culoz au zoom 14, aucune visible sur la capture
+          (démonstration du sprint 2, réseau réel, 21/10). 3 px de près,
+          la moitié d'un tracé suivi : visible, et toujours en retrait.
         */
         id: 'pdipr-reseau',
         type: 'line',
         source: 'pdipr',
         paint: {
           'line-color': GRIS_VERT,
-          'line-width': 1.5,
-          'line-opacity': 0.7,
+          'line-width': largeurParZoom(1.5, 3),
+          'line-opacity': 0.85,
         },
         layout: { 'line-cap': 'round', 'line-join': 'round' },
       },
