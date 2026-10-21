@@ -1225,8 +1225,25 @@ aside :is(button, label, p, li, h2, h3, span, output) {
      feuille quand elle est ouverte. */
   [data-testid='onboarding'],
   [data-testid='itinerary-card'],
-  [data-testid='route-drawer'] {
+  [data-testid='route-drawer'],
+  /* Ni les boutons de la fiche, ni les phrases qui n'existent que pour eux
+     — tranché par Cédric le 21/10 (#552), même règle que les commandes de
+     l'écran. La consigne « Parcourez le profil… » non plus : on ne parcourt
+     pas du papier. */
+  [data-testid='detail-3d-toggle'],
+  [data-testid='itinerary-detail-export'],
+  [data-testid='emporter-bloc'],
+  [data-testid='declare-bloc'],
+  [data-testid='elevation-readout'] {
     display: none !important;
+  }
+
+  /* La pastille du réseau garde sa couleur de balisage : les navigateurs
+     n'impriment pas les fonds par défaut, et « PR » sortait blanc (#552,
+     rendu d'un vrai PDF le 21/10). */
+  [data-testid='itinerary-detail'] [class*='badge'] {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
 
   /*

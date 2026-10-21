@@ -81,7 +81,7 @@ export function BoutonEmporter({
   const fini = progres?.fini === true
 
   return (
-    <div className={styles.bloc}>
+    <div className={styles.bloc} data-testid="emporter-bloc">
       <button
         type="button"
         className="btn-secondary"

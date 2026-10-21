@@ -331,6 +331,14 @@ test('les commandes de l’écran ne sortent pas sur le papier', async ({
     'locate-toggle',
     'itinerary-detail-close',
     'profil-zoom',
+    /* Décision de Cédric du 21/10 (#552) : les boutons de la fiche non
+       plus, ni les phrases qui n'ont de sens qu'avec eux — « un bouton sur
+       du papier ne se touche pas ». */
+    'detail-3d-toggle',
+    'itinerary-detail-export',
+    'emporter-bloc',
+    'declare-bloc',
+    'elevation-readout',
   ]
   await expect(page.getByTestId('profil-zoom')).toBeVisible({ timeout: 10_000 })
   for (const id of commandes) {
@@ -404,4 +412,18 @@ test('à la largeur d’une A4, ni le guide ni la carte d’itinéraire ne sorte
   await page.emulateMedia({ media: 'print' })
   await page.setViewportSize({ width: 794, height: 1123 })
   await expect(page.getByTestId('itinerary-card')).toBeHidden()
+})
+
+/*
+  #552, 21/10 : la pastille du réseau sortait blanche — les navigateurs
+  n'impriment pas les fonds par défaut, et « PR » se lisait sans sa couleur
+  de balisage. Rendu d'un vrai PDF le jour même.
+*/
+test('la pastille du réseau garde sa couleur sur le papier', async ({ page }) => {
+  await ouvrirUneFiche(page)
+  await page.emulateMedia({ media: 'print' })
+  const pastille = page.getByTestId('itinerary-detail').locator('[class*="badge"]').first()
+  await expect
+    .poll(() => pastille.evaluate((e) => getComputedStyle(e).printColorAdjust))
+    .toBe('exact')
 })

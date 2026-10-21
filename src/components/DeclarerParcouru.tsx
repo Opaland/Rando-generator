@@ -64,7 +64,7 @@ export function DeclarerParcouru({ itineraryId }: { itineraryId: number }) {
 
   if (!saisieOuverte) {
     return (
-      <div className={styles.bloc}>
+      <div className={styles.bloc} data-testid="declare-bloc">
         <button
           type="button"
           className="btn-secondary"
