@@ -4,9 +4,11 @@ Deux parties :
 - la mise en route de la machine, à faire une seule fois ;
 - le prompt à coller dans Claude Code à chaque reprise.
 
-La dernière session (locale, Windows, nuit du 19 au 20/10) s'est arrêtée au
-commit qui met ce fichier à jour, sur la branche
-`claude/sentiers-hiking-tracker-h28emt`.
+La dernière session (locale, Windows, journée autonome du 21/10) s'est
+arrêtée au commit qui met ce fichier à jour, sur la branche
+`claude/sentiers-hiking-tracker-h28emt`. Bilan : arbre du 20/10 commité,
+trois sprints livrés (#573, #574, #575), chacun avec revue adverse et
+démonstration sur le réseau réel.
 
 ---
 
@@ -74,22 +76,22 @@ pointent vers les `.exe` installés par winget.
    être refusé**, avec `typecheck en échec`. S'il passe, `jq` n'est pas vu
    par le hook ; dans ce cas, lancer `claude --debug` et lire pourquoi le
    hook a échoué.
-2. `/porte` doit sortir verte, monkey compris, **à trois ou quatre tests
-   près** : ceux de #572, ci-dessous.
+2. `/porte` doit sortir **entièrement** verte, monkey compris : plus
+   aucun rouge connu sous Windows depuis le 20/10 (voir ci-dessous).
 3. Pour tester sur le téléphone, lancer
    `npm run build; npm run preview -- --host`, puis ouvrir l'adresse affichée
    depuis le téléphone, sur le même Wi-Fi. Depuis #561, la page ne reste
    plus blanche sur cette origine non sécurisée. Elle n'a simplement pas
    de service worker, donc pas de hors-ligne.
 
-### Ce qui rougit sous Windows sans être du code neuf : #572
+### Ce qui rougissait sous Windows : #572
 
-`terrain-sur-carte.spec.ts` (3 tests) et `visibilite-zoom.spec.ts:111`
-sont rouges, **aussi sur l'arbre propre**. `profil-lisible.spec.ts:242`
-tombe parfois sous charge. Cause mesurée : la remise à plat de la vue 3D
-(`useMapCamera.ts`) interrompt le `fitBounds` de la fiche. Le correctif
-d'une ligne marche, mais il fait tomber 14 autres tests, calés sur la
-caméra interrompue. Tout est sur l'issue, et la décision attend Cédric.
+`terrain-sur-carte.spec.ts` et `visibilite-zoom.spec.ts:111` étaient
+rouges sur l'arbre propre le 19/10. Depuis 01e991e (20/10), **plus aucun
+rouge** : le 21/10, une douzaine de portes complètes sous Windows, monkey
+compris, sont sorties vertes sans un échec résiduel. Une porte est donc
+« verte » quand **tout** est vert ; un test rouge est à expliquer, pas à
+excuser. #572 reste ouverte pour le recalage des 14 tests qu'attend Cédric.
 
 ---
 
@@ -104,114 +106,118 @@ pousse que là, n'ouvre aucune PR et ne merge rien sur main sans que je le
 demande.
 
 Avant tout :
-1. git fetch origin claude/sentiers-hiking-tracker-h28emt et git status :
-   arbre propre et à jour, sinon arrête-toi et dis-le-moi.
-2. Relis CLAUDE.md en entier (il fait foi), puis
-   docs/PROMPT_REPRISE_POWERSHELL.md (§1, « Ce qui rougit sous Windows »
-   et §3), docs/REVUE_GLOBALE_19_10.md (section « Seconde passe ») et
+1. git fetch et git status : arbre propre et à jour, sinon arrête-toi et
+   dis-le-moi. Vérifie la CI du dernier commit de la branche et l'état
+   de main (CI et GitHub Pages) — CLAUDE.md §7.
+2. Relis CLAUDE.md en entier (il fait foi), puis ce fichier
+   (docs/PROMPT_REPRISE_POWERSHELL.md, §1, §3 et §4), et
    docs/OPTIMISATION_TOKENS.md.
-3. Vérifie que les hooks tournent vraiment : `jq --version`,
-   `gh auth status` et `bash --version` doivent répondre, et
-   `git config core.autocrlf` doit valoir false ; si la porte avant
-   commit ne bloque pas un commit volontairement cassé, arrête-toi et
-   dis-le-moi avant d'écrire une ligne.
-4. Vérifie l'état du déploiement de main (CI et GitHub Pages) avant
-   d'empiler quoi que ce soit (CLAUDE.md §7).
+3. Vérifie que les hooks tournent : jq --version, gh auth status,
+   bash --version, et git config core.autocrlf qui doit valoir false.
 
-Déjà fait le 19-20/10 et fermé : #561, #554, #548, #551 (plus a575559,
-ports sous Windows). Ouverte en route : #572 (caméra, 3 à 4 e2e rouges
-sous Windows, sur l'arbre propre aussi) : ne la corrige pas sans mon
-accord, elle demande de recaler 14 tests. En attendant, une porte est
-« verte » si seuls les tests listés sur #572 rougissent ; tout autre
-rouge est à toi.
+Puis, dans cet ordre :
 
-Suite, dans cet ordre, une issue par commit (ou par sous-point si
-l'issue en contient plusieurs indépendants) :
+A. Une seule question groupée (AskUserQuestion) pour les décisions du §3
+   de ce fichier, recommandation en premier. Ne commence aucun sprint
+   avant mes réponses ; ce que je laisse « plus tard » reste ouvert.
 
-  #560  enregistrement, sous-points 1, 2 et 4 seulement :
-        1. trace perdue si l'écriture échoue : ne vider le tampon
-           qu'après une écriture réussie, et le dire ; vérifie par un
-           test qu'au redémarrage la sortie est bien reproposée, avant
-           d'écrire un message qui le promet ;
-        2. sortieErreur non remise à zéro par poursuivreSortie ;
-        4. « dans la poche » : aucune surface ne dit de garder l'écran
-           allumé (grep sur la formule, §3).
-        Le sous-point 3 (distance comptant la pause) change un calcul :
-        propose-moi le choix, n'y touche pas.
-  #549  id perso réutilisé : déclaration et objectif fantômes
-  #550  zone restaurée au démarrage sans ses gardes
-  #562  glisser-déposer limité au .gpx
-  #563  service worker et cache.put en quota
-  #553  la fiche recouvre le crédit de la carte et les boutons de zoom
-  #555  ⓘ du crédit sous « Démarrer une sortie » à 390 px
-  #556  gros texte à 390 px
-  #552  impression
-  #557  attribution (licences) — tracé dessiné, GPX réimporté, crédit imprimé
-  #558  confidentialité — phrase fausse à l'import, compteur aveugle aux GET
-  #559  sauvegarde et restauration
-  puis #567, #568, #569, #570, #571 (mineurs), et en dernier
-  #564, #565, #566 (ceux-là changent un calcul ou une présentation :
-  propose-moi d'abord le choix, §2, n'invente pas le seuil).
+B. Une revue courte du projet : ce qui a changé depuis le 21/10, les
+   issues ouvertes, et ce que la skill revue-globale demande de mesurer.
+   Pas une revue globale complète : la dernière date du 19/10, et les
+   trois sprints du 21/10 ont chacun eu leur revue.
+
+C. Des EPIC + US sur GitHub (une épopée par sprint, label epic), puis des
+   sprints d'une épopée au plus. Candidats, à confirmer par mes réponses :
+   - #578 (le cadrage de zone emporté par les GR de grande traversée), si
+     je tranche la piste ;
+   - #577 (le ⓘ du crédit sur la marge de la fiche) ;
+   - les deux points « sans mesure » de #570 ;
+   - #290 volet 2 (peindre le tracé selon son balisage), si je tranche ;
+   - #296 (chercher l'historique par lieu).
+
+D. À la fin de chaque sprint : revue adverse (agent relecteur-adverse),
+   puis démonstration sur le réseau réel avec la skill carte-reelle, au
+   nom des personas concernés, et traitement des retours (corrigés avec
+   un test vu rouge, ou ouverts en issue).
 
 Méthode, sans exception (CLAUDE.md) :
-- TDD sur src/core ; pour chaque correctif, le test d'abord, vu ROUGE
-  sur le code actuel, puis vert ; et après coup, retire le correctif et
-  regarde le test rougir de nouveau (§1).
-- Pour l'interface, mesure ce qui est PEINT (elementFromPoint / estAlEcran
-  de tests/e2e/helpers.ts), dans un expect.poll, à la bonne largeur, au
-  doigt (hasTouch) quand c'est sous 801 px (§1bis). Pour l'impression,
-  un vrai page.pdf, pas seulement emulateMedia.
-- Quand un défaut a échappé à la sonde des règles d'écran, élargis la
-  sonde dans le même commit et prouve qu'elle rougit défaut remis
-  (§6quinquies).
-- Porte complète avant chaque commit qui touche autre chose que des docs :
-  lint, listes, textes, chemins, typecheck (npx tsc -b --noEmit),
-  coverage, ports, build, e2e, monkey. npm run build avant tout e2e, et
-  dans une commande à part (le hook juge la commande avant qu'elle
-  s'exécute). Ne touche à rien pendant qu'une porte tourne (§6quater) :
-  ni source, ni test, ni stash. Les plafonds de taille (store,
-  composants) tombent dans coverage, pas dans le hook : prévois-les.
-- Un test rouge mis de côté pour committer autre chose se met de côté
-  (git stash) AVANT de lancer la porte, jamais pendant.
-- Pas de prettier sur un fichier entier : le dépôt n'est pas formaté
-  par lui.
-- Une correction de texte se fait sur toutes les surfaces : grep sur la
-  formule, pas sur le fichier (§3).
-- Commits en français, un item par commit, poussés aussitôt la porte
-  verte. Ferme chaque issue par un commentaire qui cite le commit, et
-  ne ferme pas ce qui demande une preuve humaine (§10).
-- Ne prétends rien que tu n'as pas vérifié (§5) : si un test n'a pas pu
-  tourner sous Windows, dis-le.
+- TDD sur src/core ; chaque correctif a son test vu ROUGE avant, et
+  rouge de nouveau si on retire le correctif (§1).
+- Mesurer ce qui est PEINT (estAlEcran, elementFromPoint) dans un
+  expect.poll, à la bonne largeur, au doigt (hasTouch) sous 801 px
+  (§1bis). Impression : un vrai page.pdf rendu en image (skill
+  carte-reelle) — une A4 fait 794 px CSS et s'imprime en disposition
+  téléphone.
+- Porte complète avant tout commit qui touche src/ ou tests/ : lint,
+  listes, textes, chemins, npx tsc -b --noEmit, coverage, ports, build,
+  e2e, monkey. npm run build dans une commande à part ; rien ne bouge
+  pendant une porte (ni source, ni test, ni Chromium de démonstration).
+- Pas de prettier ; une correction de texte se fait sur toutes les
+  surfaces (§3 : grep sur la formule).
+- Commits en français, poussés aussitôt la porte verte ; fermer chaque
+  issue par un commentaire qui cite le commit ; ne rien fermer qui
+  demande une preuve humaine (§10).
+- Ne prétends rien que tu n'as pas vérifié (§5).
 
-Toutes les quatre issues traitées, fais-moi un point court : ce qui est
-poussé, ce qui a résisté, ce qui attend ma décision.
+Communication : des points d'étape COURTS — fait / en cours / attend ma
+décision — à chaque fin d'étape, pas un fil continu. Je me suis perdu le
+21/10 dans un flot de messages détaillés.
+
+À la fin de la journée : revue, clôture, et mise à jour de ce fichier
+avec le prompt du lendemain.
 ```
 
 ---
 
 ## 3. Ce qui attend la décision de Cédric
 
-- **#572** : faire le correctif de caméra avec le recalage des 14 tests,
-  ou le laisser de côté.
-- **#554, reste** : à 390×667 (iPhone SE), une taille que la sonde ne
-  mesure pas, « Ma position » remonte sur les boutons de zoom pendant le
-  tracé, faute de place. Masquer le bouton sur les écrans courts, ou
-  réduire `--hauteur-trace`.
-- **#560, sous-point 3** : la distance de l'historique compte le trajet
-  fait pendant une pause (7 km contre 2 km à l'écran de fin).
-- **Outillage Windows** : un `.gitattributes` (`* text=auto eol=lf`) et
-  `cross-env` pour les scripts `MONKEY=1 …` rendraient le §1 inutile sur
-  un nouveau clone. Changement du dépôt, pas fait sans accord.
-- **#547** : la tolérance du départage de #151 attend ta décision. La
-  mesure sur 12 de tes sorties est publiée sur l'issue. Les traces Strava
-  et le script de mesure sont restés dans le scratchpad cloud, et ne sont
-  **pas** dans le dépôt : ce sont tes données personnelles.
-- **`libelleCompletion`** (aucun écran ne l'affiche) et **`COMPLETION_PCT`**
-  (plus aucun appelant) : à trancher ou à retirer (`REVUE_GLOBALE_19_10.md`,
-  §3 et §4).
-- **`qs`** : laissé en l'état sur ta décision du 19/10.
-- **La tâche planifiée « Sentiers — backlog autonome (1 jour sur 2) »**
-  continue de se déclencher dans le cloud. En travail local, la désactiver
-  évite que deux sessions poussent sur la même branche.
-- **Non vérifié sur un vrai téléphone** : #561 (IP du réseau local) et le
-  double-tap de #551.
+Tranché le 21/10, et déjà codé : l'Ain reste en fond et ne compte jamais
+(#574) ; les boutons de la fiche ne sortent plus sur le papier (#552) ;
+« Affichage » en tête de Réglages, déplié (#576).
+
+Reste ouvert :
+
+- **#578** — choisir une zone cadre la moitié de la France : l'emprise des
+  GR de grande traversée emporte celle de la zone. Trois pistes sur
+  l'issue (emprise de la zone administrative, portions dans la zone, ou un
+  quantile des points). Vu deux fois en démonstration.
+- **#577** — au téléphone, le ⓘ du crédit (au-dessus de tout depuis le
+  20/10) se pose sur la marge droite de la fiche.
+- **#572** — le correctif de caméra avec le recalage des 14 tests, ou le
+  laisser.
+- **#570, deux points sans mesure** — la feuille pleine en revenant sur
+  « Carte » en gros texte ; l'intertitre orphelin à 1 024.
+- **#290 volet 2** — peindre le tracé de la couleur de son balisage :
+  69 % des relations mesurées portent un `osmc:symbol`, dont 12 sur 18
+  bicolores. Que faire d'un balisage bicolore ?
+- **#560, sous-point 3** — la distance de l'historique compte le trajet
+  fait pendant une pause.
+- **Rhône (#20, #87)** — l'API GeoJSON datARA répond toujours 403 le
+  21/10. **Savoie / Haute-Savoie** : la décision juridique (licence non
+  nommée) reste à prendre.
+- **Outillage Windows** — `.gitattributes` et `cross-env`, pas faits sans
+  accord.
+- **`libelleCompletion`, `COMPLETION_PCT`** — à trancher ou à retirer
+  (`REVUE_GLOBALE_19_10.md`).
+- **La tâche planifiée « Sentiers — backlog autonome »** continue de se
+  déclencher dans le cloud : à désactiver si le travail reste local.
+- **Preuves humaines** — #173 (Théo et Jeanine, seuls), #528 (un vrai
+  lecteur d'écran). **Non vérifié sur un vrai téléphone** : Retour qui
+  ferme la fiche (#568), l'IP du réseau local (#561), le double-tap (#551).
+
+## 4. Ce que la journée du 21/10 a appris
+
+- **La carte réelle trouve ce que les bouchons cachent.** En une journée :
+  le crédit sur le bas de la fiche, les boucles de l'Ain invisibles de
+  près, le gros texte introuvable, des boutons sur le papier, le cadrage de
+  zone (#578). Aucun n'était visible dans un test vert. Skill
+  `carte-reelle`.
+- **Une mesure jetable se configure comme la vraie** (§1bis) : trois de
+  mes sondes ont menti le même jour — une requête Overpass qui ne
+  rapportait pas les chemins, des boîtes pdf.js qui ne disent pas ce qui
+  est peint, un parcours de tabulation qui s'arrêtait au premier `<svg>`.
+  Chaque fois, c'est un témoin ou une image qui a tranché.
+- **Sous Windows**, ne pas découper un commit hunk par hunk via Python
+  (CR et lignes décalées), et vérifier qu'un remplacement scripté a bien
+  écrit avant de lancer ce qu'il modifie : `npm run pdipr` a réécrit le
+  jeu de l'Isère au lieu de préparer l'Ain (restauré).
