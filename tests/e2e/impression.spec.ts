@@ -427,3 +427,21 @@ test('la pastille du réseau garde sa couleur sur le papier', async ({ page }) =
     .poll(() => pastille.evaluate((e) => getComputedStyle(e).printColorAdjust))
     .toBe('exact')
 })
+
+/*
+  Revue du sprint 3 (21/10) : #552 masquait « Je l'ai déjà fait », pas
+  l'état qui le suit. Une fiche déclarée imprimait « Retirer cette
+  déclaration » — un bouton, sur du papier. La phrase qui dit la
+  déclaration, elle, reste : c'est une information.
+*/
+test('une fiche déclarée garde sa phrase et perd son bouton sur le papier', async ({
+  page,
+}) => {
+  await ouvrirUneFiche(page)
+  await page.getByTestId('declare-ouvrir').click()
+  await page.getByTestId('declare-valider').click()
+  await expect(page.getByTestId('declare-retirer')).toBeVisible()
+  await page.emulateMedia({ media: 'print' })
+  await expect(page.getByTestId('declare-etat')).toBeVisible()
+  await expect(page.getByTestId('declare-retirer')).toBeHidden()
+})

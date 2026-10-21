@@ -260,7 +260,10 @@ for (const vue of LARGEURS) {
       await ouvrirLaFicheDuGr7(page, vue.tactile)
       await auditerLeFocus(page, vue)
       // Pas de piège : la fiche n'est pas une boîte modale, la tabulation doit
-      // finir par en sortir (WCAG 2.1.2).
+      // finir par en sortir (WCAG 2.1.2). On repart **de l'intérieur** : le
+      // parcours précédent a pu s'arrêter hors de la fiche, et la sortie
+      // serait alors vraie au premier Tab, piège ou non (revue du sprint 3).
+      await page.getByTestId('itinerary-detail-close').focus()
       let sortie = false
       for (let i = 0; i < ARRETS_MAX && !sortie; i++) {
         await page.keyboard.press('Tab')

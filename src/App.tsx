@@ -554,7 +554,8 @@ function App() {
               l'onglet Réglages (#576, tranché par Cédric le 21/10 — Jeanine
               le trouvait en dernier), et reste visible dans les deux modes,
               sans quoi le mode simple serait un piège dont on ne sort pas.
-              Sur les autres onglets, il reste au bas du panneau.
+              Sur les autres onglets, il reste au bas du panneau — déplié
+              lui aussi, sous le contenu de l'onglet.
             */}
             <ModeSwitch />
             {sections.reglages && visible('reglages') && (

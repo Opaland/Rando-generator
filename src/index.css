@@ -1234,6 +1234,10 @@ aside :is(button, label, p, li, h2, h3, span, output) {
   [data-testid='itinerary-detail-export'],
   [data-testid='emporter-bloc'],
   [data-testid='declare-bloc'],
+  /* L'état « déclaré » aussi : sa phrase reste, son bouton non (revue du
+     sprint 3 — #552 n'avait masqué que l'état d'avant). */
+  [data-testid='declare-retirer'],
+  [data-testid='declare-retirer-confirm'],
   [data-testid='elevation-readout'] {
     display: none !important;
   }
