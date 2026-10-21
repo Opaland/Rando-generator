@@ -91,7 +91,7 @@ supposé.
 | **Enregistrer une sortie** | ✅ | Démarrer / pause / terminer / abandonner ; survit à un onglet tué, reprise en pause ; la position ne quitte pas l'appareil. Batterie non mesurée (`docs/PROTOCOLE_BATTERIE.md`) |
 | Import GPX, FIT, TCX, archives ZIP Strava/Garmin | ✅ | Détection à la signature, pas à l'extension |
 | Export d'un itinéraire en GPX avec attribution ODbL | ✅ | |
-| Sauvegarde complète exportable et réimportable | ✅ #132 | Aller-retour vérifié sur base effacée ; restaurer ajoute sans écraser |
+| Sauvegarde complète exportable et réimportable | ✅ #132 | Aller-retour vérifié sur base effacée ; restaurer ajoute sans écraser, et ne reprend jamais les réglages (#559) |
 | Le prix du « tout local » est annoncé | ✅ #132 | Dit dans « À propos » et dans la section Sauvegarde |
 
 **Non-but, définitif** : un compte et une synchronisation serveur.

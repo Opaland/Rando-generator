@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { gunzipSync } from 'node:zlib'
-import { afficherTousLesReseaux, mockExternalNetwork, buildGpx } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork, buildGpx, estAlEcran } from './helpers.ts'
 
 /**
  * Sauvegarde complète (issue #132).
@@ -116,6 +116,10 @@ test('restaurer deux fois la même sauvegarde ne duplique rien', async ({
   await expect(page.getByTestId('tracks-list')).toContainText('gr7.gpx')
 
   await page.getByTestId('backup').locator('summary').click()
+  // Ce que la restauration ne fait pas se dit avant qu'on la lance (#559,
+  // tranché le 20/10 : les réglages ne sont jamais repris).
+  await page.getByTestId('backup-reglages').scrollIntoViewIfNeeded()
+  await expect.poll(() => estAlEcran(page, 'backup-reglages')).toBe(true)
   const { contenu } = await telecharger(page)
 
   // Restaurer sur un appareil qui a déjà la sortie : rien n'entre, et on le

@@ -109,7 +109,7 @@ import {
  * sans relire ce commentaire (revue du sprint 6).
  *
  * Un ensemble nommé, consulté par `init`, plutôt qu'une condition recopiée
- * sur chacun des sept réglages (CLAUDE.md §4).
+ * sur chacun des réglages (CLAUDE.md §4).
  */
 /**
  * Réunit ce qui vient de la base et ce qui est déjà en mémoire, sans doublon.

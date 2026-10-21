@@ -8,7 +8,7 @@ import styles from './Backup.module.css'
  * Sauvegarde complète : l'exporter, la relire ailleurs (issue #132).
  *
  * Tout vit dans le navigateur — les traces et les zones dans IndexedDB, les
- * sept réglages dans le stockage local depuis #203. Rien ne suit d'un
+ * réglages dans le stockage local depuis #203. Rien ne suit d'un
  * appareil à l'autre, et vider les données du site efface des années de
  * traces. C'est le prix de « vos traces ne quittent jamais votre
  * navigateur » — et un prix doit être annoncé, pas découvert.
@@ -133,6 +133,11 @@ export function Backup() {
         présente est reconnue à son tracé et ignorée, même sous un autre nom de
         fichier. Vous pouvez restaurer la même sauvegarde deux fois sans rien
         dupliquer.
+      </p>
+
+      <p className={styles.hint} data-testid="backup-reglages">
+        Les réglages ne sont jamais repris : ceux de cet appareil restent les
+        vôtres.
       </p>
 
       {backupMessage && (

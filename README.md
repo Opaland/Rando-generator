@@ -244,7 +244,8 @@ distingue, pas une couleur de plus. Dans « Mes sorties », les déclarations on
 leur propre section, sous la liste des traces — pas des lignes mêlées à
 celles-ci. Les déclarations partent dans la
 sauvegarde exportable, et se relisent depuis une sauvegarde antérieure sans
-erreur.
+erreur. Restaurer ajoute sans remplacer, et ne reprend **jamais** les
+réglages : ceux de l'appareil restent en place, et l'écran le dit (#559).
 
 ### L'attribution suit la donnée
 

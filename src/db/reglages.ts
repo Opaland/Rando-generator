@@ -33,7 +33,7 @@
  * `localStorage` est **synchrone par contrat** : quand `setItem` rend la
  * main, la valeur est écrite. Il n'y a plus de fenêtre à fermer — il n'y a
  * plus de fenêtre. Et les réglages sont exactement ce pour quoi il est
- * fait : sept scalaires, quelques dizaines d'octets.
+ * fait : une poignée de scalaires, quelques dizaines d'octets.
  *
  * Une seule source à la fois, et laquelle est décidé au démarrage :
  * `localStorage` s'il répond, IndexedDB sinon. Certains navigateurs
