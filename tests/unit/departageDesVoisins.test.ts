@@ -69,15 +69,24 @@ describe('le départage entre deux sentiers voisins', () => {
   })
 
   /*
-    Ce qui n'est pas testé ici, et pourquoi : la trace **exactement** entre
-    les deux. Le commentaire de `departagerLesPassages` promet « en cas de
-    doute on crédite les deux » ; mesuré le 18/10, à 7,49 m de chacun, le
-    sentier sud est retiré à 0 % parce que sa distance dépasse celle du nord
-    de 1,9 × 10⁻⁹ m — de l'arrondi, pas de la géographie. Le mutant `<` →
-    `<=` survit donc, et le corriger demande de dire à partir de quel écart
-    « plus proche » veut dire quelque chose : un seuil qui change ce qui est
-    calculé, que le §2 interdit d’inventer. Voir #547.
+    La trace **exactement** entre les deux (#547). Mesuré le 18/10 : à
+    7,49 m de chacun, le sud était retiré à 0 % parce que sa distance
+    dépassait celle du nord de 1,9 × 10⁻⁹ m — de l'arrondi, pas de la
+    géographie. Tranché par Cédric le 20/10 : une marge **numérique** de
+    1 mm, qui efface l'arrondi et rien d'autre. Mesurée sur ses 12 sorties
+    réelles, elle ne change aucun verdict.
   */
+  it('crédite les deux quand la trace passe à égale distance', () => {
+    const trace = parallele((SUD + NORD) / 2)
+    expect(pourcentages([sentier(1, SUD), sentier(2, NORD)], trace)).toEqual([100, 100])
+  })
+
+  it('et tranche encore pour un centimètre d’avance', () => {
+    // La marge efface l'arrondi, pas l'écart : un centimètre est une
+    // différence, petite mais réelle, et le plus proche l'emporte.
+    const trace = parallele((SUD + NORD) / 2 + 0.01 / M_LAT)
+    expect(pourcentages([sentier(1, SUD), sentier(2, NORD)], trace)).toEqual([0, 100])
+  })
 })
 
 describe('le même départage, le rival dans la colonne est', () => {

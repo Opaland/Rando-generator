@@ -531,7 +531,21 @@ function leRivalGagnePartout(
   return candidats !== null && candidats.size > 0
 }
 
-/** Les chemins voisins strictement plus proches de la trace que celui-ci. */
+/**
+ * La marge du départage : un rival ne gagne qu'en étant plus proche **de
+ * plus d'un millimètre** (#547).
+ *
+ * Le `<` strict faisait de l'arrondi un verdict : à égale distance de deux
+ * sentiers parallèles, l'un était retiré à 0 % pour 1,9 × 10⁻⁹ m. Tranché
+ * par Cédric le 20/10 : une marge **numérique**, qui efface l'arrondi et
+ * rien d'autre. Écartée : une marge à l'échelle du GPS (1 à 3 m), qui
+ * changeait le verdict de 8 à 19 chemins sur ses 12 sorties réelles sans
+ * qu'on sache s'ils avaient vraiment été parcourus (mesure du 19/10, sur
+ * l'issue). Mesurée sur les mêmes sorties, celle-ci n'en change aucun.
+ */
+const MARGE_DE_DEPARTAGE_METRES = 0.001
+
+/** Les chemins voisins plus proches de la trace que celui-ci, au-delà de la marge. */
 function cheminsPlusProches(
   echantillon: Sample,
   parCellule: Map<string, Sample[]>,
@@ -556,7 +570,10 @@ function cheminsPlusProches(
         // Au-delà de la confirmation, les deux chemins sont distinguables :
         // ce n'est plus une dispute, c'est un voisinage.
         if (ecart > confirmMeters) continue
-        if ((voisin.distanceMeters ?? Infinity) < sienne) {
+        if (
+          (voisin.distanceMeters ?? Infinity) <
+          sienne - MARGE_DE_DEPARTAGE_METRES
+        ) {
           gagnants.add(voisin.wayId)
         }
       }
