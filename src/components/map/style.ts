@@ -16,6 +16,7 @@ import {
 } from '../../lib/couleursPartagees.ts'
 import {
   attributionHtml,
+  DEPARTEMENT_AIN,
   DEPARTEMENT_ISERE,
   IGN,
   METROPOLE,
@@ -56,12 +57,14 @@ export const ATTRIBUTION = attributionHtml(
   METROPOLE,
   PROVINCE_NORD,
   DEPARTEMENT_ISERE,
+  DEPARTEMENT_AIN,
 )
 export const ATTRIBUTION_OSM = attributionHtml(
   OSM_FOND_ET_TRACES,
   METROPOLE,
   PROVINCE_NORD,
   DEPARTEMENT_ISERE,
+  DEPARTEMENT_AIN,
 )
 
 /**

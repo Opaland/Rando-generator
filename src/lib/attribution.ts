@@ -145,6 +145,21 @@ export const DEPARTEMENT_ISERE: Credit = {
   lien: 'https://opendata.isere.fr/explore/dataset/plan-departemental-des-itineraires-de-promenades-et-de-randonnees-departement-de/',
 }
 
+/**
+ * Les boucles du PDIPR de l'Ain (#574, 21/10), versées par le Département.
+ *
+ * « Réseau balisé » comme l'Isère, bien que le jeu publie des boucles
+ * nommées : elles sont peintes en fond et ne comptent pas (`core/pdipr.ts`),
+ * et c'est ce qu'on lui prend qui se crédite. Absent de la feuille imprimée
+ * pour la même raison que l'Isère.
+ */
+export const DEPARTEMENT_AIN: Credit = {
+  quoi: 'Réseau balisé',
+  qui: "Département de l'Ain",
+  licence: 'Licence Ouverte 2.0',
+  lien: 'https://www.data.gouv.fr/datasets/pdipr-itineraire',
+}
+
 /** Le fond **et** les itinéraires, quand le miroir OSM remplace l'IGN. */
 export const OSM_FOND_ET_TRACES: Credit = {
   ...OSM,

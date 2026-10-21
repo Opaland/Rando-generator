@@ -47,19 +47,57 @@ interface Emprise {
  */
 const EMPRISE_ISERE: Emprise = { ouest: 4.7, est: 6.4, sud: 44.65, nord: 45.93 }
 
+/**
+ * L'emprise de l'Ain, à environ 5 km près.
+ *
+ * Mesurée le 21/10 sur l'export réel (data.gouv.fr, jeu « PDIPR
+ * itinéraire ») : les 483 boucles s'étendent de 4,729 à 6,163° E et de
+ * 45,630 à 46,514° N, toutes valides — rien n'y est reprojeté de travers,
+ * contrairement à l'Isère. L'emprise sert donc ici de garde, pas de filtre.
+ */
+const EMPRISE_AIN: Emprise = { ouest: 4.66, est: 6.23, sud: 45.58, nord: 46.56 }
+
+/**
+ * Ce que le producteur dit d'un objet, quand il le dit : les propriétés
+ * brutes de l'export, que seul le script de préparation voit.
+ */
+type Proprietes = Readonly<Record<string, unknown>> | null | undefined
+
 /** Un jeu PDIPR embarqué : son fichier, relatif à la base du site, et son emprise. */
 interface JeuPdipr {
   readonly fichier: string
   readonly emprise: Emprise
+  /**
+   * Ce que le producteur demande d'écarter, lu sur les propriétés de
+   * l'export. Appliqué **à la préparation seulement** : le fichier embarqué
+   * ne porte plus que la géométrie (`scripts/preparer-pdipr.mjs`), il n'y a
+   * plus rien à relire dans le navigateur.
+   */
+  readonly retenir?: (proprietes: Proprietes) => boolean
 }
 
 /**
- * Seule l'Isère pour l'instant : l'export de l'Ain (data.gouv.fr) n'a pas
- * pu être relu le 18/10, le serveur coupant les connexions — on n'embarque
- * pas un jeu qu'on n'a pas lu.
+ * L'Isère depuis le 18/10 ; l'Ain depuis le 21/10, quand data.gouv.fr a de
+ * nouveau répondu (il coupait les connexions le 18 — on n'embarque pas un
+ * jeu qu'on n'a pas lu).
+ *
+ * L'Ain publie des **boucles nommées**, pas des tronçons, et elles
+ * pourraient devenir des itinéraires comme celles de la Métropole. Elles
+ * restent pourtant en fond : 81 des 483 sont déjà dans OpenStreetMap
+ * (couvertes à ≥ 80 % par des chemins PR, mesuré le 21/10, #574), et les
+ * compter supposerait une règle de dédoublonnage dont le seuil change les
+ * pourcentages — il est à Cédric (§2).
+ *
+ * Seules les boucles que le Département marque `g_diffusion = OUI` sont
+ * reprises : 480 sur 483, les trois autres n'en disent rien.
  */
 const JEUX_PAR_ZONE: Readonly<Record<string, JeuPdipr>> = {
   isere: { fichier: 'data/pdipr-isere.json', emprise: EMPRISE_ISERE },
+  ain: {
+    fichier: 'data/pdipr-ain.json',
+    emprise: EMPRISE_AIN,
+    retenir: (proprietes) => proprietes?.['g_diffusion'] === 'OUI',
+  },
 }
 
 export function jeuPdiprPour(zoneKey: string | null): JeuPdipr | null {
@@ -105,12 +143,16 @@ function enLigne(coords: unknown, emprise: Emprise): Feature<LineString> | null 
 export function parseReseauPdipr(
   data: unknown,
   emprise: Emprise,
+  retenir?: (proprietes: Proprietes) => boolean,
 ): FeatureCollection<LineString> {
   const reseau = reseauVide()
   const features = (data as { features?: unknown } | null)?.features
   if (!Array.isArray(features)) return reseau
 
   for (const brute of features as unknown[]) {
+    if (retenir && !retenir((brute as { properties?: Proprietes } | null)?.properties)) {
+      continue
+    }
     const geometry = (brute as { geometry?: unknown } | null)?.geometry as
       | { type?: unknown; coordinates?: unknown }
       | null

@@ -25,8 +25,9 @@ parcouru 34 % du GR 7, 61 % des sentiers du Pilat ».
   de Lyon © Métropole de Lyon (Licence Ouverte 2.0, jeu « Boucles communales
   de randonnée ») ; GR Nord (Nouvelle-Calédonie) © Province Nord (Licence
   Ouverte 2.0, jeu « GR Province Nord ») ; réseau balisé de l'Isère ©
-  Département de l'Isère (Licence Ouverte 2.0, PDIPR), dessiné en fond sans
-  être compté ; fond de carte Plan IGN v2 (licence
+  Département de l'Isère (Licence Ouverte 2.0, PDIPR) et boucles de l'Ain ©
+  Département de l'Ain (Licence Ouverte 2.0, PDIPR itinéraire), dessinés en
+  fond sans être comptés ; fond de carte Plan IGN v2 (licence
   ouverte Etalab 2.0) avec repli automatique sur les tuiles OSM.
 - **Utilisable hors réseau** : service worker sans dépendance (ni Workbox ni
   greffon PWA), précache généré au build, tuiles déjà vues conservées.
@@ -79,7 +80,10 @@ par le CLI Playwright.
    gris : ses tronçons n'ont ni nom ni numéro, ils se voient mais ne se
    suivent pas et ne comptent dans aucun pourcentage — et ceux de
    Grenoble-Alpes Métropole manquent, l'export publié les plaçant au large
-   de l'Afrique. Ou
+   de l'Afrique. Dans l'**Ain**, les 480 boucles que le Département publie
+   comme diffusables s'y ajoutent de même : elles ont un nom, mais 81
+   d'entre elles sont déjà dans OpenStreetMap, et les compter demande une
+   règle de dédoublonnage qui n'est pas encore tranchée (#574). Ou
    encore
    un ref d'itinéraire (ex. « GR 20 »), avec quelques **grands itinéraires**
    proposés en un clic (GR 65 Saint-Jacques, GR 70 Stevenson, GR 5 Alpes…),
@@ -436,7 +440,7 @@ src/
 │  ├─ poi.ts       # POI le long d'un tracé (Overpass, bbox découpées)
 │  ├─ boucles.ts   # boucles communales open data (Métropole de Lyon, LO 2.0)
 │  ├─ grNord.ts    # GR Nord open data (Province Nord, Nouvelle-Calédonie, LO 2.0)
-│  ├─ pdipr.ts     # réseau de fond PDIPR (Isère, LO 2.0) : tronçons montrés, jamais comptés
+│  ├─ pdipr.ts     # réseau de fond PDIPR (Isère, Ain, LO 2.0) : montrés, jamais comptés
 │  ├─ routing.ts   # graphe des sentiers, accroche d'un clic, Dijkstra
 │  ├─ history.ts   # sorties par mois, totaux, cumuls
 │  ├─ discovery.ts # durées et dénivelés publiés, forme du tracé, filtres

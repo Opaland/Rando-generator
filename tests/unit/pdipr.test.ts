@@ -258,8 +258,17 @@ describe('jeuPdiprPour', () => {
     expect(jeuPdiprPour('isere')?.fichier).toBe('data/pdipr-isere.json')
   })
 
+  /*
+    L'Ain, le 21/10 (#574) : 483 boucles nommées, Licence Ouverte 2.0.
+    Montrées en fond, pas comptées — la règle de l'Isère, en attendant que
+    Cédric tranche le dédoublonnage avec OpenStreetMap (81 boucles déjà
+    couvertes à ≥ 80 %, mesuré).
+  */
+  it('désigne le jeu de l’Ain pour la zone Ain', () => {
+    expect(jeuPdiprPour('ain')?.fichier).toBe('data/pdipr-ain.json')
+  })
+
   it('ne désigne rien pour une zone qu’aucun PDIPR ne couvre', () => {
-    expect(jeuPdiprPour('ain')).toBeNull()
     expect(jeuPdiprPour('rhone')).toBeNull()
     expect(jeuPdiprPour(null)).toBeNull()
     // Une clé héritée d'Object.prototype n'est pas une zone.
@@ -274,4 +283,44 @@ describe('jeuPdiprPour', () => {
       n'est ni LineString ni MultiLineString donne alors une ligne qui n'est
       pas un tableau, que `enLigne` écarte — la même réponse.
   */
+})
+
+describe('le jeu de l’Ain', () => {
+  const ain = jeuPdiprPour('ain')
+  const boucle = (diffusion: unknown, lon = 5.8) => ({
+    type: 'Feature',
+    properties: { g_nom_iti: 'Circuit des Sarrasins', g_diffusion: diffusion },
+    geometry: {
+      type: 'LineString',
+      coordinates: [
+        [lon, 45.866],
+        [lon + 0.001, 45.867],
+      ],
+    },
+  })
+
+  it('ne retient que les boucles que le Département dit diffusables', () => {
+    if (!ain?.retenir) throw new Error('jeu de l’Ain sans règle de diffusion')
+    const lu = parseReseauPdipr(
+      { features: [boucle('OUI'), boucle('NON'), boucle(null), boucle(undefined)] },
+      ain.emprise,
+      ain.retenir,
+    )
+    expect(lu.features).toHaveLength(1)
+  })
+
+  it('lit sans règle un fichier préparé, qui ne porte plus de propriétés', () => {
+    if (!ain) throw new Error('pas de jeu de l’Ain')
+    const prepare = {
+      features: [{ type: 'Feature', properties: {}, geometry: boucle('OUI').geometry }],
+    }
+    expect(parseReseauPdipr(prepare, ain.emprise).features).toHaveLength(1)
+  })
+
+  it('écarte ce qui sort du département', () => {
+    if (!ain?.retenir) throw new Error('jeu de l’Ain sans règle de diffusion')
+    // 4,5° E : dans le Rhône, à l'ouest de la Saône.
+    const lu = parseReseauPdipr({ features: [boucle('OUI', 4.5)] }, ain.emprise, ain.retenir)
+    expect(lu.features).toEqual([])
+  })
 })

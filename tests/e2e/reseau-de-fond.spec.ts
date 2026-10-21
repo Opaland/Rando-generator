@@ -53,3 +53,23 @@ test('l’Isère montre son réseau balisé, la Loire non', async ({ page }) => 
   await expect.poll(() => tronconsPeints(page), { timeout: 15_000 }).toBe(0)
   await expect(page.getByTestId('legende-reseau-de-fond')).toHaveCount(0)
 })
+
+/*
+  L'Ain, le 21/10 (#574) : 483 boucles nommées du Département, montrées en
+  fond comme l'Isère et pas comptées — le dédoublonnage avec OpenStreetMap
+  attend la décision de Cédric. Le jeu embarqué porte 531 lignes : « des
+  centaines » suffit à dire qu'il est arrivé entier.
+*/
+test('l’Ain montre son réseau balisé, et la légende le nomme', async ({ page }) => {
+  await mockExternalNetwork(page)
+  await mockTilesOk(page)
+  await page.goto('/')
+  test.skip(!(await hasMap(page)), 'WebGL indisponible dans ce navigateur headless')
+  await fermerLeGuide(page)
+
+  await page.getByTestId('zone-ain').click()
+  await expect.poll(() => tronconsPeints(page), { timeout: 15_000 }).toBeGreaterThan(400)
+  await expect
+    .poll(() => estAlEcran(page, 'legende-reseau-de-fond'), { timeout: 5_000 })
+    .toBe(true)
+})

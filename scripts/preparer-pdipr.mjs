@@ -1,7 +1,12 @@
 /*
-  Prépare le PDIPR de l'Isère pour l'embarquer avec le site (issue #87).
+  Prépare un PDIPR départemental pour l'embarquer avec le site (issue #87).
 
-    npm run pdipr
+    npm run pdipr            (l'Isère)
+    npm run pdipr -- ain     (l'Ain, depuis le 21/10, #574)
+
+  L'Ain suit les mêmes deux réglages que l'Isère ci-dessous, et la règle de
+  diffusion de son jeu (`retenir`, `core/pdipr.ts`) : seules les boucles que
+  le Département marque diffusables sont embarquées.
 
   À relancer quand le Département republie (le jeu dit sa date de mise à
   jour : `modified`, 18/10 à l'extraction) ; le fichier produit porte la sienne.
@@ -27,11 +32,27 @@
 import { writeFileSync } from "node:fs";
 import { jeuPdiprPour, parseReseauPdipr } from "../src/core/pdipr.ts";
 
-const SOURCE =
-  "https://opendata.isere.fr/api/explore/v2.1/catalog/datasets/" +
-  "plan-departemental-des-itineraires-de-promenades-et-de-randonnees-departement-de" +
-  "/exports/geojson";
-const JEU = jeuPdiprPour("isere");
+const SOURCES = {
+  isere: {
+    url:
+      "https://opendata.isere.fr/api/explore/v2.1/catalog/datasets/" +
+      "plan-departemental-des-itineraires-de-promenades-et-de-randonnees-departement-de" +
+      "/exports/geojson",
+    source: "Département de l'Isère — PDIPR, Licence Ouverte 2.0",
+  },
+  ain: {
+    url:
+      "https://departement-ain.opendata.arcgis.com/api/download/v1/items/" +
+      "09837461f2e146fda2fafc7aa0698a10/geojson?layers=101",
+    source: "Département de l'Ain — PDIPR itinéraire, Licence Ouverte 2.0",
+  },
+};
+const ZONE = process.argv[2] ?? "isere";
+if (!Object.hasOwn(SOURCES, ZONE)) {
+  throw new Error(`zone inconnue : ${ZONE} (connues : ${Object.keys(SOURCES).join(", ")})`);
+}
+const SOURCE = SOURCES[ZONE].url;
+const JEU = jeuPdiprPour(ZONE);
 const CIBLE = `public/${JEU.fichier}`;
 const TOLERANCE_M = 5;
 const DECIMALES = 5;
@@ -91,7 +112,7 @@ const brut = await reponse.json();
   18/10, il retire les 2 102 tronçons de Grenoble-Alpes Métropole, reprojetés
   au large de l'Afrique dans l'export lui-même — voir `EMPRISE_ISERE`.
 */
-const lus = parseReseauPdipr(brut, JEU.emprise);
+const lus = parseReseauPdipr(brut, JEU.emprise, JEU.retenir);
 const brutes = (brut.features ?? []).reduce(
   (total, f) =>
     total +
@@ -113,7 +134,7 @@ for (const { geometry } of lus.features) {
 
 const sortie = {
   type: "FeatureCollection",
-  source: "Département de l'Isère — PDIPR, Licence Ouverte 2.0",
+  source: SOURCES[ZONE].source,
   extrait: new Date().toISOString().slice(0, 10),
   features: [
     {

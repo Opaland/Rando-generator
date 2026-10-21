@@ -54,7 +54,10 @@ describe('les crédits composés rendent ce qui était écrit à la main', () =>
         ' Nord</a> (Licence Ouverte 2.0)' +
         ' · Réseau balisé © <a' +
         ' href="https://opendata.isere.fr/explore/dataset/plan-departemental-des-itineraires-de-promenades-et-de-randonnees-departement-de/">Département' +
-        " de l'Isère</a> (Licence Ouverte 2.0)",
+        " de l'Isère</a> (Licence Ouverte 2.0)" +
+        ' · Réseau balisé © <a' +
+        ' href="https://www.data.gouv.fr/datasets/pdipr-itineraire">Département' +
+        " de l'Ain</a> (Licence Ouverte 2.0)",
     )
   })
 
@@ -69,7 +72,10 @@ describe('les crédits composés rendent ce qui était écrit à la main', () =>
         ' Nord</a> (Licence Ouverte 2.0)' +
         ' · Réseau balisé © <a' +
         ' href="https://opendata.isere.fr/explore/dataset/plan-departemental-des-itineraires-de-promenades-et-de-randonnees-departement-de/">Département' +
-        " de l'Isère</a> (Licence Ouverte 2.0)",
+        " de l'Isère</a> (Licence Ouverte 2.0)" +
+        ' · Réseau balisé © <a' +
+        ' href="https://www.data.gouv.fr/datasets/pdipr-itineraire">Département' +
+        " de l'Ain</a> (Licence Ouverte 2.0)",
     )
   })
 

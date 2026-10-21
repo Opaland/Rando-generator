@@ -87,6 +87,21 @@ export function DonneesEtLicences() {
           de l’Afrique.
         </li>
         <li>
+          Dans l’Ain, les <strong>boucles du Département</strong> (son plan
+          des itinéraires de promenade et de randonnée, ©&nbsp;
+          <a
+            href="https://www.data.gouv.fr/datasets/pdipr-itineraire"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Département de l’Ain
+          </a>
+          , Licence Ouverte 2.0) sont dessinées en fond, de la même
+          façon&nbsp;: elles portent un nom, mais une partie d’entre elles
+          existe déjà dans OpenStreetMap, et elles ne comptent dans aucun
+          pourcentage tant qu’on ne sait pas les distinguer.
+        </li>
+        <li>
           Le fond de carte est le <strong>Plan IGN v2</strong> (© IGN),
           diffusé par la Géoplateforme sous{' '}
           <a
