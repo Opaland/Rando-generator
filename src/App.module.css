@@ -233,7 +233,10 @@
 .rappelGuide {
   position: absolute;
   left: var(--espace-7);
-  bottom: var(--espace-7);
+  /* Au-dessus du crédit de la carte, comme « Ma position » et l'état vide :
+     depuis que le crédit passe au-dessus des surimpressions (#553), il
+     interceptait le tap sur ce bouton (refermer.spec, 21/10). */
+  bottom: calc(var(--espace-7) + var(--bande-attribution));
   z-index: var(--z-overlay-guide);
   padding: var(--espace-4) var(--espace-6);
   min-height: 44px;

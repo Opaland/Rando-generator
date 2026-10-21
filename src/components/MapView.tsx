@@ -3,6 +3,7 @@ import { echapPourLaCarte } from '../lib/echapPourLaCarte.ts'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import '../lib/maplibreSetup.ts'
 import { useAppStore } from '../store/appStore.ts'
+import { useCreditReplie } from './map/useCreditReplie.ts'
 import { useMapCamera } from './map/useMapCamera.ts'
 import { useMapInstance } from './map/useMapInstance.ts'
 import { useMapInteractions } from './map/useMapInteractions.ts'
@@ -33,6 +34,8 @@ export function MapView() {
     if (!map || !ready) return
     map.getCanvas().style.cursor = drawMode ? 'crosshair' : ''
   }, [drawMode, ready, mapRef])
+
+  useCreditReplie(containerRef, ready, selectedItineraryId !== null || drawMode)
 
   // Surlignage de l'itinéraire sélectionné.
   useEffect(() => {

@@ -312,7 +312,11 @@
   --z-overlay-detail: 6; /* ItineraryDetail : panneau détail (altimétrie, POI, 3D) */
   --z-overlay-draw: 7; /* RouteDrawer : panneau de tracé d'itinéraire */
   --z-overlay-locate: 8; /* LocateButton : « où suis-je », toujours atteignable */
-  --z-feuille: 9; /* Panneau de contrôle en feuille glissante (téléphone) */
+  --z-credit-carte: 9; /* Crédit de la carte : au-dessus de toute surimpression
+                          (#553, tranché par Cédric le 20/10). L'ODbL et la
+                          Licence Ouverte l'exigent lisible ; la fiche le
+                          recouvrait à 42-100 %, et « Démarrer » peignait son ⓘ. */
+  --z-feuille: 10; /* Panneau de contrôle en feuille glissante (téléphone) */
   /* Hauteur de la barre d'onglets du prototype #171. Mesurée à 50 px et
      posée ici plutôt que recopiée : la feuille doit réserver exactement
      cette hauteur, et deux nombres séparés dérivent en silence — le mien
@@ -396,7 +400,7 @@
   --bande-attribution: calc(
     64px + var(--hauteur-onglets) + var(--hauteur-poignee)
   );
-  --z-onglets: 10; /* Prototype #171 : barre d'onglets, au-dessus de la
+  --z-onglets: 11; /* Prototype #171 : barre d'onglets, au-dessus de la
                       feuille — une navigation que la feuille dépliée
                       recouvrirait ne serait plus une navigation. */
 }
