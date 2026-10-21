@@ -6,6 +6,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { useRetourFermeLaFiche } from './lib/retourFermeLaFiche.ts'
 import { About } from './components/About.tsx'
 import { Backup } from './components/Backup.tsx'
 import { CustomItineraries } from './components/CustomItineraries.tsx'
@@ -172,6 +173,9 @@ function App() {
   const panneauRef = useRef<HTMLElement>(null)
   const contenuRef = useRef<HTMLDivElement>(null)
   const detailOuvert = useAppStore((s) => s.detailItineraryId)
+  const fermerLaFiche = useAppStore((s) => s.closeItineraryDetail)
+  // Retour ferme la fiche au lieu de quitter l'application (#568).
+  useRetourFermeLaFiche(detailOuvert, fermerLaFiche)
   const itineraires = useAppStore((s) => s.itineraries)
   const itinerairesPerso = useAppStore((s) => s.customItineraries)
   const traceOuvert = useAppStore((s) => s.drawMode)
