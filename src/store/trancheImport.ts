@@ -232,9 +232,14 @@ export function trancheImport(deps: DependancesImport): ActionsImport {
           if (espacement !== null) {
             errors.push(`${file.name} : ${messageTropEspacee(espacement)}`)
           }
-          if (parsed.points.length === 0) {
+          // Un point seul ne trace rien : il était rangé à « 0 km » sans un
+          // mot. Refusé, comme le tracé dessiné et l'itinéraire importé —
+          // décision de Cédric, 20/10 (#567).
+          if (parsed.points.length < 2) {
             errors.push(
-              `${file.name} : aucun point de trace exploitable dans ce fichier.`,
+              parsed.points.length === 0
+                ? `${file.name} : aucun point de trace exploitable dans ce fichier.`
+                : `${file.name} : une trace demande au moins deux points, ce fichier n’en a qu’un.`,
             )
             continue
           }

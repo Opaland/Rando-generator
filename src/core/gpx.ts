@@ -119,12 +119,15 @@ export function parseGpx(xmlText: string, parser: XmlParser): ParsedGpx {
   // empêcher de lire le <rte> qui l'accompagne : c'est là que se trouvent
   // les points exploitables. Les deux comptes s'additionnent, pour ne
   // sacrifier ni les données ni ce qu'on doit dire à leur sujet.
-  const parcours =
-    trace.points.length === 0 ? extractPoints(doc, 'rtept') : null
+  //
+  // Un seul `<trkpt>` ne fait pas une trace non plus (#567, refusé depuis le
+  // 20/10) : sous deux points, le `<rte>` est lu, et retenu s'il en a plus.
+  const lu = trace.points.length < 2 ? extractPoints(doc, 'rtept') : null
+  const parcours = lu && lu.points.length > trace.points.length ? lu : null
   const { points, elevations, times, hdops, firstPointDate, debutsDeSegment } =
     parcours ?? trace
   const pointsHorsLimites =
-    trace.pointsHorsLimites + (parcours?.pointsHorsLimites ?? 0)
+    trace.pointsHorsLimites + (lu?.pointsHorsLimites ?? 0)
 
   /*
     Le domaine où la géométrie est juste (issue #170).
