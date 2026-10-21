@@ -1,5 +1,5 @@
 import { displayName, formatKm, formatPct } from '../lib/format.ts'
-import type { Itinerary, Network } from './types.ts'
+import { STEP_METERS, type Itinerary, type Network, type Sample } from './types.ts'
 
 /**
  * « J'ai fait celui-là » — le parcours déclaré, sans trace GPX (issue #158).
@@ -61,17 +61,6 @@ interface ChiffresCompletion {
   metresTotal: number
 }
 
-interface OptionsCompletion {
-  /**
-   * Mètres déjà mesurés sur chaque itinéraire.
-   *
-   * Sans cela, un itinéraire parcouru à moitié puis coché à la main
-   * compterait deux fois ces mètres-là, et le total dépasserait 100 %. La
-   * mesure prime : le déclaratif ne comble que ce qu'elle ne couvre pas.
-   */
-  mesuresParItineraire?: Map<number, number>
-}
-
 /**
  * Les deux chiffres, côte à côte et jamais additionnés.
  *
@@ -79,25 +68,38 @@ interface OptionsCompletion {
  * qui les additionne en silence. C'est cette piste-là, et elle décide de la
  * forme du reste : puisque les deux nombres voyagent ensemble, aucun écran ne
  * peut afficher l'un en croyant montrer l'autre.
+ *
+ * **Comptés dans la même unité** (#564) : les échantillons du matching, où un
+ * way partagé ne compte qu'une fois. Le déclaré prenait la longueur exacte
+ * des itinéraires cochés sur un total en échantillons — deux GR qui partagent
+ * un way, cochés, faisaient 121,2 % ; un itinéraire fragmenté coché en entier,
+ * 30 %. Un échantillon est déclaré s'il n'est pas déjà mesuré et qu'il
+ * appartient à un itinéraire coché : la mesure prime, le déclaratif ne comble
+ * que ce qu'elle ne couvre pas, et la somme ne peut plus dépasser 100 %.
+ * Tranché par Cédric le 20/10.
  */
 export function chiffresDeCompletion(
-  mesure: { doneMeters: number; totalMeters: number; pct: number },
-  itineraries: Itinerary[],
+  mesure: {
+    global: { doneMeters: number; totalMeters: number; pct: number }
+    samples: readonly Pick<Sample, 'done' | 'itineraryIds'>[]
+  },
   declares: ParcoursDeclare[],
-  options: OptionsCompletion = {},
+  stepMeters: number = STEP_METERS,
 ): ChiffresCompletion {
-  const dejaMesures = options.mesuresParItineraire ?? new Map<number, number>()
-  let declaresMetres = 0
-  for (const itin of itineraries) {
-    if (!estDeclare(declares, itin.osmRelationId)) continue
-    const mesureSurCetItineraire = dejaMesures.get(itin.osmRelationId) ?? 0
-    declaresMetres += Math.max(0, itin.totalMeters - mesureSurCetItineraire)
+  const coches = new Set(declares.map((d) => d.itineraryId))
+  let declaresEchantillons = 0
+  for (const echantillon of mesure.samples) {
+    if (echantillon.done) continue
+    if (echantillon.itineraryIds.some((id) => coches.has(id))) {
+      declaresEchantillons += 1
+    }
   }
-  const total = mesure.totalMeters
+  const declaresMetres = declaresEchantillons * stepMeters
+  const total = mesure.global.totalMeters
   return {
-    pctMesure: mesure.pct,
+    pctMesure: mesure.global.pct,
     pctDeclare: total > 0 ? (declaresMetres / total) * 100 : 0,
-    metresMesures: mesure.doneMeters,
+    metresMesures: mesure.global.doneMeters,
     metresDeclares: declaresMetres,
     metresTotal: total,
   }

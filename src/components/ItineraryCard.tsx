@@ -1,4 +1,5 @@
 import { useAppStore } from '../store/appStore.ts'
+import { longueursDeLItineraire } from '../core/longueurAffichee.ts'
 import {
   isCompleted,
   metersToNextMilestone,
@@ -36,8 +37,8 @@ export function ItineraryCard() {
     (r) => r.itineraryId === selectedItineraryId,
   )
   const pct = result?.pct ?? 0
-  const done = result?.doneMeters ?? 0
-  const total = result?.totalMeters ?? itin.totalMeters
+  // La longueur exacte, comme la liste — pas les échantillons (#564).
+  const { total, fait: done } = longueursDeLItineraire(itin, result)
   // Un pourcentage qui monte lentement ne dit rien ; un palier à portée, si.
   const restantJalon = metersToNextMilestone(pct, total)
   const objectif = objectifs.includes(itin.osmRelationId)

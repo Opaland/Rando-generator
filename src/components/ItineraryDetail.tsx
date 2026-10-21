@@ -1,9 +1,11 @@
 import { useRef, useState } from 'react'
+import { longueursDeLItineraire } from '../core/longueurAffichee.ts'
 import { useFocusDeLaFiche } from '../lib/focusDeLaFiche.ts'
 import { useAppStore } from '../store/appStore.ts'
 import { replierLesPois } from '../core/lisibilite.ts'
 import { useDeborde } from '../lib/deborde.ts'
 import {
+  formatDenivele,
   displayName,
   formatAnciennete,
   formatKm,
@@ -137,8 +139,8 @@ export function ItineraryDetail() {
     (r) => r.itineraryId === detailItineraryId,
   )
   const pct = result?.pct ?? 0
-  const done = result?.doneMeters ?? 0
-  const total = result?.totalMeters ?? itin.totalMeters
+  // La longueur exacte, comme la liste — pas les échantillons (#564).
+  const { total, fait: done } = longueursDeLItineraire(itin, result)
   // Les POI viennent de boîtes englobantes larges de plusieurs kilomètres :
   // sans mesure, « à proximité » était une promesse que personne n'avait
   // vérifiée (issue #122). On les situe, du plus proche au plus lointain, et
@@ -745,7 +747,7 @@ export function ItineraryDetail() {
               interruptions={interruptions}
             />
             <p className={styles.elevationStats}>
-              D+ {Math.round(stats.gain)} m · D− {Math.round(stats.loss)} m ·{' '}
+              {formatDenivele(stats.gain)} · {formatDenivele(stats.loss, '−')} ·{' '}
               {Math.round(stats.min)}–{Math.round(stats.max)} m
             </p>
             {pente && (
