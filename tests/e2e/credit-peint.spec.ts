@@ -75,6 +75,29 @@ for (const largeur of [1024, 1280]) {
     })
 
     /*
+      Démonstration du sprint 1, réseau réel (21/10) : le crédit passé
+      au-dessus de tout peignait le bas de la fiche — l'intertitre « Sous
+      les pieds » coupé à 1 280. La fiche, posée à 12 px du bas, était dans
+      la bande du crédit ; elle doit la laisser, comme le panneau de tracé.
+    */
+    test('le crédit ne passe pas sur le bas de la fiche', async ({ page }) => {
+      await ouvrirLaFicheDuGr7(page)
+      await expect
+        .poll(() =>
+          page.evaluate(() => {
+            const fiche = document.querySelector('[data-testid="itinerary-detail"]')
+            const credit = document.querySelector('.maplibregl-ctrl-attrib')
+            if (!fiche || !credit) return 'absent'
+            const f = fiche.getBoundingClientRect()
+            const c = credit.getBoundingClientRect()
+            const chevauche = f.left < c.right && c.left < f.right && f.top < c.bottom && c.top < f.bottom
+            return chevauche ? `fiche ${Math.round(f.bottom)} > crédit ${Math.round(c.top)}` : 'libre'
+          }),
+        )
+        .toBe('libre')
+    })
+
+    /*
       #553, second volet : le zoom. Mesuré le 19/10, fiche du GR 7 ouverte :
       à 1 280 le centre des trois boutons était peint par la fiche, et à
       1 024 au doigt le « + » l'était par sa croix — taper « + » fermait la

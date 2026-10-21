@@ -325,11 +325,11 @@
     right: 12px;
     /* Au-dessus du point de rupture, ni poignée ni barre en travers : la
        fiche revient se poser à douze pixels du bord, et reprend toute la
-       hauteur — il n'y a pas d'empreinte à partager avec quoi que ce soit. */
-    /* Au-dessus du point de rupture, ni poignée ni barre en travers : la
-       fiche revient se poser à douze pixels du bord, et reprend toute la
-       hauteur — il n'y a pas d'empreinte à partager. */
-    bottom: 12px;
+       hauteur — à part la bande du crédit de la carte, passé au-dessus de
+       toute surimpression (#553) : posée à 12 px du bas, la fiche voyait son
+       intertitre « Sous les pieds » peint par lui (démonstration du sprint
+       1, réseau réel, 21/10). Comme le panneau de tracé. */
+    bottom: calc(12px + var(--bande-attribution));
     width: min(var(--largeur-fiche), calc(100% - 24px));
     border-radius: var(--rayon-lg);
     border-top-width: 1px;
@@ -346,7 +346,7 @@
       Le `calc` réserve les douze pixels du haut comme ceux du bas : la
       fiche est posée dans le cadre, pas collée à ses bords.
     */
-    max-height: calc(100% - 24px);
+    max-height: calc(100% - 24px - var(--bande-attribution));
   }
 }
 
