@@ -3,6 +3,7 @@ import { echapPourLaCarte } from '../lib/echapPourLaCarte.ts'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import '../lib/maplibreSetup.ts'
 import { useAppStore } from '../store/appStore.ts'
+import { useBasDesCommandes } from './map/useBasDesCommandes.ts'
 import { useCreditReplie } from './map/useCreditReplie.ts'
 import { useMapCamera } from './map/useMapCamera.ts'
 import { useMapInstance } from './map/useMapInstance.ts'
@@ -36,6 +37,7 @@ export function MapView() {
   }, [drawMode, ready, mapRef])
 
   useCreditReplie(containerRef, ready, selectedItineraryId !== null || drawMode)
+  useBasDesCommandes(containerRef, ready)
 
   // Surlignage de l'itinéraire sélectionné.
   useEffect(() => {

@@ -341,3 +341,33 @@ test('les commandes de l’écran ne sortent pas sur le papier', async ({
     await expect(page.getByTestId(id), `${id} sur le papier`).toBeHidden()
   }
 })
+
+/*
+  Le papier a la largeur d'un téléphone.
+
+  Une A4 fait 794 px CSS de large : sous le point de rupture de 801 px, le
+  navigateur imprime avec la mise en page **téléphone**, où `<main>` est
+  posé en `position: absolute`. La mise en page tombait à 0 px de haut, et
+  le crédit imprimé — qui la suit — remontait en haut de la page 1, sous la
+  fiche opaque. Rendu le 21/10 depuis un vrai `page.pdf` : aucun crédit
+  peint sur les deux pages, alors que ce fichier l'affirmait « peint ».
+  Tous les tests d'ici émulent à 1 280 px, la seule largeur à laquelle le
+  papier n'imprime jamais.
+*/
+test('à la largeur d’une A4, le crédit suit la fiche au lieu de passer dessous', async ({
+  page,
+}) => {
+  await ouvrirUneFiche(page)
+  await page.emulateMedia({ media: 'print' })
+  await page.setViewportSize({ width: 794, height: 1123 })
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const fiche = document.querySelector('[data-testid="itinerary-detail"]')
+        const credit = document.querySelector('[data-testid="attribution-impression"]')
+        if (!fiche || !credit) return 'absent'
+        return credit.getBoundingClientRect().top >= fiche.getBoundingClientRect().bottom
+      }),
+    )
+    .toBe(true)
+})

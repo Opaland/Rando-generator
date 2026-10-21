@@ -38,29 +38,73 @@ async function partNonPeinte(page: Page): Promise<number> {
   })
 }
 
+async function ouvrirLaFicheDuGr7(page: Page): Promise<void> {
+  await mockExternalNetwork(page)
+  await mockElevation(page)
+  await page.goto('/')
+  await page.getByTestId('zone-pilat').click()
+  await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
+    timeout: 15_000,
+  })
+  await afficherTousLesReseaux(page)
+  await page
+    .getByTestId('itinerary-list')
+    .getByRole('button', { name: /GR 7/ })
+    .first()
+    .click()
+  await page.getByTestId('itinerary-card-detail-link').click()
+  await expect(page.getByTestId('itinerary-detail')).toBeVisible()
+}
+
 for (const largeur of [1024, 1280]) {
   test.describe(`${String(largeur)} px`, () => {
     test.use({ viewport: { width: largeur, height: 768 } })
 
     test('la fiche ouverte ne recouvre pas le crédit de la carte', async ({ page }) => {
-      await mockExternalNetwork(page)
-      await mockElevation(page)
-      await page.goto('/')
-      await page.getByTestId('zone-pilat').click()
-      await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
-        timeout: 15_000,
-      })
-      await afficherTousLesReseaux(page)
-      await page
-        .getByTestId('itinerary-list')
-        .getByRole('button', { name: /GR 7/ })
-        .first()
-        .click()
-      await page.getByTestId('itinerary-card-detail-link').click()
-      await expect(page.getByTestId('itinerary-detail')).toBeVisible()
+      await ouvrirLaFicheDuGr7(page)
       // La fiche existe bien là où le crédit est : sans recouvrement
       // possible, le test ne départagerait rien.
       await expect.poll(() => partNonPeinte(page)).toBe(0)
     })
+
+    /*
+      #553, second volet : le zoom. Mesuré le 19/10, fiche du GR 7 ouverte :
+      à 1 280 le centre des trois boutons était peint par la fiche, et à
+      1 024 au doigt le « + » l'était par sa croix — taper « + » fermait la
+      fiche.
+    */
+    for (const doigt of [false, true]) {
+      test(`fiche ouverte, le zoom est peint par lui-même${doigt ? ' (au doigt)' : ''}`, async ({
+        browser,
+      }) => {
+        const contexte = await browser.newContext({
+          viewport: { width: largeur, height: 768 },
+          hasTouch: doigt,
+        })
+        const page = await contexte.newPage()
+        await ouvrirLaFicheDuGr7(page)
+        await expect
+          .poll(() =>
+            page.evaluate(() =>
+              [
+                '.maplibregl-ctrl-zoom-in',
+                '.maplibregl-ctrl-zoom-out',
+                '.maplibregl-ctrl-compass',
+              ].filter((s) => {
+                const e = document.querySelector(s)
+                if (!e) return true
+                const r = e.getBoundingClientRect()
+                const peint = document.elementFromPoint(
+                  r.left + r.width / 2,
+                  r.top + r.height / 2,
+                )
+                return !(peint && e.contains(peint))
+              }),
+            ),
+          )
+          .toEqual([])
+        await contexte.close()
+      })
+    }
   })
 }

@@ -38,7 +38,7 @@ export function EmptyState() {
           au premier lancement) et U4 (l'attribution jamais recouverte) sur
           un 360 × 640.
         */}
-        <div className={styles.corps}>
+        <div className={`${styles.corps} ombres-defilement`} data-testid="guide-corps">
           <ol className={styles.steps}>
             {/* Repère de test : la première étape doit rester à l'écran.
                 Un premier essai de mise en page l'avait réduite à zéro

@@ -307,16 +307,20 @@
   /* Paliers d'empilement des overlays de carte (du plus bas au plus haut).
      Un seul endroit à consulter avant d'ajouter un nouvel overlay. */
   --z-overlay-legend: 3; /* MapLegend : légende des couleurs de réseau */
-  --z-overlay-guide: 4; /* EmptyState : guide de premier lancement */
   --z-overlay-card: 5; /* ItineraryCard : fiche résumé flottante */
   --z-overlay-detail: 6; /* ItineraryDetail : panneau détail (altimétrie, POI, 3D) */
   --z-overlay-draw: 7; /* RouteDrawer : panneau de tracé d'itinéraire */
   --z-overlay-locate: 8; /* LocateButton : « où suis-je », toujours atteignable */
-  --z-credit-carte: 9; /* Crédit de la carte : au-dessus de toute surimpression
+  --z-overlay-guide: 9; /* EmptyState : guide de premier lancement — au-dessus
+                           de « Ma position » et de « Démarrer » : remontés
+                           sous le zoom (#556, 21/10), ils peignaient la croix
+                           qui le ferme. Une couche qu'on referme d'un geste
+                           peut cacher le reste ; sa croix, non. */
+  --z-credit-carte: 10; /* Crédit de la carte : au-dessus de toute surimpression
                           (#553, tranché par Cédric le 20/10). L'ODbL et la
                           Licence Ouverte l'exigent lisible ; la fiche le
                           recouvrait à 42-100 %, et « Démarrer » peignait son ⓘ. */
-  --z-feuille: 10; /* Panneau de contrôle en feuille glissante (téléphone) */
+  --z-feuille: 11; /* Panneau de contrôle en feuille glissante (téléphone) */
   /* Hauteur de la barre d'onglets du prototype #171. Mesurée à 50 px et
      posée ici plutôt que recopiée : la feuille doit réserver exactement
      cette hauteur, et deux nombres séparés dérivent en silence — le mien
@@ -397,10 +401,14 @@
      Le repli additionne le pire cas de chaque terme : réserver trop de place
      coûte quelques pixels, en recouvrir une mention exigée par l'ODbL et la
      Licence Ouverte coûte autre chose. */
+  /* Le bas du zoom et de la boussole, mesuré par `map/useBasDesCommandes.ts`
+     depuis le haut de la carte ; « Démarrer » et « Ma position » se posent
+     dessous. Le repli garde leur ancienne place (224 px) avant la mesure. */
+  --bas-des-commandes: 214px;
   --bande-attribution: calc(
     64px + var(--hauteur-onglets) + var(--hauteur-poignee)
   );
-  --z-onglets: 11; /* Prototype #171 : barre d'onglets, au-dessus de la
+  --z-onglets: 12; /* Prototype #171 : barre d'onglets, au-dessus de la
                       feuille — une navigation que la feuille dépliée
                       recouvrirait ne serait plus une navigation. */
 }
@@ -911,6 +919,47 @@ aside :is(button, label, p, li, h2, h3, span, output) {
 
 /* Réservé aux lecteurs d'écran : visible pour eux, absent de l'écran.
    Un `display: none` les priverait aussi de l'information. */
+/*
+  Ombres de défilement : le bord annonce qu'il continue.
+
+  Sans marque, un texte coupé au ras du bord se lit comme un texte fini —
+  c'est ce qui a fait dire « coupé à moitié » plutôt que « il faut faire
+  défiler » (retour du 24/08). Le navigateur ne dessine plus de barre de
+  défilement permanente, donc rien ne le disait.
+
+  Technique sans JavaScript : deux dégradés en `local` (qui défilent avec le
+  contenu) masquent deux ombres en `scroll` (qui restent collées au cadre).
+  En haut de course, le dégradé opaque recouvre l'ombre haute ; au milieu,
+  les deux ombres apparaissent ; en bas, la basse disparaît. La marque dit
+  donc *où l'on en est*, pas seulement qu'il y a du contenu.
+
+  Une classe nommée plutôt qu'un bloc recopié (§4) : écrite dans la fiche
+  seule, elle y était effacée trois lignes plus bas par un raccourci
+  `background`, et ne s'est jamais peinte (trouvé le 21/10). Elle sert la
+  fiche et le guide de premier lancement (#570, 4). À poser sur l'élément
+  qui défile, après tout `background` qu'il porterait.
+*/
+.ombres-defilement {
+  background-color: var(--papier);
+  background-image:
+    linear-gradient(var(--papier) 30%, rgba(var(--papier-rvb), 0)),
+    linear-gradient(rgba(var(--papier-rvb), 0), var(--papier) 70%),
+    linear-gradient(rgba(30, 43, 35, 0.16), rgba(30, 43, 35, 0)),
+    linear-gradient(rgba(30, 43, 35, 0), rgba(30, 43, 35, 0.16));
+  background-position:
+    0 0,
+    0 100%,
+    0 0,
+    0 100%;
+  background-repeat: no-repeat;
+  background-size:
+    100% 28px,
+    100% 28px,
+    100% 10px,
+    100% 10px;
+  background-attachment: local, local, scroll, scroll;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -1225,6 +1274,9 @@ aside :is(button, label, p, li, h2, h3, span, output) {
     display: block !important;
     margin-top: var(--espace-6);
     padding-top: var(--espace-4);
+    /* La marge de la fiche qu'il suit : sans elle, sa première lettre
+       touchait le bord du papier (rendu PDF du 21/10). */
+    padding-inline: var(--espace-7);
     border-top: 1px solid #000;
     font-size: 0.75rem;
     break-inside: avoid;
@@ -1265,6 +1317,13 @@ aside :is(button, label, p, li, h2, h3, span, output) {
     Sans fiche ouverte, c'est la liste qu'on imprime — le panneau redevient
     une page ordinaire au lieu d'une colonne de hauteur fixe.
   */
+  /*
+    `<main>` aussi : une A4 fait 794 px CSS, sous le point de rupture, et le
+    papier s'imprime donc en disposition téléphone, où `<main>` est posé en
+    absolu. La mise en page tombait à 0 px, et le crédit imprimé passait
+    sous la fiche, en haut de la page 1 (rendu d'un vrai PDF, 21/10).
+  */
+  [data-testid='layout'] > main,
   [data-testid='layout'],
   [data-testid='sidebar'] {
     display: block !important;

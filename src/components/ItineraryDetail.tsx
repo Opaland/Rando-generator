@@ -259,7 +259,7 @@ export function ItineraryDetail() {
         panneau.current = element
         poserLePanneau(element)
       }}
-      className={styles.panel}
+      className={`${styles.panel} ombres-defilement`}
       aria-label={`Détail de ${displayName(itin)}`}
       data-testid="itinerary-detail"
       /* Mesuré, donc testable — et lu par le CSS pour ne rien afficher de

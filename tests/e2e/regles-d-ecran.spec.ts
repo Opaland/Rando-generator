@@ -8,6 +8,8 @@ import {
   mockElevation,
   mockExternalNetwork,
   mockTilesOk,
+  ONGLETS,
+  estAlEcran,
 } from './helpers.ts'
 
 /**
@@ -1032,6 +1034,24 @@ for (const vue of LARGEURS) {
  *
  * Deux largeurs, l'état le plus dense : c'est là que la place manque.
  */
+/**
+ * Amène la feuille à une position, en touchant la poignée jusqu'à y être :
+ * c'est la convergence qui est assertée, pas chaque clic (§6ter). Sans
+ * poignée — au-dessus du point de rupture — rien à faire.
+ */
+async function amenerLaFeuille(page: Page, position: string): Promise<void> {
+  const poignee = page.getByTestId('sheet-handle')
+  if (!(await poignee.isVisible().catch(() => false))) return
+  const feuille = page.getByTestId('sidebar')
+  await expect
+    .poll(async () => {
+      if ((await feuille.getAttribute('data-position')) === position) return true
+      await poignee.click({ timeout: 1_000 }).catch(() => undefined)
+      return false
+    })
+    .toBe(true)
+}
+
 const AVEC_GROS_TEXTE = [
   { nom: 'téléphone', width: 390, height: 844, tactile: true },
   { nom: 'PC', width: 1280, height: 800, tactile: false },
@@ -1090,6 +1110,55 @@ for (const vue of AVEC_GROS_TEXTE) {
      * chevaucher son voisin. On mesure ce qui est **peint**, pas ce qui est
      * déclaré.
      */
+    /**
+     * #556 : en gros texte à 390, l'en-tête passait de 60 à 161 px, et ce qui
+     * se posait sous lui à une hauteur fixe tombait sous la feuille ou sous
+     * le crédit — « Ma position » peint par la poignée, la boussole par le
+     * crédit — et « Progression » se coupait en deux, sa seconde ligne
+     * hors de l'écran. La sonde ne mesurait ici que le débordement.
+     */
+    test('les commandes de la carte et les onglets sont peints, en entier', async ({
+      page,
+    }) => {
+      await atteindre(page, 'zone chargée', vue.tactile)
+      await activerLeGrosTexte(page, vue.tactile)
+      // Activer le gros texte laisse la feuille pleine, sur les réglages :
+      // elle couvre alors toute la carte, et des commandes de carte dessous
+      // ne sont pas un défaut. On mesure là où la carte se lit.
+      await ouvrirOnglet(page, 'carte')
+      const cibles = [
+        '[data-testid="locate-toggle"]',
+        '.maplibregl-ctrl-compass',
+        ...ONGLETS.map((cle) => `[data-testid="onglet-${cle}"]`),
+      ]
+      // Feuille repliée, puis à mi-course — l'état d'une zone qu'on vient de
+      // choisir, celui où l'issue a mesuré « Ma position » sous la feuille.
+      // Au-dessus du point de rupture, il n'y a pas de feuille : un tour.
+      for (const position of ['repliee', 'moitie']) {
+        await amenerLaFeuille(page, position)
+        await expect
+          .poll(async () => {
+            const fautes: unknown[] = []
+            for (const sel of cibles) {
+              const dessus = await recouvrementsDuSelecteur(page, sel)
+              if (dessus.length > 0) fautes.push({ sel, dessus: dessus[0] })
+              const hors = await page.evaluate((s: string) => {
+                const e = document.querySelector(s)
+                if (!e) return false
+                const r = e.getBoundingClientRect()
+                return (
+                  r.bottom > innerHeight + 0.5 ||
+                  e.scrollHeight > e.clientHeight + 1
+                )
+              }, sel)
+              if (hors) fautes.push({ sel, hors: true })
+            }
+            return { position, fautes }
+          })
+          .toEqual({ position, fautes: [] })
+      }
+    })
+
     test('la fiche reste entièrement atteignable', async ({ page }) => {
       await atteindre(page, 'zone chargée', vue.tactile)
       await activerLeGrosTexte(page, vue.tactile)
@@ -1102,3 +1171,107 @@ for (const vue of AVEC_GROS_TEXTE) {
     })
   })
 }
+
+/**
+ * #570 (1) et #556 (3) : la feuille pleine montait au-dessus de l'en-tête —
+ * sommet à y 28 pour un en-tête qui finit à 60, à 390 ; en gros texte, la
+ * dernière ligne du slogan disparaissait. Sa hauteur se calculait sur la
+ * mise en page entière, alors qu'elle est posée au-dessus de la barre
+ * d'onglets. Aucun état des règles d'écran ne regardait l'en-tête.
+ */
+for (const vue of [
+  { nom: 'téléphone', width: 390, height: 844 },
+  { nom: 'point de rupture', width: 800, height: 900 },
+] as const) {
+  for (const gros of [false, true]) {
+    test.describe(`feuille pleine — ${vue.nom}${gros ? ', gros texte' : ''}`, () => {
+      test.use({ viewport: { width: vue.width, height: vue.height }, hasTouch: true })
+
+      test('l’en-tête reste peint en entier', async ({ page }) => {
+        await atteindre(page, 'zone chargée', true)
+        if (gros) await activerLeGrosTexte(page, true)
+        await ouvrirOnglet(page, 'carte')
+        await amenerLaFeuille(page, 'pleine')
+        await expect
+          .poll(() => recouvrementsDuSelecteur(page, 'header'))
+          .toEqual([])
+      })
+    })
+  }
+}
+
+/**
+ * #570 (2) : le chevron « ‹ » qui replie le panneau est collant et faisait
+ * 44 × 44 sans fond. Ce qui défilait dessous restait visible à travers lui,
+ * et c'est lui qui recevait le tap — `list-question-ok` peint à 30 % par lui,
+ * `ref-submit` à 19 %, mesuré le 19/10 : taper un bouton visible repliait le
+ * panneau. Un élément collant masque ce qui passe dessous ; il ne doit pas
+ * le laisser voir.
+ */
+for (const largeur of [1024, 1280]) {
+  test.describe(`chevron du panneau — ${String(largeur)} px`, () => {
+    test.use({ viewport: { width: largeur, height: 800 } })
+
+    test('le chevron ne laisse pas voir ce qu’il intercepte', async ({ page }) => {
+      await atteindre(page, 'zone chargée', false)
+      const chevron = page.getByTestId('panneau-replier')
+      await expect(chevron).toBeVisible()
+      const fond = await chevron.evaluate((e) => getComputedStyle(e).backgroundColor)
+      // `rgba(…, 0)` ou `transparent` : on voit à travers.
+      expect(fond).toMatch(/^rgb\(/)
+    })
+  })
+}
+
+/**
+ * #570 (3) : en gros texte, au PC, « Enregistrer » tombait sous le bas
+ * visible du panneau de tracé — 5 px peints sur 45 à 1 024, mesuré le
+ * 19/10. Atteignable en faisant défiler, mais rien ne le disait, et c'est
+ * la commande qui termine le tracé. `toBeVisible`, qui sert à prouver que
+ * l'état est atteint, répond oui sur un bouton écrêté (§1bis).
+ */
+for (const largeur of [1024, 1280]) {
+  test.describe(`tracé en gros texte — ${String(largeur)} px`, () => {
+    test.use({ viewport: { width: largeur, height: 800 } })
+
+    test('« Enregistrer » est peint sans faire défiler', async ({ page }) => {
+      await atteindre(page, 'zone chargée', false)
+      await activerLeGrosTexte(page, false)
+      await page.getByTestId('custom-draw').click()
+      await expect(page.getByTestId('route-drawer')).toBeVisible()
+      await expect.poll(() => estAlEcran(page, 'route-drawer-save')).toBe(true)
+    })
+  })
+}
+
+/**
+ * Ombres de défilement : « le bord annonce qu'il continue ».
+ *
+ * #570 (4) : le guide de premier lancement est coupé de 26 px à 390 × 844,
+ * et seuls 193 px sur 396 se voient à 667 px de haut — sans que rien le
+ * dise. Et la fiche, dont le commentaire décrit ces ombres depuis le 24/08,
+ * les déclarait puis les effaçait trois lignes plus bas par un raccourci
+ * `background` (trouvé le 21/10) : aucune ne s'est jamais peinte.
+ */
+test.describe('ombres de défilement — téléphone', () => {
+  test.use({ viewport: { width: 390, height: 667 }, hasTouch: true })
+
+  test('le corps du guide et la fiche annoncent qu’ils continuent', async ({
+    page,
+  }) => {
+    const ombres = (sel: string) =>
+      page.evaluate((s: string) => {
+        const e = document.querySelector(s)
+        if (!e) return 'absent'
+        return (getComputedStyle(e).backgroundImage.match(/gradient/g) ?? []).length
+      }, sel)
+    await mockExternalNetwork(page)
+    await page.goto('/')
+    await expect(page.getByTestId('guide-etape-1')).toBeVisible()
+    await expect.poll(() => ombres('[data-testid="guide-corps"]')).toBe(4)
+    await fermerLeGuide(page)
+    await atteindre(page, 'zone chargée', true)
+    await ouvrirLaFiche(page, true)
+    await expect.poll(() => ombres('[data-testid="itinerary-detail"]')).toBe(4)
+  })
+})

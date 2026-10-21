@@ -50,39 +50,8 @@
      la carte derrière, qui se met à zoomer sous le doigt. */
   overscroll-behavior: contain;
 
-  /*
-    Ombres de défilement : le bord annonce qu'il continue.
-
-    Sans marque, un texte coupé au ras du bord se lit comme un texte fini —
-    c'est ce qui a fait dire « coupé à moitié » plutôt que « il faut faire
-    défiler » (retour du 24/08). Le navigateur ne dessine plus de barre de
-    défilement permanente, donc rien ne le disait.
-
-    Technique sans JavaScript : deux dégradés en `local` (qui défilent avec le
-    contenu) masquent deux ombres en `scroll` (qui restent collées au cadre).
-    En haut de course, le dégradé opaque recouvre l'ombre haute ; au milieu,
-    les deux ombres apparaissent ; en bas, la basse disparaît. La marque dit
-    donc *où l'on en est*, pas seulement qu'il y a du contenu — ce qu'un
-    dégradé fixe n'aurait pas su faire.
-  */
-  background-image:
-    linear-gradient(var(--papier) 30%, rgba(var(--papier-rvb), 0)),
-    linear-gradient(rgba(var(--papier-rvb), 0), var(--papier) 70%),
-    linear-gradient(rgba(30, 43, 35, 0.16), rgba(30, 43, 35, 0)),
-    linear-gradient(rgba(30, 43, 35, 0), rgba(30, 43, 35, 0.16));
-  background-position:
-    0 0,
-    0 100%,
-    0 0,
-    0 100%;
-  background-repeat: no-repeat;
-  background-size:
-    100% 28px,
-    100% 28px,
-    100% 10px,
-    100% 10px;
-  background-attachment: local, local, scroll, scroll;
-  background: var(--papier);
+  /* Ombres de défilement : classe globale `ombres-defilement` (index.css),
+     qui porte aussi le fond — un `background` ici l'effacerait. */
   border-top: 1px solid var(--gris-vert-clair);
   border-top: 5px solid var(--rouge-balisage);
   box-shadow: var(--ombre-feuille);

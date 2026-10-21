@@ -70,7 +70,10 @@
 }
 
 @media (max-width: 800px) {
+  /* `top: auto` comme pour le tracé (#554) : sans lui, le `top` mesuré
+     s'ajoutait à ce `bottom` et étirait le bouton — 56 px à 800, 21/10. */
   :root[data-fiche='ouverte'] .wrapper {
+    top: auto;
     bottom: calc(
       12px + var(--hauteur-fiche) + var(--hauteur-poignee) +
         var(--hauteur-onglets) + env(safe-area-inset-bottom, 0px)
@@ -158,10 +161,15 @@
 /* Sur téléphone, le panneau de contrôle est une feuille glissante ancrée en
    bas : le bouton « où suis-je » y disparaissait dessous quelle que soit la
    position de la feuille. Il passe donc en haut à droite, sous les commandes
-   de zoom, où il reste atteignable dans les trois positions. */
+   de zoom, où il reste atteignable dans les trois positions.
+
+   Juste dessous, mesuré (`map/useBasDesCommandes.ts`) : la constante de
+   224 px laissait 82 px de vide, et « Ma position » finissait sous le crédit
+   et, en gros texte, sous la feuille à mi-course (#556). Le repli garde
+   l'ancienne place tant que la mesure n'est pas faite. */
 @media (max-width: 800px) {
   .wrapper {
-    top: 224px;
+    top: calc(var(--bas-des-commandes) + 10px);
     right: 8px;
     bottom: auto;
   }

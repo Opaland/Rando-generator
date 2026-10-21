@@ -168,7 +168,9 @@
   min-width: 44px;
   min-height: 44px;
   border: none;
-  background: none;
+  /* Opaque : collant, il passe par-dessus ce qui défile, et sans fond on
+     voyait à travers lui des boutons dont il volait le tap (#570, 2). */
+  background: var(--papier);
   border-radius: var(--rayon-md);
   font-size: var(--texte-vedette);
   line-height: 1;
@@ -443,6 +445,23 @@
   :root[data-maquette='onglets'] .sidebar {
     bottom: calc(var(--hauteur-onglets) + env(safe-area-inset-bottom, 0px));
   }
+
+  /* Relevée de la barre, la feuille doit aussi la retrancher de sa hauteur :
+     `100 %` est celle de toute la mise en page, et la feuille pleine montait
+     d'autant au-dessus de l'en-tête — sommet à y 28 sur un en-tête qui finit
+     à 60 (#570, 1), dernière ligne du slogan coupée en gros texte (#556, 3).
+     Les 24 px de carte qu'annonce `.pleine` redeviennent vrais. */
+  :root[data-maquette='onglets'] .pleine {
+    max-height: calc(
+      100% - 24px - var(--hauteur-onglets) - env(safe-area-inset-bottom, 0px)
+    );
+  }
+
+  :root[data-maquette='onglets'] .sidebar[data-onglet]:not([data-onglet='carte']).pleine {
+    max-height: calc(
+      100% - var(--hauteur-onglets) - env(safe-area-inset-bottom, 0px)
+    );
+  }
 }
 
 /*
@@ -527,6 +546,24 @@
     bottom: calc(
       var(--hauteur-feuille-moitie) + env(safe-area-inset-bottom, 0px)
     );
+  }
+}
+
+/*
+  Au-dessus du point de rupture, la fiche occupe toute la hauteur du bord
+  droit : le zoom, en haut à droite, s'en écarte comme « Ma position »
+  (LocateButton.module.css). Mesuré le 19/10 (#553) : à 1 280 le centre des
+  trois boutons était peint par la fiche, et à 1 024 au doigt taper « + »
+  fermait la fiche. Relever le zoom au-dessus d'elle aurait seulement
+  inversé le recouvrement.
+*/
+@media (min-width: 801px) {
+  :root[data-fiche='ouverte'] .main :global(.maplibregl-ctrl-top-right) {
+    right: calc(var(--largeur-fiche) + 12px);
+  }
+  /* Le panneau de tracé prend lui aussi la hauteur qu'il y a (#570, 3). */
+  :root[data-trace='ouvert'] .main :global(.maplibregl-ctrl-top-right) {
+    right: calc(var(--largeur-trace) + 12px);
   }
 }
 

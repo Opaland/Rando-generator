@@ -97,6 +97,10 @@
        80. La bande est remesurée à l'exécution par `MapView`. */
     bottom: calc(12px + var(--bande-attribution));
     width: min(var(--largeur-trace), calc(100% - 24px));
+    /* La hauteur qu'il y a, comme la fiche au PC : le plafond de téléphone
+       (`--hauteur-trace`) laissait en gros texte « Enregistrer » sous le bas
+       visible du panneau — 5 px peints sur 45 à 1 024 (#570, 3). */
+    max-height: calc(100% - 24px - var(--bande-attribution));
     border-radius: var(--rayon-lg);
     border-top-width: 1px;
     border-left: 5px solid var(--encre);
