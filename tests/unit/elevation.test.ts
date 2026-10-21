@@ -393,7 +393,9 @@ describe('la résolution du profil se dit', () => {
       ] as LonLat[],
     }
     const libelle = libelleResolution(profile)
-    expect(libelle).toContain('2,0 km')
+    // « 2 km » et non « 2,0 km », comme partout ailleurs (#571, tranché le 20/10).
+    expect(libelle).toContain('2 km')
+    expect(libelle).not.toContain('2,0')
     expect(libelle).toMatch(/col|entre deux/i)
   })
 

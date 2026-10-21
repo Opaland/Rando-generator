@@ -478,7 +478,8 @@ export function libelleResolution(profile: ElevationProfile): string | null {
   }
   const distance =
     espacement >= 1000
-      ? `${(espacement / 1000).toFixed(1).replace('.', ',')} km`
+      ? // « 2 km » et non « 2,0 km », comme partout ailleurs (#571).
+        `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 }).format(espacement / 1000)} km`
       : `${String(Math.round(espacement))} m`
   return `altitude relevée tous les ${distance} — entre deux relevés la courbe est une droite, et un col peut s’y cacher.`
 }

@@ -3,6 +3,7 @@ import {
   formatChrono,
   formatDetour,
   formatDistance,
+  formatDenivele,
   formatPct,
   displayName,
 } from '../../src/lib/format.ts'
@@ -171,3 +172,20 @@ describe('formatPct et l’erreur flottante', () => {
     }
   })
 })
+
+/*
+  Issue #571 : trois formes pour le même dénivelé — « 1 234 m D+ » dans
+  l'historique, « 1234 m D+ » dans la liste, « D+ 1234 m » sur les traces et
+  le tracé. Tranché par Cédric le 20/10 : « 1 234 m D+ » partout.
+*/
+describe('formatDenivele', () => {
+  it('écrit le nombre, l’unité, puis le sens', () => {
+    expect(formatDenivele(420)).toBe('420 m D+')
+    expect(formatDenivele(420, '−')).toBe('420 m D−')
+  })
+
+  it('sépare les milliers à la française et arrondit au mètre', () => {
+    expect(formatDenivele(1234.4)).toMatch(/^1[\s\u202f]234 m D\+$/)
+  })
+})
+

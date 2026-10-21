@@ -85,7 +85,8 @@ test('un itinéraire de 200 km annonce l’espacement de ses relevés', async ({
   await expect(note).toBeVisible()
   // Deux kilomètres entre relevés : c'est le chiffre qui explique pourquoi
   // une altitude lue entre deux d'entre eux ne veut rien dire de précis.
-  await expect(note).toContainText('2,0 km')
+  // « 2 km » et non « 2,0 km » (#571, tranché le 20/10).
+  await expect(note).toContainText('2 km')
   await expect(note).toContainText(/col/i)
 })
 

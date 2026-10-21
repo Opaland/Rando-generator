@@ -22,6 +22,7 @@ import { assessItinerary, hasGaps } from '../core/dataQuality.ts'
 import { isCompleted } from '../core/milestones.ts'
 import type { LonLat, Network } from '../core/types.ts'
 import {
+  formatDenivele,
   displayName,
   formatDuration,
   formatKm,
@@ -530,7 +531,7 @@ export function ItineraryList() {
                         {formatDuration(facts.minutes)}
                       </span>
                       {facts.gainMeters !== null && (
-                        <span> · {Math.round(facts.gainMeters)} m D+</span>
+                        <span> · {formatDenivele(facts.gainMeters)}</span>
                       )}
                       {facts.shape === 'loop' && <span> · boucle</span>}
                       {/*

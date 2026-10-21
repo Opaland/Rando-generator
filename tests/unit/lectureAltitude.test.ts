@@ -86,7 +86,7 @@ describe('libelleResolution', () => {
 
   it.each([
     [600, 'altitude relevée tous les 600 m — entre deux relevés la courbe est une droite, et un col peut s’y cacher.'],
-    [1_000, 'altitude relevée tous les 1,0 km — entre deux relevés la courbe est une droite, et un col peut s’y cacher.'],
+    [1_000, 'altitude relevée tous les 1 km — entre deux relevés la courbe est une droite, et un col peut s’y cacher.'],
   ])('dit l’espacement de %d m', (metres, libelle) => {
     expect(libelleResolution(espacement(metres))).toBe(libelle)
   })
@@ -99,7 +99,7 @@ describe('libelleResolution', () => {
   })
 
   it('parle aussi d’un profil de deux relevés', () => {
-    expect(libelleResolution(espacement(2_000, 2))).toMatch(/2,0 km/)
+    expect(libelleResolution(espacement(2_000, 2))).toMatch(/2 km/)
   })
 })
 

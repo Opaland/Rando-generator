@@ -29,6 +29,17 @@ export function formatPct(pct: number): string {
   return `${pctFormat.format(Math.floor(pct * 10 + 1e-6) / 10)} %`
 }
 
+/**
+ * « 1 234 m D+ » — le dénivelé, sous une seule forme (#571).
+ *
+ * Il en avait trois : « 1 234 m D+ » dans l'historique, « 1234 m D+ » dans
+ * la liste, « D+ 1234 m » sur les traces et le tracé. Forme tranchée par
+ * Cédric le 20/10 : le nombre, l'unité, puis le sens.
+ */
+export function formatDenivele(metres: number, sens: '+' | '−' = '+'): string {
+  return `${Math.round(metres).toLocaleString('fr-FR')} m D${sens}`
+}
+
 const moFormat = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 })
 
 /**

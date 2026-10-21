@@ -7,7 +7,7 @@ import {
   monthlyBuckets,
   reperesHistogramme,
 } from '../core/history.ts'
-import { formatKm } from '../lib/format.ts'
+import { formatDenivele, formatKm } from '../lib/format.ts'
 import styles from './History.module.css'
 
 /** Un an de recul : au-delà, les barres deviennent illisibles. */
@@ -70,7 +70,7 @@ export function History() {
         </strong>{' '}
         · {formatKm(stats.distanceMeters)}
         {stats.elevationGain > 0 &&
-          ` · ${Math.round(stats.elevationGain).toLocaleString('fr-FR')} m D+`}
+          ` · ${formatDenivele(stats.elevationGain)}`}
       </p>
 
       {enchainement.meters > 0 && (

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
 import { useAppStore } from '../store/appStore.ts'
 import { etoilesDeSortie } from '../core/affichage.ts'
-import { formatKm, importProgressLabel } from '../lib/format.ts'
+import { formatDenivele, formatKm, importProgressLabel } from '../lib/format.ts'
 import { outingLabel } from '../core/outing.ts'
 import { listerDeclarations } from '../core/declaratif.ts'
 import { useDefilerVersAlerte } from '../lib/useDefilerVersAlerte.ts'
@@ -466,7 +466,7 @@ function ItemTrace({
           {' · '}
           {formatKm(entree.metres)}
           {typeof track.elevationGain === 'number' &&
-            ` · D+ ${Math.round(track.elevationGain)} m`}
+            ` · ${formatDenivele(track.elevationGain)}`}
         </span>
         {/*
           La zone chargée au moment de l'import (issue #206).
