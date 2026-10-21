@@ -31,26 +31,10 @@
 */
 import { writeFileSync } from "node:fs";
 import { jeuPdiprPour, parseReseauPdipr } from "../src/core/pdipr.ts";
+import { SOURCES_PDIPR, zoneDemandee } from "./sources-pdipr.mjs";
 
-const SOURCES = {
-  isere: {
-    url:
-      "https://opendata.isere.fr/api/explore/v2.1/catalog/datasets/" +
-      "plan-departemental-des-itineraires-de-promenades-et-de-randonnees-departement-de" +
-      "/exports/geojson",
-    source: "Département de l'Isère — PDIPR, Licence Ouverte 2.0",
-  },
-  ain: {
-    url:
-      "https://departement-ain.opendata.arcgis.com/api/download/v1/items/" +
-      "09837461f2e146fda2fafc7aa0698a10/geojson?layers=101",
-    source: "Département de l'Ain — PDIPR itinéraire, Licence Ouverte 2.0",
-  },
-};
-const ZONE = process.argv[2] ?? "isere";
-if (!Object.hasOwn(SOURCES, ZONE)) {
-  throw new Error(`zone inconnue : ${ZONE} (connues : ${Object.keys(SOURCES).join(", ")})`);
-}
+const ZONE = zoneDemandee(process.argv[2], "isere");
+const SOURCES = SOURCES_PDIPR;
 const SOURCE = SOURCES[ZONE].url;
 const JEU = jeuPdiprPour(ZONE);
 const CIBLE = `public/${JEU.fichier}`;

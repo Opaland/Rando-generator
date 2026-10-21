@@ -23,6 +23,7 @@
     "monkey": "MONKEY=1 playwright test tests/e2e/monkey.spec.ts --workers=2",
     "og-image": "node scripts/og-image.mjs",
     "pdipr": "node scripts/preparer-pdipr.mjs",
+    "recouvrement": "node scripts/recouvrement-pdipr-osm.mjs",
     "mutation": "stryker run",
     "survivants": "node scripts/survivants.mjs",
     "mesure": "MESURE=1 playwright test tests/e2e/mesure-bibliotheque.spec.ts --workers=1",
