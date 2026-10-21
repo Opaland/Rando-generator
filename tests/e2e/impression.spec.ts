@@ -371,3 +371,37 @@ test('à la largeur d’une A4, le crédit suit la fiche au lieu de passer desso
     )
     .toBe(true)
 })
+
+/*
+  Revue du sprint 1 : `<main>` statique à l'impression, ses enfants posés en
+  absolu se calent sur la page. Sans fiche ouverte, la feuille est la liste —
+  le guide de premier lancement et la carte d'itinéraire flottante s'y
+  posaient par-dessus, en haut de la page 1.
+*/
+test('à la largeur d’une A4, ni le guide ni la carte d’itinéraire ne sortent', async ({
+  page,
+}) => {
+  await mockExternalNetwork(page)
+  await page.goto('/')
+  await expect(page.getByTestId('onboarding')).toBeVisible()
+  await page.emulateMedia({ media: 'print' })
+  await page.setViewportSize({ width: 794, height: 1123 })
+  await expect(page.getByTestId('onboarding')).toBeHidden()
+
+  await page.emulateMedia({ media: 'screen' })
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.getByTestId('onboarding-fermer').click()
+  await page.getByTestId('zone-pilat').click()
+  await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
+    timeout: 15_000,
+  })
+  await afficherTousLesReseaux(page)
+  await page
+    .getByTestId('itinerary-list')
+    .getByRole('button', { name: /GR 7/ })
+    .click()
+  await expect(page.getByTestId('itinerary-card')).toBeVisible()
+  await page.emulateMedia({ media: 'print' })
+  await page.setViewportSize({ width: 794, height: 1123 })
+  await expect(page.getByTestId('itinerary-card')).toBeHidden()
+})

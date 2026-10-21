@@ -1,5 +1,12 @@
 import { test, expect, type Page } from '@playwright/test'
-import { afficherTousLesReseaux, mockElevation, mockExternalNetwork } from './helpers.ts'
+import {
+  activerLeGrosTexte,
+  afficherTousLesReseaux,
+  fermerLeGuide,
+  mockElevation,
+  mockExternalNetwork,
+  ouvrirOnglet,
+} from './helpers.ts'
 
 /**
  * Issues #553, #555 et #556 — le crédit de la carte recouvert.
@@ -108,3 +115,46 @@ for (const largeur of [1024, 1280]) {
     }
   })
 }
+
+/*
+  Revue du sprint 1 (21/10) : le crédit replié « pour la place » se
+  redéplie quand la place revient — mais pas s'il a été replié par
+  l'utilisateur entre-temps. Le drapeau restait levé : rouvert puis refermé
+  au « ⓘ », le crédit se rouvrait tout seul au mouvement suivant de la
+  feuille, contre ce que le commentaire du code promettait.
+*/
+test.describe('crédit replié par l’utilisateur — téléphone, gros texte', () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true })
+
+  test('reste replié quand la feuille bouge', async ({ page }) => {
+    await mockExternalNetwork(page)
+    await page.goto('/')
+    await fermerLeGuide(page)
+    await activerLeGrosTexte(page, true)
+    await ouvrirOnglet(page, 'carte')
+    const credit = page.locator('.maplibregl-ctrl-attrib')
+    const deplie = () =>
+      credit.evaluate((e) => e.classList.contains('maplibregl-compact-show'))
+    const feuille = page.getByTestId('sidebar')
+    const amener = async (position: string) => {
+      await expect
+        .poll(async () => {
+          if ((await feuille.getAttribute('data-position')) === position) return true
+          await page.getByTestId('sheet-handle').click({ timeout: 1_000 }).catch(() => undefined)
+          return false
+        })
+        .toBe(true)
+    }
+    await amener('moitie')
+    // La règle l'a replié : il recouvrait « Ma position » ou le zoom.
+    await expect.poll(deplie).toBe(false)
+    const bouton = page.locator('.maplibregl-ctrl-attrib-button')
+    await bouton.click()
+    await expect.poll(deplie).toBe(true)
+    await bouton.click()
+    await expect.poll(deplie).toBe(false)
+    await amener('repliee')
+    await page.waitForTimeout(400)
+    expect(await deplie()).toBe(false)
+  })
+})

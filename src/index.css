@@ -213,6 +213,7 @@
   --ombre-flottante: 0 2px 10px rgba(30, 43, 35, 0.22); /* au-dessus de la carte */
   --ombre-panneau: 0 4px 18px rgba(30, 43, 35, 0.25); /* dialogues, accueil */
   --ombre-feuille: 0 -3px 16px rgba(30, 43, 35, 0.22); /* feuille mobile, qui monte */
+  --ombre-bord: rgba(30, 43, 35, 0.16); /* .ombres-defilement : « ça continue » */
   /* Deux formes pour deux propriétés, et il a fallu les séparer.
 
      `--anneau-focus` valait `0 0 0 1px var(--rouge-balisage)` — quatre
@@ -917,8 +918,6 @@ aside :is(button, label, p, li, h2, h3, span, output) {
   }
 }
 
-/* Réservé aux lecteurs d'écran : visible pour eux, absent de l'écran.
-   Un `display: none` les priverait aussi de l'information. */
 /*
   Ombres de défilement : le bord annonce qu'il continue.
 
@@ -944,8 +943,8 @@ aside :is(button, label, p, li, h2, h3, span, output) {
   background-image:
     linear-gradient(var(--papier) 30%, rgba(var(--papier-rvb), 0)),
     linear-gradient(rgba(var(--papier-rvb), 0), var(--papier) 70%),
-    linear-gradient(rgba(30, 43, 35, 0.16), rgba(30, 43, 35, 0)),
-    linear-gradient(rgba(30, 43, 35, 0), rgba(30, 43, 35, 0.16));
+    linear-gradient(var(--ombre-bord), transparent),
+    linear-gradient(transparent, var(--ombre-bord));
   background-position:
     0 0,
     0 100%,
@@ -960,6 +959,8 @@ aside :is(button, label, p, li, h2, h3, span, output) {
   background-attachment: local, local, scroll, scroll;
 }
 
+/* Réservé aux lecteurs d'écran : visible pour eux, absent de l'écran.
+   Un `display: none` les priverait aussi de l'information. */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -1099,6 +1100,9 @@ aside :is(button, label, p, li, h2, h3, span, output) {
     --ombre-flottante: 0 2px 10px rgba(0, 0, 0, 0.55);
     --ombre-panneau: 0 4px 18px rgba(0, 0, 0, 0.6);
     --ombre-feuille: 0 -3px 16px rgba(0, 0, 0, 0.55);
+    /* Sur un papier presque noir, une ombre ne se voit pas : la marque de
+       défilement s'y éclaircit au lieu de s'assombrir (revue du sprint 1). */
+    --ombre-bord: rgba(255, 255, 255, 0.14);
   }
 
   /*
@@ -1214,7 +1218,14 @@ aside :is(button, label, p, li, h2, h3, span, output) {
   [data-testid='demarrer-rapide'],
   [data-testid='locate-toggle'],
   [data-testid='itinerary-detail-close'],
-  [data-testid='profil-zoom'] {
+  [data-testid='profil-zoom'],
+  /* Ni ce qui flotte sur la carte : `<main>` statique à l'impression, le
+     guide et la carte d'itinéraire se calaient sur la page, par-dessus la
+     liste imprimée (revue du sprint 1, 21/10). La fiche, elle, est la
+     feuille quand elle est ouverte. */
+  [data-testid='onboarding'],
+  [data-testid='itinerary-card'],
+  [data-testid='route-drawer'] {
     display: none !important;
   }
 

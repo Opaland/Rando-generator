@@ -81,6 +81,15 @@ export function useCreditReplie(
     }
     // Les règles qui relèvent le crédit (App.module.css) s'appliquent dès
     // que l'attribut change ; une image plus tard, la mise en page est faite.
+    // Un geste sur la carte — le « ⓘ » compris — rend la main à l'utilisateur :
+    // ce qu'il replie ensuite n'est plus à nous. Sans cela, rouvert puis
+    // refermé au « ⓘ », le crédit se rouvrait au mouvement suivant de la
+    // feuille (revue du sprint 1, 21/10, e2e vu rouge).
+    const conteneur = containerRef.current
+    const rendreLaMain = () => {
+      repliePourLaPlace.current = false
+    }
+    conteneur?.addEventListener('pointerdown', rendreLaMain, true)
     const observateur = new MutationObserver(() => requestAnimationFrame(verifier))
     observateur.observe(document.documentElement, {
       attributes: true,
@@ -89,6 +98,7 @@ export function useCreditReplie(
     })
     verifier()
     return () => {
+      conteneur?.removeEventListener('pointerdown', rendreLaMain, true)
       observateur.disconnect()
     }
   }, [containerRef, ready])
