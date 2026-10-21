@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import jeuIsere from '../../public/data/pdipr-isere.json?raw'
+import jeuAin from '../../public/data/pdipr-ain.json?raw'
 import { jeuPdiprPour, parseReseauPdipr } from '../../src/core/pdipr.ts'
 import { parseBouclesGeoJSON } from '../../src/core/boucles.ts'
 import { parseGrNordGeoJSON } from '../../src/core/grNord.ts'
@@ -165,5 +166,40 @@ describe('le jeu embarqué de l’Isère', () => {
       0,
     )
     expect(lire().features).toHaveLength(lignesLivrees)
+  })
+})
+
+describe('le jeu embarqué de l’Ain', () => {
+  /*
+    Revue du sprint 2 (21/10) : seule l'Isère avait un test de sa donnée
+    livrée. 531 lignes le 21/10 — les 480 boucles diffusables, certaines en
+    plusieurs parties : « des centaines » suffit à dire que le jeu est
+    arrivé entier, sans épingler un chiffre qui changera à la prochaine
+    extraction.
+  */
+  const brut = JSON.parse(jeuAin) as {
+    source?: string
+    features: { geometry: { coordinates: unknown[] } }[]
+  }
+  const lire = () => {
+    const jeu = jeuPdiprPour('ain')
+    expect(jeu, 'la zone Ain ne désigne plus de jeu PDIPR').not.toBeNull()
+    return parseReseauPdipr(brut, jeu!.emprise)
+  }
+
+  it('se lit en lignes, par centaines', () => {
+    expect(lire().features.length).toBeGreaterThan(400)
+  })
+
+  it('n’embarque aucune ligne que la lecture écarterait', () => {
+    const lignesLivrees = brut.features.reduce(
+      (total, f) => total + f.geometry.coordinates.length,
+      0,
+    )
+    expect(lire().features).toHaveLength(lignesLivrees)
+  })
+
+  it('dit d’où il vient', () => {
+    expect(brut.source).toMatch(/Département de l'Ain.*Licence Ouverte 2\.0/)
   })
 })

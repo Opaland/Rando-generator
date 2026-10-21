@@ -184,8 +184,10 @@ Revérifié le 18/10 contre GitHub : **#160 est close** (#259, le lien
   tronçons n'ont ni nom ni ref, Cédric a tranché qu'on les montre sans les
   compter. Les 2 102 de Grenoble-Alpes Métropole sont écartés, l'export
   les plaçant au large de l'Afrique. Restent :
-  - **Ain** — export data.gouv.fr injoignable le 18/10 (connexions
-    coupées) : à retenter, rien d'autre ne manque ;
+  - **Ain** — **livré le 21/10** (`538e412`, #574), en réseau de fond lui
+    aussi : 480 boucles nommées et diffusables, montrées sans être
+    comptées. Les compter attend une règle de dédoublonnage avec OSM,
+    81 boucles y étant déjà (mesure sur #574) — à trancher par Cédric ;
   - **Savoie** (PDIPR73) et **Haute-Savoie** (PDIPR 2023), trouvés sur
     datARA le 18/10 — **bloqués sur une décision juridique de Cédric** :
     leur condition n'est pas une licence nommée (« utilisation libre sous
