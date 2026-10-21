@@ -233,12 +233,13 @@ describe('sauvegarder et restaurer passent aussi par le câblage', () => {
     expect(recus[0]).toContain('2026-09-03')
   })
 
-  it('restaurer une sauvegarde reprend le seuil de complétion qu’elle porte', async () => {
+  it('restaurer une sauvegarde ne touche pas au seuil de complétion', async () => {
     /*
-      `setCompletionPct` est le port par lequel la tranche redonne au magasin
-      un réglage lu dans le fichier. Sans lui, la sauvegarde reviendrait
-      amputée d'un réglage — sans erreur, sans message, et sans que rien ne
-      le dise.
+      Ce test gardait le port `setCompletionPct`, par lequel la tranche
+      redonnait au magasin un réglage lu dans le fichier. Le port est
+      retiré : restaurer ajoute sans remplacer (décision de Cédric, 20/10,
+      #559 point 2). Ce qui reste à garder, de bout en bout dans le
+      magasin, c'est que le seuil choisi ne bouge pas.
     */
     await useAppStore.getState().init()
     const initial = useAppStore.getState().completionPct
@@ -254,7 +255,7 @@ describe('sauvegarder et restaurer passent aussi par le câblage', () => {
       .getState()
       .importerSauvegarde(new File([serialiserBackup(backup)], 's.json'))
 
-    expect(useAppStore.getState().completionPct).toBe(vise)
+    expect(useAppStore.getState().completionPct).toBe(initial)
   })
 })
 

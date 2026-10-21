@@ -77,8 +77,6 @@ export async function ecrireLaRestauration(
 
 /**
  * Le compte rendu de ce qui est **entré**, et l'arrêt s'il y en a eu un.
- * Interrompue, une restauration ne reprend pas non plus les réglages : elle
- * ne doit pas changer en plus ce qu'on n'a pas demandé à voir changer.
  */
 export function resumeDeRestauration(
   ecrit: RestaurationEcrite,

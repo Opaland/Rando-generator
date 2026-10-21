@@ -1394,7 +1394,10 @@ describe('archives d’export', () => {
 })
 
 describe('sauvegarde complète', () => {
-  it('emporte traces, itinéraires perso et réglages, et les rend', async () => {
+  // Les réglages partent dans le fichier mais ne reviennent pas : restaurer
+  // ajoute sans remplacer (décision de Cédric, 20/10, #559 point 2). Ce
+  // test disait « et réglages, et les rend » jusque-là.
+  it('emporte traces et itinéraires perso, et les rend — pas les réglages', async () => {
     await useAppStore.getState().init()
     await useAppStore
       .getState()
@@ -1424,7 +1427,7 @@ describe('sauvegarde complète', () => {
     expect(useAppStore.getState().tracks.map((t) => t.filename)).toEqual([
       'sortie.gpx',
     ])
-    expect(useAppStore.getState().toleranceMeters).toBe(35)
+    expect(useAppStore.getState().toleranceMeters).not.toBe(35)
     expect(useAppStore.getState().backupMessage).toMatch(/1 trace ajoutée/)
   })
 

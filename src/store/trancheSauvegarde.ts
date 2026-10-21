@@ -105,8 +105,6 @@ export interface DependancesSauvegarde {
   /** Le distributeur de numéros perso du store, une fois la base lue (#543). */
   identifiantsPerso: () => Promise<AllocateurPerso>
   recalculer: () => Promise<void>
-  setTolerance: (valeur: number) => Promise<void>
-  setCompletionPct: (valeur: number) => Promise<void>
   /**
    * Remettre le fichier à l'utilisateur.
    *
@@ -237,23 +235,11 @@ export function trancheSauvegarde(
         await deps.recalculer()
       }
 
-      const resume = resumeDeRestauration(ecrit, traces, persos)
-      // Interrompue : sans les réglages (voir `resumeDeRestauration`).
-      if (ecrit.interrompue) {
-        deps.set({ backupMessage: resume })
-        return
-      }
-
-      // Les réglages ne sont repris que s'ils sont présents : une sauvegarde
-      // ne doit pas remettre la tolérance à zéro parce qu'elle est ancienne.
-      if (typeof backup.settings.toleranceMeters === 'number') {
-        await deps.setTolerance(backup.settings.toleranceMeters)
-      }
-      if (typeof backup.settings.completionPct === 'number') {
-        await deps.setCompletionPct(backup.settings.completionPct)
-      }
-
-      deps.set({ backupMessage: resume })
+      // Les réglages de la sauvegarde ne sont **jamais** repris : restaurer
+      // ajoute sans remplacer, comme le promettent l'écran, le PRD et les
+      // personas. Ils les remettaient sans le dire — tranché par Cédric le
+      // 20/10 (#559, point 2). Ils restent écrits dans le fichier.
+      deps.set({ backupMessage: resumeDeRestauration(ecrit, traces, persos) })
     },
 
     clearBackupMessage() {

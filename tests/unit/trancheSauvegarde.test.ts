@@ -153,14 +153,6 @@ function banc(
       journal.push('recalculer')
       return Promise.resolve()
     },
-    setTolerance: (v) => {
-      journal.push(`tolerance:${String(v)}`)
-      return Promise.resolve()
-    },
-    setCompletionPct: (v) => {
-      journal.push(`completion:${String(v)}`)
-      return Promise.resolve()
-    },
     telecharger: (nom, contenu) => {
       journal.push('telecharger')
       telechargements.push({ nom, contenu })
@@ -354,26 +346,21 @@ describe('importerSauvegarde', () => {
     ])
   })
 
-  it('ne reprend un réglage que s’il est dans la sauvegarde', async () => {
-    // Une sauvegarde ancienne ne doit pas remettre la tolérance à zéro parce
-    // qu'elle ne la portait pas encore.
-    const sansReglages = banc()
-    await trancheSauvegarde(sansReglages.deps).importerSauvegarde(
-      await archive({}),
-    )
-    expect(sansReglages.journal.some((l) => l.startsWith('tolerance'))).toBe(
-      false,
-    )
-    expect(sansReglages.journal.some((l) => l.startsWith('completion'))).toBe(
-      false,
-    )
-
+  /*
+    Ce test disait l'inverse jusqu'au 20/10 : « ne reprend un réglage que
+    s'il est dans la sauvegarde ». Restaurer remettait alors la tolérance et
+    le seuil de la sauvegarde, sans le dire — contre « restaurer ajoute sans
+    remplacer » (Backup.tsx, PRD, PERSONAS). Tranché par Cédric le 20/10
+    (#559, point 2) : le code rejoint les textes.
+  */
+  it('ne reprend jamais les réglages d’une sauvegarde', async () => {
     const avecReglages = banc()
     await trancheSauvegarde(avecReglages.deps).importerSauvegarde(
       await archive({ toleranceMeters: 40, completionPct: 60 }),
     )
-    expect(avecReglages.journal).toContain('tolerance:40')
-    expect(avecReglages.journal).toContain('completion:60')
+    expect(avecReglages.etat().toleranceMeters).toBe(25)
+    expect(avecReglages.etat().completionPct).toBe(80)
+    expect(avecReglages.journal.some((l) => /tolerance|completion/.test(l))).toBe(false)
   })
 
   /*

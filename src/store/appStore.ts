@@ -999,8 +999,6 @@ export const useAppStore = create<AppState>()((set, get) => {
       baseOuverte,
       identifiantsPerso,
       recalculer: recompute,
-      setTolerance: (valeur) => get().setTolerance(valeur),
-      setCompletionPct: (valeur) => get().setCompletionPct(valeur),
       telecharger: downloadBlob,
       maintenant: () => new Date().toISOString(),
     }),
