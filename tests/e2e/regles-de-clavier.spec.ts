@@ -1,9 +1,12 @@
 import { test, expect, type Page } from '@playwright/test'
 import {
+  afficherTousLesReseaux,
   fermerLeGuide,
   mockElevation,
   mockExternalNetwork,
   mockTilesOk,
+  ouvrirLaFicheDuGr7,
+  ouvrirOnglet,
 } from './helpers.ts'
 
 /**
@@ -72,7 +75,16 @@ interface Arret {
 async function arretCourant(page: Page): Promise<Arret | null> {
   return page.evaluate(() => {
     const el = document.activeElement
-    if (!el || el === document.body || !(el instanceof HTMLElement)) return null
+    // Un `<svg>` focalisable aussi — le profil altimétrique en est un : le
+    // compter pour rien arrêtait le parcours au premier profil rencontré,
+    // et la fiche ouverte semblait n'avoir que sept arrêts (21/10).
+    if (
+      !el ||
+      el === document.body ||
+      !(el instanceof HTMLElement || el instanceof SVGElement)
+    ) {
+      return null
+    }
     const r = el.getBoundingClientRect()
     const centreX = r.x + r.width / 2
     const centreY = r.y + r.height / 2
@@ -150,6 +162,76 @@ async function atteindre(page: Page): Promise<void> {
   */
 }
 
+/**
+ * Le parcours de la tabulation, depuis l'état où la page a été amenée :
+ * chaque arrêt peint est photographié avec et sans focus, et doit différer.
+ *
+ * Nommé le 21/10 (sprint 3, #575) quand deux états de plus l'ont demandé —
+ * fiche ouverte, tracé ouvert. Le parcours n'avait été fait que sur la zone
+ * chargée : ce qui est ouvert par-dessus n'avait jamais été tabulé (§6quinquies).
+ */
+async function auditerLeFocus(
+  page: Page,
+  vue: { width: number; height: number },
+): Promise<void> {
+  const invisibles: string[] = []
+  const vus: string[] = []
+  let mesures = 0
+
+  for (let i = 0; i < ARRETS_MAX; i++) {
+    await page.keyboard.press('Tab')
+    const arret = await arretCourant(page)
+    if (!arret) break
+    // Un tour complet : la tabulation est revenue à son premier arrêt.
+    if (i > 0 && vus[0] === arret.quoi) break
+    vus.push(arret.quoi)
+
+    /*
+      On ne juge que ce qui est peint.
+
+      Un élément recouvert par la feuille — l'attribution de la carte
+      derrière un panneau à mi-hauteur — n'a évidemment aucun pixel qui
+      change au focus, et le dire ici serait répondre à une autre question
+      que celle posée. C'est **une vraie question**, et elle n'est pas
+      esquivée : elle appartient à la sonde de ce qui reste atteignable au
+      clavier, où ce même élément est un constat et non une exception.
+
+      L'exclusion est donc étroite par construction : ce qui n'est pas
+      peint est mesuré ailleurs, jamais nulle part.
+    */
+    if (!arret.dansLeCadre || !arret.peint) continue
+
+    const cadre = cadreAutour(arret.rect, vue)
+    if (cadre.width <= 0 || cadre.height <= 0) continue
+
+    const poigne = await page.evaluateHandle(() => document.activeElement)
+    const avecFocus = await page.screenshot({ clip: cadre })
+    await poigne.evaluate((el) => {
+      ;(el as HTMLElement | SVGElement).blur()
+    })
+    const sansFocus = await page.screenshot({ clip: cadre })
+    // On rend le focus à l'élément avant de continuer : sans cela, la
+    // tabulation repartirait du début du document et la suite du parcours
+    // ne serait pas celle qu'on croit auditer.
+    await poigne.evaluate((el) => {
+      ;(el as HTMLElement | SVGElement).focus()
+    })
+    await poigne.dispose()
+
+    mesures++
+    if (avecFocus.equals(sansFocus)) invisibles.push(arret.quoi)
+  }
+
+  // Sans ces deux bornes, une sonde qui n'atteindrait plus rien —
+  // sélecteur cassé, page vide — resterait verte en ne mesurant rien.
+  expect(vus.length, 'la tabulation n’atteint rien').toBeGreaterThan(10)
+  expect(mesures, 'aucun arrêt n’a pu être mesuré').toBeGreaterThan(10)
+  expect(
+    invisibles,
+    `rien ne change à l’écran au focus de : ${invisibles.join(', ')}`,
+  ).toEqual([])
+}
+
 for (const vue of LARGEURS) {
   test.describe(`le focus se voit — ${vue.nom}`, () => {
     test.use({
@@ -167,62 +249,37 @@ for (const vue of LARGEURS) {
       page,
     }) => {
       await atteindre(page)
-      const invisibles: string[] = []
-      const vus: string[] = []
-      let mesures = 0
+      await auditerLeFocus(page, vue)
+    })
 
-      for (let i = 0; i < ARRETS_MAX; i++) {
+    test('fiche ouverte, chaque arrêt se voit, et la tabulation en ressort', async ({
+      page,
+    }) => {
+      await atteindre(page)
+      await afficherTousLesReseaux(page)
+      await ouvrirLaFicheDuGr7(page, vue.tactile)
+      await auditerLeFocus(page, vue)
+      // Pas de piège : la fiche n'est pas une boîte modale, la tabulation doit
+      // finir par en sortir (WCAG 2.1.2).
+      let sortie = false
+      for (let i = 0; i < ARRETS_MAX && !sortie; i++) {
         await page.keyboard.press('Tab')
-        const arret = await arretCourant(page)
-        if (!arret) break
-        // Un tour complet : la tabulation est revenue à son premier arrêt.
-        if (i > 0 && vus[0] === arret.quoi) break
-        vus.push(arret.quoi)
-
-        /*
-          On ne juge que ce qui est peint.
-
-          Un élément recouvert par la feuille — l'attribution de la carte
-          derrière un panneau à mi-hauteur — n'a évidemment aucun pixel qui
-          change au focus, et le dire ici serait répondre à une autre question
-          que celle posée. C'est **une vraie question**, et elle n'est pas
-          esquivée : elle appartient à la sonde de ce qui reste atteignable au
-          clavier, où ce même élément est un constat et non une exception.
-
-          L'exclusion est donc étroite par construction : ce qui n'est pas
-          peint est mesuré ailleurs, jamais nulle part.
-        */
-        if (!arret.dansLeCadre || !arret.peint) continue
-
-        const cadre = cadreAutour(arret.rect, vue)
-        if (cadre.width <= 0 || cadre.height <= 0) continue
-
-        const poigne = await page.evaluateHandle(() => document.activeElement)
-        const avecFocus = await page.screenshot({ clip: cadre })
-        await poigne.evaluate((el) => {
-          ;(el as HTMLElement).blur()
-        })
-        const sansFocus = await page.screenshot({ clip: cadre })
-        // On rend le focus à l'élément avant de continuer : sans cela, la
-        // tabulation repartirait du début du document et la suite du parcours
-        // ne serait pas celle qu'on croit auditer.
-        await poigne.evaluate((el) => {
-          ;(el as HTMLElement).focus()
-        })
-        await poigne.dispose()
-
-        mesures++
-        if (avecFocus.equals(sansFocus)) invisibles.push(arret.quoi)
+        sortie = await page.evaluate(
+          () =>
+            document.activeElement !== null &&
+            document.activeElement !== document.body &&
+            !document.activeElement.closest('[data-testid="itinerary-detail"]'),
+        )
       }
+      expect(sortie, 'la tabulation ne sort jamais de la fiche').toBe(true)
+    })
 
-      // Sans ces deux bornes, une sonde qui n'atteindrait plus rien —
-      // sélecteur cassé, page vide — resterait verte en ne mesurant rien.
-      expect(vus.length, 'la tabulation n’atteint rien').toBeGreaterThan(10)
-      expect(mesures, 'aucun arrêt n’a pu être mesuré').toBeGreaterThan(10)
-      expect(
-        invisibles,
-        `rien ne change à l’écran au focus de : ${invisibles.join(', ')}`,
-      ).toEqual([])
+    test('tracé ouvert, chaque arrêt se voit', async ({ page }) => {
+      await atteindre(page)
+      if (vue.tactile) await ouvrirOnglet(page, 'sorties')
+      await page.getByTestId('custom-draw').click()
+      await expect(page.getByTestId('route-drawer-save')).toBeVisible()
+      await auditerLeFocus(page, vue)
     })
   })
 }

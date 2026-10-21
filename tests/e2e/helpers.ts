@@ -1138,3 +1138,36 @@ export async function cocher(commande: Locator): Promise<void> {
   if (!(await commande.isChecked())) await commande.click()
   await expect(commande).toBeChecked()
 }
+
+/**
+ * Ouvre la fiche du GR 7 par la liste, zone du Pilat chargée et tous les
+ * réseaux affichés.
+ *
+ * Nommé le 21/10 (sprint 3) quand un troisième fichier en a eu besoin :
+ * la sonde axe des états et les règles de clavier. C'est la convergence qui
+ * est assertée, pas chaque clic (§6ter) : au téléphone, la liste vit sous
+ * « Progression » et la feuille peut intercepter le premier toucher.
+ */
+export async function ouvrirLaFicheDuGr7(page: Page, compact: boolean): Promise<void> {
+  const fiche = page.getByTestId('itinerary-detail')
+  await expect
+    .poll(
+      async () => {
+        if (await fiche.isVisible().catch(() => false)) return true
+        if (compact) await ouvrirOnglet(page, 'progression')
+        await page
+          .getByTestId('itinerary-list')
+          .getByRole('button', { name: /GR 7/ })
+          .first()
+          .click({ timeout: 1_500 })
+          .catch(() => undefined)
+        await page
+          .getByTestId('itinerary-card-detail-link')
+          .click({ timeout: 1_500 })
+          .catch(() => undefined)
+        return false
+      },
+      { timeout: 30_000 },
+    )
+    .toBe(true)
+}
