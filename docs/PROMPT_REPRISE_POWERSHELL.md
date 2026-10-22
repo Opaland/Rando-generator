@@ -27,9 +27,8 @@ irm https://claude.ai/install.ps1 | iex
 Ouvrir **un nouveau terminal** pour que le `PATH` soit relu, puis :
 
 ```powershell
-npm config set script-shell "C:\Program Files\Git\bin\bash.exe"
 gh auth login
-git clone -c core.autocrlf=false -c core.eol=lf https://github.com/Opaland/Rando-generator.git
+git clone https://github.com/Opaland/Rando-generator.git
 cd Rando-generator
 git checkout claude/sentiers-hiking-tracker-h28emt
 npm ci
