@@ -652,7 +652,11 @@ function App() {
             avant={
               onglets &&
               ongletActif !== 'sorties' &&
-              enregistrement.etat === 'repos' && (
+              enregistrement.etat === 'repos' &&
+              // Fiche ouverte au téléphone, la carte n'a plus qu'une bande :
+              // ▶ y rencontrait le zoom (« − » recouvert, #584). On y lit un
+              // itinéraire ; le départ rapide revient à la fermeture.
+              !(compact && detailOuvert !== null) && (
                 <DemarrerRapide
                   onDemarrer={() => {
                     changerDOnglet('sorties')
