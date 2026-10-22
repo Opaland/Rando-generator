@@ -560,9 +560,16 @@
     44 − 24 − 10 (la marge basse de MapLibre) = 10 px sous son contrôle,
     mesuré tel quel. Agrandir le crédit à 44 px pour le contenir, essayé,
     le faisait monter sur « Enregistrer » du panneau de tracé à 800 px.
+
+    Replié seulement. Déplié, ses 124 px montaient sur « Ma position » et, à
+    360 × 640 en gros texte, sous l'en-tête — trois licences non peintes
+    (revue du sprint 2). Déplié, il reste sur la fiche, au-dessus de tout,
+    comme tranché le 20/10. Le coin bas gauche n'est pas relevé : il est
+    vide.
   */
-  :root[data-fiche='ouverte'] .main :global(.maplibregl-ctrl-bottom-left),
-  :root[data-fiche='ouverte'] .main :global(.maplibregl-ctrl-bottom-right) {
+  :root[data-fiche='ouverte']
+    .main:not(:has(:global(.maplibregl-compact-show)))
+    :global(.maplibregl-ctrl-bottom-right) {
     bottom: calc(
       var(--hauteur-fiche) + 10px + env(safe-area-inset-bottom, 0px)
     );

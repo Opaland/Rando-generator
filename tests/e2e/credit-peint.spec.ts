@@ -231,3 +231,70 @@ test.describe('fiche ouverte, téléphone au doigt', () => {
       .toEqual({ auDessus: true, peintParLui: true })
   })
 })
+
+/*
+  Revue adverse du sprint 2 : relever le crédit pour son ⓘ le relevait aussi
+  **déplié** — sa boîte de 124 px montait sur « Ma position », et à
+  360 × 640 en gros texte passait sous l'en-tête, trois licences non
+  peintes. Déplié, il reste là où il était : sur la fiche, au-dessus de
+  tout, comme tranché le 20/10.
+*/
+for (const vue of [
+  { nom: '390 × 844', largeur: 390, hauteur: 844, gros: false },
+  { nom: '360 × 640, gros texte', largeur: 360, hauteur: 640, gros: true },
+]) {
+  test.describe(`crédit déplié, fiche ouverte — ${vue.nom}, au doigt`, () => {
+    test.use({
+      viewport: { width: vue.largeur, height: vue.hauteur },
+      hasTouch: true,
+      isMobile: true,
+    })
+
+    test('chaque licence est peinte, et « Ma position » aussi', async ({
+      page,
+    }) => {
+      await mockExternalNetwork(page)
+      await mockElevation(page)
+      await page.goto('/')
+      await fermerLeGuide(page)
+      if (vue.gros) await activerLeGrosTexte(page, true)
+      await ouvrirOnglet(page, 'carte')
+      await page.getByTestId('zone-pilat').click()
+      await page.getByTestId('zone-meta').waitFor({ state: 'attached' })
+      await afficherTousLesReseaux(page)
+      await ouvrirLaFicheParLesOnglets(page, true)
+      await page.locator('.maplibregl-ctrl-attrib-button').click()
+
+      const mesure = () =>
+        page.evaluate(() => {
+          // Au centre du premier fragment de ligne : un lien coupé sur deux
+          // lignes a une boîte englobante dont le centre tombe sur le texte
+          // voisin — mesuré, deux licences « non peintes » qui l'étaient.
+          const peintParLui = (e: Element | null) => {
+            if (!e) return false
+            const r = e.getClientRects().item(0)
+            if (!r || r.width === 0) return false
+            const p = document.elementFromPoint(
+              r.x + r.width / 2,
+              r.y + r.height / 2,
+            )
+            return p !== null && e.contains(p)
+          }
+          const liens = [
+            ...document.querySelectorAll('.maplibregl-ctrl-attrib-inner a'),
+          ]
+          return {
+            liensNonPeints: liens
+              .filter((a) => !peintParLui(a))
+              .map((a) => a.textContent),
+            maPosition: peintParLui(
+              document.querySelector('[data-testid="locate-toggle"]'),
+            ),
+          }
+        })
+      await expect
+        .poll(mesure, { timeout: 10_000 })
+        .toEqual({ liensNonPeints: [], maPosition: true })
+    })
+  })
+}
