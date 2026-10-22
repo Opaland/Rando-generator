@@ -37,15 +37,49 @@
   "permissions": {
     "allow": [
       "Bash(npm run lint)",
+      "Bash(npm run listes)",
+      "Bash(npm run textes)",
+      "Bash(npm run chemins)",
       "Bash(npm run coverage)",
+      "Bash(npm run ports)",
       "Bash(npm run build)",
+      "Bash(npm run e2e)",
       "Bash(npm run monkey)",
       "Bash(npx tsc *)",
       "Bash(npx vitest *)",
+      "Bash(npx eslint *)",
       "Bash(npx playwright test *)",
       "Bash(git status*)",
       "Bash(git diff*)",
-      "Bash(git log*)"
+      "Bash(git log*)",
+      "Bash(git fetch*)",
+      "Bash(git show*)",
+      "Bash(gh issue view *)",
+      "Bash(gh issue list*)",
+      "Bash(gh pr view *)",
+      "Bash(gh pr list*)",
+      "Bash(gh pr checks *)",
+      "Bash(gh run list*)",
+      "Bash(gh run view *)",
+      "Bash(gh run watch *)",
+      "Bash(git push*)",
+      "Bash(gh pr create*)",
+      "Bash(gh pr merge *)",
+      "Bash(gh issue create*)",
+      "Bash(gh issue comment *)",
+      "Bash(gh issue close *)"
+    ],
+    "ask": [
+      "Bash(npm run pdipr*)",
+      "Bash(node scripts/preparer-pdipr.mjs*)",
+      "Bash(node --experimental-strip-types scripts/emprises-de-zone.mjs*)",
+      "Bash(npm run og-image*)",
+      "Bash(gh secret *)",
+      "Bash(npm install*)",
+      "Bash(npm ci*)",
+      "Bash(rm -rf *)",
+      "Bash(git push --force*)",
+      "Bash(git reset --hard*)"
     ]
   }
 }
