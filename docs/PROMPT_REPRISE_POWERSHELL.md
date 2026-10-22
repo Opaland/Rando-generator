@@ -4,9 +4,10 @@ Deux parties :
 - la mise en route de la machine, à faire une seule fois ;
 - le prompt à coller dans Claude Code à chaque reprise.
 
-La dernière session (locale, Windows, 22/10) s'est arrêtée au commit qui
-met ce fichier à jour, sur `main` : depuis le 22/10, plus de branche longue —
-une issue = une branche partie de `main` = une PR (`AGENTS.md`).
+La dernière session (locale, Windows, 22/10) s'est arrêtée sur `main`, une
+fois fusionnée la PR qui met ce fichier à jour. Depuis le 22/10, plus de
+branche longue : une issue = une branche partie de `main` = une PR
+(`AGENTS.md`).
 Bilan : cinq épopées ouvertes (#579 à #583), quatre closes. #578 (cadrage
 de zone) et #577 (ⓘ du crédit) livrées, chacune reprise après sa revue
 adverse ; #572 et le sous-point 3 de #560 trouvés déjà livrés ;

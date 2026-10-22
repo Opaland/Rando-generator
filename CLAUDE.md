@@ -484,7 +484,7 @@ l'est pas. Le dire dans la PR plutôt que laisser le `Closes` parler.
 Demande de Cédric (12/10) : le quota se vide avant la fin de la semaine.
 `docs/OPTIMISATION_TOKENS.md` mesure où ça part et ce qui n'économise rien
 (déléguer à un agent, compresser plus souvent) — à relire en début de
-session, pas seulement une fois. Deux pratiques qui en sortent, à tenir
+session, pas seulement une fois. Trois pratiques qui en sortent, à tenir
 par défaut :
 
 - ne pas relancer à la main lint/listes/textes/chemins/typecheck/tests
@@ -494,8 +494,7 @@ par défaut :
 - grouper les éditions de `CLAUDE.md`/`README.md` plutôt que les étaler
   dans la session : chaque édition de ce fichier en recharge l'intégralité
   dans le contexte, environ 6 000 tokens au 12/10 ;
-- **un commit dont le diff ne touche que `docs/`, `README.md`,
-  `CLAUDE.md` ou `scripts/jumelles/` committe sur lint + listes + textes +
-  chemins + typecheck seuls**, sans coverage/build/e2e/monkey (tranché le
-  13/10, §1.3 du plan) — dès qu'un seul fichier hors de cette liste est
-  touché, la porte complète reste de mise.
+- **l'exception « docs seuls » à la porte complète** (tranchée le 13/10,
+  §1.3 du plan) : sa liste de fichiers vit dans `AGENTS.md`, et là
+  seulement — écrite ici aussi, les deux copies divergeaient déjà le jour où
+  `AGENTS.md` est né (revue globale du 22/10, §4ter).
