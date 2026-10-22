@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest'
 import {
   COMPLETION_CHOICES,
   franchissementTientEncore,
-  COMPLETION_PCT,
   DEFAULT_COMPLETION_PCT,
   MILESTONES,
   normalizeCompletionPct,
@@ -62,7 +61,7 @@ describe('isCompleted', () => {
     // Règle empruntée à CityStrides : exiger 100 % punit l'utilisateur pour
     // des tronçons impraticables, des déviations ou une géométrie OSM
     // imparfaite. Le seuil est annoncé, jamais présenté comme du 100 %.
-    expect(COMPLETION_PCT).toBe(95)
+    expect(DEFAULT_COMPLETION_PCT).toBe(95)
     expect(isCompleted(94.9)).toBe(false)
     expect(isCompleted(95)).toBe(true)
     expect(isCompleted(100)).toBe(true)

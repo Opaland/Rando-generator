@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest'
 import {
   chiffresDeCompletion,
   estDeclare,
-  libelleCompletion,
   metresDeclares,
   type ParcoursDeclare,
 } from '../../src/core/declaratif.ts'
@@ -135,22 +134,5 @@ describe('chiffresDeCompletion', () => {
     const c = chiffresDeCompletion(mesurer([]), [])
     expect(c.pctMesure).toBe(0)
     expect(c.pctDeclare).toBe(0)
-  })
-})
-
-describe('libelleCompletion', () => {
-  /**
-   * Un seul chiffre tant que rien n'est déclaré : la grande majorité des
-   * écrans ne doit pas payer le prix d'une distinction qui ne les concerne
-   * pas.
-   */
-  it('ne mentionne pas le déclaratif quand il n’y en a pas', () => {
-    expect(libelleCompletion({ pctMesure: 43.2, pctDeclare: 0 })).toBe('43,2 %')
-  })
-
-  it('sépare les deux dès qu’il y en a', () => {
-    expect(libelleCompletion({ pctMesure: 43.2, pctDeclare: 12 })).toBe(
-      '43,2 % mesurés · 12 % déclarés',
-    )
   })
 })

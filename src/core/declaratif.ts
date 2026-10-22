@@ -1,4 +1,4 @@
-import { displayName, formatKm, formatPct } from '../lib/format.ts'
+import { displayName, formatKm } from '../lib/format.ts'
 import { STEP_METERS, type Itinerary, type Network, type Sample } from './types.ts'
 
 /**
@@ -103,23 +103,6 @@ export function chiffresDeCompletion(
     metresDeclares: declaresMetres,
     metresTotal: total,
   }
-}
-
-/**
- * Ce qui s'affiche : un chiffre tant que rien n'est déclaré, deux ensuite.
- *
- * La grande majorité des écrans ne doit pas payer le prix d'une distinction
- * qui ne les concerne pas — quelqu'un qui n'a jamais rien coché ne verra
- * jamais le mot « mesurés ».
- */
-export function libelleCompletion(chiffres: {
-  pctMesure: number
-  pctDeclare: number
-}): string {
-  if (chiffres.pctDeclare <= 0) return formatPct(chiffres.pctMesure)
-  return `${formatPct(chiffres.pctMesure)} mesurés · ${formatPct(
-    chiffres.pctDeclare,
-  )} déclarés`
 }
 
 /** Une déclaration telle que « Mes sorties » la montre. */
