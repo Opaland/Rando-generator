@@ -49,16 +49,16 @@ Pourquoi ces réglages, qui ne sont pas optionnels :
 - **`gh`, connecté** : le hook de démarrage lit l'état du déploiement de
   `main` avec lui, et les issues se ferment par lui. Sans `gh`, le §7 n'est
   pas vérifié.
-- **`core.autocrlf=false` et `core.eol=lf`** : Git pour Windows convertit
-  par défaut les sources en CRLF. Les scripts de gardes cherchent des `\n`,
-  et `npm run listes` sortait rouge sur un arbre propre (19/10). Sur un
-  clone déjà fait en CRLF : `git config core.autocrlf false`,
-  `git config core.eol lf`, puis `git rm -rq --cached .` et
-  `git reset -q --hard HEAD`, sur un arbre propre uniquement.
-- **`script-shell`** : `npm run monkey`, `mesure` et quelques autres sont
-  écrits `MONKEY=1 playwright test …`, une syntaxe bash que `cmd.exe` ne
-  comprend pas. Sans ce réglage, lancer le monkey depuis Git Bash :
-  `MONKEY=1 npx playwright test tests/e2e/monkey.spec.ts --workers=2`.
+- **Fins de ligne** : plus rien à régler depuis le 22/10. Git pour Windows
+  convertit par défaut les sources en CRLF, et `npm run listes` sortait
+  rouge sur un arbre propre (19/10) ; `.gitattributes` impose maintenant
+  `eol=lf` à tout clone. Sur un clone déjà fait en CRLF, sur un arbre propre
+  uniquement : `git rm -rq --cached .` puis `git reset -q --hard HEAD`.
+- **`script-shell`** : plus nécessaire non plus. Les scripts à variable
+  (`monkey`, `mesure`, `reel`…) passent par `cross-env`, que `cmd.exe`
+  comprend : vérifié le 22/10, `npm run monkey` vert avec
+  `npm_config_script_shell=cmd.exe`, là où `MONKEY=1 …` y rendait
+  « 'MONKEY' n'est pas reconnu ». Un `script-shell` déjà posé ne gêne pas.
 
 `PW_CHROMIUM_PATH` n'est **pas** à définir en local. `playwright.config.ts`
 ne s'en sert que si elle existe, et `npx playwright install chromium`

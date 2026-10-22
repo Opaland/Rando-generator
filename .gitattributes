@@ -1,0 +1,16 @@
+# Le dépôt est en LF, quelle que soit la machine qui le clone.
+#
+# Git pour Windows convertit par défaut les sources en CRLF ; les scripts de
+# gardes cherchent des `\n`, et `npm run listes` sortait rouge sur un arbre
+# propre (19/10). `core.autocrlf=false` le réglait, mais seulement pour qui
+# pensait à le poser au clonage — un garde-fou qu'il faut penser à taper ne
+# garde rien (CLAUDE.md §6quater). Écrit ici, il vaut pour tout clone.
+* text=auto eol=lf
+
+# Binaires : jamais convertis.
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff2 binary
+*.pdf binary
+*.zip binary
