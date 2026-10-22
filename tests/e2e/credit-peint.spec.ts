@@ -6,6 +6,7 @@ import {
   mockElevation,
   mockExternalNetwork,
   ouvrirOnglet,
+  ouvrirLaFicheDuGr7 as ouvrirLaFicheParLesOnglets,
 } from './helpers.ts'
 
 /**
@@ -179,5 +180,54 @@ test.describe('crédit replié par l’utilisateur — téléphone, gros texte',
     await amener('repliee')
     await page.waitForTimeout(400)
     expect(await deplie()).toBe(false)
+  })
+})
+
+/*
+  Issue #577 — démonstration du sprint 1, réseau réel (21/10), Sylvie au
+  doigt : fiche ouverte, le ⓘ restait à la hauteur de la feuille à moitié
+  (48 vh) quand la fiche monte jusqu'à `--hauteur-fiche`. Il se posait sur
+  la marge droite de la fiche, et une ligne longue qui défilait dessous y
+  perdait ses derniers caractères.
+*/
+test.describe('fiche ouverte, téléphone au doigt', () => {
+  test.use({
+    viewport: { width: 390, height: 844 },
+    hasTouch: true,
+    isMobile: true,
+  })
+
+  test('le ⓘ du crédit ne se pose pas sur la fiche (#577)', async ({ page }) => {
+    await mockExternalNetwork(page)
+    await mockElevation(page)
+    await page.goto('/')
+    await fermerLeGuide(page)
+    await page.getByTestId('zone-pilat').click()
+    await page.getByTestId('zone-meta').waitFor({ state: 'attached' })
+    await afficherTousLesReseaux(page)
+    await ouvrirLaFicheParLesOnglets(page, true)
+
+    const mesure = () =>
+      page.evaluate(() => {
+        const bouton = document.querySelector('.maplibregl-ctrl-attrib-button')
+        const fiche = document.querySelector('[data-testid="itinerary-detail"]')
+        if (!bouton || !fiche) return null
+        const b = bouton.getBoundingClientRect()
+        const f = fiche.getBoundingClientRect()
+        if (b.width === 0) return null
+        const peint = document.elementFromPoint(
+          b.x + b.width / 2,
+          b.y + b.height / 2,
+        )
+        return {
+          // Le bas du ⓘ au-dessus du haut de la fiche : rien ne se recouvre.
+          auDessus: b.bottom <= f.top,
+          peintParLui: peint !== null && bouton.contains(peint),
+        }
+      })
+    // La fiche met 0,2 s à se poser : une mesure en vol ne dit rien (§1bis).
+    await expect
+      .poll(mesure, { timeout: 10_000 })
+      .toEqual({ auDessus: true, peintParLui: true })
   })
 })

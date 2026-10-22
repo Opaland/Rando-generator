@@ -547,6 +547,26 @@
       var(--hauteur-feuille-moitie) + env(safe-area-inset-bottom, 0px)
     );
   }
+
+  /*
+    Fiche ouverte, elle monte plus haut que la feuille à moitié : jusqu'à
+    `--hauteur-fiche`, poignée et onglets compris. Le crédit, relevé de
+    48 vh seulement, se posait sur sa marge droite (#577). Même spécificité
+    que la règle précédente : celle-ci l'emporte parce qu'elle vient après.
+
+    Les 10 px de plus ne sont pas une marge de confort. Au doigt, le ⓘ
+    passe à 44 px (plancher tactile, index.css) dans un crédit replié que
+    MapLibre dessine sur 24 px, bouton ancré en haut : il déborde de
+    44 − 24 − 10 (la marge basse de MapLibre) = 10 px sous son contrôle,
+    mesuré tel quel. Agrandir le crédit à 44 px pour le contenir, essayé,
+    le faisait monter sur « Enregistrer » du panneau de tracé à 800 px.
+  */
+  :root[data-fiche='ouverte'] .main :global(.maplibregl-ctrl-bottom-left),
+  :root[data-fiche='ouverte'] .main :global(.maplibregl-ctrl-bottom-right) {
+    bottom: calc(
+      var(--hauteur-fiche) + 10px + env(safe-area-inset-bottom, 0px)
+    );
+  }
 }
 
 /*
