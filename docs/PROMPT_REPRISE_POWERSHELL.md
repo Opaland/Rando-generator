@@ -4,8 +4,10 @@ Deux parties :
 - la mise en route de la machine, à faire une seule fois ;
 - le prompt à coller dans Claude Code à chaque reprise.
 
-La dernière session (locale, Windows, 22/10) s'est arrêtée au commit qui
-met ce fichier à jour, sur la branche `claude/sentiers-hiking-tracker-h28emt`.
+La dernière session (locale, Windows, 22/10) s'est arrêtée sur `main`, une
+fois fusionnée la PR qui met ce fichier à jour. Depuis le 22/10, plus de
+branche longue : une issue = une branche partie de `main` = une PR
+(`AGENTS.md`).
 Bilan : cinq épopées ouvertes (#579 à #583), quatre closes. #578 (cadrage
 de zone) et #577 (ⓘ du crédit) livrées, chacune reprise après sa revue
 adverse ; #572 et le sous-point 3 de #560 trouvés déjà livrés ;
@@ -32,7 +34,6 @@ Ouvrir **un nouveau terminal** pour que le `PATH` soit relu, puis :
 gh auth login
 git clone https://github.com/Opaland/Rando-generator.git
 cd Rando-generator
-git checkout claude/sentiers-hiking-tracker-h28emt
 npm ci
 npx playwright install chromium
 claude
@@ -102,9 +103,10 @@ excuser. #572 est fermée depuis le 22/10.
 
 ```text
 Reprise de Sentiers sur mon PC (Windows, PowerShell, Claude Code natif
-avec Git Bash). Branche claude/sentiers-hiking-tracker-h28emt — ne
-pousse que là, n'ouvre aucune PR et ne merge rien sur main sans que je le
-demande.
+avec Git Bash). Mode de développement d'AGENTS.md : une issue = une
+branche partie de main à jour = une PR (Closes #n), fusionnée en squash
+seulement CI verte, après avoir remis main à jour dans la branche. Jamais
+de commit direct sur main.
 
 Avant tout :
 1. git fetch et git status : arbre propre et à jour, sinon arrête-toi et

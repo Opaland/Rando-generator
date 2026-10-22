@@ -1,0 +1,43 @@
+{
+  "context": {
+    "fileName": [
+      "AGENTS.md"
+    ]
+  },
+  "tools": {
+    "allowed": [
+      "run_shell_command(npm run lint)",
+      "run_shell_command(npm run listes)",
+      "run_shell_command(npm run textes)",
+      "run_shell_command(npm run chemins)",
+      "run_shell_command(npm run coverage)",
+      "run_shell_command(npm run ports)",
+      "run_shell_command(npm run build)",
+      "run_shell_command(npm run e2e)",
+      "run_shell_command(npm run monkey)",
+      "run_shell_command(npx tsc)",
+      "run_shell_command(npx vitest)",
+      "run_shell_command(npx eslint)",
+      "run_shell_command(npx playwright test)",
+      "run_shell_command(git status)",
+      "run_shell_command(git diff)",
+      "run_shell_command(git log)",
+      "run_shell_command(git fetch)",
+      "run_shell_command(git show)",
+      "run_shell_command(gh issue view)",
+      "run_shell_command(gh issue list)",
+      "run_shell_command(gh pr view)",
+      "run_shell_command(gh pr list)",
+      "run_shell_command(gh pr checks)",
+      "run_shell_command(gh run list)",
+      "run_shell_command(gh run view)",
+      "run_shell_command(gh run watch)",
+      "run_shell_command(git push)",
+      "run_shell_command(gh pr create)",
+      "run_shell_command(gh pr merge)",
+      "run_shell_command(gh issue create)",
+      "run_shell_command(gh issue comment)",
+      "run_shell_command(gh issue close)"
+    ]
+  }
+}

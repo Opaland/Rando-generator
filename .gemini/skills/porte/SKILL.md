@@ -1,0 +1,64 @@
+---
+name: porte
+description: "Lance la porte complète avant commit sur Sentiers — lint, listes jumelles, textes, chemins cités, typecheck, couverture, ports du magasin, build, e2e Playwright et monkey — dans le bon ordre et avec les bons pièges évités. À utiliser avant tout commit, et quand on veut savoir si l'arbre est sain."
+---
+<!-- Fichier généré par scripts/generer-integrations.mjs depuis .claude/skills/porte/SKILL.md : ne pas modifier, relancer le script. -->
+
+# La porte complète
+
+Le hook `PreToolUse` ne couvre que ce qui tient en une minute (lint, listes
+jumelles, typecheck, tests unitaires). Cette procédure lance le reste.
+
+## L'ordre, et pourquoi
+
+Lancer les étapes dans cet ordre — chacune coûte plus cher que la
+précédente, autant échouer tôt.
+
+```bash
+npm run lint
+npm run listes             # le CSS et la sonde d'écran, même règle (§4ter)
+npm run textes             # le README annonce tous les filtres (§3)
+npm run chemins            # un commentaire qui nomme un fichier l'affirme
+npx tsc -b --noEmit        # PAS `tsc --noEmit` : voir plus bas
+npm run coverage           # un seuil par domaine : 90 % sur src/core,
+                           # un cliquet mesuré sur store et lib (#495)
+npm run ports              # aucun port du magasin né mort (§489)
+npm run build              # SANS masquer la sortie
+export PW_CHROMIUM_PATH=/opt/pw-browsers/chromium
+npx playwright test
+npm run monkey
+```
+
+## Trois pièges, tous mesurés sur ce dépôt
+
+**`npx tsc --noEmit` rend 0 sans rien vérifier.** Le projet utilise les
+références de projet TypeScript. Vérifié : un fichier délibérément cassé
+passe `tsc --noEmit` et échoue `tsc -b --noEmit`.
+
+**Ne jamais faire `npm run build >/dev/null`.** Un build qui échoue laisse
+`dist/` dans son état précédent, et Playwright teste alors une version
+périmée — six tests e2e ont ainsi échoué pour rien, le temps de comprendre.
+
+**Un seul exécutant, et `playwright.config.ts` s'en charge** — plus besoin
+de penser à `--workers=1`, qui reste sans effet puisqu'il dit la même chose.
+
+La raison n'est pas celle qu'on a longtemps écrite ici. Mesuré le 03/09
+(#491) : les tests ne se marchent pas dessus. Trois passes en parallèle ont
+rendu 3, 4 et 3 échecs, **dix tests distincts, presque jamais les mêmes**,
+tous sur un `expect.poll` qui expire. Ce sont des budgets de temps calibrés
+sur une machine au repos, que deux Chromium sur quatre cœurs mettent en
+défaut. Le gain serait de 39 % pour une suite qui ne discrimine plus.
+
+## Quand un test e2e échoue
+
+1. Le relancer **isolément**. S'il passe seul, ce n'est pas forcément un
+   flake : c'est peut-être une course que la charge révèle.
+2. `git stash` puis relancer la suite complète. Si l'arbre propre échoue
+   aussi, le défaut préexiste ; sinon il est à moi.
+3. **Ne pas conclure « instable » deux fois pour le même test.** La
+   deuxième fois, chercher la cause — `detail.spec.ts:258` était un vrai
+   défaut de rendu (#186), pas un test capricieux.
+
+## Ce que la porte ne dit pas
+
+Elle ne dit pas que le travail est fini. Elle dit qu'il ne casse rien.
