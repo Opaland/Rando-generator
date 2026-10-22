@@ -24,15 +24,24 @@ import {
  * seul en prend 132. La boussole y reste sous « Ma position » : c'est la
  * suite de #584, à trancher, d'où son absence de l'assertion à cette taille.
  */
-async function peintsParEuxMemes(page: Page): Promise<Record<string, boolean>> {
+/**
+ * « ok », ou ce qui est peint à la place : un simple booléen disait
+ * « faux » en CI sans dire quoi recouvrait la commande (22/10).
+ */
+async function peintsParEuxMemes(page: Page): Promise<Record<string, string>> {
   return page.evaluate(() => {
     const peint = (sel: string) => {
       const e = document.querySelector(sel)
-      if (!e) return false
+      if (!e) return 'absent'
       const r = e.getBoundingClientRect()
-      if (r.width === 0) return false
+      if (r.width === 0) return 'sans taille'
       const p = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)
-      return p !== null && e.contains(p)
+      if (p !== null && e.contains(p)) return 'ok'
+      const temoin =
+        p?.closest('[data-testid]')?.getAttribute('data-testid') ??
+        p?.className.toString() ??
+        'rien'
+      return `sous ${temoin} (${String(Math.round(r.top))}-${String(Math.round(r.bottom))} px)`
     }
     return {
       zoomIn: peint('.maplibregl-ctrl-zoom-in'),
@@ -49,14 +58,14 @@ for (const vue of [
     largeur: 390,
     hauteur: 844,
     gros: true,
-    attendu: { zoomIn: true, zoomOut: true, boussole: true, maPosition: true },
+    attendu: { zoomIn: 'ok', zoomOut: 'ok', boussole: 'ok', maPosition: 'ok' },
   },
   {
     nom: '360 × 640',
     largeur: 360,
     hauteur: 640,
     gros: false,
-    attendu: { zoomIn: true, zoomOut: true, maPosition: true },
+    attendu: { zoomIn: 'ok', zoomOut: 'ok', maPosition: 'ok' },
   },
 ]) {
   test.describe(`fiche ouverte au doigt — ${vue.nom}`, () => {
