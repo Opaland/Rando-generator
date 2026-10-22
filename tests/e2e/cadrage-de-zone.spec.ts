@@ -1,5 +1,9 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork, waitForMapReady } from './helpers.ts'
+import {
+  fermerLeGuide,
+  mockExternalNetwork,
+  waitForMapReady,
+} from './helpers.ts'
 import pilatFixture from '../fixtures/overpass/pilat.json' with { type: 'json' }
 
 /**
@@ -117,4 +121,65 @@ test('choisir une zone cadre la zone, pas la grande traversée qui la touche', a
       { timeout: 15_000 },
     )
     .toEqual({ contientLaZone: true, serre: true })
+})
+
+/**
+ * Démonstration du sprint 1, au nom de Paul (téléphone, au doigt) : la zone
+ * était cadrée sur toute la hauteur de la carte, et la feuille ouverte à
+ * moitié en couvrait le sud — Bourg-Argental et le Crêt de la Perdrix sous
+ * le panneau, Lyon au milieu de l'écran. La fiche réservait déjà cette
+ * marge (#80) ; le cadrage de zone, non.
+ */
+test.describe('téléphone (390 px, au doigt)', () => {
+  test.use({
+    viewport: { width: 390, height: 844 },
+    hasTouch: true,
+    isMobile: true,
+  })
+
+  test('la zone choisie n’est pas cadrée sous la feuille', async ({ page }) => {
+    const overpass = await mockExternalNetwork(page)
+    overpass.setFixture({
+      ...pilatFixture,
+      elements: [...pilatFixture.elements, GRANDE_TRAVERSEE],
+    })
+    await page.goto('/')
+    await fermerLeGuide(page)
+    await page.getByTestId('zone-pilat').click()
+    await page.getByTestId('zone-meta').waitFor({ state: 'attached' })
+    await waitForMapReady(page)
+
+    // Le sud et le nord du parc, au milieu de sa largeur : ce qui est peint
+    // à leur place doit être la carte, pas la feuille (§1bis).
+    const milieu = (PILAT.ouest + PILAT.est) / 2
+    const peints = () =>
+      page.evaluate(
+        ([lon, sud, nord]) => {
+          const map = (
+            window as unknown as {
+              __sentiersMap?: {
+                isMoving: () => boolean
+                project: (p: [number, number]) => { x: number; y: number }
+                getCanvas: () => HTMLCanvasElement
+              }
+            }
+          ).__sentiersMap
+          if (!map || map.isMoving()) return null
+          const cadre = map.getCanvas().getBoundingClientRect()
+          const peint = (lat: number) => {
+            const p = map.project([lon, lat])
+            return (
+              document.elementFromPoint(cadre.x + p.x, cadre.y + p.y) ===
+              map.getCanvas()
+            )
+          }
+          return { sud: peint(sud), nord: peint(nord) }
+        },
+        [milieu, PILAT.sud, PILAT.nord] as const,
+      )
+
+    await expect
+      .poll(peints, { timeout: 15_000 })
+      .toEqual({ sud: true, nord: true })
+  })
 })

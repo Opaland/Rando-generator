@@ -42,6 +42,20 @@ export function useMapCamera(
     // et y recadrer arrachait la carte à ce qu'on regardait (revue du
     // sprint 1, `demonstration.spec.ts`).
     const { zoneKey } = useAppStore.getState()
+    // Au téléphone, la zone se choisit dans la feuille, qui reste ouverte sur
+    // le bas de la carte : sans marge, le sud de la zone tombait dessous
+    // (démonstration du sprint 1, au nom de Paul). Même règle que la fiche.
+    const panneau = document
+      .querySelector('[data-testid="sidebar"]')
+      ?.getBoundingClientRect()
+    const recouvre = margeBassePanneau(
+      map.getContainer().getBoundingClientRect(),
+      panneau,
+    )
+    const options = {
+      padding: { top: 48, left: 48, right: 48, bottom: 48 + recouvre },
+      duration: 400,
+    }
     const emprise = itineraries.length > 0 ? empriseACadrer(zoneKey) : null
     if (emprise) {
       const [ouest, sud, est, nord] = emprise
@@ -50,7 +64,7 @@ export function useMapCamera(
           [ouest, sud],
           [est, nord],
         ],
-        { padding: 48, duration: 400 },
+        options,
       )
       return
     }
@@ -61,7 +75,7 @@ export function useMapCamera(
       }
     }
     if (!bounds.isEmpty()) {
-      map.fitBounds(bounds, { padding: 48, duration: 400 })
+      map.fitBounds(bounds, options)
     }
   }, [mapRef, itineraries, customItineraries, ready])
 
