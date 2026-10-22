@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { gunzipSync } from 'node:zlib'
-import { afficherTousLesReseaux, mockExternalNetwork, buildGpx } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork, buildGpx, estAlEcran } from './helpers.ts'
 
 /**
  * Sauvegarde complète (issue #132).
@@ -116,6 +116,10 @@ test('restaurer deux fois la même sauvegarde ne duplique rien', async ({
   await expect(page.getByTestId('tracks-list')).toContainText('gr7.gpx')
 
   await page.getByTestId('backup').locator('summary').click()
+  // Ce que la restauration ne fait pas se dit avant qu'on la lance (#559,
+  // tranché le 20/10 : les réglages ne sont jamais repris).
+  await page.getByTestId('backup-reglages').scrollIntoViewIfNeeded()
+  await expect.poll(() => estAlEcran(page, 'backup-reglages')).toBe(true)
   const { contenu } = await telecharger(page)
 
   // Restaurer sur un appareil qui a déjà la sortie : rien n'entre, et on le
@@ -149,4 +153,97 @@ test('un fichier qui n’est pas une sauvegarde est refusé, en le disant', asyn
   )
   // Et rien n'a été touché au passage.
   await expect(page.getByTestId('tracks-empty')).toBeVisible()
+})
+
+/*
+  Issue #567 : une sauvegarde modifiée à la main peut porter une date
+  illisible — `core/backup.ts` ne revalide que les points. La liste
+  affichait « gr7.gpx · Invalid Date · 2,3 km », et encore après
+  rechargement. Le lecteur GPX écarte désormais une telle date à l'import :
+  seule une sauvegarde peut encore l'amener jusqu'à la liste.
+*/
+test('une date illisible dans une sauvegarde s’affiche « date inconnue »', async ({
+  page,
+}) => {
+  await mockExternalNetwork(page)
+  await page.goto('/')
+
+  await page.getByTestId('gpx-input').setInputFiles({
+    name: 'gr7.gpx',
+    mimeType: 'application/gpx+xml',
+    buffer: Buffer.from(buildGpx(15), 'utf-8'),
+  })
+  await expect(page.getByTestId('tracks-list')).toContainText('gr7.gpx')
+  await page.getByTestId('backup').locator('summary').click()
+  const { contenu } = await telecharger(page)
+  const json = JSON.parse(gunzipSync(contenu).toString('utf-8')) as {
+    tracks: { date: unknown }[]
+  }
+  for (const trace of json.tracks) trace.date = 'pas une date'
+
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        const requete = indexedDB.deleteDatabase('sentiers')
+        requete.onsuccess = () => {
+          resolve()
+        }
+        requete.onerror = () => {
+          resolve()
+        }
+        requete.onblocked = () => {
+          resolve()
+        }
+      }),
+  )
+  await page.reload()
+  await page.getByTestId('backup').locator('summary').click()
+  await page.getByTestId('backup-input').setInputFiles({
+    name: 'sauvegarde.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(json), 'utf-8'),
+  })
+  await expect(page.getByTestId('backup-message')).toContainText(
+    '1 trace ajoutée',
+  )
+
+  const liste = page.getByTestId('tracks-list')
+  await expect(liste.getByText('date inconnue')).toBeVisible()
+  await expect(liste).not.toContainText('Invalid Date')
+})
+
+/*
+  Issue #559, point 1 : quelqu'un qui n'a que des déclarations ne pouvait
+  pas sauvegarder. Le bouton ne regardait que les traces et les
+  itinéraires perso — « Rien à sauvegarder pour l'instant » —, alors que
+  le README dit « les déclarations partent dans la sauvegarde ». C'est le
+  profil le plus nombreux (#158) : quinze PR dans la tête, aucun fichier.
+*/
+test('une déclaration seule se sauvegarde', async ({ page }) => {
+  await mockExternalNetwork(page)
+  await page.goto('/')
+  await page.getByTestId('zone-pilat').click()
+  await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
+    timeout: 15_000,
+  })
+  await afficherTousLesReseaux(page)
+  await page
+    .getByTestId('itinerary-list')
+    .getByRole('button', { name: /GR 7/ })
+    .first()
+    .click()
+  await page.getByTestId('itinerary-card-detail-link').click()
+  await page.getByTestId('declare-ouvrir').click()
+  await page.getByTestId('declare-valider').click()
+  await expect(page.getByTestId('declare-etat')).toBeVisible()
+
+  await page.getByTestId('backup').locator('summary').click()
+  await expect(page.getByTestId('backup-export')).toBeEnabled()
+  const { contenu } = await telecharger(page)
+  const json = JSON.parse(gunzipSync(contenu).toString('utf-8')) as {
+    tracks: unknown[]
+    parcoursDeclares: unknown[]
+  }
+  expect(json.tracks).toHaveLength(0)
+  expect(json.parcoursDeclares).toHaveLength(1)
 })

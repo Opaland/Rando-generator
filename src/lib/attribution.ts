@@ -28,10 +28,12 @@
  * licence à la main.
  */
 
-import type { GpxAttribution } from '../core/gpxExport.ts'
+import { attributionDe, type GpxAttribution } from '../core/gpxExport.ts'
+import { sourcesDe } from '../core/attributionDuTrace.ts'
+import type { Itinerary } from '../core/types.ts'
 
 /** Un crédit : à qui, pour quoi, sous quelle licence, et où lire celle-ci. */
-export interface Credit {
+interface Credit {
   /** Ce qu'on doit à cette source, tel qu'il apparaît dans la phrase. */
   readonly quoi: string
   /**
@@ -114,7 +116,7 @@ export const IGN_RELIEF: Credit = {
 export const METROPOLE: Credit = {
   quoi: 'Boucles locales',
   qui: 'Métropole de Lyon',
-  licence: 'Licence Ouverte',
+  licence: 'Licence Ouverte 2.0',
   lien: 'https://data.grandlyon.com/',
 }
 
@@ -124,6 +126,38 @@ export const PROVINCE_NORD: Credit = {
   qui: 'Province Nord',
   licence: 'Licence Ouverte 2.0',
   lien: 'https://data.gouv.nc/explore/dataset/gr-province-nord/',
+}
+
+/**
+ * Le réseau balisé de l'Isère (PDIPR, #87), versé par le Département.
+ *
+ * « Réseau balisé » et non « Itinéraires » : ce jeu n'en fournit aucun — il
+ * est peint en fond, sans nom ni ref (`core/pdipr.ts`). Le créditer comme
+ * des itinéraires dirait qu'on lui doit ce qu'on ne lui a pas pris.
+ *
+ * Absent de la feuille imprimée, pour la raison qui fait écrire
+ * `IGN_RELIEF` : la carte n'y est pas, le réseau de fond non plus.
+ */
+export const DEPARTEMENT_ISERE: Credit = {
+  quoi: 'Réseau balisé',
+  qui: "Département de l'Isère",
+  licence: 'Licence Ouverte 2.0',
+  lien: 'https://opendata.isere.fr/explore/dataset/plan-departemental-des-itineraires-de-promenades-et-de-randonnees-departement-de/',
+}
+
+/**
+ * Les boucles du PDIPR de l'Ain (#574, 21/10), versées par le Département.
+ *
+ * « Réseau balisé » comme l'Isère, bien que le jeu publie des boucles
+ * nommées : elles sont peintes en fond et ne comptent pas (`core/pdipr.ts`),
+ * et c'est ce qu'on lui prend qui se crédite. Absent de la feuille imprimée
+ * pour la même raison que l'Isère.
+ */
+export const DEPARTEMENT_AIN: Credit = {
+  quoi: 'Réseau balisé',
+  qui: "Département de l'Ain",
+  licence: 'Licence Ouverte 2.0',
+  lien: 'https://www.data.gouv.fr/datasets/pdipr-itineraire',
 }
 
 /** Le fond **et** les itinéraires, quand le miroir OSM remplace l'IGN. */
@@ -220,4 +254,25 @@ export function creditsDesSources(
     }
   }
   return credits
+}
+
+/**
+ * Le crédit de la feuille imprimée (#557, point 3) : les sources de la
+ * fiche ouverte — ou, sans fiche, de ce qui est chargé —, et le relief de
+ * l'IGN, dont vient le profil.
+ *
+ * Il était écrit en dur dans `App.tsx` : `OSM, IGN_RELIEF, METROPOLE,
+ * PROVINCE_NORD`. Une fiche de GR créditait la Métropole et la Province
+ * Nord, et un PDIPR importé n'avait pas son producteur sur le papier —
+ * exactement ce que `creditsDesSources` existe pour éviter.
+ */
+export function creditsImprimes(
+  fiche: Itinerary | null,
+  charges: readonly Itinerary[],
+): Credit[] {
+  const sources = (fiche ? [fiche] : charges).flatMap((itineraire) => {
+    const attribution = attributionDe(itineraire)
+    return attribution ? sourcesDe(attribution) : []
+  })
+  return [...creditsDesSources(sources), IGN_RELIEF]
 }

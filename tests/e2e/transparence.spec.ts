@@ -35,6 +35,13 @@ test('« À propos » nomme chaque service tiers réellement contacté', async (
   // l'itinéraire consulté, y compris un itinéraire que vous avez importé.
   await expect(sortant).toContainText('altimétrie')
   await expect(sortant).toContainText('importé')
+  /*
+    Revue globale du 17/10 : ouvrir la fiche d'un itinéraire envoie aussi
+    sa forme à Overpass (recherche des points d'intérêt), y compris pour
+    un tracé importé — exactement le cas que la puce de l'altimétrie
+    décrivait déjà, mais que celle d'Overpass passait sous silence.
+  */
+  await expect(sortant).toContainText(/points? d.intérêt/i)
 })
 
 test('« À propos » distingue ce qui sort de ce qui ne sort jamais', async ({
@@ -104,4 +111,28 @@ test('le premier écran ne promet pas que rien ne part', async ({ page }) => {
   await expect(accueil).not.toContainText('aucune donnée n’est envoyée')
   await expect(accueil).toContainText('ne partent nulle part')
   await expect(accueil).toContainText('IGN')
+})
+
+/*
+  Issue #558, point 1 : « Mes itinéraires » disait « Rien ne quitte votre
+  navigateur » à l'endroit exact où l'on dépose le fichier — alors qu'ouvrir
+  la fiche d'un itinéraire importé envoie sa géométrie à l'altimétrie IGN et
+  sa forme à Overpass. « À propos » le disait pourtant lui-même.
+*/
+test('« Mes itinéraires » ne promet pas que rien ne part', async ({ page }) => {
+  await mockExternalNetwork(page)
+  await page.goto('/')
+  const section = page.getByTestId('custom-input').locator('xpath=ancestor::details[1]')
+  await expect(section).not.toContainText('Rien ne quitte')
+  await expect(section.getByText(/envoie sa forme à l’IGN/)).toBeVisible()
+})
+
+test('« À propos » dit les tuiles d’un corridor emporté, et le compteur ses angles morts', async ({
+  page,
+}) => {
+  await mockExternalNetwork(page)
+  await page.goto('/')
+  await page.getByTestId('about-open').click()
+  await expect(page.getByTestId('about-sortant')).toContainText('corridor')
+  await expect(page.getByText(/service worker/)).toBeVisible()
 })

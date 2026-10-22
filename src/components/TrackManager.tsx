@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
 import { useAppStore } from '../store/appStore.ts'
 import { etoilesDeSortie } from '../core/affichage.ts'
-import { formatKm, importProgressLabel } from '../lib/format.ts'
+import { formatDenivele, formatKm, importProgressLabel } from '../lib/format.ts'
 import { outingLabel } from '../core/outing.ts'
 import { listerDeclarations } from '../core/declaratif.ts'
 import { useDefilerVersAlerte } from '../lib/useDefilerVersAlerte.ts'
@@ -23,6 +23,7 @@ import {
 } from '../core/gpxExport.ts'
 import { downloadTextFile } from '../lib/download.ts'
 import styles from './TrackManager.module.css'
+import { dateAffichee } from '../core/valeurLue.ts'
 
 const SUCCESS_TIMEOUT_MS = 4000
 
@@ -113,9 +114,10 @@ export function TrackManager() {
   const onDrop = (event: DragEvent) => {
     event.preventDefault()
     setDragOver(false)
-    const files = Array.from(event.dataTransfer.files).filter((f) =>
-      f.name.toLowerCase().endsWith('.gpx'),
-    )
+    // Aucun tri à l'extension : la lecture reconnaît GPX, FIT, TCX et les
+    // archives au contenu (`store/lecture.ts`), et dit ce qu'elle n'a pas su
+    // lire. Le filtre `.gpx` d'ici perdait les FIT en silence (#562).
+    const files = Array.from(event.dataTransfer.files)
     if (files.length > 0) void runImport(files)
   }
 
@@ -413,9 +415,7 @@ export function TrackManager() {
                 <span className={styles.itemInfo}>
                   <span className={styles.filename}>{d.nom}</span>
                   <span className={styles.itemMeta}>
-                    {d.date
-                      ? new Date(d.date).toLocaleDateString('fr-FR')
-                      : 'date inconnue'}
+                    {dateAffichee(d.date) ?? 'date inconnue'}
                     {' · '}
                     {formatKm(d.metres)}
                   </span>
@@ -462,13 +462,11 @@ function ItemTrace({
       >
         <span className={styles.filename}>{track.filename}</span>
         <span className={styles.itemMeta}>
-          {track.date
-            ? new Date(track.date).toLocaleDateString('fr-FR')
-            : 'date inconnue'}
+          {dateAffichee(track.date) ?? 'date inconnue'}
           {' · '}
           {formatKm(entree.metres)}
           {typeof track.elevationGain === 'number' &&
-            ` · D+ ${Math.round(track.elevationGain)} m`}
+            ` · ${formatDenivele(track.elevationGain)}`}
         </span>
         {/*
           La zone chargée au moment de l'import (issue #206).

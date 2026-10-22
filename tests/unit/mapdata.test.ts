@@ -53,6 +53,22 @@ describe('buildTrailGeoJSON', () => {
     expect(base.features[0]!.properties.network).toBe('GR')
   })
 
+  /*
+    Trouvé par une vague de mutation du 17/10 : le test précédent n'insère
+    jamais que PR avant GR — il n'exerce que le sens « upgrade » de la
+    comparaison de priorité. Rien ne vérifiait le sens inverse : un GR déjà
+    posé ne doit pas être écrasé par un PR qui le rejoint. Les deux sens
+    sont la même garde ; n'en éprouver qu'un laisse l'autre sans test.
+  */
+  it('un way déjà fort n’est pas rétrogradé par un réseau plus faible', () => {
+    const shared = { osmWayId: 10, coords: line }
+    const gr = makeItinerary(1, [shared], { network: 'GR' })
+    const pr = makeItinerary(2, [shared], { network: 'PR', ref: 'PR X' })
+    const samples = buildSamples([gr, pr], 100)
+    const { base } = buildTrailGeoJSON([gr, pr], samples)
+    expect(base.features[0]!.properties.network).toBe('GR')
+  })
+
   it('liste tous les itinéraires d’un way partagé (pour le surlignage)', () => {
     const shared = { osmWayId: 10, coords: line }
     const pr = makeItinerary(2, [shared], { network: 'PR', ref: 'PR X' })

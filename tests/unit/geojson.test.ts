@@ -287,3 +287,46 @@ describe('provenance déclarée (issue #87)', () => {
     ).toBeNull()
   })
 })
+
+/*
+  Issue #559, point 4 : le GeoJSON de « Mes itinéraires » n'avait pas la
+  garde de l'antiméridien que portent GPX, TCX, FIT et la restauration.
+  `[[179.9999,-17],[-179.9999,-17]]` était accepté, et `distanceMeters`
+  en faisait 38 281 km.
+*/
+describe('domaine de validité (issue #559)', () => {
+  it('refuse une ligne qui franchit le méridien 180°, en disant pourquoi', () => {
+    expect(() =>
+      parseGeoJsonTrails(
+        collection([
+          ligne([
+            [179.9999, -17],
+            [-179.9999, -17],
+          ]),
+        ]),
+      ),
+    ).toThrow(GeoJsonError)
+    expect(() =>
+      parseGeoJsonTrails(
+        collection([
+          ligne([
+            [179.9999, -17],
+            [-179.9999, -17],
+          ]),
+        ]),
+      ),
+    ).toThrow(/180/)
+  })
+
+  it('garde une ligne qui longe l’antiméridien sans le franchir', () => {
+    const trails = parseGeoJsonTrails(
+      collection([
+        ligne([
+          [179.9, -13.3],
+          [179.95, -13.31],
+        ]),
+      ]),
+    )
+    expect(trails).toHaveLength(1)
+  })
+})

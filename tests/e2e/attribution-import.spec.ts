@@ -72,6 +72,48 @@ test('un fichier qui déclare sa source la porte jusqu’au GPX', async ({
 })
 
 /**
+ * Issue #541 — Léa : un PDIPR importé n'est pas distingué comme source
+ * institutionnelle dans « Mes itinéraires ». L'attribution était déjà portée
+ * jusqu'au GPX (test précédent) ; rien ne la montrait dans la liste
+ * elle-même, où elle se confondait avec un tracé personnel sans source.
+ */
+test('la liste « Mes itinéraires » montre la source quand le fichier la déclare', async ({
+  page,
+}) => {
+  await mockExternalNetwork(page)
+  await page.goto('/')
+  await page.getByTestId('custom-input').setInputFiles({
+    name: 'pdipr-ain.geojson',
+    mimeType: 'application/geo+json',
+    buffer: Buffer.from(pdipr(true), 'utf-8'),
+  })
+
+  const liste = page.getByTestId('custom-list')
+  await expect(liste).toContainText('Sentier des Monts')
+  await expect(liste).toContainText('Source : Département de l’Ain')
+})
+
+/**
+ * Et sans déclaration, pas de mention inventée : l'absence de ligne « Source »
+ * est elle-même l'information, pas un oubli de ce test.
+ */
+test('la liste ne montre rien quand le fichier ne déclare aucune source', async ({
+  page,
+}) => {
+  await mockExternalNetwork(page)
+  await page.goto('/')
+  await page.getByTestId('custom-input').setInputFiles({
+    name: 'pdipr-muet.geojson',
+    mimeType: 'application/geo+json',
+    buffer: Buffer.from(pdipr(false), 'utf-8'),
+  })
+
+  const liste = page.getByTestId('custom-list')
+  await expect(liste).toContainText('Sentier des Monts')
+  await expect(liste.getByTestId('custom-source')).toHaveCount(0)
+})
+
+/**
  * Et quand le fichier ne déclare rien, on **ne l'invente pas** : on prévient
  * que l'export sera muet. Une attribution fausse serait pire qu'absente.
  */

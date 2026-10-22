@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import styles from './About.module.css'
 import { SortiesReseau } from './SortiesReseau.tsx'
+import { DonneesEtLicences } from './DonneesEtLicences.tsx'
 
 /** Page À propos : licences, marques, engagement privacy. */
 export function About({
@@ -64,7 +65,9 @@ export function About({
             <strong>sortie que vous enregistrez</strong>. Pendant
             l’enregistrement, votre position est relevée toutes les quelques
             secondes et écrite dans le stockage de votre navigateur, pour qu’une
-            sortie survive à un écran verrouillé ou à un onglet fermé.
+            sortie survive à un onglet fermé. Gardez l’écran allumé&nbsp;: sur
+            certains téléphones, dont Android, un écran verrouillé suspend la
+            localisation, et le chemin fait pendant ce temps n’est pas compté.
             <strong> Elle n’est envoyée à personne</strong>, ni pendant, ni
             après. Aucun serveur n’est contacté pour enregistrer, et il n’y a
             rien à désactiver pour que ce soit vrai&nbsp;: il n’existe pas de
@@ -103,12 +106,19 @@ export function About({
               <strong>référence tapée</strong> («&nbsp;GR&nbsp;7&nbsp;») ou un{' '}
               <strong>rayon autour d’un point</strong>, quand vous chargez une
               zone ou lancez une recherche. C’est de là que viennent les tracés.
+              Overpass reçoit aussi, en plusieurs boîtes qui suivent le
+              tracé, la <strong>forme de l’itinéraire dont vous ouvrez la
+              fiche</strong> — pour y chercher les points d’intérêt à
+              proximité. Cela vaut aussi pour un itinéraire que vous avez{' '}
+              <strong>importé</strong>.
             </li>
             <li>
               La <strong>Géoplateforme IGN</strong> reçoit les{' '}
               <strong>coordonnées des tuiles que vous regardez</strong>, en
               continu tant que la carte est affichée. Autrement dit&nbsp;: où
-              vous préparez vos sorties.
+              vous préparez vos sorties. Quand vous <strong>emportez</strong>{' '}
+              un itinéraire, elle reçoit aussi celles de tout son corridor,
+              que vous ne regardez pas.
             </li>
             <li>
               <strong>OpenStreetMap</strong> reçoit la même chose, mais
@@ -145,68 +155,7 @@ export function About({
           </p>
         </section>
 
-        <section>
-          <h3>Données et licences</h3>
-          <ul>
-            <li>
-              Les tracés d’itinéraires proviennent d’
-              <a
-                href="https://www.openstreetmap.org/copyright"
-                target="_blank"
-                rel="noreferrer"
-              >
-                OpenStreetMap
-              </a>{' '}
-              (© les contributeurs OpenStreetMap), sous licence{' '}
-              <a
-                href="https://opendatacommons.org/licenses/odbl/"
-                target="_blank"
-                rel="noreferrer"
-              >
-                ODbL
-              </a>
-              , via l’API Overpass.
-            </li>
-            <li>
-              La <strong>recherche par nom de ville</strong> interroge l’
-              <a
-                href="https://adresse.data.gouv.fr/"
-                target="_blank"
-                rel="noreferrer"
-              >
-                API Adresse
-              </a>{' '}
-              de la Base Adresse Nationale (© Etalab, Licence Ouverte). Seul le
-              texte que vous tapez est transmis&nbsp;: ni vos traces, ni votre
-              position.
-            </li>
-            <li>
-              Les <strong>boucles locales</strong> de la Métropole de Lyon
-              proviennent du jeu de données ouvert «&nbsp;Boucles communales de
-              randonnée&nbsp;» (©&nbsp;
-              <a
-                href="https://data.grandlyon.com/"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Métropole de Lyon
-              </a>
-              , Licence Ouverte 2.0).
-            </li>
-            <li>
-              Le fond de carte est le <strong>Plan IGN v2</strong> (© IGN),
-              diffusé par la Géoplateforme sous{' '}
-              <a
-                href="https://www.etalab.gouv.fr/licence-ouverte-open-licence/"
-                target="_blank"
-                rel="noreferrer"
-              >
-                licence ouverte Etalab 2.0
-              </a>
-              , avec repli sur les tuiles OpenStreetMap.
-            </li>
-          </ul>
-        </section>
+        <DonneesEtLicences />
 
         <section>
           <h3>GR, GR de Pays, PR : qu’est-ce que c’est&nbsp;?</h3>
@@ -300,6 +249,15 @@ export function About({
             est « parcouru » si l’une de vos traces passe à moins de la
             tolérance choisie (50 m par défaut). La progression est le rapport
             des points parcourus sur l’ensemble, converti en kilomètres.
+          </p>
+          <p>
+            Trois règles évitent de compter ce qui n’a pas été marché&nbsp;: un
+            passage ne compte qu’à partir de trois points consécutifs, environ
+            300&nbsp;m — couper un sentier n’est pas le parcourir&nbsp;; au moins
+            un quart de ces points doit être frôlé, à moins de 40&nbsp;% de la
+            tolérance — longer un sentier à distance ne suffit pas&nbsp;; et ce
+            qui est parcouru à plus de 28,5&nbsp;km/h, en voiture par exemple,
+            ne compte pas.
           </p>
         </section>
       </div>

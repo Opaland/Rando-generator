@@ -1,4 +1,5 @@
-import { parseGpx, type ParsedGpx } from '../core/gpx.ts'
+import { GpxError, parseGpx, type ParsedGpx } from '../core/gpx.ts'
+import { pourquoiIllisible } from '../core/contenuIllisible.ts'
 import { looksLikeFit, parseFit } from '../core/fit.ts'
 import { looksLikeTcx, parseTcx } from '../core/tcx.ts'
 import {
@@ -60,6 +61,10 @@ export async function parseTraceFile(file: File): Promise<ParsedGpx> {
   // reste lisible, et un fichier mal nommé ne fait pas échouer l'import.
   const texte = new TextDecoder().decode(buffer)
   if (looksLikeTcx(texte)) return parseTcx(texte, new DOMParser())
+  // Ni FIT ni TCX : le lecteur GPX ne doit recevoir que ce qui ressemble à
+  // du XML, sans quoi son message parle d'un export GPX à un ZIP vide (#567).
+  const illisible = pourquoiIllisible(buffer, texte)
+  if (illisible) throw new GpxError(illisible)
   return parseGpx(texte, new DOMParser())
 }
 
@@ -169,11 +174,14 @@ export async function lireItineraires(file: File): Promise<{
     }
   }
   const trace = await parseTraceFile(file)
-  // Un GPX déposé dans « Mes itinéraires » est un tracé qu'on a dessiné ou
-  // relevé soi-même : rien à attribuer, et rien à en dire.
+  // La source que le fichier déclare, s'il en déclare une (#557). Ce
+  // `null` était justifié par « un tracé qu'on a dessiné ou relevé
+  // soi-même : rien à attribuer » — sur l'écran qui propose d'y déposer un
+  // cartoguide ou un Visorando, et pour un export de Sentiers qui porte
+  // l'ODbL.
   return {
     trails: [{ name: null, lines: [trace.points] }],
     pointsHorsLimites: trace.pointsHorsLimites,
-    source: null,
+    source: trace.source ?? null,
   }
 }

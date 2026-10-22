@@ -48,7 +48,7 @@ export interface TrailWay {
 }
 
 /** Métadonnées éditoriales d'une boucle locale (source open data). */
-export interface LocalDetails {
+interface LocalDetails {
   /** Producteur de la donnée, pour l'attribution (ex. « Métropole de Lyon »). */
   source: string
   commune: string | null
@@ -171,6 +171,13 @@ export interface Track {
   hdops?: (number | null)[] | null
   /** Précision GPS par point, en mètres. Même convention que `hdops`. */
   precisionsMetres?: (number | null)[] | null
+  /**
+   * Les indices des points qui commencent un nouveau tronçon : le pas qui
+   * y mène n'a pas été marché — une pause, un trou GPS (#560). Absent ou
+   * vide, la trace est d'un seul tenant, comme toutes celles d'avant.
+   * Toujours lu par `core/segmentsDeTrace.ts`, jamais directement.
+   */
+  debutsDeSegment?: number[]
 }
 
 export interface CompletionResult {

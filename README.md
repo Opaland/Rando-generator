@@ -11,19 +11,23 @@ parcouru 34 % du GR 7, 61 % des sentiers du Pilat ».
 - **Vos traces restent chez vous** : vos GPX ne quittent jamais votre
   navigateur, et le calcul de complétion s'y fait de bout en bout. Aucun
   compte, aucun backend, aucune télémétrie. La persistance se fait en
-  IndexedDB pour les traces et les zones, en `localStorage` pour les sept
+  IndexedDB pour les traces et les zones, en `localStorage` pour les huit
   réglages — dont l'écriture, elle, est synchrone (issue #203).
 - **Ce qui sort quand même** : afficher une carte, c'est demander des images à
-  quelqu'un. Overpass reçoit la zone ou la référence cherchée, la
-  Géoplateforme IGN les tuiles regardées et jusqu'à cent points de
-  l'itinéraire dont on ouvre le profil, l'API Adresse le nom de commune tapé,
-  et l'hébergeur la demande de la page. « À propos » le détaille dans
-  l'application (issue #168).
+  quelqu'un. Overpass reçoit la zone ou la référence cherchée, et la forme de
+  l'itinéraire dont on ouvre la fiche (pour les points d'intérêt à
+  proximité) ; la Géoplateforme IGN les tuiles regardées et jusqu'à cent
+  points de l'itinéraire dont on ouvre le profil ; l'API Adresse le nom de
+  commune tapé ; et l'hébergeur la demande de la page. « À propos » le
+  détaille dans l'application (issue #168).
 - **Données ouvertes uniquement** : itinéraires © les contributeurs
   OpenStreetMap (ODbL) via l'API Overpass ; boucles locales de la Métropole
   de Lyon © Métropole de Lyon (Licence Ouverte 2.0, jeu « Boucles communales
   de randonnée ») ; GR Nord (Nouvelle-Calédonie) © Province Nord (Licence
-  Ouverte 2.0, jeu « GR Province Nord ») ; fond de carte Plan IGN v2 (licence
+  Ouverte 2.0, jeu « GR Province Nord ») ; réseau balisé de l'Isère ©
+  Département de l'Isère (Licence Ouverte 2.0, PDIPR) et boucles de l'Ain ©
+  Département de l'Ain (Licence Ouverte 2.0, PDIPR itinéraire), dessinés en
+  fond sans être comptés ; fond de carte Plan IGN v2 (licence
   ouverte Etalab 2.0) avec repli automatique sur les tuiles OSM.
 - **Utilisable hors réseau** : service worker sans dépendance (ni Workbox ni
   greffon PWA), précache généré au build, tuiles déjà vues conservées.
@@ -57,10 +61,12 @@ npm run e2e        # playwright (nécessite un Chromium, voir ci-dessous)
 
 Pour Playwright : `npx playwright install chromium`, ou pointez un Chromium
 existant via `PW_CHROMIUM_PATH=/chemin/vers/chrome`. La variable vaut pour
-**toutes** les commandes qui lancent Playwright — `npm run e2e`,
-`npm run monkey`, `npm run mesure`, `npm run reel`, `npm run chargement` et
-`npm run panneau` —, pas seulement la première : `playwright.config.ts` la
-lit pour chacune.
+**toutes** les commandes qui lancent Chromium — `npm run e2e`,
+`npm run monkey`, `npm run mesure`, `npm run reel`, `npm run chargement`,
+`npm run panneau`, `npm run dense` et `npm run og-image` —, pas seulement la
+première : `playwright.config.ts` la lit pour les sept premières, et
+`og-image` la lit lui-même directement puisqu'il lance Chromium sans passer
+par le CLI Playwright.
 
 ## Utilisation
 
@@ -69,7 +75,15 @@ lit pour chacune.
    vosgien département par département, ou la **Nouvelle-Calédonie**
    (GR® NC1 et itinéraires locaux depuis OSM, plus les cinq étapes du **GR
    Nord** © Province Nord ajoutées automatiquement ; sans profil
-   altimétrique, le MNT de l'IGN ne la couvre pas — la fiche le dit) — ou
+   altimétrique, le MNT de l'IGN ne la couvre pas — la fiche le dit). En
+   **Isère**, le réseau balisé du Département (PDIPR) s'ajoute en fond, en
+   gris : ses tronçons n'ont ni nom ni numéro, ils se voient mais ne se
+   suivent pas et ne comptent dans aucun pourcentage — et ceux de
+   Grenoble-Alpes Métropole manquent, l'export publié les plaçant au large
+   de l'Afrique. Dans l'**Ain**, les 480 boucles que le Département publie
+   comme diffusables s'y ajoutent de même : elles ont un nom, mais 81
+   d'entre elles sont déjà dans OpenStreetMap, et les compter demande une
+   règle de dédoublonnage qui n'est pas encore tranchée (#574). Ou
    encore
    un ref d'itinéraire (ex. « GR 20 »), avec quelques **grands itinéraires**
    proposés en un clic (GR 65 Saint-Jacques, GR 70 Stevenson, GR 5 Alpes…),
@@ -93,12 +107,16 @@ lit pour chacune.
    **survit à un onglet tué** : rouverte, elle est retrouvée en pause, parce
    qu'entre la mort de l'onglet et le retour, personne ne sait ce qui s'est
    passé. La position relevée **ne quitte jamais le navigateur**, y compris
-   pendant l'enregistrement. La consommation de batterie n'est pas encore
+   pendant l'enregistrement. **L'écran doit rester allumé** : sur certains
+   téléphones, dont Android (mesuré sur un Pixel 7), un écran verrouillé
+   suspend la localisation sans erreur ; l'écran de la sortie, « À propos »
+   et `pourquoi.html` le disent. La consommation de batterie n'est pas encore
    mesurée, donc pas encore annoncée : `docs/PROTOCOLE_BATTERIE.md` dit ce
    qu'il faut relever.
 3. **Importer des GPX** (multi-fichiers, drag & drop). Les traces sont listées
    avec nom, date, distance et D+, persistées localement ; un double import
-   du même fichier est détecté et refusé. Sur un lot de fichiers, l'import
+   du même fichier est détecté et mis de côté : il vous est proposé, et
+   c'est vous qui l'ajoutez ou l'écartez. Sur un lot de fichiers, l'import
    annonce celui qu'il est en train de lire. **Déplier une trace** montre ce
    que cette sortie-là a fait avancer : quels itinéraires balisés, et de
    combien (un simple croisement de sentier, sous 300 m, n'est pas compté).
@@ -109,9 +127,9 @@ lit pour chacune.
 4. **Créer « Mes itinéraires »** : importez le GPX d'un parcours *à faire*
    (cartoguide, Visorando, tracé maison…) — il devient un itinéraire local
    avec sa propre progression, hors statistiques des réseaux OSM. Ou
-   **tracez-le à la souris** (« Tracer sur la carte ») : chaque clic pose une
-   étape accrochée au sentier le plus proche, et le tracé **suit les chemins
-   affichés** entre les étapes (plus court chemin, calculé dans le
+   **tracez-le à la souris ou au doigt** (« Tracer sur la carte ») : chaque
+   clic pose une étape accrochée au sentier le plus proche, et le tracé
+   **suit les chemins affichés** entre les étapes (plus court chemin, calculé dans le
    navigateur).
 5. **Voir ses sorties** : la section « Mes sorties » totalise le nombre de
    sorties, les kilomètres et le D+, et trace un histogramme des distances
@@ -147,7 +165,8 @@ lit pour chacune.
 
    Sélectionner un itinéraire dans la liste **zoome dessus** sur la carte.
    Un itinéraire parcouru à
-   **95 % ou plus est « bouclé »** — exiger 100 % punirait le randonneur pour
+   **95 % ou plus est « bouclé »** — par défaut : le seuil se règle à 90, 95
+   ou 100 %. Exiger 100 % punirait le randonneur pour
    des tronçons impraticables ou une géométrie OSM imparfaite ; le seuil est
    toujours annoncé, jamais présenté comme du 100 %. Les autres affichent ce
    qu'il reste avant le prochain jalon (25, 50, 75, 90, 100 %).
@@ -155,19 +174,20 @@ lit pour chacune.
 7. **Trouver une sortie** : le panneau « Trouver une sortie » filtre par
    longueur, durée, dénivelé, forme (boucle ou aller simple, déduite de la
    géométrie du tracé), **sol**, **eau sur le chemin** et proximité de votre
-   position. Aucun filtre ne s'applique à une donnée absente : un dénivelé
-   inconnu n'est pas un dénivelé nul, et l'écarter ferait disparaître en
-   silence la plupart des tracés OSM.
+   position. Longueur, durée, dénivelé, forme et proximité ne s'appliquent
+   pas à une donnée absente : un dénivelé inconnu n'est pas un dénivelé nul,
+   et l'écarter ferait disparaître en silence la plupart des tracés OSM.
 
    **Deux d'entre eux méritent leur libellé exact.** Le filtre de sol dit
    « entièrement dur ou stabilisé » et non « accessible » : le second
-   promettrait un jugement qu'on n'est pas en mesure de porter. Et il est le
-   seul à **écarter ce qu'on ignore** plutôt que de le laisser passer —
+   promettrait un jugement qu'on n'est pas en mesure de porter. Et, avec
+   l'eau, il **écarte ce qu'on ignore** plutôt que de le laisser passer —
    partir en fauteuil tout-terrain sur un sentier dont personne n'a renseigné
    le sol coûte une journée, là où les autres filtres ne coûtent qu'une
-   surprise. L'eau, elle, se choisit en **détour** (250 m, 500 m, 1 km, 2 km)
-   et jamais en « avec / sans » : un point absent d'OpenStreetMap ne veut pas
-   dire qu'il n'y a pas d'eau, il veut dire que personne ne l'a saisi.
+   surprise. L'eau, elle, se choisit en **détour** (250 m, 500 m ou 1 km)
+   et jamais en « avec / sans » : un itinéraire écarté est un itinéraire où
+   l'on n'a pas trouvé d'eau dans ce rayon, pas un itinéraire sans eau — un
+   point absent d'OpenStreetMap veut dire que personne ne l'a saisi.
 
    **Ou dites-le en une phrase.** « Une boucle facile de moins de 12 km, pas
    plus de 400 m de dénivelé, à 30 km de chez moi » remplit les listes
@@ -203,9 +223,10 @@ lit pour chacune.
 
     Une fiche s'**imprime** aussi, par son bouton : sur le papier, la fiche
     seule — sans la carte, sans les panneaux, sans les commandes, et sur fond
-    blanc plutôt que sur le beige de l'écran. C'est le seul chemin hors de
-    l'appareil qui ne trahisse pas la promesse : sans compte ni serveur, il
-    n'y a pas de « partager par mail ».
+    blanc plutôt que sur le beige de l'écran. Comme l'export GPX, l'image du
+    bilan et la sauvegarde, c'est un chemin hors de l'appareil qui passe par
+    vous et non par un serveur : sans compte ni serveur, il n'y a pas de
+    « partager par mail ».
 
 ### Déclarer un parcours, sans trace GPX
 
@@ -227,7 +248,8 @@ distingue, pas une couleur de plus. Dans « Mes sorties », les déclarations on
 leur propre section, sous la liste des traces — pas des lignes mêlées à
 celles-ci. Les déclarations partent dans la
 sauvegarde exportable, et se relisent depuis une sauvegarde antérieure sans
-erreur.
+erreur. Restaurer ajoute sans remplacer, et ne reprend **jamais** les
+réglages : ceux de l'appareil restent en place, et l'écran le dit (#559).
 
 ### L'attribution suit la donnée
 
@@ -292,11 +314,19 @@ coupures se lisent dessus (issue #161).
 
 ### Une grosse bibliothèque
 
-Mesuré le 23/08/2026 sur **800 activités** de 2 h 30 à un point par seconde,
-soit 7,2 millions de points : import en **94,7 s**, **91 Mo** occupés dans
-IndexedDB (9 % du quota), sauvegarde de **36,7 Mo** produite en 6,4 s, et
-aucune trace perdue. Le détail et ce que la mesure ne dit pas :
-`docs/MESURE_BIBLIOTHEQUE.md`. Reproductible avec `npm run mesure`.
+**Ce n'est pas encore tenu.** Mesuré le 08/10/2026 sur des activités de
+2 h 30 à un point par seconde : 100 activités s'importent en **6,1 min**, et
+800 n'ont **pas fini en 25 min**, le plafond du test
+(`docs/MESURE_BIBLIOTHEQUE_08_10.md`). Le 14/10, la mesure a dit où :
+l'analyse des fichiers est rapide et linéaire, c'est le calcul de
+correspondance qui domine — 98,6 % du temps à 200 activités — et il croît
+plus vite que le carré du nombre de points
+(`docs/MESURE_BIBLIOTHEQUE_SPRINT9.md`). Le pourquoi, à l'intérieur de
+`core/matching.ts`, reste à établir. Reproductible avec `npm run mesure`.
+
+Le chiffre qui figurait ici — 800 activités en 94,7 s, le 23/08
+(`docs/MESURE_BIBLIOTHEQUE.md`) — n'a pas résisté aux deux mesures
+suivantes.
 
 ### Deux onglets, une seule base
 
@@ -320,9 +350,12 @@ mathématique, et elle écarterait La Réunion, les Antilles ou la Guyane, où c
 calcul est parfaitement sain. Ce qui est refusé, c'est ce qu'on ne sait pas
 mesurer.
 
-Les quatre chemins par lesquels des coordonnées entrent portent la même garde,
-par la même fonction nommée : les lecteurs GPX, TCX et FIT, et la restauration
-de sauvegarde.
+Les cinq chemins par lesquels des coordonnées entrent portent la même garde,
+par la même fonction nommée : les lecteurs GPX, TCX et FIT, le GeoJSON déposé
+dans « Mes itinéraires », et la restauration de sauvegarde — traces comme
+itinéraires persos. Le GeoJSON et les itinéraires d'une sauvegarde l'avaient
+oubliée jusqu'au 20/10 (#559) : cette phrase en comptait quatre, et les
+disait tous gardés.
 
 Le hachage spatial du matching, lui, a été corrigé plutôt que borné : il
 découpe l'espace en carrés **de degrés**, et une cellule qui fait 118 m de
@@ -380,7 +413,9 @@ cours. Rien n'est perdu en rechargeant quand même : une sortie non terminée
 se retrouve en pause, comme après un onglet tué.
 
 Sur téléphone, la carte occupe tout le cadre et le panneau de contrôle devient
-une feuille glissante à trois positions : repliée sur sa seule poignée — qui
+une feuille à trois positions, qu'on fait passer de l'une à l'autre en
+touchant sa poignée — on ne la fait pas glisser : repliée sur cette seule
+poignée — qui
 affiche le pourcentage global —, à mi-hauteur, ou presque plein écran. Elle
 s'ouvre à mi-hauteur à la première visite, quand il n'y a rien à voir sur la
 carte et tout à faire dans le panneau, et reste basse au retour, quand la zone
@@ -405,6 +440,7 @@ src/
 │  ├─ poi.ts       # POI le long d'un tracé (Overpass, bbox découpées)
 │  ├─ boucles.ts   # boucles communales open data (Métropole de Lyon, LO 2.0)
 │  ├─ grNord.ts    # GR Nord open data (Province Nord, Nouvelle-Calédonie, LO 2.0)
+│  ├─ pdipr.ts     # réseau de fond PDIPR (Isère, Ain, LO 2.0) : montrés, jamais comptés
 │  ├─ routing.ts   # graphe des sentiers, accroche d'un clic, Dijkstra
 │  ├─ history.ts   # sorties par mois, totaux, cumuls
 │  ├─ discovery.ts # durées et dénivelés publiés, forme du tracé, filtres
@@ -420,7 +456,7 @@ src/
 │  └─ mapdata.ts   # GeoJSON des couches carte (base / parcouru / traces)
 ├─ store/       # Zustand + client du worker de matching
 ├─ db/          # IndexedDB (idb), versionnée, TTL 30 jours
-│               # + reglages.ts : les sept réglages, en écriture synchrone
+│               # + reglages.ts : les huit réglages, en écriture synchrone
 ├─ workers/     # matching.worker.ts (repli synchrone si Worker indisponible)
 └─ components/  # MapView (MapLibre) + map/ (style, sources, caméra),
                 # ZonePicker, TrackManager, Dashboard, NextOuting, History,
@@ -574,7 +610,7 @@ fait faute d'un corpus réel pour poser un seuil sans l'inventer.
   **réessaient le clic avec l'assertion dans la boucle**, plutôt que de parier
   sur un seul essai (la CI masquait ces échecs derrière ses relances).
 - CI GitHub Actions : `lint`, **`listes`**, **`textes`**, **`chemins`**,
-  `typecheck`, tests (couverture), `build`, `e2e`. Les trois en gras sont des
+  `typecheck`, tests (couverture), `ports`, `build`, `e2e`. Les trois en gras sont des
   gardes nées d'un raté daté, et chacune échoue en nommant ce qui manque :
   - `listes` — le CSS et la sonde d'écran plancherisent la même liste de
     commandes, écrite deux fois ; elles avaient le même trou ;

@@ -30,7 +30,7 @@ export class FitError extends Error {
   }
 }
 
-export interface ParsedFit {
+interface ParsedFit {
   points: LonLat[]
   /** Altitudes alignées sur les points (null quand l'enregistrement n'en a pas). */
   elevations: (number | null)[]

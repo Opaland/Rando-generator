@@ -233,12 +233,13 @@ describe('sauvegarder et restaurer passent aussi par le câblage', () => {
     expect(recus[0]).toContain('2026-09-03')
   })
 
-  it('restaurer une sauvegarde reprend le seuil de complétion qu’elle porte', async () => {
+  it('restaurer une sauvegarde ne touche pas au seuil de complétion', async () => {
     /*
-      `setCompletionPct` est le port par lequel la tranche redonne au magasin
-      un réglage lu dans le fichier. Sans lui, la sauvegarde reviendrait
-      amputée d'un réglage — sans erreur, sans message, et sans que rien ne
-      le dise.
+      Ce test gardait le port `setCompletionPct`, par lequel la tranche
+      redonnait au magasin un réglage lu dans le fichier. Le port est
+      retiré : restaurer ajoute sans remplacer (décision de Cédric, 20/10,
+      #559 point 2). Ce qui reste à garder, de bout en bout dans le
+      magasin, c'est que le seuil choisi ne bouge pas.
     */
     await useAppStore.getState().init()
     const initial = useAppStore.getState().completionPct
@@ -254,7 +255,7 @@ describe('sauvegarder et restaurer passent aussi par le câblage', () => {
       .getState()
       .importerSauvegarde(new File([serialiserBackup(backup)], 's.json'))
 
-    expect(useAppStore.getState().completionPct).toBe(vise)
+    expect(useAppStore.getState().completionPct).toBe(initial)
   })
 })
 
@@ -310,7 +311,8 @@ describe('deux ports dont l’appel ne suffisait pas à dire qu’ils sont tenus
 
   it('donne à chaque tracé un identifiant négatif, et jamais deux fois le même', async () => {
     /*
-      `nextCustomId` porte un commentaire — « ids négatifs » — et le §4bis dit
+      `nextCustomId` — devenu `AllocateurPerso` (#543), qui ne distribue que
+      sous zéro — portait un commentaire, « ids négatifs », et le §4bis dit
       qu'un commentaire qui justifie est une affirmation. Le signe n'est pas
       cosmétique : un identifiant perso positif entre en collision avec les
       identifiants de relation OSM, et deux itinéraires distincts se
@@ -363,5 +365,19 @@ describe('deux ports dont l’appel ne suffisait pas à dire qu’ils sont tenus
       useAppStore.getState().elevationLoading,
       'sans tracé retrouvé, la fiche renonce au profil sans le dire',
     ).toBe(true)
+  })
+})
+
+describe('le journal des sorties réseau, câblé depuis le magasin réel', () => {
+  /*
+    Trouvé par mutation du 17/10 : `...trancheSortiesReseau({ set })` dans
+    l'état initial, remplacé par `...{}`, survivait à toute la suite.
+    `tests/unit/trancheSortiesReseau.test.ts` éprouve `trancheSortiesReseau`
+    comme une fonction pure, avec son propre `set` factice — jamais depuis
+    `useAppStore`, qui est le seul endroit où ce branchement peut casser.
+  */
+  it('noterSortieReseau est bien l’action du magasin réel, pas un trou', () => {
+    useAppStore.getState().noterSortieReseau('https://tile.openstreetmap.org/1/1/1.png', null)
+    expect(useAppStore.getState().sortiesReseau).toHaveLength(1)
   })
 })

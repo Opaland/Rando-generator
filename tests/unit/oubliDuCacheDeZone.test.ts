@@ -39,9 +39,23 @@ import type { SentiersDb } from '../../src/db/database.ts'
  * **Il n'y en a pas** — le corps de `loadFromOverpass` court en synchrone
  * jusqu'à sa première attente. Écrit ici parce qu'un faux positif coûte la
  * confiance dans les vrais.
+ *
+ * ## Oublier, mais seulement après une réponse (#548)
+ *
+ * Les trois chemins effaçaient la ligne **avant** d'interroger Overpass.
+ * Hors réseau — le cas ordinaire en randonnée —, « Actualiser les tracés »
+ * détruisait donc la copie hors ligne, le repli sur cache ne trouvait plus
+ * rien, et au démarrage suivant l'application s'ouvrait vide.
+ *
+ * L'oubli a lieu désormais après une réponse valide, juste avant
+ * l'écriture : si celle-ci échoue (quota), la ligne périmée ne survit pas
+ * à la demande de s'en défaire, ce que #437 voulait. Si c'est le réseau qui
+ * échoue, la copie reste, et le repli la sert avec son message.
  */
 
 const appelsOverpass = { n: 0 }
+/** Le réseau du test : il échoue, sauf quand une question le fait répondre. */
+const reseau = { repond: false }
 
 vi.mock('../../src/core/overpass.ts', async () => {
   const vrai =
@@ -58,6 +72,7 @@ vi.mock('../../src/core/overpass.ts', async () => {
     */
     fetchOverpass: () => {
       appelsOverpass.n += 1
+      if (reseau.repond) return Promise.resolve({ elements: [] })
       return Promise.reject(new OverpassError('miroirs injoignables (test)'))
     },
   }
@@ -70,13 +85,27 @@ const { trancheZone } = await import('../../src/store/trancheZone.ts')
  * encore ouverte » sans la rendre indisponible — c'est exactement la fenêtre
  * de démarrage que décrit `trancheZone.ts:206`.
  */
-function harnais({ baseOuverteDansLEtat }: { baseOuverteDansLEtat: boolean }) {
+function harnais({
+  baseOuverteDansLEtat,
+  enCache,
+}: {
+  baseOuverteDansLEtat: boolean
+  /** La copie hors ligne que la base sert pour toute clé, s'il y en a une. */
+  enCache?: object
+}) {
   const supprimees: string[] = []
+  /** Oublis et écritures dans l'ordre où ils arrivent. */
+  const journal: string[] = []
+  const affichees: unknown[] = []
   const db = {
-    getZone: () => Promise.resolve(undefined),
-    putZone: () => Promise.resolve(),
+    getZone: () => Promise.resolve(enCache),
+    saveZone: (zone: { zoneKey: string }) => {
+      journal.push(`ecrit:${zone.zoneKey}`)
+      return Promise.resolve()
+    },
     deleteZone: (cle: string) => {
       supprimees.push(cle)
+      journal.push(`oubli:${cle}`)
       return Promise.resolve()
     },
     setSetting: () => Promise.resolve(),
@@ -108,14 +137,16 @@ function harnais({ baseOuverteDansLEtat }: { baseOuverteDansLEtat: boolean }) {
     // aurait passé même si le store avait gardé la mauvaise version.
     oublierLaZoneEnCache: creerOubliDeZone({ baseOuverte: () => Promise.resolve(db) }),
     recompute: () => Promise.resolve(),
-    setItineraries: () => {},
+    setItineraries: (_cle: string, _libelle: string, itineraires: unknown) => {
+      affichees.push(itineraires)
+    },
     // `loadAutour` referme la recherche de lieu par cette dépendance depuis
     // que celle-ci a sa propre tranche (#454) ; ici il n'y a rien à fermer.
     oublierLesLieux: () => {},
     sortirDeLaDemonstration: () => Promise.resolve(),
   } as unknown as DependancesZone
 
-  return { actions: trancheZone(deps), supprimees, etat }
+  return { actions: trancheZone(deps), supprimees, journal, affichees, etat }
 }
 
 const LIEU = { label: 'Chaponost', contexte: '69, Rhône', center: [4.7, 45.7] }
@@ -144,17 +175,72 @@ const CHEMINS = [
 
 beforeEach(() => {
   appelsOverpass.n = 0
+  reseau.repond = false
 })
 
+/** Une copie hors ligne, telle que `saveZone` l'a écrite. */
+const COPIE = {
+  zoneKey: 'copie',
+  label: 'Copie',
+  itineraries: [{ osmRelationId: 1 }],
+  fetchedAt: '2026-10-01T00:00:00.000Z',
+  schema: 1,
+}
+
 describe.each(CHEMINS)('$nom, base déjà ouverte', ({ cle, lancer }) => {
-  it('oublie la zone en cache quand on force', async () => {
-    const { actions, supprimees } = harnais({ baseOuverteDansLEtat: true })
+  it('oublie la zone en cache quand on force et que le réseau répond', async () => {
+    reseau.repond = true
+    const { actions, journal } = harnais({ baseOuverteDansLEtat: true })
+    await lancer(actions, true)
+    expect(
+      journal,
+      'un rechargement forcé laissait sa ligne en cache : « Actualiser les' +
+        ' tracés » n’actualisait rien.',
+    ).toEqual([`oubli:${cle}`, `ecrit:${cle}`])
+  })
+
+  it('garde la copie hors ligne quand on force et que le réseau échoue (#548)', async () => {
+    const { actions, supprimees, affichees } = harnais({
+      baseOuverteDansLEtat: true,
+      enCache: COPIE,
+    })
     await lancer(actions, true)
     expect(
       supprimees,
-      'un rechargement forcé laissait sa ligne en cache : « Actualiser les' +
-        ' tracés » n’actualisait rien.',
-    ).toEqual([cle])
+      '« Actualiser les tracés » hors réseau effaçait la copie hors ligne' +
+        ' avant de savoir si les serveurs répondaient.',
+    ).toEqual([])
+    // Et le repli la sert : sans elle, l'écran se vidait au démarrage suivant.
+    expect(affichees).toEqual([COPIE.itineraries])
+  })
+
+  it('rapporte le message du service, pas un générique, sans cache pour amortir l’échec', async () => {
+    /*
+      Trouvé par mutation du 17/10 : `error instanceof OverpassError ||
+      error instanceof DbError` survivait muté en `&&` (une erreur ne peut
+      être les deux instances à la fois, donc la condition devient
+      toujours fausse) ou en `false`, parce qu'aucun test n'affirmait rien
+      sur `zoneError` ici — seulement sur les clés effacées du cache.
+      `fetchOverpass` est mockée plus haut pour rejeter avec une vraie
+      `OverpassError` ; ce test lit enfin le message qu'elle laisse.
+    */
+    const { actions, etat } = harnais({ baseOuverteDansLEtat: true })
+    await lancer(actions, false)
+    expect((etat as { zoneError?: string }).zoneError).toBe(
+      'miroirs injoignables (test)',
+    )
+  })
+
+  it('ne l’oublie pas quand on ne force pas, même quand le réseau répond', async () => {
+    /*
+      Depuis #548, l'oubli n'a lieu qu'après une réponse : la question
+      suivante, posée sur un réseau qui échoue, ne pouvait donc plus voir un
+      `if (force)` devenu `if (true)`. Celle-ci le peut.
+    */
+    reseau.repond = true
+    const { actions, journal } = harnais({ baseOuverteDansLEtat: true })
+    await lancer(actions, false)
+    expect(journal).toEqual([`ecrit:${cle}`])
   })
 
   it('ne l’oublie pas quand on ne force pas', async () => {
@@ -179,6 +265,7 @@ describe('les trois chemins forcés, face à une base pas encore ouverte', () =>
     resservait — alors qu'on venait de demander à s'en débarrasser.
   */
   it.each(CHEMINS)('$nom oublie quand même la zone', async ({ cle, lancer }) => {
+    reseau.repond = true
     const { actions, supprimees } = harnais({ baseOuverteDansLEtat: false })
     await lancer(actions, true)
     expect(

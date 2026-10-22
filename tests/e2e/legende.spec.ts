@@ -56,6 +56,45 @@ test('zone chargée : seuls ses réseaux, et pas les états', async ({ page }) =
   await expect(page.getByTestId('legende-etats')).toHaveCount(0)
 })
 
+/**
+ * GR et GRP se confondent en vision deutéranope (ΔE 6,9, issue #360) : la
+ * carte s'en distingue déjà par la forme (`trails-base-grp`/`trails-done-grp`,
+ * tireté `[4,2]`, `style.ts`), mais la légende ne montrait qu'une pastille
+ * pleine — la même règle que « autre » pour le terrain (ligne 73 plus bas),
+ * oubliée au troisième endroit où elle s'applique (§4ter). Le témoin de la
+ * légende doit ressembler à ce qui est peint sur la carte, pas seulement sa
+ * teinte.
+ */
+test('GRP se distingue par la forme dans la légende, pas seulement la couleur', async ({
+  page,
+}) => {
+  test.skip(!(await ouvrir(page)), 'WebGL indisponible')
+  await page.getByTestId('zone-pilat').click()
+  await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
+    timeout: 15_000,
+  })
+  await afficherTousLesReseaux(page)
+
+  const legende = page.getByTestId('map-legend')
+  const grp = legende.locator('[data-reseau="GRP"] span')
+  const gr = legende.locator('[data-reseau="GR"] span')
+  await expect(grp).toHaveCount(1)
+
+  const grpTiret = await grp.evaluate(
+    (el) => getComputedStyle(el).backgroundImage,
+  )
+  expect(
+    grpTiret,
+    `pastille GRP : ${grpTiret} — devrait porter un motif répété, comme le fait déjà « autre » pour le terrain`,
+  ).toContain('repeating-linear-gradient')
+
+  // GR, lui, reste une couleur pleine : seul GRP porte le tireté sur la carte.
+  const grTiret = await gr.evaluate(
+    (el) => getComputedStyle(el).backgroundImage,
+  )
+  expect(grTiret).not.toContain('repeating-linear-gradient')
+})
+
 test('des traces sans zone ont leur légende, réduite aux états', async ({
   page,
 }) => {

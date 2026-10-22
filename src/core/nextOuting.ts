@@ -20,14 +20,14 @@ import { STEP_METERS } from './types.ts'
 export const APPROACH_HALF_LIFE_KM = 10
 
 /** Tronçon d'un itinéraire resté non parcouru, d'un seul tenant. */
-export interface UnwalkedRun {
+interface UnwalkedRun {
   wayId: number
   meters: number
   /** Premier point non parcouru : c'est là qu'on reprend. */
   start: LonLat
 }
 
-export interface Suggestion {
+interface Suggestion {
   itineraryId: number
   /** Tout ce qui reste à parcourir sur cet itinéraire. */
   remainingMeters: number
@@ -38,7 +38,7 @@ export interface Suggestion {
   score: number
 }
 
-export interface NextOutingOptions {
+interface NextOutingOptions {
   from?: LonLat | null
   limit?: number
   stepMeters?: number

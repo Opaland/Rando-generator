@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import {
   afficherTousLesReseaux,
+  mockElevation,
   mockExternalNetwork,
   estAlEcran,
 } from './helpers.ts'
@@ -29,8 +30,13 @@ import {
  * papier ne déborde pas.
  */
 
-async function ouvrirUneFiche(page: import('@playwright/test').Page) {
+async function ouvrirUneFiche(
+  page: import('@playwright/test').Page,
+  avecAltimetrie = false,
+) {
   await mockExternalNetwork(page)
+  // Après le réseau, pas avant : la dernière route posée l'emporte.
+  if (avecAltimetrie) await mockElevation(page)
   await page.goto('/')
   await page.getByTestId('zone-pilat').click()
   await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
@@ -263,6 +269,14 @@ test('la feuille porte le crédit de ses sources, en toutes lettres', async ({
   await expect(credit).toContainText('ODbL')
   await expect(credit).toContainText('les contributeurs OpenStreetMap')
   await expect(credit).toContainText('IGN')
+  /*
+    Issue #557, point 3 : le crédit était écrit en dur, et une fiche de GR
+    imprimée créditait aussi la Métropole de Lyon et la Province Nord —
+    quand un PDIPR importé n'avait pas son producteur sur le papier. Il
+    suit maintenant les sources de la fiche.
+  */
+  await expect(credit).not.toContainText('Métropole')
+  await expect(credit).not.toContainText('Province Nord')
 })
 
 test('ce crédit ne se montre qu’au papier', async ({ page }) => {
@@ -293,4 +307,141 @@ test('ce crédit ne se montre qu’au papier', async ({ page }) => {
     masquage ci-dessus retirerait le seul crédit de la page.
   */
   await expect(page.getByTestId('pied-panneau')).toContainText('ODbL')
+})
+
+/*
+  Issue #552 : cinq commandes de l'écran sortaient sur le papier. La barre
+  d'onglets, en `position: fixed`, au bas de **chaque** page, par-dessus
+  les commandes de zoom du profil — `pdftotext` y lisait « Carte Sorties
+  Progression Réglages » ; « Démarrer » (▶), dont le cadre coupait une
+  ligne ; « Ma position » ; la croix de la fiche ; le zoom du profil.
+
+  L'existence d'abord, et à l'écran : `toBeHidden()` est satisfait par
+  l'absence, et c'est exactement ainsi que l'en-tête a passé des semaines
+  « masqué » sur un sélecteur vide (#385).
+*/
+test('les commandes de l’écran ne sortent pas sur le papier', async ({
+  page,
+}) => {
+  // Le profil, et son zoom, n'existent qu'avec une altimétrie.
+  await ouvrirUneFiche(page, true)
+  const commandes = [
+    'barre-onglets',
+    'demarrer-rapide',
+    'locate-toggle',
+    'itinerary-detail-close',
+    'profil-zoom',
+    /* Décision de Cédric du 21/10 (#552) : les boutons de la fiche non
+       plus, ni les phrases qui n'ont de sens qu'avec eux — « un bouton sur
+       du papier ne se touche pas ». */
+    'detail-3d-toggle',
+    'itinerary-detail-export',
+    'emporter-bloc',
+    'declare-bloc',
+    'elevation-readout',
+  ]
+  await expect(page.getByTestId('profil-zoom')).toBeVisible({ timeout: 10_000 })
+  for (const id of commandes) {
+    await expect(page.getByTestId(id), `${id} à l’écran`).toBeVisible()
+  }
+  await page.emulateMedia({ media: 'print' })
+  for (const id of commandes) {
+    await expect(page.getByTestId(id), `${id} sur le papier`).toBeHidden()
+  }
+})
+
+/*
+  Le papier a la largeur d'un téléphone.
+
+  Une A4 fait 794 px CSS de large : sous le point de rupture de 801 px, le
+  navigateur imprime avec la mise en page **téléphone**, où `<main>` est
+  posé en `position: absolute`. La mise en page tombait à 0 px de haut, et
+  le crédit imprimé — qui la suit — remontait en haut de la page 1, sous la
+  fiche opaque. Rendu le 21/10 depuis un vrai `page.pdf` : aucun crédit
+  peint sur les deux pages, alors que ce fichier l'affirmait « peint ».
+  Tous les tests d'ici émulent à 1 280 px, la seule largeur à laquelle le
+  papier n'imprime jamais.
+*/
+test('à la largeur d’une A4, le crédit suit la fiche au lieu de passer dessous', async ({
+  page,
+}) => {
+  await ouvrirUneFiche(page)
+  await page.emulateMedia({ media: 'print' })
+  await page.setViewportSize({ width: 794, height: 1123 })
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const fiche = document.querySelector('[data-testid="itinerary-detail"]')
+        const credit = document.querySelector('[data-testid="attribution-impression"]')
+        if (!fiche || !credit) return 'absent'
+        return credit.getBoundingClientRect().top >= fiche.getBoundingClientRect().bottom
+      }),
+    )
+    .toBe(true)
+})
+
+/*
+  Revue du sprint 1 : `<main>` statique à l'impression, ses enfants posés en
+  absolu se calent sur la page. Sans fiche ouverte, la feuille est la liste —
+  le guide de premier lancement et la carte d'itinéraire flottante s'y
+  posaient par-dessus, en haut de la page 1.
+*/
+test('à la largeur d’une A4, ni le guide ni la carte d’itinéraire ne sortent', async ({
+  page,
+}) => {
+  await mockExternalNetwork(page)
+  await page.goto('/')
+  await expect(page.getByTestId('onboarding')).toBeVisible()
+  await page.emulateMedia({ media: 'print' })
+  await page.setViewportSize({ width: 794, height: 1123 })
+  await expect(page.getByTestId('onboarding')).toBeHidden()
+
+  await page.emulateMedia({ media: 'screen' })
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.getByTestId('onboarding-fermer').click()
+  await page.getByTestId('zone-pilat').click()
+  await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
+    timeout: 15_000,
+  })
+  await afficherTousLesReseaux(page)
+  await page
+    .getByTestId('itinerary-list')
+    .getByRole('button', { name: /GR 7/ })
+    .click()
+  await expect(page.getByTestId('itinerary-card')).toBeVisible()
+  await page.emulateMedia({ media: 'print' })
+  await page.setViewportSize({ width: 794, height: 1123 })
+  await expect(page.getByTestId('itinerary-card')).toBeHidden()
+})
+
+/*
+  #552, 21/10 : la pastille du réseau sortait blanche — les navigateurs
+  n'impriment pas les fonds par défaut, et « PR » se lisait sans sa couleur
+  de balisage. Rendu d'un vrai PDF le jour même.
+*/
+test('la pastille du réseau garde sa couleur sur le papier', async ({ page }) => {
+  await ouvrirUneFiche(page)
+  await page.emulateMedia({ media: 'print' })
+  const pastille = page.getByTestId('itinerary-detail').locator('[class*="badge"]').first()
+  await expect
+    .poll(() => pastille.evaluate((e) => getComputedStyle(e).printColorAdjust))
+    .toBe('exact')
+})
+
+/*
+  Revue du sprint 3 (21/10) : #552 masquait « Je l'ai déjà fait », pas
+  l'état qui le suit. Une fiche déclarée imprimait « Retirer cette
+  déclaration » — un bouton, sur du papier. La phrase qui dit la
+  déclaration, elle, reste : c'est une information.
+*/
+test('une fiche déclarée garde sa phrase et perd son bouton sur le papier', async ({
+  page,
+}) => {
+  await ouvrirUneFiche(page)
+  await page.getByTestId('declare-ouvrir').click()
+  await page.getByTestId('declare-valider').click()
+  await expect(page.getByTestId('declare-retirer')).toBeVisible()
+  await page.emulateMedia({ media: 'print' })
+  await expect(page.getByTestId('declare-etat')).toBeVisible()
+  await expect(page.getByTestId('declare-retirer')).toBeHidden()
 })

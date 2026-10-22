@@ -102,6 +102,13 @@ describe('lireIntention — la forme et le sol', () => {
     expect(lireIntention('une traversée').filtres.shape).toBe('linear')
   })
 
+  it('reconnaît « aller simple » même séparé par plus d’un espace', () => {
+    // Trouvé par mutation du 17/10 : `\s+` devenu `\s` (un seul blanc)
+    // survivait, parce qu'aucun test n'avait plus d'un espace entre les
+    // deux mots.
+    expect(lireIntention('un aller  simple').filtres.shape).toBe('linear')
+  })
+
   it('reconnaît ce qui roule, par ce qui roule dessus', () => {
     expect(lireIntention('avec une poussette').filtres.sol).toBe('roulant')
     expect(lireIntention('en fauteuil').filtres.sol).toBe('roulant')
@@ -173,6 +180,19 @@ describe('lireIntention — ce qui a été compris se relit', () => {
     expect(distance).toBeDefined()
     expect(distance!.texte).toBe('moins de 12 km')
     expect(distance!.texte).not.toMatch(/^\s|\s$/)
+  })
+
+  it('retire les blancs de bord même quand le motif les a capturés', () => {
+    /*
+      Trouvé par mutation du 17/10 : le `.trim()` survivait encore, parce
+      que le cas ci-dessus ne capture jamais de blanc en bord de match — la
+      règle de proximité (« … km de chez moi »), elle, commence par `\s*`
+      avant le nombre, et un double espace avant « 20 km » se retrouve dans
+      le match lui-même.
+    */
+    const i = lireIntention('une rando  20 km de chez moi')
+    const distance = i.compris.find((f) => f.champ === 'maxAwayKm')
+    expect(distance?.texte).toBe('20 km de chez moi')
   })
 })
 

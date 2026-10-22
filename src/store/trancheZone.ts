@@ -44,7 +44,7 @@ import {
   ZONES,
   libelleDeZone,
 } from '../core/overpass.ts'
-import { messageDeZone } from '../core/messageDeZone.ts'
+import { messageDeZone, messageDeRepliSurCache } from '../core/messageDeZone.ts'
 import type { Lieu } from '../core/geocode.ts'
 import { fetchPois } from '../core/poi.ts'
 import { reponseTronquee } from '../core/poisDeZone.ts'
@@ -59,10 +59,10 @@ import {
 import type { Itinerary, PointOfInterest } from '../core/types.ts'
 
 /** Où en est un chargement de zone, pour l'annoncer plutôt que le taire. */
-export type ZoneLoadStage = 'requesting' | 'retrying' | 'processing' | null
+type ZoneLoadStage = 'requesting' | 'retrying' | 'processing' | null
 
 /** Ce que la zone ajoute à l'état du store. */
-export interface EtatZone {
+interface EtatZone {
   zoneKey: string | null
   zoneLabel: string | null
   zoneError: string | null
@@ -75,13 +75,13 @@ export interface EtatZone {
 }
 
 /** Les champs du store que la tranche lit sans les posséder. */
-export interface EtatLuAilleurs {
+interface EtatLuAilleurs {
   db: SentiersDb | null
   itineraries: Itinerary[]
   demonstration: boolean
 }
 
-export interface ActionsZone {
+interface ActionsZone {
   loadZone: (zoneId: string, options?: { force?: boolean }) => Promise<void>
   loadRef: (ref: string, options?: { force?: boolean }) => Promise<void>
   loadAutour: (lieu: Lieu, options?: { force?: boolean }) => Promise<void>
@@ -110,8 +110,10 @@ export interface DependancesZone {
   /** Retient la zone affichée, pour la rouvrir au prochain démarrage. */
   persistLastZone: (zoneKey: string) => Promise<void>
   /**
-   * Jette la ligne en cache d'une zone, pour qu'un rechargement forcé
-   * reparte vraiment d'Overpass. Les trois chemins forcés la recopiaient, et
+   * Jette la ligne en cache d'une zone, une fois qu'un rechargement forcé a
+   * obtenu sa réponse et avant de l'écrire — jamais avant, sans quoi un
+   * échec réseau détruisait la copie hors ligne (#548). Les trois chemins
+   * forcés la recopiaient, et
    * deux la recopiaient mal — sur un `db` qui vaut `null` pendant
    * l'ouverture (#437 ; `tests/unit/oubliDuCacheDeZone.test.ts` garde l'accord).
    */
@@ -255,6 +257,9 @@ export function trancheZone(deps: DependancesZone): ActionsZone {
         */
         const partielle = data.remark !== undefined
         const perdues = relationsPerdues(data, itineraries).length
+        // Oublier après la réponse, jamais avant : hors réseau, l'effacement
+        // préalable détruisait la copie hors ligne (#548 ; voir oubliDeZone.ts).
+        if (force) await deps.oublierLaZoneEnCache(zoneKey)
         const db = await deps.baseOuverte()
         if (db) {
           try {
@@ -296,38 +301,17 @@ export function trancheZone(deps: DependancesZone): ActionsZone {
             cached.itineraries,
             cached.fetchedAt,
           )
-          /*
-            Le troisième chemin de #404, oublié par sa propre PR — qui
-            déclarait pourtant en avoir couvert « les deux ». La garde nommée
-            existait déjà ; elle n'était simplement pas appelée ici, et une
-            zone tronquée repassait muette avec ses pourcentages surestimés.
-            C'est le §4 pour la cinquième fois dans ce dépôt.
-
-            Le vide est écarté, et pour un mot : le message de la zone vide
-            conseille « Réessayez avec “Actualiser les tracés” », ce qui
-            enverrait quelqu'un refaire exactement ce qui vient d'échouer.
-            Une zone vide se voit à l'écran ; elle n'a pas besoin d'une
-            marche à suivre qui ne marchera pas.
-          */
-          const diagnostic =
-            cached.itineraries.length === 0
-              ? null
-              : messageDeZone({
-                  itineraires: cached.itineraries.length,
-                  partielle: cached.partielle,
-                  perdues: cached.perdues,
-                })
+          // Le troisième chemin de #404, oublié par sa propre PR — qui
+          // déclarait pourtant en avoir couvert « les deux ». La composition
+          // du message (pourquoi le vide est écarté, pourquoi pas « Les
+          // serveurs … ») vit maintenant dans `messageDeRepliSurCache`
+          // (`core/messageDeZone.ts`), sortie d'ici au sprint 8 (#539).
           deps.set({
-            zoneError:
-              // « Serveurs … injoignables » plutôt que « Les serveurs … sont
-              // injoignables » : le diagnostic qui peut suivre commence par
-              // « Les serveurs OpenStreetMap ont interrompu la requête », et
-              // les deux phrases se lisaient l'une derrière l'autre avec la
-              // même ouverture. Retoucher la seconde aurait été en écrire une
-              // deuxième version — ce que le §4ter interdit plus fermement
-              // qu'une maladresse ne coûte.
-              'Serveurs OpenStreetMap injoignables : affichage des tracés en cache (ils datent peut-être un peu).' +
-              (diagnostic === null ? '' : ` ${diagnostic}`),
+            zoneError: messageDeRepliSurCache({
+              itineraires: cached.itineraries.length,
+              partielle: cached.partielle,
+              perdues: cached.perdues,
+            }),
           })
           await deps.persistLastZone(zoneKey)
           await deps.recompute()
@@ -388,7 +372,6 @@ export function trancheZone(deps: DependancesZone): ActionsZone {
       const zone = ZONES.find((z) => z.id === zoneId)
       if (!zone) return
       const force = options.force ?? false
-      if (force) await deps.oublierLaZoneEnCache(zoneId)
       await loadFromOverpass(zoneId, zone.label, buildZoneQuery(zoneId), force)
       await mergeLocalBoucles(zoneId)
     },
@@ -432,7 +415,6 @@ export function trancheZone(deps: DependancesZone): ActionsZone {
       if (!trimmed) return
       const force = options.force ?? false
       const zoneKey = `ref:${trimmed.toUpperCase()}`
-      if (force) await deps.oublierLaZoneEnCache(zoneKey)
       await loadFromOverpass(zoneKey, trimmed, buildRefQuery(trimmed), force)
     },
 
@@ -447,7 +429,6 @@ export function trancheZone(deps: DependancesZone): ActionsZone {
       const [lon, lat] = lieu.center
       const zoneKey = `autour:${lon.toFixed(4)},${lat.toFixed(4)}`
       const force = options.force ?? false
-      if (force) await deps.oublierLaZoneEnCache(zoneKey)
       deps.oublierLesLieux()
       await loadFromOverpass(
         zoneKey,

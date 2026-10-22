@@ -4,6 +4,7 @@ import {
   noterSortie,
   resumerJournal,
   libelleDestination,
+  HOTES_CONTACTES,
   type EntreeJournal,
 } from '../../src/core/journalSortant.ts'
 
@@ -83,6 +84,52 @@ describe('classerSortie', () => {
   it('ne casse pas sur une URL illisible', () => {
     expect(classerSortie('pas une url').destination).toBe('site')
   })
+
+  it('n’ancre pas trop large : un domaine qui ressemble n’est pas le bon', () => {
+    // Chaque motif `(^|\.)...$` doit refuser un suffixe ajouté après le nom
+    // exact — sans l'ancre de fin, « overpass-api.de.attacker.com »
+    // passerait pour le vrai service.
+    expect(classerSortie('https://overpass-api.de.attacker.com/x').destination).toBe(
+      'inconnue',
+    )
+    expect(classerSortie('https://data.geopf.fr.attacker.com/x').destination).toBe(
+      'inconnue',
+    )
+    // Même sur le chemin « altimétrie », pour mettre à l'épreuve cette
+    // entrée-ci de `CONNUS` plutôt que celle du fond de carte.
+    expect(
+      classerSortie('https://data.geopf.fr.attacker.com/altimetrie/x').destination,
+    ).toBe('inconnue')
+    expect(
+      classerSortie('https://tile.openstreetmap.org.attacker.com/x').destination,
+    ).toBe('inconnue')
+    expect(
+      classerSortie('https://api-adresse.data.gouv.fr.attacker.com/x').destination,
+    ).toBe('inconnue')
+    expect(classerSortie('https://kumi.systems.attacker.com/x').destination).toBe(
+      'inconnue',
+    )
+    expect(
+      classerSortie('https://data.grandlyon.com.attacker.com/x').destination,
+    ).toBe('inconnue')
+  })
+
+  it('kumi.systems et grandlyon.com acceptent le domaine nu, pas seulement un sous-domaine', () => {
+    /*
+      Trouvé par mutation du 17/10 : ces deux motifs sont les seuls testés
+      uniquement via un sous-domaine (overpass.kumi.systems) — jamais via
+      le domaine nu. La garde qui exige un point ou un début de chaîne
+      avant le nom n'était donc jamais mise à l'épreuve côté « domaine nu »,
+      et un mot qui ne fait que contenir le nom (« evilkumi.systems ») ne
+      doit toujours pas être pris pour le vrai service.
+    */
+    expect(classerSortie('https://kumi.systems/x').destination).toBe('sentiers')
+    expect(classerSortie('https://evilkumi.systems/x').destination).toBe('inconnue')
+    expect(classerSortie('https://data.grandlyon.com/x').destination).toBe('sentiers')
+    expect(classerSortie('https://evildata.grandlyon.com/x').destination).toBe(
+      'inconnue',
+    )
+  })
 })
 
 describe('resumerJournal', () => {
@@ -117,6 +164,37 @@ describe('resumerJournal', () => {
 
   it('ne dit rien d’inconnu quand tout est répertorié', () => {
     expect(resumerJournal(entrees).inconnues).toEqual([])
+  })
+
+  it('fusionne deux hôtes de la même destination en un seul groupe, hôtes triés', () => {
+    /*
+      Trouvé par mutation du 17/10 : aucun test n'avait deux entrées
+      partageant la même destination. Trois lacunes dormaient derrière
+      cette seule combinaison : la branche qui fusionne dans un groupe
+      existant (`if (groupe)`), et le tri alphabétique des hôtes à
+      l'intérieur d'un groupe.
+    */
+    const resume = resumerJournal([
+      { destination: 'sentiers', hote: 'overpass.kumi.systems', nombre: 1 },
+      { destination: 'sentiers', hote: 'overpass-api.de', nombre: 2 },
+    ])
+    expect(resume.parDestination).toEqual([
+      {
+        destination: 'sentiers',
+        hotes: ['overpass-api.de', 'overpass.kumi.systems'],
+        nombre: 3,
+      },
+    ])
+  })
+
+  it('trie les destinations inconnues, pas dans leur ordre de rencontre', () => {
+    // Trouvé par mutation du 17/10 : une seule destination inconnue dans
+    // les tests existants ne pouvait pas trahir un tri supprimé.
+    const resume = resumerJournal([
+      { destination: 'inconnue', hote: 'zebre.example.com', nombre: 1 },
+      { destination: 'inconnue', hote: 'alpha.example.com', nombre: 1 },
+    ])
+    expect(resume.inconnues).toEqual(['alpha.example.com', 'zebre.example.com'])
   })
 
   it('rend zéro sans rien inventer sur un journal vide', () => {
@@ -164,6 +242,23 @@ describe('noterSortie', () => {
     const journal: never[] = []
     noterSortie(journal, 'https://overpass-api.de/api/interpreter')
     expect(journal).toHaveLength(0)
+  })
+
+  it('garde deux hôtes séparés même quand ils servent la même destination', () => {
+    /*
+      Trouvé par mutation du 17/10 : le `findIndex` ne comparait plus que
+      la destination, pas l'hôte — survivait parce qu'aucun test n'avait
+      deux hôtes différents partageant la même destination. Les deux
+      miroirs Overpass sont exactement ce cas : tous deux classés
+      « sentiers ».
+    */
+    let journal = noterSortie([], 'https://overpass-api.de/api/interpreter')
+    journal = noterSortie(journal, 'https://overpass.kumi.systems/api/interpreter')
+    expect(journal).toHaveLength(2)
+    expect(journal.map((e) => e.hote).sort()).toEqual([
+      'overpass-api.de',
+      'overpass.kumi.systems',
+    ])
   })
 })
 
@@ -231,5 +326,74 @@ describe('l’origine qui sert l’application', () => {
       classerSortie('https://overpass-api.de/api/interpreter').destination,
     ).toBe('sentiers')
     expect(classerSortie('/assets/app.js').destination).toBe('site')
+  })
+
+  /*
+    Trouvé par mutation du 17/10 : les deux tests ci-dessus appellent
+    toujours `classerSortie` avec une URL de **même origine**, qui prend le
+    repli de la ligne 127 avant même d'atteindre le test explicite sur
+    « localhost » ou « 127.0.0.1 ». Il fallait une origine différente de
+    l'hôte visé pour atteindre cette garde-là séparément.
+  */
+  it('traite 127.0.0.1 comme le site, même visé depuis une autre origine', () => {
+    expect(
+      classerSortie(
+        'http://127.0.0.1:5173/sw.js',
+        'https://sentiers.example.org',
+      ).destination,
+    ).toBe('site')
+  })
+
+  it('traite localhost comme le site, même visé depuis une autre origine', () => {
+    expect(
+      classerSortie(
+        'http://localhost:5173/sw.js',
+        'https://sentiers.example.org',
+      ).destination,
+    ).toBe('site')
+  })
+})
+
+/**
+ * Les deux replis de `classerSortie`, qu'aucun test n'atteignait (vague de
+ * mutation du 19/10).
+ */
+describe('classerSortie, quand une adresse ne se lit pas', () => {
+  it('classe encore les tiers quand l’origine fournie est illisible', () => {
+    // Le repli sur `http://localhost` ne rend pas la fonction fausse : un
+    // tiers reste un tiers.
+    expect(classerSortie('https://data.geopf.fr/wmts?LAYER=X', 'pas une origine').destination).toBe(
+      'fond-de-carte',
+    )
+  })
+
+  it('ne compte pas comme une sortie une adresse impossible à analyser', () => {
+    /*
+      `fetch('http://[')` est refusé avant tout réseau (ERR_INVALID_URL,
+      vérifié le 19/10) : rien n'a quitté l'appareil, et la ranger parmi les
+      tiers dirait le contraire. Elle va donc avec les fichiers du site, sans
+      hôte — pas parmi les destinations non répertoriées, qui sont des
+      requêtes réellement parties vers un inconnu.
+    */
+    expect(classerSortie('http://[')).toEqual({ destination: 'site', hote: '' })
+  })
+})
+
+/*
+  Issue #571 : `HOTES_CONTACTES` se disait « dérivée de `CONNUS` » et
+  c'était un tableau écrit à la main. `csp.test.ts` comparait donc la
+  politique à une liste que rien ne tenait d'accord avec le classement.
+  Elle est dérivée ; reste à garder que chaque hôte qu'elle contient soit
+  bien reconnu par la règle à côté de laquelle il est écrit.
+*/
+describe('les hôtes contactés et le classement disent la même chose', () => {
+  it('chaque hôte contacté est reconnu, et pas comme un inconnu', () => {
+    expect(HOTES_CONTACTES.length).toBeGreaterThan(0)
+    for (const hote of HOTES_CONTACTES) {
+      expect(
+        classerSortie(`https://${hote}/`, 'https://exemple.test').destination,
+        hote,
+      ).not.toBe('inconnue')
+    }
   })
 })

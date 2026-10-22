@@ -1,4 +1,6 @@
 import { polylineLengthMeters } from './sampling.ts'
+import { segmentsDe } from './segmentsDeTrace.ts'
+import { instantDe, moisLocal } from './valeurLue.ts'
 import type { Track } from './types.ts'
 
 /**
@@ -6,11 +8,14 @@ import type { Track } from './types.ts'
  * n'exploitait. Regrouper par mois donne la seule chose qu'un compteur de
  * complétion ne montre pas — le rythme, et les mois où l'on n'est pas sorti.
  *
- * Les mois sont calculés en UTC : sinon la même trace changerait de mois
- * selon le fuseau où l'on ouvre l'application.
+ * Les mois sont calculés en heure locale depuis le 20/10 (#565), comme la
+ * liste, le libellé et les années : ce commentaire disait « en UTC, sinon
+ * la même trace changerait de mois selon le fuseau » — vrai, mais
+ * l'histogramme était alors seul de son avis, et la trace changeait de
+ * mois d'un écran à l'autre.
  */
 
-export interface MonthBucket {
+interface MonthBucket {
   /** Mois au format « 2026-08 ». */
   month: string
   count: number
@@ -18,7 +23,7 @@ export interface MonthBucket {
   elevationGain: number
 }
 
-export interface HistoryStats {
+interface HistoryStats {
   count: number
   distanceMeters: number
   elevationGain: number
@@ -28,18 +33,12 @@ export interface HistoryStats {
   lastDate: string | null
 }
 
-/** Longueur d'une trace, en mètres. */
+/** Longueur marchée d'une trace, en mètres : sans le trait entre deux tronçons (#560). */
 export function trackDistanceMeters(track: Track): number {
-  return polylineLengthMeters(track.points)
-}
-
-/** Mois UTC « AAAA-MM » d'une date ISO, ou null si elle est illisible. */
-function monthOf(date: string | null): string | null {
-  if (!date) return null
-  const parsed = new Date(date)
-  if (Number.isNaN(parsed.getTime())) return null
-  const mois = String(parsed.getUTCMonth() + 1).padStart(2, '0')
-  return `${parsed.getUTCFullYear()}-${mois}`
+  return segmentsDe(track).reduce(
+    (total, segment) => total + polylineLengthMeters(segment),
+    0,
+  )
 }
 
 /** Totaux de l'ensemble des sorties. */
@@ -57,12 +56,12 @@ export function historyStats(tracks: Track[]): HistoryStats {
     if (typeof track.elevationGain === 'number') {
       elevationGain += track.elevationGain
     }
-    const time = track.date ? new Date(track.date).getTime() : Number.NaN
-    if (Number.isNaN(time)) {
+    const time = instantDe(track.date)
+    if (time === null || track.date === null) {
       undatedCount += 1
       continue
     }
-    const iso = track.date as string
+    const iso = track.date
     if (!first || time < first.time) first = { iso, time }
     if (!last || time > last.time) last = { iso, time }
   }
@@ -93,7 +92,7 @@ function nextMonth(month: string): string {
 export function monthlyBuckets(tracks: Track[]): MonthBucket[] {
   const parMois = new Map<string, MonthBucket>()
   for (const track of tracks) {
-    const month = monthOf(track.date)
+    const month = moisLocal(track.date)
     if (!month) continue
     const bucket = parMois.get(month) ?? {
       month,
@@ -155,7 +154,7 @@ export function monthLabel(month: string): string {
 }
 
 /** Ce qu'il faut pour qu'une barre se lise : le sommet, et son échelle. */
-export interface ReperesHistogramme {
+interface ReperesHistogramme {
   /** Le mois le plus haut, ou `null` si aucun mois ne porte de sortie. */
   moisLePlusHaut: string | null
   /** Sa distance, en mètres. Zéro quand il n'y a rien à désigner. */

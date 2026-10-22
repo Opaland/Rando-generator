@@ -97,7 +97,7 @@ const CONFIRM_FACTOR = 0.4
 /** Part minimale d'échantillons confirmés pour créditer un passage. */
 const CONFIRM_RATIO = 0.25
 
-export interface MatchOptions {
+interface MatchOptions {
   toleranceMeters: number
   stepMeters?: number
   /** Horodatage ISO des résultats — injecté pour garder la fonction pure. */
@@ -112,6 +112,12 @@ export interface MatchOptions {
    * comme avant cette option.
    */
   trackTimes?: (number | null)[] | undefined
+  /**
+   * Les indices `i` de `trackPoints` où le pas `i − 1 → i` n'a pas été
+   * marché : une pause, la jonction entre deux traces (#560). Jamais
+   * reliés, même sous MAX_GAP_METERS. `core/segmentsDeTrace.ts` les calcule.
+   */
+  coupures?: readonly number[] | undefined
 }
 
 /**
@@ -185,8 +191,22 @@ function addToCells(index: TrackIndex, segment: TrackSegment): void {
  * Rend `null` quand l'un des deux points du segment n'a pas d'horodatage :
  * le segment est alors jugé uniquement sur la distance (MAX_GAP_METERS),
  * comme avant cette option.
+ *
+ * Les deux balayages ci-dessous supposent `times` croissant à mesure qu'on
+ * s'éloigne de `i` dans le sens attendu — ce que l'appariement garantit
+ * pour une trace unique, mais pas pour un lot de plusieurs activités
+ * concaténées dont l'horodatage recommence plus tôt. Sans `tPrev > tB` /
+ * `tNext < tA`, un écart négatif ne dépasse jamais `windowMs` (positif) et
+ * le balayage ne s'arrête plus avant le bord du tableau — trouvé sur #539,
+ * où un horodatage qui reculait entre deux activités synthétiques rendait
+ * la mise en correspondance quadratique plutôt que linéaire.
+ *
+ * Exporté pour `tests/unit/lissageDeVitesse.test.ts`, qui en éprouve les
+ * bornes sur des valeurs calculées à la main : à travers `runMatching`, une
+ * borne décalée d'un point ne change presque jamais un pourcentage, et une
+ * cinquantaine de mutants y survivaient (vague du 18/10).
  */
-function windowedSpeedMps(
+export function windowedSpeedMps(
   points: LonLat[],
   times: (number | null)[],
   i: number,
@@ -198,13 +218,13 @@ function windowedSpeedMps(
   let lo = i - 1
   while (lo > 0) {
     const tPrev = times[lo - 1]
-    if (tPrev == null || tB - tPrev > windowMs) break
+    if (tPrev == null || tPrev > tB || tB - tPrev > windowMs) break
     lo--
   }
   let hi = i
   while (hi < points.length - 1) {
     const tNext = times[hi + 1]
-    if (tNext == null || tNext - tA > windowMs) break
+    if (tNext == null || tNext < tA || tNext - tA > windowMs) break
     hi++
   }
   const tLo = times[lo]
@@ -231,6 +251,7 @@ function windowedSpeedMps(
 function buildTrackIndex(
   points: LonLat[],
   times?: (number | null)[],
+  coupures: ReadonlySet<number> = new Set(),
 ): TrackIndex {
   const index: TrackIndex = new Map()
   if (points.length === 0) return index
@@ -242,7 +263,7 @@ function buildTrackIndex(
   for (let i = 1; i < points.length; i++) {
     const a = points[i - 1] as LonLat
     const b = points[i] as LonLat
-    const tropLoin = distanceMeters(a, b) > MAX_GAP_METERS
+    const tropLoin = coupures.has(i) || distanceMeters(a, b) > MAX_GAP_METERS
     const tropRapide =
       times != null &&
       (windowedSpeedMps(points, times, i) ?? 0) > MAX_WALK_SPEED_MPS
@@ -510,7 +531,21 @@ function leRivalGagnePartout(
   return candidats !== null && candidats.size > 0
 }
 
-/** Les chemins voisins strictement plus proches de la trace que celui-ci. */
+/**
+ * La marge du départage : un rival ne gagne qu'en étant plus proche **de
+ * plus d'un millimètre** (#547).
+ *
+ * Le `<` strict faisait de l'arrondi un verdict : à égale distance de deux
+ * sentiers parallèles, l'un était retiré à 0 % pour 1,9 × 10⁻⁹ m. Tranché
+ * par Cédric le 20/10 : une marge **numérique**, qui efface l'arrondi et
+ * rien d'autre. Écartée : une marge à l'échelle du GPS (1 à 3 m), qui
+ * changeait le verdict de 8 à 19 chemins sur ses 12 sorties réelles sans
+ * qu'on sache s'ils avaient vraiment été parcourus (mesure du 19/10, sur
+ * l'issue). Mesurée sur les mêmes sorties, celle-ci n'en change aucun.
+ */
+const MARGE_DE_DEPARTAGE_METRES = 0.001
+
+/** Les chemins voisins plus proches de la trace que celui-ci, au-delà de la marge. */
 function cheminsPlusProches(
   echantillon: Sample,
   parCellule: Map<string, Sample[]>,
@@ -535,7 +570,10 @@ function cheminsPlusProches(
         // Au-delà de la confirmation, les deux chemins sont distinguables :
         // ce n'est plus une dispute, c'est un voisinage.
         if (ecart > confirmMeters) continue
-        if ((voisin.distanceMeters ?? Infinity) < sienne) {
+        if (
+          (voisin.distanceMeters ?? Infinity) <
+          sienne - MARGE_DE_DEPARTAGE_METRES
+        ) {
           gagnants.add(voisin.wayId)
         }
       }
@@ -689,7 +727,11 @@ export function runMatching(
 ): MatchResult {
   const stepMeters = options.stepMeters ?? STEP_METERS
   const samples = buildSamples(itineraries, stepMeters)
-  const index = buildTrackIndex(trackPoints, options.trackTimes)
+  const index = buildTrackIndex(
+    trackPoints,
+    options.trackTimes,
+    new Set(options.coupures),
+  )
   matchSamples(samples, index, options.toleranceMeters)
   const confirmMeters = options.toleranceMeters * CONFIRM_FACTOR
   const passages = applyContinuity(samples, {

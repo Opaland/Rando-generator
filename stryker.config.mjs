@@ -86,5 +86,43 @@ export default {
     '!src/lib/observerReseau.ts', // remplace fetch et XHR au niveau global
     '!src/lib/useCountUp.ts', //     crochet React à minuterie
     '!src/lib/useHorloge.ts', //     crochet React à minuterie
+
+    /*
+      `src/components/` entre dans le périmètre le 18/10, en `.ts` seulement
+      — jamais en `.tsx`.
+
+      Les 37 fichiers `.tsx` du dossier sont du JSX sans logique extraite :
+      aucun test unitaire n'en importe un seul, ils ne sont éprouvés que par
+      Playwright (§6quinquies). Les muter ne rendrait que des « NoCoverage »
+      — la même non-information que la liste du dessus, en plus cher.
+
+      `src/components/map/` est différent : quatre de ses sept fichiers sont
+      de la logique pure, sortie de `MapView.tsx` pour être éprouvable
+      (`style.ts`, `poiPopup.ts`, `useMapSources.ts`, et `zoneGroupes.ts` à la
+      racine du dossier), et chacun a son test. Les trois crochets restants
+      (`useMapCamera.ts`, `useMapInstance.ts`, `useMapInteractions.ts`)
+      pilotent l'instance MapLibre réelle et n'ont aucun test unitaire —
+      exclus pour la même raison que les six de `src/lib` ci-dessus.
+
+      Nuance du 18/10 : `useMapInstance.ts` a désormais un test, sur une
+      carte factice (`carteRendueSansLoad.test.ts`, #545) — mais d'un seul
+      contrat, « prête au premier style chargé ». Le repli du fond sur OSM
+      et le cas sans WebGL n'en ont aucun : le muter rendrait surtout des
+      « NoCoverage » sur eux. Il reste exclu tant qu'ils ne sont pas
+      éprouvés, et la phrase du dessus ne vaut plus, pour lui, qu'à moitié.
+
+      `useMapSources.ts` reste dans le périmètre : contrairement aux trois
+      exclus, `appliquerQuandPret` s'éprouve déjà avec une carte factice
+      (`mapSources.test.ts`), et le crochet principal l'a rejoint le 18/10
+      (`sourcesDeLaCarteReelle.test.ts`, carte factice + magasin réel via
+      `createRoot`/`act`) — mais seulement pour la fusion des itinéraires
+      persos et la source du terrain. Les trois autres `useEffect` du
+      fichier (dessin, position, repère d'altitude) restent sans test
+      dédié : un lot encore ouvert, pas un oubli caché.
+    */
+    'src/components/**/*.ts',
+    '!src/components/map/useMapCamera.ts', //      pilote l'instance MapLibre réelle
+    '!src/components/map/useMapInstance.ts', //     idem
+    '!src/components/map/useMapInteractions.ts', // idem
   ],
 }

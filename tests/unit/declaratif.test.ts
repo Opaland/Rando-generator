@@ -2,11 +2,12 @@ import { describe, it, expect } from 'vitest'
 import {
   chiffresDeCompletion,
   estDeclare,
-  libelleCompletion,
   metresDeclares,
   type ParcoursDeclare,
 } from '../../src/core/declaratif.ts'
 import { makeItinerary, straightLine } from '../fixtures/synthetic.ts'
+import { runMatching } from '../../src/core/matching.ts'
+import type { Itinerary, LonLat } from '../../src/core/types.ts'
 
 /**
  * Issue #158 — « j'ai fait celui-là », sans trace GPX.
@@ -63,13 +64,29 @@ describe('metresDeclares', () => {
   })
 })
 
-describe('chiffresDeCompletion', () => {
-  const mesure = { doneMeters: 3_000, totalMeters: 15_000, pct: 20 }
+/*
+  Les chiffres se comptent en échantillons, des deux côtés (#564).
 
+  Le pourcentage déclaré prenait `itin.totalMeters` au numérateur et le
+  total en échantillons au dénominateur, où un way partagé ne compte qu'une
+  fois. Deux GR qui partagent un way, cochés, rien de mesuré : 121,2 %
+  déclarés ; un itinéraire fragmenté coché en entier : 30 %. Tranché par
+  Cédric le 20/10 : la longueur affichée est `totalMeters`, mais le
+  pourcentage déclaré compte les mêmes échantillons que la mesure.
+*/
+function mesurer(itineraires: Itinerary[], trace: LonLat[] = []) {
+  return runMatching(itineraires, trace, {
+    toleranceMeters: 50,
+    computedAt: '2026-08-23T10:00:00.000Z',
+  })
+}
+
+describe('chiffresDeCompletion', () => {
   it('rend deux nombres, jamais leur somme', () => {
-    const c = chiffresDeCompletion(mesure, [DIX_KM, CINQ_KM], [declare(2)])
-    expect(c.pctMesure).toBeCloseTo(20, 1)
-    expect(c.pctDeclare).toBeCloseTo((CINQ_KM.totalMeters / 15_000) * 100, 1)
+    const m = mesurer([DIX_KM, CINQ_KM])
+    const c = chiffresDeCompletion(m, [declare(2)])
+    expect(c.pctMesure).toBe(0)
+    expect(c.pctDeclare).toBeCloseTo((50 / 150) * 100, 0)
   })
 
   /**
@@ -79,46 +96,43 @@ describe('chiffresDeCompletion', () => {
    * mesure prime, le déclaratif ne comble que ce qu'elle ne couvre pas.
    */
   it('ne compte pas deux fois un itinéraire mesuré puis coché', () => {
-    const c = chiffresDeCompletion(
-      { doneMeters: 2_000, totalMeters: 5_000, pct: 40 },
-      [CINQ_KM],
-      [declare(2)],
-      { mesuresParItineraire: new Map([[2, 2_000]]) },
-    )
-    expect(c.metresDeclares).toBeCloseTo(CINQ_KM.totalMeters - 2_000, 0)
-    expect(c.pctMesure + c.pctDeclare).toBeLessThanOrEqual(100.001)
+    const moitie = straightLine(4.7, 45.4, 2_500, 20)
+    const m = mesurer([CINQ_KM], moitie)
+    expect(m.global.pct).toBeGreaterThan(30)
+    const c = chiffresDeCompletion(m, [declare(2)])
+    expect(c.pctMesure + c.pctDeclare).toBeCloseTo(100, 6)
+  })
+
+  it('deux itinéraires cochés qui partagent un way ne dépassent pas 100 %', () => {
+    const commun = straightLine(4.5, 45.4, 3_000, 100)
+    const a = makeItinerary(1, [{ osmWayId: 10, coords: commun }])
+    const b = makeItinerary(2, [
+      { osmWayId: 10, coords: commun },
+      { osmWayId: 11, coords: straightLine(4.6, 45.4, 1_000, 100) },
+    ])
+    const c = chiffresDeCompletion(mesurer([a, b]), [declare(1), declare(2)])
+    expect(c.pctDeclare).toBeCloseTo(100, 6)
+  })
+
+  it('un itinéraire fragmenté coché en entier compte en entier', () => {
+    const ways = Array.from({ length: 100 }, (_, i) => ({
+      osmWayId: 100 + i,
+      coords: straightLine(4.5 + i * 0.001, 45.4, 30, 10),
+    }))
+    const fragmente = makeItinerary(3, ways)
+    const c = chiffresDeCompletion(mesurer([fragmente]), [declare(3)])
+    expect(c.pctDeclare).toBeCloseTo(100, 6)
   })
 
   it('ne déborde pas quand rien n’est déclaré', () => {
-    const c = chiffresDeCompletion(mesure, [DIX_KM, CINQ_KM], [])
+    const c = chiffresDeCompletion(mesurer([DIX_KM, CINQ_KM]), [])
     expect(c.pctDeclare).toBe(0)
     expect(c.metresDeclares).toBe(0)
   })
 
   it('ne divise pas par zéro', () => {
-    const c = chiffresDeCompletion(
-      { doneMeters: 0, totalMeters: 0, pct: 0 },
-      [],
-      [],
-    )
+    const c = chiffresDeCompletion(mesurer([]), [])
     expect(c.pctMesure).toBe(0)
     expect(c.pctDeclare).toBe(0)
-  })
-})
-
-describe('libelleCompletion', () => {
-  /**
-   * Un seul chiffre tant que rien n'est déclaré : la grande majorité des
-   * écrans ne doit pas payer le prix d'une distinction qui ne les concerne
-   * pas.
-   */
-  it('ne mentionne pas le déclaratif quand il n’y en a pas', () => {
-    expect(libelleCompletion({ pctMesure: 43.2, pctDeclare: 0 })).toBe('43,2 %')
-  })
-
-  it('sépare les deux dès qu’il y en a', () => {
-    expect(libelleCompletion({ pctMesure: 43.2, pctDeclare: 12 })).toBe(
-      '43,2 % mesurés · 12 % déclarés',
-    )
   })
 })

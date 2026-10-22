@@ -1,4 +1,5 @@
 import type { CompletionResult, Itinerary, Track } from './types.ts'
+import { instantDe } from './valeurLue.ts'
 
 /**
  * Ce qu'une sortie a apporté.
@@ -25,7 +26,7 @@ export interface OutingHighlight {
   pct: number
 }
 
-export interface OutingOptions {
+interface OutingOptions {
   limit?: number
   minMeters?: number
 }
@@ -63,8 +64,7 @@ const DATE_FORMAT = new Intl.DateTimeFormat('fr-FR', {
 
 /** « Le 15 juin 2024 », ou l'aveu qu'on ne sait pas. */
 export function outingLabel(track: Track): string {
-  if (!track.date) return 'Sortie sans date'
-  const temps = Date.parse(track.date)
-  if (Number.isNaN(temps)) return 'Sortie sans date'
+  const temps = instantDe(track.date)
+  if (temps === null) return 'Sortie sans date'
   return `Le ${DATE_FORMAT.format(new Date(temps))}`
 }

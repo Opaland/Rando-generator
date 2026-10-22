@@ -261,3 +261,60 @@ test('sans userChoice, le bouton disparaît sans message inventé', async ({
   await expect(page.getByTestId('installation-refusee')).toHaveCount(0)
   await expect(page.getByTestId('installation-echec')).toHaveCount(0)
 })
+
+/**
+ * Revue adverse du sprint 1 (#578) : quitter la démonstration change la clé
+ * de zone sans toucher aux itinéraires. Un cadrage qui repartait sur la clé
+ * renvoyait la carte sur l'ensemble des boucles, au milieu de ce que
+ * l'utilisateur regardait — mesuré z 16 → z 11,6 à l'import d'un GPX.
+ */
+test('importer pendant la démonstration ne recadre pas la carte', async ({
+  page,
+}) => {
+  await mockExternalNetwork(page)
+  await mockBoucles(page)
+  await page.goto('/')
+  await page.getByTestId('voir-un-exemple').click()
+  await expect(page.getByTestId('demo-banner')).toBeVisible({ timeout: 10_000 })
+
+  const zoom = () =>
+    page.evaluate(() => {
+      const map = (
+        window as unknown as {
+          __sentiersMap?: {
+            isMoving: () => boolean
+            getZoom: () => number
+            jumpTo: (o: { center: [number, number]; zoom: number }) => void
+          }
+        }
+      ).__sentiersMap
+      if (!map || map.isMoving()) return null
+      return map.getZoom()
+    })
+  // La démonstration a fini de se cadrer avant qu'on zoome soi-même.
+  await expect.poll(zoom, { timeout: 10_000 }).not.toBeNull()
+  await page.evaluate(() => {
+    ;(
+      window as unknown as {
+        __sentiersMap?: {
+          jumpTo: (o: { center: [number, number]; zoom: number }) => void
+        }
+      }
+    ).__sentiersMap?.jumpTo({ center: [4.81, 45.74], zoom: 16 })
+  })
+  await expect.poll(zoom).toBeCloseTo(16, 1)
+
+  await page.getByTestId('gpx-input').setInputFiles({
+    name: 'ma-sortie.gpx',
+    mimeType: 'application/gpx+xml',
+    buffer: Buffer.from(buildGpx(15), 'utf-8'),
+  })
+  await expect(page.getByTestId('demo-banner')).toHaveCount(0)
+
+  // Un recadrage part au rendu qui suit la sortie de la démonstration et dure
+  // 400 ms : une seconde laisse le temps de le voir partir. C'est une borne,
+  // pas une preuve qu'aucun mouvement n'arrivera jamais (§6ter).
+  await page.waitForTimeout(1_000)
+  await expect.poll(zoom).not.toBeNull()
+  expect(await zoom()).toBeCloseTo(16, 1)
+})

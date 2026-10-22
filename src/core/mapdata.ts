@@ -1,6 +1,7 @@
 import { slicePolyline } from './sampling.ts'
 import { chainWays, MIN_GAP_METERS } from './chainage.ts'
 import { distanceMeters } from './geo.ts'
+import { segmentsDe } from './segmentsDeTrace.ts'
 import type { Itinerary, LonLat, Network, Sample, Track } from './types.ts'
 import { STEP_METERS } from './types.ts'
 
@@ -101,7 +102,15 @@ function chainerLeTrace(itinerary: Itinerary): TraceChainee {
       if (saut >= MIN_GAP_METERS) {
         interruptions.push({ debutMetres: cumul, finMetres: cumul + saut })
       }
-      cumul += saut
+      /*
+        Le saut n'est pas ajouté à `cumul` ici : la boucle qui suit repart
+        du premier point du morceau (il n'est pas collé), et compte la
+        distance depuis le dernier point posé — c'est-à-dire le saut. Il était
+        ajouté deux fois, et chaque interruption après la première tombait
+        plus loin sur l'axe de la somme des trous précédents : sur trois
+        morceaux et deux trous de 300 et 400 m, la seconde à 2 293 m au lieu
+        de 1 994 (trouvé le 19/10 en écrivant donneesDeCarte.test.ts).
+      */
     }
     for (let i = colle ? 1 : 0; i < points.length; i += 1) {
       const point = points[i] as LonLat
@@ -132,12 +141,12 @@ export function interruptionsDuTrace(itinerary: Itinerary): Interruption[] {
 }
 
 /** GeoJSON minimal — évite une dépendance de types externe dans core. */
-export interface LineStringGeometry {
+interface LineStringGeometry {
   type: 'LineString'
   coordinates: LonLat[]
 }
 
-export interface TrailProperties {
+interface TrailProperties {
   network: Network
   /** Itinéraire « principal » du way (réseau prioritaire), pour le clic. */
   itineraryId: number
@@ -146,13 +155,13 @@ export interface TrailProperties {
   wayId: number
 }
 
-export interface LineFeature<P> {
+interface LineFeature<P> {
   type: 'Feature'
   geometry: LineStringGeometry
   properties: P
 }
 
-export interface LineCollection<P> {
+interface LineCollection<P> {
   type: 'FeatureCollection'
   features: LineFeature<P>[]
 }
@@ -186,7 +195,7 @@ function lineFeature<P>(coordinates: LonLat[], properties: P): LineFeature<P> {
   }
 }
 
-export interface TrailGeoJSON {
+interface TrailGeoJSON {
   /** Tous les ways (géométrie précise), pour le tracé « non parcouru ». */
   base: LineCollection<TrailProperties>
   /** Tronçons parcourus (suites d'échantillons faits, résolution STEP). */
@@ -288,7 +297,7 @@ export function buildTrailGeoJSON(
   }
 }
 
-export interface TrackProperties {
+interface TrackProperties {
   trackId: string
 }
 
@@ -339,8 +348,12 @@ export function buildTracksGeoJSON(
 ): LineCollection<TrackProperties> {
   return {
     type: 'FeatureCollection',
-    features: tracks
-      .filter((t) => t.points.length >= 2)
-      .map((t) => lineFeature(t.points, { trackId: t.id })),
+    // Un trait par tronçon : relier les deux bouts d'une pause dessinait un
+    // trajet que personne n'a marché (#560).
+    features: tracks.flatMap((t) =>
+      segmentsDe(t)
+        .filter((segment) => segment.length >= 2)
+        .map((segment) => lineFeature(segment, { trackId: t.id })),
+    ),
   }
 }

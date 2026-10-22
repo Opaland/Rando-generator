@@ -26,7 +26,7 @@ export interface VeilleGeo {
   arreter: (qui: Veilleur) => void
 }
 
-export interface OptionsVeille {
+interface OptionsVeille {
   /** Injectable : les tests fournissent une géolocalisation qui compte. */
   geolocation: () => Geolocation | null
   options: PositionOptions

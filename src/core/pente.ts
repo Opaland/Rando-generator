@@ -20,7 +20,7 @@ import type { ElevationProfile } from './types.ts'
  * puisse l'afficher autrement.
  */
 
-export interface Pente {
+interface Pente {
   /** Pente en pourcentage, toujours positive : une descente est une pente. */
   pourcent: number
   /** Longueur du segment sur lequel cette moyenne a été faite, en mètres. */
@@ -107,7 +107,7 @@ export const PAS_MINIMAL_METRES = 5
  * afficher 822 % : le module n'avait pas de mot pour « je ne peux pas
  * mesurer ça ».
  */
-export type MesureDePente =
+type MesureDePente =
   | { etat: 'mesuree'; pente: Pente }
   | { etat: 'trop-fine'; pasLePlusLong: number }
   | { etat: 'sans-altitude' }

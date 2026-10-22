@@ -1,5 +1,95 @@
 import { describe, it, expect } from 'vitest'
-import { messageDeZone } from '../../src/core/messageDeZone.ts'
+import {
+  messageDeZone,
+  messageDeRepliSurCache,
+  messageDeRestauration,
+} from '../../src/core/messageDeZone.ts'
+
+/**
+ * Issue #550 — le quatrième chemin : la zone restaurée au démarrage.
+ *
+ * Elle s'affichait sans rien dire, ni de ce qu'elle a de travers, ni de son
+ * âge ou de son schéma — trois gardes que les autres chemins appliquent. On
+ * la montre quand même (aucun réseau ne part au démarrage) : ce qui manquait,
+ * c'est la phrase.
+ */
+describe('la zone restaurée au démarrage', () => {
+  /*
+    Formulé comme Mousse de Poche (« extrait du … ») à la demande de Cédric
+    le 20/10 : une date et une raison, plutôt qu'un « copie ancienne » qui
+    ne dit ni de quand ni ce qui manque.
+  */
+  const LE_12_JUILLET = '2026-07-12T09:00:00.000Z'
+
+  it('ne dit rien d’une copie à jour et entière', () => {
+    expect(
+      messageDeRestauration({
+        itineraires: 12,
+        perimee: null,
+        telechargeeLe: LE_12_JUILLET,
+      }),
+    ).toBeNull()
+  })
+
+  it('dit ce que la zone a de travers, comme au chargement', () => {
+    expect(
+      messageDeRestauration({
+        itineraires: 12,
+        partielle: true,
+        perimee: null,
+        telechargeeLe: LE_12_JUILLET,
+      }),
+    ).toBe(messageDeZone({ itineraires: 12, partielle: true }))
+  })
+
+  it('date une copie trop vieille', () => {
+    const message = messageDeRestauration({
+      itineraires: 12,
+      perimee: 'age',
+      telechargeeLe: LE_12_JUILLET,
+    })
+    expect(message).toMatch(/^Tracés téléchargés le 12\/07\/2026\./)
+    expect(message).toMatch(/Actualiser les tracés/)
+    expect(message).not.toMatch(/version précédente/)
+  })
+
+  it('dit ce qui manque à une copie d’une version précédente', () => {
+    const message = messageDeRestauration({
+      itineraires: 12,
+      perimee: 'ancienne',
+      telechargeeLe: LE_12_JUILLET,
+    })
+    expect(message).toMatch(/version précédente de Sentiers, le 12\/07\/2026/)
+    expect(message).toMatch(/balisage/)
+    expect(message).toMatch(/Actualiser les tracés/)
+  })
+
+  /*
+    Mousse traite ce cas à part (« une version plus récente a gardé vos
+    favoris ») : un onglet resté sur l'ancienne version relit une copie
+    écrite par la nouvelle. « Version précédente » y serait faux.
+  */
+  it('ne prend pas une copie d’une version plus récente pour une ancienne', () => {
+    const message = messageDeRestauration({
+      itineraires: 12,
+      perimee: 'future',
+      telechargeeLe: LE_12_JUILLET,
+    })
+    expect(message).toMatch(/version plus récente de Sentiers/)
+    expect(message).not.toMatch(/précédente/)
+  })
+
+  it('dit les deux quand la copie est vieille et tronquée', () => {
+    const message = messageDeRestauration({
+      itineraires: 12,
+      partielle: true,
+      perimee: 'age',
+      telechargeeLe: LE_12_JUILLET,
+    })
+    expect(message).toMatch(/12\/07\/2026/)
+    expect(message).toMatch(/surestimés/)
+  })
+})
 
 /**
  * Issue #404 — ce qu'une zone a de travers, et où cette phrase se compose.
@@ -87,5 +177,38 @@ describe('ce qu’une zone a de travers', () => {
    */
   it('se tait sur une zone écrite avant que le fait ne soit gardé', () => {
     expect(messageDeZone({ itineraires: 12 })).toBeNull()
+  })
+})
+
+/**
+ * Le message du repli sur cache, sorti de `trancheZone.ts` (issue #539,
+ * sprint 8) : même composition que `messageDeZone`, mais sur un chemin qui
+ * dit en plus que les miroirs sont injoignables — et qui écarte le conseil
+ * « Réessayez avec “Actualiser les tracés” » sur une zone vide, puisque
+ * c'est justement ce geste qui vient d'échouer.
+ */
+describe('le repli sur une zone en cache quand les miroirs sont injoignables', () => {
+  it("dit l'injoignabilité seule sur une zone entière", () => {
+    expect(messageDeRepliSurCache({ itineraires: 12 })).toBe(
+      'Serveurs OpenStreetMap injoignables : affichage des tracés en cache (ils datent peut-être un peu).',
+    )
+  })
+
+  it('ajoute que les pourcentages sont surestimés sur une zone tronquée', () => {
+    const message = messageDeRepliSurCache({ itineraires: 12, partielle: true })
+    expect(message).toMatch(/injoignables/i)
+    expect(message).toMatch(/surestim/i)
+  })
+
+  it('ajoute combien d’itinéraires découpés manquent', () => {
+    expect(messageDeRepliSurCache({ itineraires: 12, perdues: 3 })).toMatch(
+      /3 itinéraires/,
+    )
+  })
+
+  it('ne conseille pas d’actualiser sur une zone vide', () => {
+    const message = messageDeRepliSurCache({ itineraires: 0 })
+    expect(message).toMatch(/injoignables/i)
+    expect(message).not.toMatch(/Actualiser/i)
   })
 })

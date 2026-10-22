@@ -84,14 +84,34 @@ const PLAFONDS: Record<string, number> = {
     (boucles de Lyon, puis GR Nord) est sorti dans `sourcesLocales.ts`,
     plutôt que de relever ce plafond pour une seconde source qui n'est pas
     de la logique de zone elle-même — la même réponse honnête qu'en #454.
+
+    Redescendu de 495 à 480 le 14/10 (sprint 8) : la composition du message
+    de repli sur cache (#404, troisième chemin) est sortie dans
+    `messageDeRepliSurCache` (`core/messageDeZone.ts`), qui porte déjà la
+    même responsabilité pour les deux autres chemins. 473 lignes après.
   */
-  'trancheZone.ts': 495,
+  'trancheZone.ts': 480,
   /*
     Sorti de `trancheZone.ts` le 16/09 en écrivant le GR Nord : 85 lignes.
-    Le plafond laisse la place d'une troisième source (Ain, Isère — #87)
+    Le plafond laissait la place d'une troisième source (Ain, Isère — #87)
     avant de forcer une nouvelle décision.
+
+    Elle est venue le 18/10, et elle n'était pas une source d'itinéraires :
+    le PDIPR de l'Isère est un réseau de fond. Le chargeur mémorisé est
+    devenu générique ici (108 lignes), le PDIPR est parti dans
+    `reseauDeFond.ts` plutôt que de relever ce plafond — il en avait porté
+    le fichier à 142.
   */
   'sourcesLocales.ts': 110,
+  // 64 lignes : le réseau de fond PDIPR et ses deux lecteurs (carte,
+  // légende). La place d'un second département, pas d'une tranche.
+  'reseauDeFond.ts': 80,
+  // 39 lignes : ce qui désigne un itinéraire perso sans en faire partie
+  // (#549). La place d'une quatrième référence, pas d'une tranche.
+  'referencesPerso.ts': 55,
+  // 48 lignes : la zone restaurée au démarrage, sortie d'`appStore.ts` pour
+  // y appliquer les gardes des trois autres chemins (#550).
+  'restaurationDeZone.ts': 60,
   /*
     Le journal des sorties réseau (issue #178), sorti d'`appStore.ts` le
     07/09 (#445) : 113 lignes, la seule action qui était encore écrite en
@@ -105,7 +125,17 @@ const PLAFONDS: Record<string, number> = {
   // refusait le correctif de #454 — c'est la première des deux réponses
   // honnêtes que ce fichier nomme.
   'rechercheDeLieu.ts': 140,
-  'trancheSauvegarde.ts': 260,
+  // Relevé de 260 à 270 le 18/10 : la restauration dépose sur l'état
+  // d'après ses écritures, et non plus sur celui d'avant (242 → 266). La
+  // règle elle-même, `ajouterLesNeufs`, est sortie dans `core/backup.ts` ;
+  // ce qui reste ici est son appel sur les trois listes, et son pourquoi.
+  'trancheSauvegarde.ts': 270,
+  // Sorti de trancheSauvegarde le 20/10 (#559, point 5) : ce que la base a
+  // reçu d'une restauration interrompue. Le correctif portait la tranche à
+  // 301 lignes pour un plafond de 270. Relevé de 90 à 110 le même jour :
+  // la revue a montré que les déclarations n'y étaient pas suivies une à
+  // une (96 lignes après), et c'est le même mécanisme, pas un autre.
+  'ecrireLaRestauration.ts': 110,
   'trancheDemonstration.ts': 230,
   'reseauxVisibles.ts': 100,
   'trancheAffichage.ts': 130,
@@ -125,7 +155,24 @@ const PLAFONDS: Record<string, number> = {
   // plafond de 480 (#442). Mesuré, pas supposé — la prédiction inverse
   // avait déjà été fausse en #437.
   'epilogueDImport.ts': 80,
-  'matchingClient.ts': 110,
+  // 47 lignes dont 23 de commentaire : le distributeur de numéros perso et
+  // l'attente du démarrage (#543), sortis d'`appStore.ts` pour la même
+  // raison que les deux du dessus. De quoi une seconde règle, pas plus.
+  'identifiantsPerso.ts': 60,
+  /*
+    Relevé de 110 à 120 le 14/10 (sprint 8, analyse du 08/10) : la marge
+    était tombée à 2 lignes sans qu'aucun sous-bloc ne s'en détache. Le
+    fichier est un seul mécanisme — construire le worker, l'abandonner pour
+    de bon après un échec, retomber en synchrone — et la moitié de ses
+    lignes sont le commentaire qui explique pourquoi `workerImpossible` ne
+    retente jamais (#471, lui-même corrigé une fois pour une énumération
+    présentée comme exhaustive qui ne l'était pas, §4bis). Le couper
+    séparerait soit le mécanisme de sa justification, soit une moitié de
+    worker sans l'autre : aucune des deux n'est un sous-bloc qui a sa place
+    ailleurs. C'est la seconde réponse honnête du §2, appliquée ici parce
+    que la première ne s'applique pas.
+  */
+  'matchingClient.ts': 120,
   /*
     Sorti d'`appStore.ts` le 30/09 (revue technique) : objectifs épinglés,
     bascule et calcul du reste à marcher. 90 lignes, dont la moitié de

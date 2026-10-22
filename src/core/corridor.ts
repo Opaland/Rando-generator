@@ -153,9 +153,17 @@ export function tuilesDuCorridor(
 /**
  * Le tracé, redécoupé assez fin pour qu'aucune tuile ne soit sautée.
  *
- * Le pas vaut la moitié d'une tuile : c'est la condition pour qu'un segment
- * qui traverse une tuile en pose au moins un point dedans, quelle que soit
- * son orientation.
+ * Le pas vaut la moitié d'une tuile : deux points successifs tombent donc
+ * dans la même tuile ou dans deux tuiles qui se touchent, et aucune rangée
+ * n'est sautée.
+ *
+ * Cette phrase disait « un segment qui traverse une tuile y pose au moins
+ * un point, quelle que soit son orientation » — c'était faux (§4bis). Un
+ * segment en diagonale peut frôler le coin d'une tuile entre deux points :
+ * mesuré le 19/10, 7 tuiles sur 54 à rayon nul, jusqu'à 134 m de traversée.
+ * Aucun pas fini ne les attrape. C'est la marge de `tuilesDuCorridor` qui
+ * les couvre — au moins une tuile autour dès le premier mètre de rayon — et
+ * `tests/unit/corridorEnDiagonale.test.ts` le tient.
  */
 function* pointsDuTrace(coords: LonLat[], z: number): Generator<LonLat> {
   // Pas de borne sur le nombre de morceaux, et ce n'est pas un oubli : une

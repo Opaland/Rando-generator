@@ -39,3 +39,18 @@
 .map :global(.maplibregl-ctrl-attrib a) {
   color: var(--encre);
 }
+
+/*
+  Le crédit au-dessus de toute surimpression de la carte — fiche, panneau de
+  tracé, « Démarrer », « Ma position » (#553, #555, #556). La règle était
+  écrite dans `MapView.tsx` (« rien ne se pose sur l'attribution »), mais le
+  conteneur restait au `z-index` 2 de MapLibre, sous elles toutes. Il passe
+  au palier `--z-credit-carte`, sous la feuille : celle-ci est un plan à part,
+  et dépliée en grand elle ne laisse pas de carte à créditer.
+
+  Le zoom (en haut à droite) n'est pas relevé : à 1 024, son « + » couvrirait
+  la croix de la fiche au lieu de l'inverse.
+*/
+.map :global(.maplibregl-ctrl-bottom-right) {
+  z-index: var(--z-credit-carte);
+}

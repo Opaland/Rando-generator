@@ -59,7 +59,7 @@
  * `get` y figurait, il n'est port d'aucune tranche, et la garde l'a dit.
  */
 import { readFileSync, statSync, readdirSync, existsSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, relative, sep } from 'node:path'
 
 const MAGASIN = 'src/store/appStore.ts'
 const RAPPORT = 'coverage/coverage-final.json'
@@ -134,7 +134,10 @@ if (plusRecente.quand > ageDuRapport) {
 const brut = JSON.parse(readFileSync(RAPPORT, 'utf8'))
 const parFichier = new Map()
 for (const [absolu, donnees] of Object.entries(brut)) {
-  const relatif = absolu.replace(`${process.cwd()}/`, '')
+  // Le rapport nomme les fichiers en chemins absolus, avec `\` sous
+  // Windows : retirer « cwd + '/' » n'y retirait rien, et le magasin
+  // devenait introuvable.
+  const relatif = relative(process.cwd(), absolu).split(sep).join('/')
   parFichier.set(relatif, donnees)
 }
 

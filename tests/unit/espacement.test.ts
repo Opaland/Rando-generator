@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { espacementTropGrand } from '../../src/core/matching.ts'
+import { metersToDegLon } from '../fixtures/synthetic.ts'
 import type { LonLat } from '../../src/core/types.ts'
 
 /**
@@ -55,6 +56,31 @@ describe('espacementTropGrand', () => {
   it('ne dit rien d’une trace trop courte pour avoir un espacement', () => {
     expect(espacementTropGrand([])).toBeNull()
     expect(espacementTropGrand([[4.5, 45.4]])).toBeNull()
+  })
+
+  it('sur un nombre pair d’écarts, moyenne les deux du milieu plutôt que d’en choisir un', () => {
+    /*
+      Trouvé par une vague de mutation du 17/10 : aucun test n'exerçait la
+      branche paire de la médiane avec une valeur vérifiée — les deux tests
+      qui l'atteignaient (la trace dense, les deux points à 50 km) ne
+      vérifient que `toBeNull()`, pas le nombre. Un mutant qui remplace la
+      moyenne par un produit, une différence, ou qui force la branche
+      impaire, survivait donc sans qu'aucune porte ne le voie.
+
+      Quatre écarts distincts (1 500, 1 600, 1 700, 1 800 m) : la branche
+      impaire choisirait 1 700 (ecarts[2]), la bonne moyenne des deux du
+      milieu est 1 650. Les deux sont au-dessus de MAX_GAP_METERS, donc la
+      différence ne se voit que sur la valeur rendue, pas sur sa présence.
+    */
+    const LAT_ESPACEMENT = 45.4
+    const pas = [1500, 1700, 1600, 1800] // délibérément dans le désordre
+    let lon = 4.5
+    const points: LonLat[] = [[lon, LAT_ESPACEMENT]]
+    for (const m of pas) {
+      lon += metersToDegLon(m, LAT_ESPACEMENT)
+      points.push([lon, LAT_ESPACEMENT])
+    }
+    expect(espacementTropGrand(points)).toBeCloseTo(1650, 0)
   })
 
   it('ne se laisse pas piéger par deux points très éloignés', () => {

@@ -1,5 +1,8 @@
+import { AllocateurPerso } from './identifiantsPerso.ts'
 import type { ParcoursDeclare } from './declaratif.ts'
 import { traverseAntimeridien } from './domaine.ts'
+import { instantDe, jourLocal } from './valeurLue.ts'
+import { isWgs84Coordinate } from './geo.ts'
 import { trackFingerprint } from './gpx.ts'
 import type { Itinerary, LonLat, Track } from './types.ts'
 
@@ -28,12 +31,12 @@ export class BackupError extends Error {
 export const BACKUP_FORMAT = 'sentiers-sauvegarde'
 export const BACKUP_VERSION = 1
 
-export interface BackupReglages {
+interface BackupReglages {
   toleranceMeters?: number
   completionPct?: number
 }
 
-export interface Backup {
+interface Backup {
   format: typeof BACKUP_FORMAT
   version: number
   exportedAt: string
@@ -78,9 +81,16 @@ export function serialiserBackup(backup: Backup): string {
   return JSON.stringify(backup)
 }
 
-/** Nom du fichier téléchargé, daté du jour de l'export. */
+/**
+ * Nom du fichier téléchargé, daté du jour **local** de l'export — comme le
+ * bilan (#565). Il lisait le début de la chaîne ISO, c'est-à-dire le jour
+ * UTC : un même soir en Guadeloupe, « sauvegarde-…-16 » et « bilan-…-15 ».
+ */
 export function backupFilename(isoNow: string): string {
-  const jour = /^(\d{4}-\d{2}-\d{2})/.exec(isoNow)?.[1]
+  // Un horodatage ISO, et seulement lui : `Date.parse` lit aussi
+  // « le 2026-08-20 », et le nom ne doit rien dater d'une chaîne quelconque.
+  const instant = /^\d{4}-\d{2}-\d{2}/.test(isoNow) ? instantDe(isoNow) : null
+  const jour = instant === null ? null : jourLocal(instant)
   return jour
     ? `sauvegarde-sentiers-${jour}.json.gz`
     : 'sauvegarde-sentiers.json.gz'
@@ -159,13 +169,14 @@ function champs(valeur: unknown): Record<string, unknown> | null {
     : null
 }
 
+/**
+ * Un point, et un point **sur le globe** (#559). `estPoint` ne vérifiait
+ * que deux nombres : `[4.5, 95]` passait, et une trace de 2 780 km venue
+ * d'une sauvegarde modifiée à la main restait en base. GPX, TCX, FIT et
+ * l'enregistreur appellent la même règle.
+ */
 function estPoint(valeur: unknown): boolean {
-  return (
-    Array.isArray(valeur) &&
-    valeur.length === 2 &&
-    typeof valeur[0] === 'number' &&
-    typeof valeur[1] === 'number'
-  )
+  return Array.isArray(valeur) && valeur.length === 2 && isWgs84Coordinate(valeur)
 }
 
 function estTrace(valeur: unknown): valeur is Track {
@@ -221,7 +232,13 @@ function estItineraire(valeur: unknown): valeur is Itinerary {
       // Vérifier chaque coordonnée, pas seulement que `coords` est un
       // tableau : un `null` glissé là se propageait jusqu'au calcul de
       // longueur et au rendu de la carte, très loin d'ici (issue #166).
-      return Array.isArray(coords) && coords.length > 0 && coords.every(estPoint)
+      return (
+        Array.isArray(coords) &&
+        coords.length > 0 &&
+        coords.every(estPoint) &&
+        // La garde de la trace (#170) manquait à l'itinéraire perso (#559).
+        !traverseAntimeridien(coords as LonLat[])
+      )
     })
   )
 }
@@ -314,7 +331,7 @@ export async function lireArchiveBackup(
   }
 }
 
-export interface FusionTraces {
+interface FusionTraces {
   tracks: Track[]
   ajoutees: number
   ignorees: number
@@ -343,7 +360,11 @@ export function fusionnerTraces(
       continue
     }
     empreintes.add(empreinte)
-    const id = ids.has(entrante.id) ? `${entrante.id}-importee` : entrante.id
+    // Renommer jusqu'à trouver un nom libre : deux entrantes au même
+    // identifiant pris recevaient toutes deux `…-importee`, et la seconde
+    // écrasait la première en base (trouvé par mutation, 18/10).
+    let id = entrante.id
+    while (ids.has(id)) id = `${id}-importee`
     ids.add(id)
     tracks.push({ ...entrante, id })
     ajoutees += 1
@@ -351,7 +372,28 @@ export function fusionnerTraces(
   return { tracks, ajoutees, ignorees }
 }
 
-export interface FusionItineraires {
+/**
+ * Ce qu'une fusion a ajouté après les `depuis` premiers éléments, posé à la
+ * suite de `actuels` sans ce qui y est déjà.
+ *
+ * Sert à la restauration, qui fusionne sur un état lu avant ses écritures en
+ * base et doit déposer sur celui d'après : ce qu'un import a ajouté entre les
+ * deux reste (voir `restaurationConcurrente.test.ts`).
+ */
+export function ajouterLesNeufs<T>(
+  actuels: T[],
+  fusion: T[],
+  depuis: number,
+  cle: (element: T) => string | number,
+): T[] {
+  const connus = new Set(actuels.map(cle))
+  return [
+    ...actuels,
+    ...fusion.slice(depuis).filter((e) => !connus.has(cle(e))),
+  ]
+}
+
+interface FusionItineraires {
   itineraries: Itinerary[]
   ajoutes: number
   ignores: number
@@ -375,17 +417,24 @@ function signature(itineraire: Itinerary): string {
  *
  * Leurs numéros sont attribués localement (−1, −2, …) : deux appareils
  * donnent le même à deux itinéraires différents. Sans renumérotation, l'import
- * écraserait celui de l'appareil d'accueil — et ses ways avec, puisqu'ils
- * dérivent du numéro de l'itinéraire.
+ * écraserait celui de l'appareil d'accueil.
+ *
+ * Les chemins se renumérotent à part, un par un (#543) : ils ne dérivent plus
+ * du numéro de l'itinéraire depuis #440, et la formule `id * 1 000 − index`
+ * qui restait ici tombait sur les chemins d'un import à mille tronçons. Un
+ * numéro apporté par la sauvegarde est gardé tant qu'il est libre.
+ *
+ * `allocateur` est celui du magasin quand il y en a un : il sait ce qu'un
+ * import en cours vient de recevoir sans l'avoir encore déposé.
  */
 export function fusionnerItineraires(
   existants: Itinerary[],
   entrants: Itinerary[],
+  allocateur: AllocateurPerso = new AllocateurPerso(),
 ): FusionItineraires {
+  allocateur.observer(existants)
   const signatures = new Set(existants.map(signature))
-  const ids = new Set(existants.map((i) => i.osmRelationId))
   const itineraries = [...existants]
-  let prochainId = Math.min(0, ...ids)
   let ajoutes = 0
   let ignores = 0
   for (const entrant of entrants) {
@@ -394,23 +443,15 @@ export function fusionnerItineraires(
       continue
     }
     signatures.add(signature(entrant))
-    if (!ids.has(entrant.osmRelationId)) {
-      ids.add(entrant.osmRelationId)
-      prochainId = Math.min(prochainId, entrant.osmRelationId)
-      itineraries.push(entrant)
-    } else {
-      prochainId -= 1
-      const id = prochainId
-      ids.add(id)
-      itineraries.push({
-        ...entrant,
-        osmRelationId: id,
-        ways: entrant.ways.map((way, index) => ({
-          ...way,
-          osmWayId: id * 1_000 - index,
-        })),
-      })
-    }
+    const id = allocateur.reserverRelation(entrant.osmRelationId)
+      ? entrant.osmRelationId
+      : allocateur.relation()
+    const ways = entrant.ways.map((way) =>
+      allocateur.reserverChemin(way.osmWayId)
+        ? way
+        : { ...way, osmWayId: allocateur.chemin() },
+    )
+    itineraries.push({ ...entrant, osmRelationId: id, ways })
     ajoutes += 1
   }
   return { itineraries, ajoutes, ignores }
@@ -426,6 +467,9 @@ export function fusionnerItineraires(
 export function resumeFusion(
   traces: FusionTraces,
   itineraires: FusionItineraires,
+  // Les déclarations comptent aussi : une sauvegarde qui n'en portait que
+  // des nouvelles se disait « rien de nouveau » (revue du 20/10).
+  declarationsAjoutees = 0,
 ): string {
   const morceaux: string[] = []
   if (traces.ajoutees > 0) {
@@ -438,6 +482,13 @@ export function resumeFusion(
       itineraires.ajoutes === 1
         ? '1 itinéraire ajouté'
         : `${itineraires.ajoutes} itinéraires ajoutés`,
+    )
+  }
+  if (declarationsAjoutees > 0) {
+    morceaux.push(
+      declarationsAjoutees === 1
+        ? '1 déclaration ajoutée'
+        : `${String(declarationsAjoutees)} déclarations ajoutées`,
     )
   }
   const dejaLa = traces.ignorees + itineraires.ignores

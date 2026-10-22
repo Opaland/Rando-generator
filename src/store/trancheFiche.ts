@@ -107,7 +107,7 @@ export const FICHE_FERMEE: Omit<EtatFiche, 'focusTarget' | 'focusBounds'> = {
 }
 
 /** Ce que la tranche a besoin de savoir du reste du store. */
-export interface DependancesFiche {
+interface DependancesFiche {
   set: (
     partiel: Partial<EtatFiche & { selectedItineraryId: number | null }>,
   ) => void

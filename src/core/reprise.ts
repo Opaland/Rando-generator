@@ -1,4 +1,4 @@
-import type { Enregistrement, Intervalle, PointBrut } from './recorder.ts'
+import { fermerIntervalle, type Enregistrement, type Intervalle, type PointBrut } from './recorder.ts'
 
 /**
  * Survivre à un onglet tué (issue #152, pierre 2).
@@ -85,15 +85,6 @@ export function pointsAEcrire(
   return e.points.slice(dejaEcrits)
 }
 
-/** Ferme l'intervalle en cours, s'il y en a un. */
-function fermerA(intervalles: Intervalle[], instant: number): Intervalle[] {
-  return intervalles.map((intervalle, i) =>
-    i === intervalles.length - 1 && intervalle.fin === null
-      ? { ...intervalle, fin: instant }
-      : intervalle,
-  )
-}
-
 /**
  * Ce qu'on retrouve au démarrage, ou `null` s'il n'y a rien à reprendre.
  *
@@ -126,6 +117,6 @@ export function reprendreApresInterruption(
     points,
     demarreA: tete.demarreA,
     termineA: null,
-    intervalles: fermerA(tete.intervalles, dernierInstantConnu),
+    intervalles: fermerIntervalle(tete.intervalles, dernierInstantConnu),
   }
 }

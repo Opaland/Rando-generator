@@ -76,6 +76,7 @@ test('une déclaration se retire, et ne laisse rien derrière', async ({
   await expect(page.getByTestId('global-declare')).toBeVisible()
 
   await page.getByTestId('declare-retirer').click()
+  await page.getByTestId('declare-retirer-confirm').click()
   await expect(page.getByTestId('declare-ouvrir')).toBeVisible()
   await expect(page.getByTestId('global-declare')).toHaveCount(0)
 })
@@ -177,6 +178,7 @@ test('un itinéraire coché est dessiné à part sur la carte', async ({ page })
   await expect.poll(declares, { timeout: 15_000 }).toBeGreaterThan(0)
 
   await page.getByTestId('declare-retirer').click()
+  await page.getByTestId('declare-retirer-confirm').click()
   await expect.poll(declares, { timeout: 15_000 }).toBe(0)
 })
 
@@ -241,4 +243,28 @@ test('sans trace, cocher change ce qu’on lit sous le zéro', async ({
   await expect(sousLeChiffre).toBeVisible()
   await expect(sousLeChiffre).toContainText('cochés à la main')
   await expect(sousLeChiffre).not.toContainText('Aucune sortie')
+})
+
+/*
+  Issue #565 : le `max` du champ date se calculait en UTC. À Nouméa
+  (UTC+11), on ne pouvait pas déclarer « aujourd'hui » avant 11 h : le champ
+  plafonnait à la veille. Le fuseau et l'heure du navigateur sont posés
+  ici — sur une machine réglée en UTC, ce test ne départagerait rien.
+*/
+test.describe('à Nouméa, à 7 h du matin', () => {
+  test.use({ timezoneId: 'Pacific/Noumea' })
+
+  test('on peut déclarer aujourd’hui', async ({ page }) => {
+    // 31 août 20 h UTC = 1ᵉʳ septembre 7 h à Nouméa.
+    await page.clock.setFixedTime(new Date('2026-08-31T20:00:00Z'))
+    await mockExternalNetwork(page)
+    await page.goto('/')
+    await chargerLaZone(page)
+    await ouvrirLaFiche(page)
+    await page.getByTestId('declare-ouvrir').click()
+    await expect(page.getByTestId('declare-date')).toHaveAttribute(
+      'max',
+      '2026-09-01',
+    )
+  })
 })

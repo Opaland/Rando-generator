@@ -37,7 +37,7 @@ import type { Itinerary, LonLat, PoiKind, PointOfInterest } from './types.ts'
  */
 export const CATEGORIES_RECHERCHEES = ['water', 'shelter', 'viewpoint'] as const
 
-export type CategorieRecherchee = (typeof CATEGORIES_RECHERCHEES)[number]
+type CategorieRecherchee = (typeof CATEGORIES_RECHERCHEES)[number]
 
 /** Détour aller-retour, en mètres, ou `null` si rien n'a été trouvé. */
 export type DetoursPoi = Record<CategorieRecherchee, number | null>

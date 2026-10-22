@@ -93,6 +93,37 @@ describe('parseGrNordGeoJSON', () => {
     expect(res).toEqual([])
   })
 
+  /*
+    Trouvé par une vague de mutation du 17/10 : le test précédent corrompt
+    les deux coordonnées de la ligne, donc `every` et `some` rendent le même
+    résultat (rejeter) et ne se distinguent pas. Une ligne à moitié valide —
+    un relevé GPS qui dérive sur un seul point — doit être rejetée tout
+    autant : la laisser passer avec une seule coordonnée hors bornes
+    produirait un tracé qui saute d'un bout du monde à l'autre.
+  */
+  it('écarte une étape dont une seule coordonnée est hors bornes', () => {
+    const res = parseGrNordGeoJSON(
+      {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            properties: { objectid: 10, nom: 'À moitié corrompue' },
+            geometry: {
+              type: 'LineString',
+              coordinates: [
+                [164.5, -20.9],
+                [842000, 6520000],
+              ],
+            },
+          },
+        ],
+      },
+      FETCHED_AT,
+    )
+    expect(res).toEqual([])
+  })
+
   it('écarte une feature sans objectid exploitable', () => {
     const res = parseGrNordGeoJSON(
       {

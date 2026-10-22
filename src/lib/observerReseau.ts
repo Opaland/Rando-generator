@@ -10,7 +10,9 @@
  *
  * Ce qu'il ne voit pas est écrit ici plutôt que passé sous silence : les
  * ressources chargées par le navigateur lui-même — balises `<img>`,
- * feuilles de style, polices — ne passent ni par `fetch` ni par XHR.
+ * feuilles de style, polices — ne passent ni par `fetch` ni par XHR ; et
+ * le service worker a son propre `fetch`, que ce patch n'atteint pas — les
+ * tuiles du corridor qu'on emporte partent par là (#558).
  * L'interface ne doit donc affirmer que ce que cette instrumentation
  * couvre, et c'est pourquoi elle parle de « requêtes de l'application »
  * plutôt que de tout trafic.

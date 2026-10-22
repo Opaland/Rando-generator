@@ -1,4 +1,4 @@
-import { expect, type Locator, type Page } from '@playwright/test'
+import { expect, type Locator, type Page, type Route } from '@playwright/test'
 import pilatFixture from '../fixtures/overpass/pilat.json' with { type: 'json' }
 import poiFixture from '../fixtures/overpass/poi.json' with { type: 'json' }
 
@@ -9,6 +9,8 @@ export interface MapLike {
   getCenter: () => { lng: number; lat: number }
   getPitch: () => number
   isMoving: () => boolean
+  getCanvas: () => HTMLCanvasElement
+  jumpTo: (options: { center: [number, number] }) => void
 }
 
 /** Vrai si la carte a pu s'initialiser (WebGL disponible dans ce navigateur). */
@@ -44,7 +46,52 @@ export async function waitForMapReady(page: Page): Promise<void> {
   )
 }
 
-/** Clique un point géographique sur la carte (coordonnées carte → écran). */
+/**
+ * Retient les réponses à `motif` jusqu'à ce qu'on les relâche.
+ *
+ * Le relâchement porte un drapeau, et pas seulement une fonction. Poser
+ * `ouvrir` depuis le gestionnaire de route puis l'appeler avec `?.()`
+ * suppose que Playwright a déjà intercepté la requête — or l'état
+ * « chargement » que le test attend naît quand l'application **lance** la
+ * requête. Si le gestionnaire n'a pas encore tourné, l'appel ne fait rien
+ * en silence, et la réponse reste bloquée à jamais. Le défaut a été corrigé
+ * dans un test de `loading.spec.ts` le 23/08, pas dans ses deux voisins :
+ * l'un d'eux est tombé le 20/10 (CLAUDE.md §4 et §6ter).
+ */
+export async function retenirLaReponse(
+  page: Page,
+  motif: string,
+  repondre: (route: Route) => Promise<void>,
+): Promise<() => void> {
+  const etat: { relache: boolean; ouvrir: (() => void) | null } = {
+    relache: false,
+    ouvrir: null,
+  }
+  await page.route(motif, async (route) => {
+    if (!etat.relache) {
+      await new Promise<void>((resolve) => {
+        etat.ouvrir = resolve
+      })
+    }
+    await repondre(route)
+  })
+  return () => {
+    etat.relache = true
+    etat.ouvrir?.()
+  }
+}
+
+/**
+ * Clique un point géographique sur la carte (coordonnées carte → écran).
+ *
+ * Un point projeté peut tomber sous une commande — le crédit, le zoom, une
+ * feuille : le clic part alors dans le bouton, pas dans le tracé. Tant que la
+ * caméra s'arrêtait au zoom 9 (#572), le point visé tombait dans la carte par
+ * hasard ; cadrée jusqu'au bout, la zone le pose sous le crédit. On demande
+ * donc ce qui est **peint** au point (CLAUDE.md §1bis) et, si ce n'est pas
+ * la carte, on la recentre dessus — ce que ferait quelqu'un qui fait glisser
+ * la carte avant de toucher le tracé.
+ */
 export async function clickOnMap(
   page: Page,
   lon: number,
@@ -55,25 +102,49 @@ export async function clickOnMap(
   // La caméra peut encore finir un fitBounds animé : attendre l'arrêt avant
   // de projeter, sinon le point calculé dérive de la ligne (tolérance de
   // clic quasi nulle sur une géométrie « line » de 2 px).
-  await page.waitForFunction(
-    () =>
-      !(
-        window as unknown as { __sentiersMap?: MapLike }
-      ).__sentiersMap?.isMoving(),
-  )
-  const mapBox = await page.getByTestId('map').boundingBox()
-  if (!mapBox) throw new Error('Carte introuvable')
-  const point = await page.evaluate(
-    ([lonArg, latArg]) => {
-      const map = (window as unknown as { __sentiersMap?: MapLike })
-        .__sentiersMap
-      if (!map) return null
-      return map.project([lonArg, latArg])
-    },
-    [lon, lat] as const,
-  )
+  const immobile = () =>
+    page.waitForFunction(
+      () =>
+        !(
+          window as unknown as { __sentiersMap?: MapLike }
+        ).__sentiersMap?.isMoving(),
+    )
+  const projeter = () =>
+    page.evaluate(
+      ([lonArg, latArg]) => {
+        const map = (window as unknown as { __sentiersMap?: MapLike })
+          .__sentiersMap
+        if (!map) return null
+        const p = map.project([lonArg, latArg])
+        const cadre = map.getCanvas().getBoundingClientRect()
+        const x = cadre.x + p.x
+        const y = cadre.y + p.y
+        const peint = document.elementFromPoint(x, y) === map.getCanvas()
+        return { x, y, peint }
+      },
+      [lon, lat] as const,
+    )
+  await immobile()
+  let point = await projeter()
   if (!point) throw new Error('Carte non initialisée (WebGL indisponible ?)')
-  await page.mouse.click(mapBox.x + point.x, mapBox.y + point.y)
+  if (!point.peint) {
+    await page.evaluate(
+      ([lonArg, latArg]) => {
+        const map = (window as unknown as { __sentiersMap?: MapLike })
+          .__sentiersMap
+        map?.jumpTo({ center: [lonArg, latArg] })
+      },
+      [lon, lat] as const,
+    )
+    await immobile()
+    point = await projeter()
+    if (!point?.peint) {
+      throw new Error(
+        `${String(lon)}, ${String(lat)} reste sous une commande, même au centre de la carte`,
+      )
+    }
+  }
+  await page.mouse.click(point.x, point.y)
 }
 
 /**
@@ -385,12 +456,21 @@ export type CleOnglet = (typeof ONGLETS)[number]
 /**
  * Se place sur un onglet — et ne fait rien si la barre n'existe pas.
  *
- * Le silence est délibéré. La barre n'apparaît qu'en dessous du point de
- * rupture, et l'ancienne disposition reste servie par
- * `?maquette=accordeons` : un test qui aurait à savoir dans laquelle il
- * tourne pour appeler cette fonction n'aurait rien gagné. Ici le même test
- * passe dans les deux, et n'exprime que ce qui l'intéresse — « je veux voir
- * les sorties », pas « je clique sur le deuxième bouton ».
+ * Le silence est délibéré. La barre existe à toutes les largeurs depuis le
+ * 23/08 (`App.tsx`) ; seul son *effet de filtrage* dépend de la largeur — sur
+ * grand écran, cliquer l'amène à sa première section sans rien cacher des
+ * autres. L'ancienne disposition en accordéons reste servie par
+ * `?maquette=accordeons`, où la barre n'existe pas du tout : un test qui
+ * aurait à savoir dans laquelle il tourne pour appeler cette fonction n'aurait
+ * rien gagné. Ici le même test passe dans les trois cas, et n'exprime que ce
+ * qui l'intéresse — « je veux voir les sorties », pas « je clique sur le
+ * deuxième bouton ».
+ *
+ * Cette phrase disait auparavant « la barre n'apparaît qu'en dessous du
+ * point de rupture » — vrai avant le 23/08, faux depuis, et personne ne
+ * l'avait relevé jusqu'à l'audit du 17/10 (`docs/AUDIT_APPLICATIF_17_10.md`) :
+ * un commentaire resté vrai en apparence mais faux en substance n'alerte
+ * personne (CLAUDE.md §4bis).
  */
 export async function ouvrirOnglet(page: Page, cle: CleOnglet): Promise<void> {
   const onglet = page.getByTestId(`onglet-${cle}`)
@@ -783,8 +863,18 @@ export async function suivisDePosition(page: Page): Promise<number> {
  * mesure alors la latence d'écriture en croyant mesurer la reprise.
  */
 export async function pointsEnBase(page: Page): Promise<number> {
+  return compterEnBase(page, 'enregistrementPoints')
+}
+
+/**
+ * Combien d'enregistrements un magasin d'IndexedDB contient, ou −1 s'il est
+ * illisible. Même raison que `pointsEnBase` : une écriture s'attend, elle ne
+ * se devine pas — `double-clic.spec.ts` rechargeait avant que la
+ * déclaration soit écrite, et échouait deux fois sur trois.
+ */
+export async function compterEnBase(page: Page, magasin: string): Promise<number> {
   return page.evaluate(
-    () =>
+    (magasin) =>
       new Promise<number>((resolve) => {
         const ouverture = indexedDB.open('sentiers')
         ouverture.onerror = () => {
@@ -792,14 +882,14 @@ export async function pointsEnBase(page: Page): Promise<number> {
         }
         ouverture.onsuccess = () => {
           const base = ouverture.result
-          if (!base.objectStoreNames.contains('enregistrementPoints')) {
+          if (!base.objectStoreNames.contains(magasin)) {
             base.close()
             resolve(-1)
             return
           }
           const compte = base
-            .transaction('enregistrementPoints', 'readonly')
-            .objectStore('enregistrementPoints')
+            .transaction(magasin, 'readonly')
+            .objectStore(magasin)
             .count()
           compte.onsuccess = () => {
             base.close()
@@ -811,6 +901,7 @@ export async function pointsEnBase(page: Page): Promise<number> {
           }
         }
       }),
+    magasin,
   )
 }
 
@@ -1046,4 +1137,37 @@ export async function cocher(commande: Locator): Promise<void> {
   */
   if (!(await commande.isChecked())) await commande.click()
   await expect(commande).toBeChecked()
+}
+
+/**
+ * Ouvre la fiche du GR 7 par la liste, zone du Pilat chargée et tous les
+ * réseaux affichés.
+ *
+ * Nommé le 21/10 (sprint 3) quand un troisième fichier en a eu besoin :
+ * la sonde axe des états et les règles de clavier. C'est la convergence qui
+ * est assertée, pas chaque clic (§6ter) : au téléphone, la liste vit sous
+ * « Progression » et la feuille peut intercepter le premier toucher.
+ */
+export async function ouvrirLaFicheDuGr7(page: Page, compact: boolean): Promise<void> {
+  const fiche = page.getByTestId('itinerary-detail')
+  await expect
+    .poll(
+      async () => {
+        if (await fiche.isVisible().catch(() => false)) return true
+        if (compact) await ouvrirOnglet(page, 'progression')
+        await page
+          .getByTestId('itinerary-list')
+          .getByRole('button', { name: /GR 7/ })
+          .first()
+          .click({ timeout: 1_500 })
+          .catch(() => undefined)
+        await page
+          .getByTestId('itinerary-card-detail-link')
+          .click({ timeout: 1_500 })
+          .catch(() => undefined)
+        return false
+      },
+      { timeout: 30_000 },
+    )
+    .toBe(true)
 }

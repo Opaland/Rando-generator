@@ -1,5 +1,11 @@
 import { test, expect } from '@playwright/test'
-import { mockExternalNetwork, fermerLeGuide, ouvrirOnglet } from './helpers.ts'
+import {
+  buildGpx,
+  mockExternalNetwork,
+  fermerLeGuide,
+  ouvrirOnglet,
+} from './helpers.ts'
+import { buildFit } from '../fixtures/fit.ts'
 import type { Page } from '@playwright/test'
 
 /**
@@ -64,5 +70,43 @@ test.describe('à la souris', () => {
     await expect(page.getByTestId('depot-glisser')).toContainText(
       /glissez-les ici/i,
     )
+  })
+
+  /*
+    Issue #562 — le dépôt ne gardait que les `.gpx`, alors que le texte
+    annonce « GPX, FIT ou TCX » et l'archive d'export, et que la lecture
+    reconnaît le format **au contenu**. Un `.fit` déposé avec un `.GPX`
+    disparaissait sans un mot ; un fichier qui n'est pas une trace aussi.
+  */
+  test('un dépôt mixte importe chaque trace, et dit ce qu’il n’a pas su lire', async ({
+    page,
+  }) => {
+    await ouvrirLeDepot(page)
+    const fit = buildFit(
+      Array.from({ length: 30 }, (_, i) => ({
+        timestamp: 1_000_000 + i * 10,
+        lat: 45.4,
+        lon: 4.5 + i * 0.0002,
+        altitude: 800,
+      })),
+    )
+    const depot = await page.evaluateHandle(
+      ({ gpx, fit }) => {
+        const transfert = new DataTransfer()
+        transfert.items.add(new File([gpx], 'A.GPX'))
+        transfert.items.add(new File([new Uint8Array(fit)], 'b.fit'))
+        transfert.items.add(new File(['des notes'], 'notes.txt'))
+        return transfert
+      },
+      { gpx: buildGpx(15), fit: Array.from(new Uint8Array(fit)) },
+    )
+    await page.getByTestId('gpx-dropzone').dispatchEvent('drop', {
+      dataTransfer: depot,
+    })
+
+    const liste = page.getByTestId('tracks-list')
+    await expect(liste).toContainText('A.GPX', { timeout: 15_000 })
+    await expect(liste).toContainText('b.fit')
+    await expect(page.getByTestId('gpx-errors')).toContainText('notes.txt')
   })
 })

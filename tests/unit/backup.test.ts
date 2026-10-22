@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest'
+import { AllocateurPerso } from '../../src/core/identifiantsPerso.ts'
 import {
+  ajouterLesNeufs,
   BACKUP_FORMAT,
   BACKUP_VERSION,
   BackupError,
@@ -13,6 +15,7 @@ import {
   serialiserBackup,
 } from '../../src/core/backup.ts'
 import type { Itinerary, Track } from '../../src/core/types.ts'
+import { makeItinerary } from '../fixtures/synthetic.ts'
 
 /**
  * Sauvegarde complète (issue #132).
@@ -293,6 +296,17 @@ describe('fusionnerItineraires', () => {
     const boucle = perso(-1, 'Ma boucle', [[4.5, 45.4], [4.52, 45.42]])
     const resultat = fusionnerItineraires([boucle], [{ ...boucle }])
     expect(resultat.ajoutes).toBe(0)
+    expect(resultat.ignores).toBe(1)
+    expect(resultat.itineraries).toHaveLength(1)
+  })
+
+  it('n’ajoute qu’une fois un itinéraire que la sauvegarde porte deux fois', () => {
+    // Trouvé par mutation le 18/10 : rien ne vérifiait que la signature d'un
+    // entrant ajouté écarte son jumeau du même fichier.
+    const boucle = perso(-4, 'Ma boucle', [[4.5, 45.4], [4.52, 45.42]])
+    const resultat = fusionnerItineraires([], [boucle, { ...boucle }])
+    expect(resultat.ajoutes).toBe(1)
+    expect(resultat.ignores).toBe(1)
     expect(resultat.itineraries).toHaveLength(1)
   })
 
@@ -346,6 +360,54 @@ describe('fusionnerItineraires', () => {
       i.ways.map((w) => w.osmWayId),
     )
     expect(new Set(tousLesWays).size).toBe(tousLesWays.length)
+  })
+
+  /*
+    #543. La renumérotation des chemins se faisait par `id * 1 000 − index`,
+    la formule que #440 a retirée de l'import : elle ignore les chemins déjà
+    en usage, qui depuis #440 se numérotent −1, −2… indépendamment des
+    relations. Un chemin importé à −2 000 — mille-et-un tronçons, un PDIPR —
+    tombe sur le premier chemin d'un entrant renuméroté −2.
+  */
+  it('ne renumérote pas un chemin sur un chemin déjà en usage', () => {
+    const ici: Itinerary = {
+      ...perso(-1, 'Réseau', [[4.5, 45.4], [4.52, 45.42]]),
+      ways: [{ osmWayId: -2000, coords: [[4.5, 45.4], [4.52, 45.42]] }],
+    }
+    const ailleurs = perso(-1, 'Tour du Mont Blanc', [[6.9, 45.9], [6.92, 45.92]])
+    const resultat = fusionnerItineraires([ici], [ailleurs])
+    const chemins = resultat.itineraries.flatMap((i) =>
+      i.ways.map((w) => w.osmWayId),
+    )
+    expect(new Set(chemins).size).toBe(chemins.length)
+  })
+
+  it('renumérote le chemin d’un entrant au numéro libre quand ce chemin est pris', () => {
+    // Le numéro de relation est libre, celui du chemin ne l'est pas : la
+    // fusion ne regardait que le premier.
+    const ici = perso(-1, 'Boucle du Pilat', [[4.5, 45.4], [4.52, 45.42]])
+    const ailleurs: Itinerary = {
+      ...perso(-3, 'Tour du Mont Blanc', [[6.9, 45.9], [6.92, 45.92]]),
+      ways: [{ osmWayId: -1000, coords: [[6.9, 45.9], [6.92, 45.92]] }],
+    }
+    const resultat = fusionnerItineraires([ici], [ailleurs])
+    expect(resultat.itineraries.map((i) => i.osmRelationId)).toEqual([-1, -3])
+    const chemins = resultat.itineraries.flatMap((i) =>
+      i.ways.map((w) => w.osmWayId),
+    )
+    expect(new Set(chemins).size).toBe(chemins.length)
+  })
+
+  it('ne donne pas à un entrant un numéro que le magasin vient de distribuer', () => {
+    // Un import en cours a reçu −2 sans l'avoir encore déposé : la liste
+    // `existants` l'ignore, l'allocateur partagé le sait.
+    const allocateur = new AllocateurPerso()
+    const ici = perso(-1, 'Ici', [[4.5, 45.4], [4.52, 45.42]])
+    allocateur.observer([ici])
+    expect(allocateur.relation()).toBe(-2)
+    const ailleurs = perso(-2, 'Ailleurs', [[6.9, 45.9], [6.92, 45.92]])
+    const resultat = fusionnerItineraires([ici], [ailleurs], allocateur)
+    expect(resultat.itineraries.map((i) => i.osmRelationId)).not.toContain(-2)
   })
 })
 
@@ -438,6 +500,72 @@ describe('domaine de validité à la restauration (issue #170)', () => {
     })
     const relue = await lireArchiveBackup(archive)
     expect(relue.tracks).toHaveLength(0)
+  })
+
+  /*
+    Issue #559, point 4 (QA, vu trois fois) : une sauvegarde portant
+    `points: [[4.5,95],[4.6,120]]` donnait « 1 trace ajoutée », de
+    2 779,9 km, toujours là après rechargement. `estPoint` vérifiait des
+    nombres, pas un lieu : GPX, TCX, FIT et l'enregistreur appellent
+    `estDansLeMonde`, la restauration non.
+  */
+  it('écarte une trace dont les points sont hors du globe', async () => {
+    const archive = await archiveDe({
+      tracks: [
+        {
+          id: 'nulle-part',
+          filename: 'pole.gpx',
+          points: [
+            [4.5, 95],
+            [4.6, 120],
+          ],
+          date: null,
+          importedAt: '2026-01-01T00:00:00Z',
+        },
+      ],
+      customItineraries: [],
+      settings: {},
+    })
+    const relue = await lireArchiveBackup(archive)
+    expect(relue.tracks).toHaveLength(0)
+  })
+
+  it('écarte un itinéraire perso hors du globe, ou qui franchit 180°', async () => {
+    const archive = await archiveDe({
+      tracks: [],
+      customItineraries: [
+        makeItinerary(-1, [
+          {
+            osmWayId: 1,
+            coords: [
+              [4.5, 45.4],
+              [4.5, 95],
+            ],
+          },
+        ]),
+        makeItinerary(-2, [
+          {
+            osmWayId: 2,
+            coords: [
+              [179.999, -17],
+              [-179.999, -17],
+            ],
+          },
+        ]),
+        makeItinerary(-3, [
+          {
+            osmWayId: 3,
+            coords: [
+              [4.5, 45.4],
+              [4.501, 45.4],
+            ],
+          },
+        ]),
+      ],
+      settings: {},
+    })
+    const relue = await lireArchiveBackup(archive)
+    expect(relue.customItineraries.map((i) => i.osmRelationId)).toEqual([-3])
   })
 
   it('garde une trace qui longe l’antiméridien sans le franchir', async () => {
@@ -537,5 +665,25 @@ describe('parcours déclarés et sauvegarde (issue #158)', () => {
       ) as ArrayBuffer,
     )
     expect(relue.parcoursDeclares).toEqual([declare])
+  })
+})
+
+describe('ajouterLesNeufs', () => {
+  const cle = (x: { id: string }) => x.id
+  it('pose à la suite de l’état actuel ce que la fusion a ajouté, et seulement cela', () => {
+    const avant = [{ id: 'a' }]
+    const fusion = [...avant, { id: 'b' }, { id: 'c' }]
+    // Pendant ce temps : « a » retiré, « d » et « c » arrivés d'ailleurs.
+    const actuels = [{ id: 'd' }, { id: 'c' }]
+    expect(ajouterLesNeufs(actuels, fusion, avant.length, cle)).toEqual([
+      { id: 'd' },
+      { id: 'c' },
+      { id: 'b' },
+    ])
+  })
+
+  it('ne remet pas ce que la fusion avait déjà, même retiré entre-temps', () => {
+    const fusion = [{ id: 'a' }, { id: 'b' }]
+    expect(ajouterLesNeufs([], fusion, 1, cle)).toEqual([{ id: 'b' }])
   })
 })

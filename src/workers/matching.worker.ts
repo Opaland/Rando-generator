@@ -8,6 +8,8 @@ export interface MatchRequest {
   trackPoints: LonLat[]
   /** Même longueur et même ordre que `trackPoints` (issue #150). */
   trackTimes?: (number | null)[] | undefined
+  /** Voir `MatchOptions.coupures` (#560). */
+  coupures?: number[] | undefined
   toleranceMeters: number
   stepMeters: number
   computedAt: string
@@ -26,6 +28,7 @@ scope.onmessage = (event: MessageEvent<MatchRequest>) => {
     itineraries,
     trackPoints,
     trackTimes,
+    coupures,
     toleranceMeters,
     stepMeters,
     computedAt,
@@ -35,6 +38,7 @@ scope.onmessage = (event: MessageEvent<MatchRequest>) => {
     stepMeters,
     computedAt,
     trackTimes,
+    coupures,
   })
   scope.postMessage({ requestId, result } satisfies MatchResponse)
 }

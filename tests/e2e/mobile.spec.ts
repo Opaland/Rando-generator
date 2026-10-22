@@ -213,7 +213,12 @@ test('rien ne descend sous 13 px sur un écran de téléphone', async ({
   await expect(page.getByTestId('global-pct')).toHaveText('54,5 %')
 
   // Les quatre onglets, pour la même raison que l'audit des cibles.
-  const textes: { px: number; texte: string; badge: boolean }[] = []
+  const textes: {
+    px: number
+    texte: string
+    badge: boolean
+    attribution: boolean
+  }[] = []
   await surChaqueOnglet(page, async () => {
     textes.push(...(await releverTailles(page)))
   })
@@ -223,18 +228,27 @@ test('rien ne descend sous 13 px sur un écran de téléphone', async ({
   //    grasses sur fond plein, contraintes en largeur dans les listes ;
   //  — l'attribution MapLibre, phrase dense qu'on consulte une fois et qui
   //    occuperait le quart de la carte à 14 px.
-  const attribution = (t: string) =>
-    /MapLibre|IGN|OpenStreetMap|Métropole|Province Nord/.test(t)
-  expect(textes.filter((t) => t.px < 13 && !attribution(t.texte))).toEqual([])
+  //
+  // L'attribution se reconnaît à l'endroit où elle est peinte — le contrôle
+  // de MapLibre —, plus à la liste des producteurs qu'elle nomme. Cette
+  // liste était écrite ici à la main, recopie de `src/lib/attribution.ts`
+  // (§4ter) : le 18/10, créditer le Département de l'Isère (#87) l'a fait
+  // échouer, comme le ferait chaque source à venir.
+  expect(textes.filter((t) => t.px < 13 && !t.attribution)).toEqual([])
   expect(
-    textes.filter((t) => t.px < 14 && !t.badge && !attribution(t.texte)),
+    textes.filter((t) => t.px < 14 && !t.badge && !t.attribution),
   ).toEqual([])
 })
 
 /** Relève la taille de chaque élément qui porte lui-même du texte. */
 async function releverTailles(page: import('@playwright/test').Page) {
   return page.evaluate(() => {
-    const releve: { px: number; texte: string; badge: boolean }[] = []
+    const releve: {
+      px: number
+      texte: string
+      badge: boolean
+      attribution: boolean
+    }[] = []
     for (const el of document.querySelectorAll('body *')) {
       const propre = el.textContent.trim()
       if (!propre) continue
@@ -250,6 +264,7 @@ async function releverTailles(page: import('@playwright/test').Page) {
         px: Math.round(parseFloat(getComputedStyle(el).fontSize) * 10) / 10,
         texte: propre.slice(0, 40),
         badge: /_badge_/.test(el.className),
+        attribution: el.closest('.maplibregl-ctrl-attrib') !== null,
       })
     }
     return releve

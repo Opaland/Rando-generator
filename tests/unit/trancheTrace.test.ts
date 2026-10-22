@@ -1,5 +1,7 @@
+import { AllocateurPerso } from '../../src/core/identifiantsPerso.ts'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { Itinerary, LonLat } from '../../src/core/types.ts'
+import { gpxAttributionFor } from '../../src/core/gpxExport.ts'
 
 /**
  * La tranche « tracé » du store (issue #155).
@@ -84,7 +86,7 @@ function banc(balises: Itinerary[], ficheOuverte = false) {
     },
     etatTrace: () => etat,
     itinerairesDuGraphe: () => ({ balises, perso }),
-    prochainIdentifiantPerso: () => -1,
+    identifiantsPerso: () => Promise.resolve(new AllocateurPerso()),
     ficheOuverte: () => ficheOuverte,
     fermerLaFiche: () => {
       fermetures += 1
@@ -118,6 +120,10 @@ describe('le graphe de routage n’est construit qu’à bon escient', () => {
     b.actions.addDrawPoint([4.5, 45.4])
     b.actions.addDrawPoint([4.503, 45.4])
     expect(b.etat().drawWaypointKeys).toHaveLength(2)
+    expect(b.etat().drawWaypoints).toEqual([
+      [4.5, 45.4],
+      [4.503, 45.4],
+    ])
     expect(
       construits.length,
       'le mémo du graphe ne touche plus : il est reconstruit à chaque clic',
@@ -218,6 +224,21 @@ describe('enregistrer un tracé', () => {
     expect(itineraire.totalMeters).toBeGreaterThan(0)
   })
 
+  /*
+    Issue #557 : le tracé suit la géométrie du GR, et s'exportait sans
+    l'ODbL. Il porte maintenant la source de ce qu'il suit.
+  */
+  it('porte l’attribution des sentiers qu’il suit', async () => {
+    const b = banc([segment(1, [4.5, 45.4])])
+    b.actions.toggleDrawMode()
+    b.actions.addDrawPoint([4.5, 45.4])
+    b.actions.addDrawPoint([4.503, 45.4])
+    await b.actions.saveDrawnItinerary('Mon tour')
+    expect((b.enregistres[0] as Itinerary).attribution).toEqual(
+      gpxAttributionFor('GR'),
+    )
+  })
+
   /** Un nom vide ne doit pas produire un itinéraire sans nom dans la liste. */
   it('donne un nom par défaut plutôt qu’une ligne vide', async () => {
     const b = banc([segment(1, [4.5, 45.4])])
@@ -297,6 +318,23 @@ describe('compléter un tracé', () => {
     expect(b.etat().drawWaypointKeys).toBe(avant)
   })
 
+  it('la boucle referme le tracé sur son point de départ', () => {
+    // `bouclerTrace` n'était exercé par aucun test unitaire — seulement par
+    // `tests/e2e/tracer.spec.ts`, que Stryker ne voit pas.
+    const b = banc([segment(1, [4.5, 45.4])])
+    b.actions.toggleDrawMode()
+    b.actions.addDrawPoint([4.5, 45.4])
+    b.actions.addDrawPoint([4.501, 45.4])
+    b.actions.addDrawPoint([4.502, 45.4])
+    const premiere = b.etat().drawWaypointKeys[0]
+    b.actions.bouclerTrace()
+    const keys = b.etat().drawWaypointKeys
+    expect(keys.at(-1)).toBe(premiere)
+    expect(keys).toHaveLength(4)
+    expect(b.etat().drawWaypoints[0]).toEqual([4.5, 45.4])
+    expect(b.etat().drawWaypoints.at(-1)).toEqual([4.5, 45.4])
+  })
+
   it('défaire retire la dernière étape et rien d’autre', () => {
     const b = banc([segment(1, [4.5, 45.4])])
     b.actions.toggleDrawMode()
@@ -306,8 +344,39 @@ describe('compléter un tracé', () => {
     expect(b.etat().drawWaypointKeys).toHaveLength(3)
     b.actions.undoDrawPoint()
     expect(b.etat().drawWaypointKeys).toHaveLength(2)
-    expect(b.etat().drawWaypoints).toHaveLength(2)
+    expect(b.etat().drawWaypoints).toEqual([
+      [4.5, 45.4],
+      [4.502, 45.4],
+    ])
     expect(b.etat().drawPath.length).toBeGreaterThan(0)
+  })
+
+  /**
+   * `TRACE_PERIMEE` existe pour ce cas précis : un tracé posé dans une zone,
+   * dont le réseau disparaît du graphe (changement de zone, ou — ici — perte
+   * d'un itinéraire perso). `routeThrough` ne trouve alors plus les nœuds
+   * des étapes restantes, et rend `null` ; `undoDrawPoint` doit quand même
+   * rendre un chemin, vide plutôt qu'absent.
+   */
+  it('défaire rend un chemin vide plutôt que planter quand le réseau a disparu', () => {
+    // Le tracé part entièrement d'un itinéraire perso, pour pouvoir le
+    // retirer ensuite sans toucher aux balises (fixes pour tout le banc).
+    const b = banc([])
+    b.actions.toggleDrawMode()
+    b.changerLesPerso([segment(1, [4.5, 45.4])])
+    b.actions.addDrawPoint([4.5, 45.4])
+    b.actions.addDrawPoint([4.502, 45.4])
+    b.actions.addDrawPoint([4.503, 45.4])
+    expect(b.etat().drawWaypointKeys).toHaveLength(3)
+
+    // Le réseau affiché change sous le tracé en cours (changement de zone,
+    // ou ici perte de l'itinéraire perso) : les nœuds des étapes restantes
+    // n'existent plus dans le graphe reconstruit.
+    b.changerLesPerso([])
+    expect(() => {
+      b.actions.undoDrawPoint()
+    }).not.toThrow()
+    expect(b.etat().drawPath).toEqual([])
   })
 
   /**
@@ -343,6 +412,24 @@ describe('estimer le dénivelé', () => {
     return b
   }
 
+  it('demande bien l’altimétrie pour un tracé d’exactement deux points', async () => {
+    // Trouvé par mutation du 17/10 : `drawPath.length < 2` devenu `<= 2`
+    // survivait, parce que `tracéDeDeuxPoints()` relie deux points
+    // distants de trois nœuds du réseau — `drawPath` y compte donc quatre
+    // points, jamais exactement deux. Deux points **adjacents** donnent un
+    // `drawPath` de longueur deux, la plus petite valeur qui ne doit pas
+    // être refusée.
+    const b = banc([segment(1, [4.5, 45.4])])
+    b.actions.toggleDrawMode()
+    b.actions.addDrawPoint([4.5, 45.4])
+    b.actions.addDrawPoint([4.501, 45.4])
+    expect(b.etat().drawPath).toHaveLength(2)
+    const attente = b.actions.estimerDeniveleTrace()
+    expect(altimetriesEnAttente).toHaveLength(1)
+    altimetriesEnAttente[0]?.resoudre({ elevations: [800, 810] })
+    await attente
+  })
+
   it('ne demande rien tant qu’il n’y a pas deux points', async () => {
     const b = banc([segment(1, [4.5, 45.4])])
     b.actions.toggleDrawMode()
@@ -373,6 +460,38 @@ describe('estimer le dénivelé', () => {
     expect(b.etat().drawGainMeters).toBeNull()
     expect(b.etat().drawError).toMatch(/relief/i)
     expect(b.etat().drawGainLoading).toBe(false)
+  })
+
+  /*
+    Issue #569, point 3 — la sonde de la revue : `drawPath.length = 3,
+    drawGainMeters = 400`, alors que 400 m était le D+ du tracé d'avant.
+    Un tracé qui change pendant l'attente remet déjà le D+ à `null` ; la
+    réponse en retard ne doit pas l'écraser avec le chiffre d'un autre.
+  */
+  it('une réponse arrivée après un changement de tracé est écartée', async () => {
+    const b = tracéDeDeuxPoints()
+    const ancienTrace = b.etat().drawPath
+    const attente = b.actions.estimerDeniveleTrace()
+    b.actions.addDrawPoint([4.504, 45.4])
+    const nouveauTrace = b.etat().drawPath
+    // Le tracé a bien changé : sans cela, le test passerait pour rien.
+    expect(nouveauTrace.length).toBeGreaterThan(ancienTrace.length)
+    altimetriesEnAttente[0]?.resoudre({ elevations: [400, 800] })
+    await attente
+    expect(b.etat().drawPath).toBe(nouveauTrace)
+    expect(b.etat().drawGainMeters).toBeNull()
+    expect(b.etat().drawGainLoading).toBe(false)
+  })
+
+  it('une panne arrivée après un changement de tracé ne s’affiche pas', async () => {
+    const b = tracéDeDeuxPoints()
+    const attente = b.actions.estimerDeniveleTrace()
+    const avant = b.etat().drawPath
+    b.actions.addDrawPoint([4.504, 45.4])
+    expect(b.etat().drawPath).not.toBe(avant)
+    altimetriesEnAttente[0]?.rejeter(new Error('réseau'))
+    await attente
+    expect(b.etat().drawError).toBeNull()
   })
 
   it('une panne du service laisse le tracé enregistrable', async () => {

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   NETWORK_COLORS,
+  NETWORK_TIRETS,
   POSITION_COLOR,
 } from '../../src/lib/networkDisplay.ts'
 import { ORDRE_DES_RESEAUX } from '../../src/core/reseaux.ts'
@@ -131,6 +132,15 @@ describe('lisibilité en vision deutéranope (#360)', () => {
     const gr = enRvb(NETWORK_COLORS.GR)
     const grp = enRvb(NETWORK_COLORS.GRP)
     expect(ecart(gr, grp)).toBeGreaterThan(ECART_LISIBLE)
+  })
+
+  /*
+    Trouvé par mutation du 17/10 : aucun test ne lisait `NETWORK_TIRETS`
+    — la distinction par la forme que cette section vient de justifier. Un
+    tableau vidé par erreur n'aurait rien fait rougir.
+  */
+  it('le GRP se distingue du GR par la forme, pas seulement par la teinte', () => {
+    expect(NETWORK_TIRETS).toEqual(['GRP'])
   })
 })
 

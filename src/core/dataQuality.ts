@@ -1,5 +1,6 @@
 import { distanceMeters } from './geo.ts'
 import { chainWays, MIN_GAP_METERS } from './chainage.ts'
+import { DUREE_DE_VIE_MS, estFrais } from './fraicheur.ts'
 import type { Itinerary, LonLat } from './types.ts'
 
 /**
@@ -14,8 +15,8 @@ import type { Itinerary, LonLat } from './types.ts'
  * Rien ici ne juge le terrain : on ne mesure que ce qu'on a téléchargé.
  */
 
-/** Au-delà, la donnée mérite une actualisation (le cache dure 30 jours). */
-export const STALE_DAYS = 30
+/** Au-delà, la donnée mérite une actualisation : la durée de vie du cache. */
+export const STALE_DAYS = DUREE_DE_VIE_MS / 86_400_000
 
 export interface GeometryGap {
   from: LonLat
@@ -23,7 +24,7 @@ export interface GeometryGap {
   meters: number
 }
 
-export interface DataQuality {
+interface DataQuality {
   /** Morceaux distincts de la géométrie (1 = continue, 0 = rien d'exploitable). */
   pieces: number
   /** Interruptions entre morceaux, de la plus grande à la plus petite. */
@@ -185,7 +186,9 @@ export function assessItinerary(
         ' incomplète dans OpenStreetMap.',
     )
   }
-  if (ageDays !== null && ageDays > STALE_DAYS) {
+  // Averti exactement quand la copie sera rechargée : la même règle
+  // (`estFrais`), et non plus des jours entiers comparés de leur côté (#571).
+  if (ageDays !== null && !estFrais(itinerary.fetchedAt, now)) {
     warnings.push(
       `Tracés téléchargés il y a ${ageDays} jours — « Actualiser les tracés » ira rechercher les corrections apportées depuis.`,
     )

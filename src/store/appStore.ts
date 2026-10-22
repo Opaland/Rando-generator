@@ -1,5 +1,4 @@
 import { create } from 'zustand'
-import { libelleDeZone } from '../core/overpass.ts'
 import type { Lieu } from '../core/geocode.ts'
 import type { ParcoursDeclare } from '../core/declaratif.ts'
 import { outingHighlights, type OutingHighlight } from '../core/outing.ts'
@@ -25,6 +24,8 @@ import {
   type EtatSortie,
 } from './enregistrementSlice.ts'
 import { creerOubliDeZone } from './oubliDeZone.ts'
+import { creerIdentifiantsPerso } from './identifiantsPerso.ts'
+import { numerosDesignes, oublierLesReferences } from './referencesPerso.ts'
 import {
   lireObjectifs,
   OBJECTIFS_AU_REPOS,
@@ -34,13 +35,14 @@ import {
 } from './trancheObjectifs.ts'
 import { creerVeilleGeo } from './veilleGeo.ts'
 import { GEO_OPTIONS, geolocationErrorMessage } from '../core/geolocation.ts'
-import type { Itinerary, LonLat, Track, UserPosition } from '../core/types.ts'
+import type { Itinerary, Track, UserPosition } from '../core/types.ts'
 import { DEFAULT_TOLERANCE_METERS, STEP_METERS } from '../core/types.ts'
 import {
   openSentiersDb,
   DbError,
   type SentiersDb,
 } from '../db/database.ts'
+import { restaurerLaDerniereZone } from './restaurationDeZone.ts'
 import {
   creerEnregistreurDeReglage,
   oublierReglagesTouches,
@@ -84,6 +86,7 @@ import {
   type EtatImport,
 } from './trancheImport.ts'
 import { computeMatching } from './matchingClient.ts'
+import { assemblerPourLAppariement } from '../core/segmentsDeTrace.ts'
 import {
   trancheSortiesReseau,
   SORTIES_RESEAU_AU_REPOS,
@@ -106,7 +109,7 @@ import {
  * sans relire ce commentaire (revue du sprint 6).
  *
  * Un ensemble nommé, consulté par `init`, plutôt qu'une condition recopiée
- * sur chacun des sept réglages (CLAUDE.md §4).
+ * sur chacun des réglages (CLAUDE.md §4).
  */
 /**
  * Réunit ce qui vient de la base et ce qui est déjà en mémoire, sans doublon.
@@ -127,7 +130,7 @@ export const MIN_TOLERANCE = 25
 export const MAX_TOLERANCE = 100
 
 /** Étape affichée pendant zoneLoading, pour un retour visuel non figé. */
-export type ZoneLoadStage = 'requesting' | 'retrying' | 'processing' | null
+type ZoneLoadStage = 'requesting' | 'retrying' | 'processing' | null
 
 /**
  * Une trace mise de côté parce qu'elle ressemble à une autre déjà importée.
@@ -137,7 +140,7 @@ export type ZoneLoadStage = 'requesting' | 'retrying' | 'processing' | null
  * fois.
  */
 
-export interface AppState
+interface AppState
   extends
     EtatObjectifs,
     ActionsObjectifs,
@@ -402,14 +405,18 @@ export const useAppStore = create<AppState>()((set, get) => {
     rangerTrace: async (trace) => {
       set((etat) => ({ tracks: [...etat.tracks, trace] }))
       const base = get().db
+      let ecrite = false
       if (base) {
         try {
           await base.saveTrack(trace)
+          ecrite = true
         } catch {
-          // Quota dépassé : la trace reste en mémoire pour cette session.
+          // Quota dépassé : la trace reste en mémoire pour cette session, et
+          // la tranche garde le tampon qui permettra de la retrouver (#560).
         }
       }
       await recompute()
+      return ecrite
     },
     quitterDemonstration: () => {
       void sortirDeLaDemonstration(get)
@@ -417,28 +424,30 @@ export const useAppStore = create<AppState>()((set, get) => {
     veille,
   })
 
-  /** Prochain identifiant libre pour un itinéraire perso (ids négatifs). */
-  function nextCustomId(): number {
-    return (
-      Math.min(0, ...get().customItineraries.map((i) => i.osmRelationId)) - 1
-    )
-  }
+  // Un seul distributeur de numéros perso, après la lecture de la base (#543).
+  const { lectureCommencee, identifiantsPerso } = creerIdentifiantsPerso(
+    () => get().customItineraries,
+    () => numerosDesignes(get()),
+  )
 
   async function recompute(): Promise<void> {
     const { itineraries, customItineraries, tracks, toleranceMeters } = get()
     const sequence = ++recomputeSequence
+    // Repères de mesure (issue #539) : `matchingBusy` ne se peint pas de
+    // façon fiable en e2e — rien ne garantit qu'un rendu intervienne entre
+    // les deux `set`, qu'il s'agisse du relais au worker ou du repli
+    // synchrone. `performance.mark` ne dépend d'aucun rendu.
+    performance.mark('sentiers:recompute:debut')
     set({ matchingBusy: true })
-    const trackPoints: LonLat[] = tracks.flatMap((t) => t.points)
-    // Même longueur et alignement que trackPoints : une trace sans
-    // horodatage (#149) contribue des `null`, pas un décalage.
-    const trackTimes: (number | null)[] = tracks.flatMap(
-      (t) => t.times ?? t.points.map(() => null),
-    )
+    // Bout à bout, sans relier deux traces ni deux tronçons (#560).
+    const { trackPoints, trackTimes, coupures } =
+      assemblerPourLAppariement(tracks)
     const computedAt = new Date().toISOString()
     const result = await computeMatching({
       itineraries,
       trackPoints,
       trackTimes,
+      coupures,
       toleranceMeters,
       stepMeters: STEP_METERS,
       computedAt,
@@ -451,6 +460,7 @@ export const useAppStore = create<AppState>()((set, get) => {
             itineraries: customItineraries,
             trackPoints,
             trackTimes,
+            coupures,
             toleranceMeters,
             stepMeters: STEP_METERS,
             computedAt,
@@ -476,6 +486,7 @@ export const useAppStore = create<AppState>()((set, get) => {
         franchissementTientEncore(annonceEnCours, result.results)
           ? annonceEnCours
           : null)
+      performance.mark('sentiers:recompute:fin')
       set({
         matching: result,
         customMatching: customResult,
@@ -617,6 +628,7 @@ export const useAppStore = create<AppState>()((set, get) => {
     ...etatSortieInitial(),
 
     async init() {
+      const lectureFaite = lectureCommencee()
       let db: SentiersDb | null = null
       try {
         ouvertureBase = openSentiersDb()
@@ -630,7 +642,10 @@ export const useAppStore = create<AppState>()((set, get) => {
               : 'Le stockage local est indisponible : vos données ne seront pas conservées.',
         })
       }
-      if (!db) return
+      if (!db) {
+        lectureFaite()
+        return
+      }
 
       const [
         tracks,
@@ -644,6 +659,7 @@ export const useAppStore = create<AppState>()((set, get) => {
         grosTexteBrut,
         guideFermeBrut,
         panneauReplieBrut,
+        poisEmportes,
       ] = await Promise.all([
         db.listTracks(),
         db.listCustomItineraries(),
@@ -656,7 +672,12 @@ export const useAppStore = create<AppState>()((set, get) => {
         db.getSetting('grosTexte'),
         db.getSetting('guideFerme'),
         db.getSetting('panneauReplie'),
-      ])
+        db.listerPoisEmportes(),
+      ]).catch((error: unknown) => {
+        // Une base illisible ne doit pas laisser un import attendre à vie.
+        lectureFaite()
+        throw error
+      })
       // Fusion, jamais remplacement : lire IndexedDB prend quelques centaines
       // de millisecondes, et l'utilisateur peut avoir déposé un fichier
       // entre-temps. Écraser la liste faisait disparaître sa trace sans un
@@ -730,6 +751,7 @@ export const useAppStore = create<AppState>()((set, get) => {
           etat.panneauReplie,
         ),
       }))
+      lectureFaite(poisEmportes)
 
       await sortie.reprendreAuDemarrage(db)
 
@@ -763,22 +785,18 @@ export const useAppStore = create<AppState>()((set, get) => {
         }
       }
 
-      // Au démarrage, on restaure la dernière zone depuis le cache uniquement
-      // (jamais d'appel réseau externe sans action de l'utilisateur — les
-      // boucles locales sont un fichier du site, pas un service tiers).
-      // Même raison : restaurer la zone en cache par-dessus une
-      // démonstration mêlerait de vrais itinéraires à des sorties fictives.
+      // La dernière zone, depuis le cache seul (`restaurationDeZone.ts`) —
+      // jamais par-dessus une démonstration, qui mêlerait de vrais
+      // itinéraires à des sorties fictives. Les boucles locales sont un
+      // fichier du site, pas un service tiers.
       if (typeof lastZoneKey === 'string' && !get().demonstration) {
-        const cached = await db.getZone(lastZoneKey)
-        if (cached) {
-          setItineraries(
-            lastZoneKey,
-            libelleDeZone(lastZoneKey, cached.label),
-            cached.itineraries,
-            cached.fetchedAt,
-          )
-          set({ zoneRestoredAtStartup: true })
-        }
+        const restauree = await restaurerLaDerniereZone(db, lastZoneKey, {
+          setItineraries,
+          poserMessage: (zoneError) => {
+            set({ zoneError })
+          },
+        })
+        if (restauree) set({ zoneRestoredAtStartup: true })
       }
       await recompute()
       if (typeof lastZoneKey === 'string' && !get().demonstration) {
@@ -872,8 +890,7 @@ export const useAppStore = create<AppState>()((set, get) => {
       const computedAt = new Date().toISOString()
       const resultat = await computeMatching({
         itineraries: tous,
-        trackPoints: track.points,
-        trackTimes: track.times,
+        ...assemblerPourLAppariement([track]),
         toleranceMeters,
         stepMeters: STEP_METERS,
         computedAt,
@@ -936,14 +953,15 @@ export const useAppStore = create<AppState>()((set, get) => {
         La fiche se ferme si elle montre l'itinéraire qu'on supprime.
 
         Passé en dépendance nommée plutôt que lu depuis `get()` : la tranche
-        n'a pas à savoir que la fiche détail existe, encore moins comment
-        elle s'appelle. C'est ce qui a rendu le couplage visible en écrivant
-        cette liste — l'import touche à sept choses distinctes, et il fallait
-        les nommer une à une pour s'en apercevoir.
+        n'a pas à savoir que la fiche détail existe. C'est ce qui a rendu le
+        couplage visible en écrivant cette liste — l'import touche à bien des
+        choses distinctes, et il fallait les nommer pour s'en apercevoir.
       */
       fermerLaFicheSi: (id) => {
         if (get().detailItineraryId === id) get().closeItineraryDetail()
       },
+      identifiantsPerso,
+      oublierLesReferences: (id) => oublierLesReferences(id, get(), baseOuverte),
     }),
 
     ...trancheDemonstration({
@@ -979,9 +997,8 @@ export const useAppStore = create<AppState>()((set, get) => {
       },
       quitterLaDemonstration: () => sortirDeLaDemonstration(get),
       baseOuverte,
+      identifiantsPerso,
       recalculer: recompute,
-      setTolerance: (valeur) => get().setTolerance(valeur),
-      setCompletionPct: (valeur) => get().setCompletionPct(valeur),
       telecharger: downloadBlob,
       maintenant: () => new Date().toISOString(),
     }),
@@ -1008,7 +1025,7 @@ export const useAppStore = create<AppState>()((set, get) => {
         balises: get().itineraries,
         perso: get().customItineraries,
       }),
-      prochainIdentifiantPerso: nextCustomId,
+      identifiantsPerso,
       ficheOuverte: () => get().detailItineraryId !== null,
       fermerLaFiche: () => {
         get().closeItineraryDetail()

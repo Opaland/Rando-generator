@@ -46,6 +46,19 @@ describe('zoomer', () => {
     expect(f.fin).toBeLessThanOrEqual(TOTAL)
   })
 
+  it('ne part jamais avant le début du parcours en dézoomant près du bord gauche', () => {
+    /*
+      Trouvé par mutation du 17/10 : la garde `if (debut < 0) debut = 0`
+      désactivée survivait au test précédent, parce qu'il part d'une
+      fenêtre déjà collée au bord droit — la butée de fin suffit à ramener
+      le résultat dans le parcours sans jamais faire jouer celle du début.
+      Ici c'est l'inverse : un dézoom large près du bord gauche fait
+      passer `debut` sous zéro avant toute autre butée.
+    */
+    const f = zoomer({ debut: 0, fin: 2000 }, TOTAL, 5, 500)
+    expect(f.debut).toBe(0)
+  })
+
   it('ne descend pas sous une largeur exploitable', () => {
     // En dessous, deux points d'altitude consécutifs sortent du cadre et le
     // graphique n'a plus rien à montrer.
@@ -64,6 +77,32 @@ describe('zoomer', () => {
     const court = LARGEUR_MIN_METRES / 2
     const f = zoomer(fenetreEntiere(court), court, 0.5, 0)
     expect(f).toEqual({ debut: 0, fin: court })
+  })
+
+  it('calcule sa largeur actuelle comme fin moins début, pas fin plus début', () => {
+    // Trouvé par mutation du 17/10 : tous les appels existants partent
+    // d'une fenêtre dont `debut` vaut 0, où fin+debut et fin-debut
+    // coïncident. Ici le début n'est pas nul.
+    const f = zoomer({ debut: 3000, fin: 5000 }, TOTAL, 1, 4000)
+    expect(f).toEqual({ debut: 3000, fin: 5000 })
+  })
+
+  it('centre la fenêtre par défaut quand elle n’a aucune largeur de départ', () => {
+    // Trouvé par mutation du 17/10 : `largeurActuelle > 0 ? ... : 0.5`
+    // remplacé par `true`/`>= 0` divise par zéro (0/0 = NaN) sur une
+    // fenêtre de largeur nulle ; remplacé par `false`/`<= 0`, le repli à
+    // 0.5 masque ce cas mais casse le cas normal (voir le test suivant).
+    const f = zoomer({ debut: 5000, fin: 5000 }, TOTAL, 2, 5000)
+    expect(Number.isFinite(f.debut)).toBe(true)
+    expect(Number.isFinite(f.fin)).toBe(true)
+  })
+
+  it('pondère le point visé selon sa position réelle dans la fenêtre, pas à 50/50', () => {
+    // Trouvé par mutation du 17/10 : les tests existants visent soit le
+    // centre exact, soit un bord qu'un autre garde-fou ramène à 0 de toute
+    // façon — les deux masquent un repli permanent à 0,5.
+    const f = zoomer({ debut: 0, fin: 10_000 }, TOTAL, 0.5, 2000)
+    expect(f).toEqual({ debut: 1000, fin: 6000 })
   })
 })
 
@@ -90,6 +129,14 @@ describe('estZoome', () => {
   it('distingue la vue entière d’une vue resserrée', () => {
     expect(estZoome(fenetreEntiere(TOTAL), TOTAL)).toBe(false)
     expect(estZoome({ debut: 0, fin: 5000 }, TOTAL)).toBe(true)
+  })
+
+  it('détecte un zoom qui ne bouge que le début', () => {
+    // Trouvé par mutation du 17/10 : les deux tests existants laissent
+    // toujours `debut` à 0, donc la condition `fenetre.debut > 0` n'était
+    // jamais la seule à décider — `fenetre.fin < totalMetres` suffisait
+    // déjà dans les deux cas.
+    expect(estZoome({ debut: 100, fin: TOTAL }, TOTAL)).toBe(true)
   })
 })
 

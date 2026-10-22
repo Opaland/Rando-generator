@@ -60,6 +60,34 @@ describe('suggestNextOutings', () => {
     expect(premiere?.remainingMeters).toBe(6 * STEP_METERS)
   })
 
+  it('retient le plus long tronçon même s’il n’est pas le dernier clos', () => {
+    /*
+      Trouvé par mutation du 17/10 : `if (!acc.best || courant.samples >
+      acc.best.samples) acc.best = courant` affecté sans condition
+      survivait, parce que le seul test existant avait le plus long tronçon
+      en dernière position — « garder le dernier » et « garder le plus
+      long » coïncidaient. Ici le plus long (4) vient avant le plus court
+      (2).
+    */
+    const faits = [false, false, false, false, true, false, false]
+    const suggestions = suggestNextOutings(
+      [itinerary(1, 'GR 7')],
+      samples(100, [1], faits),
+    )
+    expect(suggestions[0]?.bestRun.meters).toBe(4 * STEP_METERS)
+  })
+
+  it('garde le premier tronçon en cas d’égalité de longueur', () => {
+    // Trouvé par mutation du 17/10 : `>` devenu `>=` survivait, faute d'un
+    // test avec deux tronçons de même longueur.
+    const faits = [false, false, true, false, false]
+    const suggestions = suggestNextOutings(
+      [itinerary(1, 'GR 7')],
+      samples(100, [1], faits),
+    )
+    expect(suggestions[0]?.bestRun.start[0]).toBeCloseTo(4.5, 6)
+  })
+
   it('coupe un tronçon au changement de chemin', () => {
     // Deux ways distincts ne se suivent pas forcément sur le terrain :
     // les recoller donnerait un « tronçon » imaginaire.
@@ -84,6 +112,41 @@ describe('suggestNextOutings', () => {
     )
     expect(suggestions.map((s) => s.itineraryId)).toEqual([1, 2])
     expect(suggestions[0]?.awayMeters).toBeLessThan(200)
+  })
+
+  it('pénalise le tronçon le plus loin par sa distance, pas par un repli constant', () => {
+    /*
+      Trouvé par mutation du 17/10 : la pénalité de distance
+      (`1 + awayMeters / 1_000 / APPROACH_HALF_LIFE_KM`) remplacée par une
+      constante, par un repli à l'envers, ou par une soustraction, survivait
+      au test « à gain égal, le plus proche passe devant » — parce que les
+      identifiants y coïncidaient déjà avec l'ordre attendu (1 avant 2), et
+      le départage par identifiant à égalité de score masquait la panne.
+      Ici l'itinéraire le plus loin porte le plus petit identifiant :
+      seule une vraie pénalité de distance peut encore le classer second.
+    */
+    // ~5 km de « from » : assez proche pour qu'une pénalité au signe
+    // inversé (`1 - x` plutôt que `1 + x`) change encore le sens du
+    // classement, pas seulement son ampleur.
+    const loin = samples(100, [1], [false, false, false], 6.4357, 45.4)
+    const proche = samples(200, [2], [false, false, false], 6.5, 45.4)
+    const suggestions = suggestNextOutings(
+      [itinerary(1, 'Lointain'), itinerary(2, 'Proche')],
+      [...loin, ...proche],
+      { from: [6.5, 45.4] as LonLat },
+    )
+    expect(suggestions.map((s) => s.itineraryId)).toEqual([2, 1])
+  })
+
+  it('départage par identifiant croissant à score strictement égal', () => {
+    // Trouvé par mutation du 17/10 : `a.itineraryId - b.itineraryId` devenu
+    // `+` survivait, faute d'un test vérifiant l'ordre entre deux
+    // suggestions à égalité de score plutôt que leur seul ensemble.
+    const suggestions = suggestNextOutings(
+      [itinerary(5, 'Cinq'), itinerary(3, 'Trois')],
+      [...samples(500, [5], [false, false]), ...samples(300, [3], [false, false])],
+    )
+    expect(suggestions.map((s) => s.itineraryId)).toEqual([3, 5])
   })
 
   it('sans position connue, classe sur le seul gain', () => {

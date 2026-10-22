@@ -1,6 +1,9 @@
 /**
- * Jeter la ligne en cache d'une zone, pour qu'un rechargement forcé reparte
- * vraiment d'Overpass (issue #437).
+ * Jeter la ligne en cache d'une zone lors d'un rechargement forcé (issue
+ * #437) — une fois la réponse d'Overpass obtenue, et avant de l'écrire :
+ * l'effacer avant la requête détruisait la copie hors ligne quand le réseau
+ * manquait (#548). Si l'écriture échoue ensuite, la ligne périmée ne
+ * survit pas à la demande de s'en défaire.
  *
  * ## Pourquoi un module pour quatre lignes
  *
@@ -26,7 +29,7 @@
  *
  * La forme est celle de `creerEnregistreurDeReglage`, pour la même raison.
  */
-export interface DependancesOubli {
+interface DependancesOubli {
   /** La base, ou `null` si elle n'a pas pu s'ouvrir. */
   baseOuverte: () => Promise<{
     deleteZone: (zoneKey: string) => Promise<unknown>

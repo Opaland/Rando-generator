@@ -1,7 +1,9 @@
 import { estDansLeMonde } from './coordonnees.ts'
 import { verifierDomaine } from './domaine.ts'
-import { elevationStats } from './elevation.ts'
-import type { LonLat } from './types.ts'
+import { elevationStats, HYSTERESIS_ALTIMETRIQUE_METRES } from './elevation.ts'
+import { instantDe, nombreLu } from './valeurLue.ts'
+import { tranchesDe } from './segmentsDeTrace.ts'
+import type { LonLat, SourceItineraire } from './types.ts'
 
 /** Erreur de lecture d'un fichier GPX, message affichable tel quel à l'utilisateur. */
 export class GpxError extends Error {
@@ -54,6 +56,20 @@ export interface ParsedGpx {
    */
   hdops: (number | null)[] | null
   /**
+   * Où commence chaque `<trkseg>` (ou `<trk>`), en indice de `points` (#560).
+   * Le schéma GPX 1.1 dit qu'un segment est une suite continue de points :
+   * une montre en ouvre un nouveau après une pause ou une perte de signal.
+   * Absent pour les formats qui ne le portent pas (FIT, TCX).
+   */
+  debutsDeSegment?: number[]
+  /**
+   * La source que le fichier déclare dans `<metadata><copyright>` (#557).
+   * Sentiers l'écrit dans chaque export d'une donnée sous licence ; sans la
+   * relire, réimporter un export coupait la chaîne d'attribution. Absent
+   * pour les formats qui ne la portent pas (FIT, TCX).
+   */
+  source?: SourceItineraire | null
+  /**
    * Précision horizontale en **mètres**, alignée sur `points`. C'est ce que
    * rapporte le FIT (`gps_accuracy`), et le GPX ne la porte pas — d'où
    * `null` chez ce dernier.
@@ -103,12 +119,15 @@ export function parseGpx(xmlText: string, parser: XmlParser): ParsedGpx {
   // empêcher de lire le <rte> qui l'accompagne : c'est là que se trouvent
   // les points exploitables. Les deux comptes s'additionnent, pour ne
   // sacrifier ni les données ni ce qu'on doit dire à leur sujet.
-  const parcours =
-    trace.points.length === 0 ? extractPoints(doc, 'rtept') : null
-  const { points, elevations, times, hdops, firstPointDate } =
+  //
+  // Un seul `<trkpt>` ne fait pas une trace non plus (#567, refusé depuis le
+  // 20/10) : sous deux points, le `<rte>` est lu, et retenu s'il en a plus.
+  const lu = trace.points.length < 2 ? extractPoints(doc, 'rtept') : null
+  const parcours = lu && lu.points.length > trace.points.length ? lu : null
+  const { points, elevations, times, hdops, firstPointDate, debutsDeSegment } =
     parcours ?? trace
   const pointsHorsLimites =
-    trace.pointsHorsLimites + (parcours?.pointsHorsLimites ?? 0)
+    trace.pointsHorsLimites + (lu?.pointsHorsLimites ?? 0)
 
   /*
     Le domaine où la géométrie est juste (issue #170).
@@ -133,12 +152,32 @@ export function parseGpx(xmlText: string, parser: XmlParser): ParsedGpx {
     hdops,
     // Le GPX rapporte un HDOP, jamais une précision en mètres.
     precisionsMetres: null,
-    date: metadataTime ?? firstPointDate,
+    debutsDeSegment,
+    source: copyrightDe(doc),
+    // Une date illisible ne vaut pas mieux qu'une date absente : elle
+    // s'affichait « Invalid Date » (#567).
+    date:
+      metadataTime && instantDe(metadataTime) !== null
+        ? metadataTime
+        : firstPointDate,
     pointsHorsLimites,
   }
 }
 
+/** `<copyright author="…"><license>…</license></copyright>`, s'il est complet. */
+function copyrightDe(doc: Document): SourceItineraire | null {
+  const copyright = doc
+    .getElementsByTagName('metadata')[0]
+    ?.getElementsByTagName('copyright')[0]
+  const author = copyright?.getAttribute('author')?.trim()
+  const license = copyright
+    ?.getElementsByTagName('license')[0]
+    ?.textContent.trim()
+  return author && license ? { author, license } : null
+}
+
 interface ExtractedPoints {
+  debutsDeSegment: number[]
   points: LonLat[]
   elevations: (number | null)[]
   times: (number | null)[]
@@ -158,35 +197,41 @@ function extractPoints(doc: Document, tagName: 'trkpt' | 'rtept'): ExtractedPoin
   const hdops: (number | null)[] = []
   let firstPointDate: string | null = null
   let pointsHorsLimites = 0
+  // La coupure se pose au premier point **gardé** d'un nouveau segment : un
+  // point écarté ne doit ni la décaler, ni en créer une pour un segment
+  // dont rien ne reste.
+  const debutsDeSegment: number[] = []
+  let segmentDuDernierGarde: Element | null = null
   for (const pt of Array.from(doc.getElementsByTagName(tagName))) {
-    const lat = Number(pt.getAttribute('lat'))
-    const lon = Number(pt.getAttribute('lon'))
-    // Une coordonnée illisible (`lat="nord"`) est un fichier cassé, pas un
-    // point mal placé : la compter fausserait le message rendu à l'utilisateur.
-    if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue
+    const lat = nombreLu(pt.getAttribute('lat'))
+    const lon = nombreLu(pt.getAttribute('lon'))
+    // Une coordonnée illisible (`lat="nord"`) ou absente est un fichier
+    // cassé, pas un point mal placé — et surtout pas un point sur
+    // l'équateur (#567) : la compter fausserait le message rendu.
+    if (lat === null || lon === null) continue
     if (!estDansLeMonde(lon, lat)) {
       pointsHorsLimites += 1
       continue
     }
+    if (points.length > 0 && pt.parentElement !== segmentDuDernierGarde) {
+      debutsDeSegment.push(points.length)
+    }
+    segmentDuDernierGarde = pt.parentElement
     points.push([lon, lat])
-    const ele = Number(
-      pt.getElementsByTagName('ele')[0]?.textContent.trim() ?? NaN,
+    elevations.push(
+      nombreLu(pt.getElementsByTagName('ele')[0]?.textContent),
     )
-    elevations.push(Number.isFinite(ele) ? ele : null)
 
     // Les quatre tableaux avancent ensemble, y compris quand un point est
     // écarté : un décalage d'un cran rendrait la vitesse calculée absurde.
     const time = pt.getElementsByTagName('time')[0]?.textContent.trim()
     // Un <time> illisible ne vaut pas mieux qu'un <time> absent : NaN
     // décalerait toute vitesse calculée à partir de lui.
-    const instant = time ? Date.parse(time) : Number.NaN
-    times.push(Number.isFinite(instant) ? instant : null)
-    if (firstPointDate === null && time) firstPointDate = time
+    const instant = instantDe(time)
+    times.push(instant)
+    if (firstPointDate === null && time && instant !== null) firstPointDate = time
 
-    const hdop = Number(
-      pt.getElementsByTagName('hdop')[0]?.textContent.trim() ?? NaN,
-    )
-    hdops.push(Number.isFinite(hdop) ? hdop : null)
+    hdops.push(nombreLu(pt.getElementsByTagName('hdop')[0]?.textContent))
   }
   return {
     points,
@@ -195,6 +240,7 @@ function extractPoints(doc: Document, tagName: 'trkpt' | 'rtept'): ExtractedPoin
     hdops,
     firstPointDate,
     pointsHorsLimites,
+    debutsDeSegment,
   }
 }
 
@@ -212,9 +258,27 @@ function extractPoints(doc: Document, tagName: 'trkpt' | 'rtept'): ExtractedPoin
  */
 export function elevationGainMeters(
   elevations: (number | null)[],
-  thresholdMeters = 3,
+  thresholdMeters = HYSTERESIS_ALTIMETRIQUE_METRES,
 ): number | null {
   return elevationStats(elevations, thresholdMeters)?.gain ?? null
+}
+
+/**
+ * Le dénivelé positif d'une trace en plusieurs tronçons, chacun compté à
+ * part. Une seule règle pour la trace importée et la sortie enregistrée
+ * (`deniveleParcouru` l'appelle) : sans elle, la montée faite en voiture
+ * entre deux `<trkseg>` comptait en D+ (#560).
+ * `null` quand aucun tronçon n'a d'altitude exploitable.
+ */
+export function deniveleParTroncons(
+  elevations: (number | null)[],
+  debutsDeSegment: number[] | undefined,
+): number | null {
+  const gains = tranchesDe({ points: elevations, debutsDeSegment }).map(
+    ([debut, fin]) => elevationGainMeters(elevations.slice(debut, fin)),
+  )
+  const connus = gains.filter((g): g is number => g !== null)
+  return connus.length === 0 ? null : connus.reduce((a, b) => a + b, 0)
 }
 
 /**

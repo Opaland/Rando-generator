@@ -1,7 +1,10 @@
 import { useEffect, useRef } from 'react'
+import { echapPourLaCarte } from '../lib/echapPourLaCarte.ts'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import '../lib/maplibreSetup.ts'
 import { useAppStore } from '../store/appStore.ts'
+import { useBasDesCommandes } from './map/useBasDesCommandes.ts'
+import { useCreditReplie } from './map/useCreditReplie.ts'
 import { useMapCamera } from './map/useMapCamera.ts'
 import { useMapInstance } from './map/useMapInstance.ts'
 import { useMapInteractions } from './map/useMapInteractions.ts'
@@ -32,6 +35,9 @@ export function MapView() {
     if (!map || !ready) return
     map.getCanvas().style.cursor = drawMode ? 'crosshair' : ''
   }, [drawMode, ready, mapRef])
+
+  useCreditReplie(containerRef, ready, selectedItineraryId !== null || drawMode)
+  useBasDesCommandes(containerRef, ready)
 
   // Surlignage de l'itinéraire sélectionné.
   useEffect(() => {
@@ -104,9 +110,10 @@ export function MapView() {
   }, [ready])
 
   useEffect(() => {
-    // Échap désélectionne l'itinéraire (navigation clavier).
+    // Échap désélectionne l'itinéraire (navigation clavier) — sauf quand il
+    // sert déjà à autre chose : une boîte ouverte, un champ (#568).
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') selectItinerary(null)
+      if (echapPourLaCarte(e)) selectItinerary(null)
     }
     window.addEventListener('keydown', onKey)
     return () => {

@@ -66,8 +66,12 @@ export interface PortsSortie {
   poser: (partiel: Partial<EtatSortie>) => void
   /** `null` quand le stockage local est indisponible. */
   base: () => SentiersDb | null
-  /** Range la trace produite avec les autres, et relance l'appariement. */
-  rangerTrace: (trace: Track) => Promise<void>
+  /**
+   * Range la trace produite avec les autres, et relance l'appariement.
+   * Rend `false` quand la trace n'a pas pu être écrite sur le disque : elle
+   * n'existe alors qu'en mémoire, et le tampon est tout ce qui la garde.
+   */
+  rangerTrace: (trace: Track) => Promise<boolean>
   /** La démonstration s'efface au premier geste réel (issue #172). */
   quitterDemonstration: () => void
   veille: VeilleGeo
@@ -96,6 +100,18 @@ export interface TrancheSortie {
 
 const MESSAGE_SANS_GEOLOCALISATION =
   'Votre navigateur ne fournit pas la localisation.'
+
+/**
+ * La promesse de reprise est tenue par `reprendreAuDemarrage`, qui relit le
+ * tampon laissé en place — vérifié par un test (#560). Elle cesse de l'être
+ * si une autre sortie démarre d'ici là, puisque démarrer efface le tampon :
+ * le message le dit plutôt que de le taire.
+ */
+export const MESSAGE_SORTIE_NON_RANGEE =
+  'La sortie n’a pas pu être enregistrée sur l’appareil (stockage plein ou ' +
+  'indisponible). Elle reste visible pendant cette visite, et sera ' +
+  'reproposée au prochain lancement de Sentiers si vous ne démarrez pas ' +
+  'd’autre sortie d’ici là.'
 
 export function creerTrancheSortie(ports: PortsSortie): TrancheSortie {
   const maintenant = ports.maintenant ?? (() => Date.now())
@@ -147,10 +163,12 @@ export function creerTrancheSortie(ports: PortsSortie): TrancheSortie {
     })
   }
 
-  function viderLeTampon(): Promise<void> {
+  function viderLeTampon(
+    seulementSi: () => boolean = () => true,
+  ): Promise<void> {
     return enfiler(async () => {
       const base = ports.base()
-      if (!base) return
+      if (!base || !seulementSi()) return
       await base.effacerEnregistrement()
       pointsEcrits = 0
     })
@@ -219,7 +237,12 @@ export function creerTrancheSortie(ports: PortsSortie): TrancheSortie {
         ports.lire().enregistrement,
         maintenant(),
       )
-      if (repris.etat === 'enregistrement') ports.veille.demarrer('sortie')
+      if (repris.etat === 'enregistrement') {
+        ports.veille.demarrer('sortie')
+        // L'alerte « Position introuvable… » annoncerait une panne que la
+        // reprise vient de lever (#560).
+        ports.poser({ sortieErreur: null })
+      }
       ports.poser({ enregistrement: repris, sortieReprise: false })
       void ecrireEntete(repris)
     },
@@ -238,12 +261,28 @@ export function creerTrancheSortie(ports: PortsSortie): TrancheSortie {
       )
       ports.veille.arreter('sortie')
       const trace = versTrace(fini, `sortie-${String(fini.demarreA ?? 0)}`)
-      ports.poser({ enregistrement: enregistreurVide(), sortieReprise: false })
-      await viderLeTampon()
+      ports.poser({
+        enregistrement: enregistreurVide(),
+        sortieReprise: false,
+        sortieErreur: null,
+      })
       // Une sortie sans le moindre point ne produit rien : il n'y a rien à
       // apparier, et une trace vide dans l'historique ne dit rien à personne.
-      if (!trace) return
-      await ports.rangerTrace(trace)
+      if (!trace) {
+        await viderLeTampon()
+        return
+      }
+      // Le tampon ne se vide qu'une fois la trace sur le disque : c'est lui
+      // qui la garde jusque-là. L'inverse a perdu des sorties entières sur
+      // un quota plein, sans un mot (#560).
+      const ecrite = await ports.rangerTrace(trace)
+      if (!ecrite) {
+        if (ports.base()) ports.poser({ sortieErreur: MESSAGE_SORTIE_NON_RANGEE })
+        return
+      }
+      // Le rangement attend l'appariement. Une sortie démarrée entre-temps a
+      // déjà effacé ce tampon et écrit le sien : ne pas l'emporter avec.
+      await viderLeTampon(() => ports.lire().enregistrement.etat === 'repos')
     },
 
     async abandonnerSortie() {

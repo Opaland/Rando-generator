@@ -50,39 +50,8 @@
      la carte derrière, qui se met à zoomer sous le doigt. */
   overscroll-behavior: contain;
 
-  /*
-    Ombres de défilement : le bord annonce qu'il continue.
-
-    Sans marque, un texte coupé au ras du bord se lit comme un texte fini —
-    c'est ce qui a fait dire « coupé à moitié » plutôt que « il faut faire
-    défiler » (retour du 24/08). Le navigateur ne dessine plus de barre de
-    défilement permanente, donc rien ne le disait.
-
-    Technique sans JavaScript : deux dégradés en `local` (qui défilent avec le
-    contenu) masquent deux ombres en `scroll` (qui restent collées au cadre).
-    En haut de course, le dégradé opaque recouvre l'ombre haute ; au milieu,
-    les deux ombres apparaissent ; en bas, la basse disparaît. La marque dit
-    donc *où l'on en est*, pas seulement qu'il y a du contenu — ce qu'un
-    dégradé fixe n'aurait pas su faire.
-  */
-  background-image:
-    linear-gradient(var(--papier) 30%, rgba(var(--papier-rvb), 0)),
-    linear-gradient(rgba(var(--papier-rvb), 0), var(--papier) 70%),
-    linear-gradient(rgba(30, 43, 35, 0.16), rgba(30, 43, 35, 0)),
-    linear-gradient(rgba(30, 43, 35, 0), rgba(30, 43, 35, 0.16));
-  background-position:
-    0 0,
-    0 100%,
-    0 0,
-    0 100%;
-  background-repeat: no-repeat;
-  background-size:
-    100% 28px,
-    100% 28px,
-    100% 10px,
-    100% 10px;
-  background-attachment: local, local, scroll, scroll;
-  background: var(--papier);
+  /* Ombres de défilement : classe globale `ombres-defilement` (index.css),
+     qui porte aussi le fond — un `background` ici l'effacerait. */
   border-top: 1px solid var(--gris-vert-clair);
   border-top: 5px solid var(--rouge-balisage);
   box-shadow: var(--ombre-feuille);
@@ -356,11 +325,11 @@
     right: 12px;
     /* Au-dessus du point de rupture, ni poignée ni barre en travers : la
        fiche revient se poser à douze pixels du bord, et reprend toute la
-       hauteur — il n'y a pas d'empreinte à partager avec quoi que ce soit. */
-    /* Au-dessus du point de rupture, ni poignée ni barre en travers : la
-       fiche revient se poser à douze pixels du bord, et reprend toute la
-       hauteur — il n'y a pas d'empreinte à partager. */
-    bottom: 12px;
+       hauteur — à part la bande du crédit de la carte, passé au-dessus de
+       toute surimpression (#553) : posée à 12 px du bas, la fiche voyait son
+       intertitre « Sous les pieds » peint par lui (démonstration du sprint
+       1, réseau réel, 21/10). Comme le panneau de tracé. */
+    bottom: calc(12px + var(--bande-attribution));
     width: min(var(--largeur-fiche), calc(100% - 24px));
     border-radius: var(--rayon-lg);
     border-top-width: 1px;
@@ -377,7 +346,7 @@
       Le `calc` réserve les douze pixels du haut comme ceux du bas : la
       fiche est posée dans le cadre, pas collée à ses bords.
     */
-    max-height: calc(100% - 24px);
+    max-height: calc(100% - 24px - var(--bande-attribution));
   }
 }
 

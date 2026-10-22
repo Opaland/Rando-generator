@@ -62,6 +62,23 @@ describe('historyStats', () => {
     expect(stats.lastDate).toBe('2026-07-02T08:00:00Z')
   })
 
+  it('retient la première et la dernière date même hors ordre d’arrivée', () => {
+    /*
+      Trouvé par mutation du 17/10 : le test précédent présente les traces
+      déjà triées par date d'arrivée (juin puis juillet), où « mettre à
+      jour sans condition » et « mettre à jour seulement si plus extrême »
+      donnent le même résultat. Ici l'ordre d'arrivée ne correspond à
+      aucun des deux extrêmes.
+    */
+    const stats = historyStats([
+      track('b', '2026-06-01T08:00:00Z', 1000),
+      track('a', '2026-01-01T08:00:00Z', 1000),
+      track('c', '2026-03-01T08:00:00Z', 1000),
+    ])
+    expect(stats.firstDate).toBe('2026-01-01T08:00:00Z')
+    expect(stats.lastDate).toBe('2026-06-01T08:00:00Z')
+  })
+
   it('compte les sorties sans date sans les perdre', () => {
     const stats = historyStats([
       track('a', '2026-06-10T08:00:00Z', 5000),
@@ -105,6 +122,11 @@ describe('monthlyBuckets', () => {
     expect(buckets.map((b) => b.month)).toEqual(['2026-06', '2026-07'])
     expect(buckets[1]!.count).toBe(2)
     expect(buckets[1]!.elevationGain).toBe(600)
+    // Trouvé par mutation du 17/10 : `+=` devenu `-=` ne cassait aucun test,
+    // parce que seul `elevationGain` était lu sur un mois à deux traces.
+    expect(buckets[1]!.distanceMeters).toBeGreaterThan(
+      buckets[0]!.distanceMeters,
+    )
   })
 
   it('comble les mois sans sortie plutôt que de les masquer', () => {
@@ -136,10 +158,31 @@ describe('monthlyBuckets', () => {
     ])
   })
 
-  it('utilise le fuseau UTC, pour que le mois ne dépende pas du lieu de lecture', () => {
-    // 23 h 30 le 31 janvier en UTC reste janvier, où qu'on ouvre l'app.
-    const buckets = monthlyBuckets([track('a', '2026-01-31T23:30:00Z', 1000)])
-    expect(buckets[0]!.month).toBe('2026-01')
+  /*
+    Ce test disait l'inverse jusqu'au 20/10 : « utilise le fuseau UTC, pour
+    que le mois ne dépende pas du lieu de lecture ». La raison tenait, mais
+    l'histogramme était alors seul de son avis — la liste, le libellé et
+    les années comptaient en heure locale, et une même sortie changeait de
+    mois d'un écran à l'autre (#565). Tranché pour l'heure locale partout ;
+    le cas qui reste, lire ses sorties depuis un autre fuseau que celui où
+    on les a faites, déplace désormais tous les écrans ensemble.
+  */
+  it('compte le mois en heure locale, comme le reste de l’application', () => {
+    const env = (
+      globalThis as unknown as {
+        process: { env: Record<string, string | undefined> }
+      }
+    ).process.env
+    const avant = env.TZ
+    try {
+      // 23 h 30 le 31 janvier en UTC, 0 h 30 le 1ᵉʳ février à Paris.
+      env.TZ = 'Europe/Paris'
+      const buckets = monthlyBuckets([track('a', '2026-01-31T23:30:00Z', 1000)])
+      expect(buckets[0]!.month).toBe('2026-02')
+    } finally {
+      if (avant === undefined) delete env.TZ
+      else env.TZ = avant
+    }
   })
 
   it('retourne une liste vide sans sortie datée', () => {
@@ -219,6 +262,35 @@ describe('reperesHistogramme', () => {
     expect(reperes.moisLePlusHaut).toBe('2026-09')
     expect(reperes.metresLePlusHaut).toBe(5_400)
     expect(reperes.moisRenseignes).toBe(1)
+  })
+
+  it('désigne un seul mois même si sa distance est nulle', () => {
+    /*
+      Trouvé par mutation du 17/10 : `moisLePlusHaut === null` retiré de la
+      condition (ne laissant que « distance strictement plus grande que le
+      maximum courant ») survivait parce que le maximum courant démarre à
+      0 et qu'aucun test n'avait de mois avec sortie (count > 0) mais une
+      distance nulle — un relevé GPS à un seul point, par exemple.
+    */
+    const reperes = reperesHistogramme([bucket('2026-09', 0, 1)])
+    expect(reperes.moisLePlusHaut).toBe('2026-09')
+    expect(reperes.metresLePlusHaut).toBe(0)
+    expect(reperes.moisRenseignes).toBe(1)
+  })
+
+  it('garde le premier mois en cas d’égalité, pas le dernier', () => {
+    /*
+      Trouvé par une relecture du 18/10 : `>` remplacé par `>=` ne changeait
+      jamais `moisLePlusHaut` tant qu'aucun test ne mettait deux mois à
+      strictement la même distance — les deux désignent alors un mois
+      différent, puisque `moisLePlusHaut` porte l'identité du mois, pas
+      seulement sa distance.
+    */
+    const reperes = reperesHistogramme([
+      bucket('2026-06', 20_000),
+      bucket('2026-07', 20_000),
+    ])
+    expect(reperes.moisLePlusHaut).toBe('2026-06')
   })
 
   it('ne désigne rien quand il n’y a rien à désigner', () => {

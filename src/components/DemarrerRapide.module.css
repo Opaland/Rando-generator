@@ -7,10 +7,19 @@
 }
 
 /* Même palier que LocateButton : le libellé cède la place à l'icône seule
-   une fois la carte étroite. */
+   une fois la carte étroite — à l'œil seulement. En `display: none`, il
+   quittait aussi l'arbre d'accessibilité, et l'icône étant `aria-hidden`,
+   le bouton n'avait plus de nom : un lecteur d'écran annonçait « bouton »,
+   sans plus (axe `button-name`, WCAG 4.1.2 — sonde du sprint 3, 21/10). */
 @media (max-width: 800px) {
   .bouton span:last-child {
-    display: none;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   .bouton {

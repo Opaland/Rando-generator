@@ -32,9 +32,14 @@ export type SectionApp =
   | 'reglages'
   | 'sauvegarde'
 
-export interface DefinitionOnglet {
+interface DefinitionOnglet {
   cle: Onglet
   libelle: string
+  /**
+   * Ce que la barre affiche en gros texte quand le libellé n'y tient pas
+   * (#556). Le libellé entier reste celui qu'entend un lecteur d'écran.
+   */
+  libelleCourt?: string
   /** Icône **et** libellé : une icône seule se devine, et se devine mal. */
   icone: string
 }
@@ -62,6 +67,7 @@ export const ONGLETS: DefinitionOnglet[] = [
   {
     cle: 'progression',
     libelle: 'Progression',
+    libelleCourt: 'Progrès',
     icone: '📈',
   },
   {
@@ -163,7 +169,7 @@ export function ancreDeSection(section: SectionApp): string {
   return ANCRES[section]
 }
 
-export type Disposition = 'onglets' | 'accordeons'
+type Disposition = 'onglets' | 'accordeons'
 
 /**
  * Quelle disposition afficher.

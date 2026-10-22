@@ -130,7 +130,8 @@ test('aller-retour, boucle et dénivelé estimé (issue #137)', async ({ page })
   // Le dénivelé se demande, il ne s'invite pas à chaque clic.
   await expect(stats).not.toContainText('D+')
   await page.getByTestId('route-drawer-denivele').click()
-  await expect(stats).toContainText(/D\+ \d+ m/, { timeout: 10_000 })
+  // « 412 m D+ », la forme unique du dénivelé (#571, tranché le 20/10).
+  await expect(stats).toContainText(/\d+ m D\+/, { timeout: 10_000 })
 
   // Poser une étape de plus périme le chiffre : il disparaît plutôt que de
   // décrire un tracé qui n'existe plus.

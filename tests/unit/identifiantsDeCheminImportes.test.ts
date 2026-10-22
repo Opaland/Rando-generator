@@ -154,4 +154,30 @@ describe('deux itinéraires importés ne se partagent aucun identifiant', () => 
     ).toEqual([])
     expect(Math.max(...ids)).toBeLessThan(-1001)
   })
+
+  /*
+    Trouvé par mutation du 17/10 : le test précédent écarte `osmRelationId
+    === -1` avant de rien vérifier — s'il écartait aussi un *nouvel*
+    itinéraire tombé par erreur sur -1 (`Math.min` remplacé par `Math.max`,
+    qui rendrait `nextId` égal à 0 au lieu de -1 ici), le filtre l'aurait
+    caché avec le vrai `dejaLa`, et la collision serait passée inaperçue.
+  */
+  it('ne réutilise pas non plus l’identifiant de relation déjà en base', async () => {
+    const dejaLa: Itinerary = {
+      osmRelationId: -1,
+      ref: null,
+      name: 'Un import précédent',
+      network: 'PERSO',
+      ways: [],
+      totalMeters: 0,
+      fetchedAt: '2026-08-30T00:00:00.000Z',
+      importe: true,
+    }
+    const tous = await importer(fichierADeuxTraces(3), {
+      customItineraries: [dejaLa],
+    })
+    const neufs = tous.filter((i) => i.name !== 'Un import précédent')
+    expect(neufs).toHaveLength(2)
+    expect(neufs.map((i) => i.osmRelationId)).not.toContain(-1)
+  })
 })

@@ -21,7 +21,8 @@ import {
   type PointBrut,
 } from '../../src/core/recorder.ts'
 import { distanceMeters } from '../../src/core/geo.ts'
-import type { LonLat } from '../../src/core/types.ts'
+import type { LonLat, Track } from '../../src/core/types.ts'
+import { trackDistanceMeters } from '../../src/core/history.ts'
 
 /**
  * Issue #152, pierre 3 — ce que l'écran de marche a le droit d'afficher.
@@ -167,6 +168,44 @@ describe('la distance parcourue', () => {
       6,
     )
   })
+
+  it('compte un écart de temps égal exactement à MAX_GAP_MS', () => {
+    // Trouvé par mutation du 17/10 : `<=` devenu `<` survivait, parce
+    // qu'aucun test n'utilisait exactement le seuil — seulement bien en
+    // dessous ou bien au-delà.
+    let e = demarrer(enregistreurVide(), T0)
+    e = ajouterPoint(e, point(0, T0 + 1_000))
+    e = ajouterPoint(e, point(1, T0 + 1_000 + 20_000))
+    expect(distanceParcourue(e)).toBeCloseTo(
+      distanceMeters([4.8, 45.75], [4.801, 45.75]),
+      6,
+    )
+  })
+
+  /*
+    Trouvé par mutation du 17/10 : `instant <= intervalle.fin` devenu
+    `instant > intervalle.fin` survivait à tous les tests précédents.
+    Chaque pause y était soit assez longue pour que l'écart de temps seul
+    exclue déjà le segment, soit a deux intervalles où l'erreur se
+    neutralisait par coïncidence (les deux bornes « fausses » restaient
+    différentes l'une de l'autre). Avec trois pauses courtes d'affilée,
+    l'erreur boucle : tout instant postérieur à la fin du **premier**
+    intervalle clos s'y fait à tort rattacher, et deux points de deux
+    intervalles différents s'y retrouvent tous les deux — faussement égaux.
+  */
+  it('ne recolle pas deux intervalles distincts après plusieurs pauses courtes', () => {
+    let e = demarrer(enregistreurVide(), T0)
+    e = ajouterPoint(e, point(0, T0 + 1_000))
+    e = suspendre(e, T0 + 2_000)
+    e = reprendre(e, T0 + 2_100)
+    e = ajouterPoint(e, point(1, T0 + 2_200))
+    e = suspendre(e, T0 + 2_300)
+    e = reprendre(e, T0 + 2_400)
+    // Loin du point précédent : si le segment est à tort recollé, la
+    // distance comptée n'est plus nulle.
+    e = ajouterPoint(e, point(500, T0 + 2_500))
+    expect(distanceParcourue(e)).toBe(0)
+  })
 })
 
 describe('le dénivelé', () => {
@@ -280,6 +319,22 @@ describe('la trace produite à la fin', () => {
     expect(versTrace(sortieDeTroisPoints(), 'sortie-1')).toBeNull()
   })
 
+  it('rend null pour un état autre que « terminé », même avec les deux instants posés', () => {
+    /*
+      Trouvé par mutation du 17/10 : `if (e.etat !== 'termine') return null`
+      désactivé survivait, parce que dans tous les tests existants, une
+      sortie qui n'est pas terminée n'a jamais `termineA` posé non plus —
+      une autre garde juste après rattrapait le même résultat par
+      coïncidence. Un état incohérent (`termineA` posé sans `etat:
+      'termine'`) n'est pas censé arriver par l'API normale, mais la
+      fonction doit s'en protéger quand même — c'est elle, la dernière
+      ligne avant l'historique.
+    */
+    let e = sortieDeTroisPoints()
+    e = terminer(e, T0 + 4_000)
+    expect(versTrace({ ...e, etat: 'pause' }, 'sortie-1')).toBeNull()
+  })
+
   it('rend null pour une sortie terminée sans le moindre point', () => {
     const e = terminer(demarrer(enregistreurVide(), T0), T0 + 1_000)
     expect(versTrace(e, 'sortie-1')).toBeNull()
@@ -330,6 +385,37 @@ describe('la trace produite à la fin', () => {
     expect(trace?.precisionsMetres).toEqual([8, 8, 8])
   })
 
+  /*
+    Issue #560, sous-point 3, mesuré par la revue : 1 km à pied, pause,
+    reprise 5 km plus loin, 1 km à pied. L'écran de fin disait 2 km,
+    l'historique 7 : la trace rangée reliait les deux bouts de la pause.
+    La règle qui coupe est celle de l'écran (`segmentCompte`), pas une
+    seconde (§4ter).
+  */
+  it('coupe la trace à la pause, et l’historique dit ce que l’écran disait', () => {
+    let e = demarrer(enregistreurVide(), T0)
+    e = ajouterPoint(e, point(0, T0 + 1_000))
+    e = ajouterPoint(e, point(1, T0 + 2_000))
+    e = suspendre(e, T0 + 3_000)
+    e = reprendre(e, T0 + 900_000)
+    e = ajouterPoint(e, point(60, T0 + 901_000))
+    e = ajouterPoint(e, point(61, T0 + 902_000))
+    e = terminer(e, T0 + 903_000)
+
+    const trace = versTrace(e, 'sortie-1')
+    expect(trace?.debutsDeSegment).toEqual([2])
+    expect(trackDistanceMeters(trace as Track)).toBeCloseTo(
+      distanceParcourue(e),
+      6,
+    )
+  })
+
+  it('ne coupe pas une sortie faite d’une traite', () => {
+    let e = sortieDeTroisPoints()
+    e = terminer(e, T0 + 4_000)
+    expect(versTrace(e, 'sortie-1')?.debutsDeSegment).toEqual([])
+  })
+
   it('nomme la trace de façon reconnaissable, sans nom de fichier inventé', () => {
     let e = sortieDeTroisPoints()
     e = terminer(e, T0 + 4_000)
@@ -354,6 +440,25 @@ describe('la trace provisoire', () => {
       point(0, T0),
     )
     expect(traceProvisoire(unSeulPoint)).toBeNull()
+  })
+
+  it('dessine dès exactement deux points, pas seulement au-delà', () => {
+    // Trouvé par mutation du 17/10 : `length < 2` devenu `<= 2` survivait,
+    // parce qu'aucun test ne posait exactement la borne — un seul point
+    // (null) et trois points (tracé) l'encadraient sans la toucher.
+    let e = demarrer(enregistreurVide(), T0)
+    e = ajouterPoint(e, point(0, T0 + 1_000))
+    e = ajouterPoint(e, point(1, T0 + 2_000))
+    expect(traceProvisoire(e)).not.toBeNull()
+  })
+
+  it('porte les horodatages et les précisions de chaque point', () => {
+    // Trouvé par mutation du 17/10 : `times` et `precisionsMetres` n'étaient
+    // jamais lus ici — seule la version équivalente de `versTrace` l'était.
+    const e = sortieDeTroisPoints()
+    const trace = traceProvisoire(e)
+    expect(trace?.times).toEqual([T0 + 1_000, T0 + 2_000, T0 + 3_000])
+    expect(trace?.precisionsMetres).toEqual([8, 8, 8])
   })
 
   it('dessine la sortie dès le deuxième point', () => {

@@ -73,6 +73,19 @@ describe('trierHistorique', () => {
     ).toEqual(['juin.gpx', 'mars.gpx', 'janvier.gpx'])
   })
 
+  it('range les traces sans date après celles qui en ont, triées par date', () => {
+    // Même garantie que pour le tri par dénivelé : une sortie sans date
+    // va à la fin plutôt qu'au 1er janvier 1970.
+    const melange = preparerHistorique([
+      trace('sans-date.gpx', null, 2),
+      trace('recente.gpx', '2026-06-01T08:00:00Z', 2),
+      trace('ancienne.gpx', '2025-01-01T08:00:00Z', 2),
+    ])
+    expect(
+      trierHistorique(melange, 'date').map((e) => e.track.filename),
+    ).toEqual(['recente.gpx', 'ancienne.gpx', 'sans-date.gpx'])
+  })
+
   it('met la plus longue en tête', () => {
     expect(
       trierHistorique(entrees, 'distance').map((e) => e.track.filename),
@@ -90,6 +103,24 @@ describe('trierHistorique', () => {
     const avant = entrees.map((e) => e.track.filename)
     trierHistorique(entrees, 'distance')
     expect(entrees.map((e) => e.track.filename)).toEqual(avant)
+  })
+
+  it('garde l’ordre d’arrivée entre deux sorties sans dénivelé', () => {
+    /*
+      Trouvé par mutation du 17/10 : la garde `if (typeof da !== 'number')`
+      désactivée laissait passer la seule entrée « sans dénivelé » existante
+      — il en fallait deux pour distinguer « les traiter à égalité, dans
+      l'ordre d'arrivée » de « les comparer entre elles comme si 0 valait
+      pour la mesure manquante ».
+    */
+    const melange = preparerHistorique([
+      trace('b-sans-denivele.gpx', '2026-01-01T08:00:00Z', 2, null),
+      trace('a-sans-denivele.gpx', '2026-01-02T08:00:00Z', 2, null),
+      trace('mesuree.gpx', '2026-01-03T08:00:00Z', 2, 500),
+    ])
+    expect(
+      trierHistorique(melange, 'denivele').map((e) => e.track.filename),
+    ).toEqual(['mesuree.gpx', 'b-sans-denivele.gpx', 'a-sans-denivele.gpx'])
   })
 
   it('range les traces sans dénivelé après celles qui en ont', () => {
@@ -211,6 +242,26 @@ describe('grouperParAnnee', () => {
     expect(groupes).toHaveLength(1)
     expect(groupes[0]!.annee).toBeNull()
     expect(groupes[0]!.ouvertParDefaut).toBe(true)
+    /*
+      Trouvé par mutation du 17/10 : `Math.max(0, entrees.length -
+      MAX_PAR_ANNEE)` devenu `Math.min(...)`, ou l'addition remplaçant la
+      soustraction, survivaient parce qu'aucun test ne lisait `restantes`
+      pour la liste non groupée — toujours nul ici, puisque
+      SEUIL_GROUPEMENT est bien plus petit que MAX_PAR_ANNEE.
+    */
+    expect(groupes[0]!.restantes).toBe(0)
+  })
+
+  it('n’atteint pas le groupement exactement au seuil', () => {
+    /*
+      Trouvé par mutation du 17/10 : `entrees.length < SEUIL_GROUPEMENT`
+      devenu `<=` survivait, parce qu'aucun test n'utilisait exactement
+      SEUIL_GROUPEMENT entrées — seulement moins, ou nettement plus.
+    */
+    const entrees = preparerHistorique(beaucoup(SEUIL_GROUPEMENT, 2026))
+    const groupes = grouperParAnnee(entrees)
+    expect(groupes).toHaveLength(1)
+    expect(groupes[0]!.annee).toBe(2026)
   })
 
   it('groupe par année au-delà du seuil', () => {
@@ -220,6 +271,22 @@ describe('grouperParAnnee', () => {
     ])
     const groupes = grouperParAnnee(entrees)
     expect(groupes.map((g) => g.annee)).toEqual([2026, 2018])
+  })
+
+  it('trie les années par ordre décroissant, pas par ordre de rencontre', () => {
+    /*
+      Trouvé par mutation du 17/10 : `.sort((a, b) => b - a)` supprimé,
+      remplacé par une addition, ou par un comparateur muet, survivait aux
+      deux tests existants parce que l'ordre de rencontre (la plus récente
+      en premier dans le tableau d'entrée) coïncidait déjà avec l'ordre
+      trié. Ici l'année la plus ancienne arrive en premier dans l'entrée.
+    */
+    const entrees = preparerHistorique([
+      ...beaucoup(SEUIL_GROUPEMENT, 2018),
+      ...beaucoup(5, 2024),
+    ])
+    const groupes = grouperParAnnee(entrees)
+    expect(groupes.map((g) => g.annee)).toEqual([2024, 2018])
   })
 
   it('ouvre l’année la plus récente, et elle seule', () => {
@@ -243,6 +310,31 @@ describe('grouperParAnnee', () => {
     const groupes = grouperParAnnee(entrees)
     expect(groupes.at(-1)!.annee).toBeNull()
     expect(groupes.at(-1)!.entrees).toHaveLength(1)
+    // Trouvé par mutation du 17/10 : ni `ouvertParDefaut` ni `restantes`
+    // n'étaient lus pour ce groupe.
+    expect(groupes.at(-1)!.ouvertParDefaut).toBe(false)
+    expect(groupes.at(-1)!.restantes).toBe(0)
+  })
+
+  it('n’ouvre pas un groupe « sans date » composé uniquement de sorties non datées', () => {
+    /*
+      Trouvé par mutation du 17/10 : la garde `if (entree.annee === null)`
+      désactivée (ou son bloc vidé) faisait passer chaque sortie sans date
+      par la voie des années, sous une clé `null` — ce qui, mêlé à une
+      autre année, retombait par coïncidence au même endroit et avec le
+      même indicateur. Ici, sans aucune année réelle, la coïncidence cesse :
+      la voie mutée ouvre le groupe par défaut (il est seul, donc premier),
+      la vraie ne l'ouvre jamais.
+    */
+    const entrees = preparerHistorique(
+      Array.from({ length: SEUIL_GROUPEMENT }, (_, i) =>
+        trace(`sans-date-${String(i)}.gpx`, null),
+      ),
+    )
+    const groupes = grouperParAnnee(entrees)
+    expect(groupes).toHaveLength(1)
+    expect(groupes[0]!.annee).toBeNull()
+    expect(groupes[0]!.ouvertParDefaut).toBe(false)
   })
 
   it('borne ce qu’une année déplie d’un coup', () => {
@@ -278,6 +370,8 @@ describe('organiserHistorique', () => {
       expect(groupes).toHaveLength(1)
       expect(groupes[0]!.ouvertParDefaut).toBe(true)
       expect(groupes[0]!.entrees).toHaveLength(beaucoup.length)
+      // Trouvé par mutation du 17/10 : `restantes` n'était jamais lu ici.
+      expect(groupes[0]!.restantes).toBe(0)
     }
   })
 })

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { creerVeilleGeo } from '../../src/store/veilleGeo.ts'
 
 /**
@@ -268,5 +268,26 @@ describe('ce qui ne doit jamais être fermé', () => {
     v.arreter('carte')
 
     expect(geo.actifs).toBe(0)
+  })
+
+  it('une seconde erreur sur un suivi déjà refermé ne referme rien de plus', () => {
+    /*
+      Trouvé par mutation du 17/10 : `if (identifiant !== null)
+      api.clearWatch(identifiant)` survivait, parce qu'aucun test ne
+      rejouait le gestionnaire d'erreur après qu'une première erreur l'a
+      déjà remis à `null`. Un vrai navigateur peut avoir mis en file deux
+      événements d'erreur pour le même suivi avant que le premier ait eu
+      le temps de le fermer — le second gestionnaire tourne alors sur un
+      `identifiant` déjà retombé à `null`.
+
+      Le faux `clearWatch` lève sur une poignée qu'il ne connaît plus
+      (#464) : c'est ce qui rend la seconde fermeture observable.
+    */
+    const espion = vi.spyOn(geo.api, 'watchPosition')
+    const v = veille()
+    v.demarrer('carte')
+    const gestionnaireErreur = espion.mock.calls[0]?.[1]
+    geo.echouer(ERREUR)
+    expect(() => gestionnaireErreur?.(ERREUR)).not.toThrow()
   })
 })

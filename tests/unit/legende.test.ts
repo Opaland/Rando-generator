@@ -175,3 +175,44 @@ describe('les familles de terrain', () => {
     expect(contenu.vide).toBe(true)
   })
 })
+
+/**
+ * Le réseau balisé du Département (PDIPR, #87).
+ *
+ * Même règle : nommé quand il est **dessiné**, c'est-à-dire reçu — pas quand
+ * la zone pourrait en avoir un. Hors ligne, le fichier n'arrive pas ; une
+ * légende qui le nommerait quand même mentirait.
+ */
+describe('le réseau balisé du Département', () => {
+  it('est nommé quand des tronçons sont peints', () => {
+    const contenu = contenuLegende({
+      itineraires: [],
+      itinerairesPerso: [],
+      aDesTraces: false,
+      reseauDeFond: true,
+    })
+    expect(contenu.reseauDeFond).toBe(true)
+    // Seul sur la carte, il suffit à justifier la légende.
+    expect(contenu.vide).toBe(false)
+  })
+
+  it('n’est pas nommé quand rien n’est peint', () => {
+    const contenu = contenuLegende({
+      itineraires: [itineraire('GR')],
+      itinerairesPerso: [],
+      aDesTraces: false,
+    })
+    expect(contenu.reseauDeFond).toBe(false)
+  })
+})
+
+/*
+  Survivants équivalents de la vague du 18/10 sur `contenuLegende` (§6bis) :
+  - la garde `segment.famille === 'inconnu'` retirée : « inconnu » entre dans
+    l'ensemble, mais `ORDRE_TERRAIN` (dur, stabilisé, naturel, autre) ne le
+    contient pas, et le filtre qui suit l'écarte ;
+  - `terrains.length === 0` remplacé par `true` dans `vide` : un terrain
+    n'est nommé que pour l'itinéraire regardé, dont le réseau figure dans
+    `ORDRE_DES_RESEAUX` — qui porte les sept valeurs de `Network` — donc
+    `reseaux` n'est jamais vide quand `terrains` ne l'est pas.
+*/

@@ -8,7 +8,7 @@ import styles from './Backup.module.css'
  * Sauvegarde complète : l'exporter, la relire ailleurs (issue #132).
  *
  * Tout vit dans le navigateur — les traces et les zones dans IndexedDB, les
- * sept réglages dans le stockage local depuis #203. Rien ne suit d'un
+ * réglages dans le stockage local depuis #203. Rien ne suit d'un
  * appareil à l'autre, et vider les données du site efface des années de
  * traces. C'est le prix de « vos traces ne quittent jamais votre
  * navigateur » — et un prix doit être annoncé, pas découvert.
@@ -16,6 +16,7 @@ import styles from './Backup.module.css'
 export function Backup() {
   const tracks = useAppStore((s) => s.tracks)
   const customItineraries = useAppStore((s) => s.customItineraries)
+  const parcoursDeclares = useAppStore((s) => s.parcoursDeclares)
   const exporterSauvegarde = useAppStore((s) => s.exporterSauvegarde)
   const importerSauvegarde = useAppStore((s) => s.importerSauvegarde)
   const backupMessage = useAppStore((s) => s.backupMessage)
@@ -34,7 +35,12 @@ export function Backup() {
   const webkit =
     typeof navigator === 'undefined' ? false : estSafari(navigator.userAgent)
 
-  const aQuelqueChose = tracks.length > 0 || customItineraries.length > 0
+  // Les déclarations comptent : sans elles, quelqu'un qui n'a coché que des
+  // itinéraires, sans un seul fichier, ne pouvait pas sauvegarder (#559).
+  const aQuelqueChose =
+    tracks.length > 0 ||
+    customItineraries.length > 0 ||
+    parcoursDeclares.length > 0
 
   return (
     <details className={styles.section} data-testid="backup">
@@ -117,7 +123,8 @@ export function Backup() {
 
       {!aQuelqueChose && (
         <p className={styles.hint} data-testid="backup-empty">
-          Rien à sauvegarder pour l’instant : importez d’abord une trace.
+          Rien à sauvegarder pour l’instant : importez une trace, ou déclarez
+          un itinéraire parcouru.
         </p>
       )}
 
@@ -126,6 +133,11 @@ export function Backup() {
         présente est reconnue à son tracé et ignorée, même sous un autre nom de
         fichier. Vous pouvez restaurer la même sauvegarde deux fois sans rien
         dupliquer.
+      </p>
+
+      <p className={styles.hint} data-testid="backup-reglages">
+        Les réglages ne sont jamais repris : ceux de cet appareil restent les
+        vôtres.
       </p>
 
       {backupMessage && (

@@ -2,6 +2,8 @@ import type { AggregateStats } from './matching.ts'
 import { DEFAULT_COMPLETION_PCT, isCompleted } from './milestones.ts'
 import type { CompletionResult, Itinerary, Track } from './types.ts'
 import { attributionDe, type GpxAttribution } from './gpxExport.ts'
+import { sourcesDe } from './attributionDuTrace.ts'
+import { instantDe, jourLocal } from './valeurLue.ts'
 
 /**
  * Bilan partageable : le chiffre qu'on a envie de montrer.
@@ -15,7 +17,7 @@ import { attributionDe, type GpxAttribution } from './gpxExport.ts'
 /** Au-delà, l'image devient un tableau qu'on ne lit plus. */
 const TOP_MAX = 5
 
-export interface SummaryLine {
+interface SummaryLine {
   name: string
   pct: number
   completed: boolean
@@ -50,7 +52,7 @@ export interface Summary {
   sources: GpxAttribution[]
 }
 
-export interface SummaryInput {
+interface SummaryInput {
   global: AggregateStats
   results: CompletionResult[]
   itineraries: Itinerary[]
@@ -61,9 +63,8 @@ export interface SummaryInput {
 }
 
 function isoDay(date: string | null): string | null {
-  if (!date) return null
-  const time = Date.parse(date)
-  return Number.isNaN(time) ? null : new Date(time).toISOString().slice(0, 10)
+  const time = instantDe(date)
+  return time === null ? null : jourLocal(time)
 }
 
 /**
@@ -78,9 +79,11 @@ function isoDay(date: string | null): string | null {
 function provenances(itineraries: Itinerary[]): GpxAttribution[] {
   const parAuteur = new Map<string, GpxAttribution>()
   for (const itineraire of itineraries) {
-    const source = attributionDe(itineraire)
-    if (source !== null && !parAuteur.has(source.author)) {
-      parAuteur.set(source.author, source)
+    const attribution = attributionDe(itineraire)
+    // Un tracé dessiné sur plusieurs sources les porte réunies (#557) :
+    // chacune est créditée sous sa propre formule.
+    for (const source of attribution ? sourcesDe(attribution) : []) {
+      if (!parAuteur.has(source.author)) parAuteur.set(source.author, source)
     }
   }
   return [...parAuteur.values()]

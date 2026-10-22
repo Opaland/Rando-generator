@@ -33,7 +33,7 @@
  * `localStorage` est **synchrone par contrat** : quand `setItem` rend la
  * main, la valeur est écrite. Il n'y a plus de fenêtre à fermer — il n'y a
  * plus de fenêtre. Et les réglages sont exactement ce pour quoi il est
- * fait : sept scalaires, quelques dizaines d'octets.
+ * fait : une poignée de scalaires, quelques dizaines d'octets.
  *
  * Une seule source à la fois, et laquelle est décidé au démarrage :
  * `localStorage` s'il répond, IndexedDB sinon. Certains navigateurs
@@ -156,11 +156,28 @@ export function ecrireReglage(
     local.setItem(PREFIXE + clef, JSON.stringify(valeur))
     return true
   } catch {
+    /*
+      Refusé : la valeur part en repli dans IndexedDB. Mais la lecture
+      consulte `localStorage` d'abord, et un magasin plein lit très bien —
+      l'ancienne valeur y restait, et c'est elle qu'on relisait (#569 :
+      relu 40, attendu 80). La retirer laisse la lecture tomber sur le
+      repli : une seule source à la fois. Si même retirer est refusé, la
+      lecture l'est aussi en général (`SecurityError`), et retombe de même.
+    */
+    try {
+      local.removeItem(PREFIXE + clef)
+    } catch {
+      // Rien de plus à tenter ici : voir ci-dessus.
+    }
     return false
   }
 }
 
-/** Efface un réglage. Sert au nettoyage d'une sauvegarde réimportée. */
+/**
+ * Efface un réglage. Aucun appelant dans l'application : seuls les tests s'en
+ * servent, pour repartir d'un magasin propre. Ce commentaire disait qu'il
+ * « sert au nettoyage d'une sauvegarde réimportée » (#571, §4bis).
+ */
 export function effacerReglage(clef: SettingKey): void {
   magasin()?.removeItem(PREFIXE + clef)
 }

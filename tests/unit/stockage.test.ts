@@ -51,6 +51,19 @@ describe('etatDuStockage', () => {
     expect(etat.octetsUtilises).toBeNull()
   })
 
+  it('survit à une consultation de la persistance qui échoue', async () => {
+    /*
+      Trouvé par mutation du 17/10 : le repli `() => null` de la ligne 57
+      remplacé par `() => undefined` survivait, parce qu'aucun test ne
+      faisait échouer `persisted()` elle-même — seul `estimate()` l'était,
+      et `persistant` n'y est jamais lu.
+    */
+    const etat = await etatDuStockage(
+      api({ persisted: () => Promise.reject(new Error('refusé')) }),
+    )
+    expect(etat.persistant).toBeNull()
+  })
+
   it('accepte une estimation partielle', async () => {
     const etat = await etatDuStockage(
       api({ estimate: () => Promise.resolve({ usage: 42 }) }),
@@ -144,6 +157,26 @@ describe('apiDuNavigateur', () => {
     vi.stubGlobal('navigator', {})
     expect(apiDuNavigateur()).toBeNull()
     vi.stubGlobal('navigator', { storage: { persisted: () => true } })
+    expect(apiDuNavigateur()).toBeNull()
+    vi.unstubAllGlobals()
+  })
+
+  it('rend null même quand une seule des trois méthodes manque', () => {
+    /*
+      Trouvé par mutation du 17/10 : les trois cas du test précédent ont
+      tous `estimate` manquant en même temps que le reste, et `if
+      (!persisted || !persist || !estimate)` survivait réduit à son seul
+      dernier terme (`!estimate`), ou à une combinaison `&&`/`||` d'une
+      autre forme — rien ne distinguait « une seule méthode manque, les
+      deux autres sont là ».
+    */
+    vi.stubGlobal('navigator', {
+      storage: {
+        persisted: () => Promise.resolve(true),
+        estimate: () => Promise.resolve({}),
+        // persist manque.
+      },
+    })
     expect(apiDuNavigateur()).toBeNull()
     vi.unstubAllGlobals()
   })

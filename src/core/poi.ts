@@ -29,7 +29,7 @@ const MAX_CHUNKS = 40
 /** Nombre maximal de POI demandés à Overpass. */
 export const MAX_POIS = 400
 
-export interface BoundingBox {
+interface BoundingBox {
   south: number
   west: number
   north: number

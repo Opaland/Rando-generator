@@ -1,4 +1,4 @@
-import { formatKm } from './format.ts'
+import { formatKm, formatPct } from './format.ts'
 import { NETWORK_COLORS } from './networkDisplay.ts'
 import { ENCRE, GRIS_VERT, PAPIER } from './couleursPartagees.ts'
 import { attributionTexte, creditsDesSources } from './attribution.ts'
@@ -13,10 +13,6 @@ const GRIS = GRIS_VERT
 
 const DISPLAY = "'Avenir Next', 'Futura', 'Trebuchet MS', system-ui, sans-serif"
 const SANS = "system-ui, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif"
-
-function pctTexte(pct: number): string {
-  return `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 }).format(pct)} %`
-}
 
 /** « 2024 » plutôt que « 2024–2024 » : répéter l'année ne dit rien de plus. */
 function anneesTexte(period: { from: string; to: string }): string {
@@ -57,7 +53,7 @@ export function drawSummaryCard(
 
   ctx.fillStyle = ENCRE
   ctx.font = `700 150px ${DISPLAY}`
-  ctx.fillText(pctTexte(summary.pct), 60, 250)
+  ctx.fillText(formatPct(summary.pct), 60, 250)
 
   ctx.fillStyle = GRIS
   ctx.font = `400 30px ${SANS}`
@@ -87,7 +83,7 @@ export function drawSummaryCard(
     ctx.fillText(ligne.name, 700, y)
     ctx.fillStyle = ligne.completed ? NETWORK_COLORS.GR : GRIS
     ctx.textAlign = 'right'
-    ctx.fillText(pctTexte(ligne.pct), CARD_WIDTH - 64, y)
+    ctx.fillText(formatPct(ligne.pct), CARD_WIDTH - 64, y)
     ctx.textAlign = 'left'
     y += 52
   }

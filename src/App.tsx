@@ -6,6 +6,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { useRetourFermeLaFiche } from './lib/retourFermeLaFiche.ts'
 import { About } from './components/About.tsx'
 import { Backup } from './components/Backup.tsx'
 import { CustomItineraries } from './components/CustomItineraries.tsx'
@@ -55,12 +56,10 @@ import { useAppStore } from './store/appStore.ts'
 import styles from './App.module.css'
 import {
   attributionTexte,
+  creditsImprimes,
   IGN,
-  IGN_RELIEF,
   MARQUES_FFRANDONNEE,
-  METROPOLE,
   OSM,
-  PROVINCE_NORD,
 } from './lib/attribution.ts'
 
 // La carte (MapLibre, ~900 kB) est chargée à part : le tableau de bord et les
@@ -174,6 +173,12 @@ function App() {
   const panneauRef = useRef<HTMLElement>(null)
   const contenuRef = useRef<HTMLDivElement>(null)
   const detailOuvert = useAppStore((s) => s.detailItineraryId)
+  const fermerLaFiche = useAppStore((s) => s.closeItineraryDetail)
+  // Retour ferme la fiche au lieu de quitter l'application (#568).
+  useRetourFermeLaFiche(detailOuvert, fermerLaFiche)
+  const itineraires = useAppStore((s) => s.itineraries)
+  const itinerairesPerso = useAppStore((s) => s.customItineraries)
+  const traceOuvert = useAppStore((s) => s.drawMode)
   const compact = useEcranCompact()
   // La barre existe à toutes les largeurs depuis le 23/08 : sur PC aussi, la
   // navigation principale doit être visible sans qu'on la cherche.
@@ -231,6 +236,12 @@ function App() {
     if (detailOuvert !== null) racine.dataset['fiche'] = 'ouverte'
     else delete racine.dataset['fiche']
   }, [detailOuvert])
+  // Le panneau de tracé occupe le même coin que la fiche (#544).
+  useEffect(() => {
+    const racine = document.documentElement
+    if (traceOuvert) racine.dataset['trace'] = 'ouvert'
+    else delete racine.dataset['trace']
+  }, [traceOuvert])
   const [aboutOpen, setAboutOpen] = useState(false)
   /**
    * null = personne n'a touché la poignée, la position se déduit de l'état
@@ -333,6 +344,9 @@ function App() {
         ) {
           setFeuille('repliee')
         }
+        // Même geste pour le tracé (#546) : on trace sur la carte, la
+        // feuille à mi-course recouvrait le panneau de tracé tout entier.
+        if (etat.drawMode && !precedent.drawMode) setFeuille('repliee')
       }),
     [],
   )
@@ -534,6 +548,16 @@ function App() {
                 <ItineraryList />
               </Ancre>
             )}
+            {/*
+              « Affichage » juste avant les réglages, et hors de toute
+              condition de section : au téléphone, il arrive ainsi en tête de
+              l'onglet Réglages (#576, tranché par Cédric le 21/10 — Jeanine
+              le trouvait en dernier), et reste visible dans les deux modes,
+              sans quoi le mode simple serait un piège dont on ne sort pas.
+              Sur les autres onglets, il reste au bas du panneau — déplié
+              lui aussi, sous le contenu de l'onglet.
+            */}
+            <ModeSwitch />
             {sections.reglages && visible('reglages') && (
               <Ancre section="reglages">
                 <Settings />
@@ -544,7 +568,6 @@ function App() {
                 <Backup />
               </Ancre>
             )}
-            <ModeSwitch />
             <InstallButton />
             <footer className={styles.footer} data-testid="pied-panneau">
               <a
@@ -629,7 +652,11 @@ function App() {
             avant={
               onglets &&
               ongletActif !== 'sorties' &&
-              enregistrement.etat === 'repos' && (
+              enregistrement.etat === 'repos' &&
+              // Fiche ouverte au téléphone, la carte n'a plus qu'une bande :
+              // ▶ y rencontrait le zoom (« − » recouvert, #584). On y lit un
+              // itinéraire ; le départ rapide revient à la fermeture.
+              !(compact && detailOuvert !== null) && (
                 <DemarrerRapide
                   onDemarrer={() => {
                     changerDOnglet('sorties')
@@ -663,7 +690,15 @@ function App() {
         className={styles.attributionImpression}
         data-testid="attribution-impression"
       >
-        {attributionTexte(OSM, IGN_RELIEF, METROPOLE, PROVINCE_NORD)} ·{' '}
+        {attributionTexte(
+          ...creditsImprimes(
+            [...itineraires, ...itinerairesPerso].find(
+              (i) => i.osmRelationId === detailOuvert,
+            ) ?? null,
+            [...itineraires, ...itinerairesPerso],
+          ),
+        )}{' '}
+        ·{' '}
         {MARQUES_FFRANDONNEE}
       </footer>
 

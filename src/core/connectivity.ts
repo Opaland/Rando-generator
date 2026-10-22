@@ -16,14 +16,14 @@
 /** Type du message échangé avec le service worker (recopié dans public/sw.js). */
 export const CONNECTIVITY_MESSAGE = 'sentiers:connectivity'
 
-export interface ConnectivityState {
+interface ConnectivityState {
   /** Ce que déclare `navigator.onLine`. */
   navigatorOnline: boolean
   /** Le service worker a servi l'application depuis le cache, réseau absent. */
   cacheFallback: boolean
 }
 
-export type ConnectivityEvent = 'online' | 'offline' | 'cache-fallback'
+type ConnectivityEvent = 'online' | 'offline' | 'cache-fallback'
 
 export function initialConnectivity(navigatorOnline: boolean): ConnectivityState {
   return { navigatorOnline, cacheFallback: false }

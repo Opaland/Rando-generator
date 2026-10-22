@@ -4,6 +4,7 @@ import {
   NavigationControl,
   type ErrorEvent as MapErrorEvent,
 } from 'maplibre-gl'
+import { creerCompteurDeRepli } from '../../lib/compteurDeRepli.ts'
 import {
   ATTRIBUTION,
   ATTRIBUTION_OSM,
@@ -15,7 +16,7 @@ import {
 /** Nombre d'erreurs de tuiles avant de basculer sur le fond OpenStreetMap. */
 const ERREURS_AVANT_REPLI = 3
 
-export interface MapInstance {
+interface MapInstance {
   mapRef: RefObject<MaplibreMap | null>
   /** Vrai une fois le premier style chargé : les couches existent. */
   ready: boolean
@@ -43,8 +44,8 @@ export function useMapInstance(
   const [ready, setReady] = useState(false)
   const [styleEpoch, setStyleEpoch] = useState(0)
   const [mapError, setMapError] = useState(false)
-  const repliFait = useRef(false)
-  const erreursTuiles = useRef(0)
+  // Trois échecs **consécutifs** de tuiles IGN avant le repli (#569).
+  const compteurDeRepli = useRef(creerCompteurDeRepli(ERREURS_AVANT_REPLI))
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return
@@ -55,12 +56,13 @@ export function useMapInstance(
         style: baseStyle(IGN_TILES, ATTRIBUTION),
         center: [4.55, 45.5],
         zoom: 9,
-        // Attribution laissée au comportement par défaut de MapLibre :
-        // dépliée sur grand écran, repliée derrière un « ⓘ » en dessous de
-        // 640 px. Forcée dépliée, elle occupait trois lignes et 60 px en bas
-        // de carte sur téléphone, par-dessus la légende et l'état d'accueil
-        // (docs/AUDIT_MOBILE.md, constat M7). Elle reste accessible : c'est
-        // une obligation ODbL et Licence Ouverte, pas un ornement.
+        // Attribution : dépliée sur grand écran, repliée derrière un « ⓘ »
+        // en dessous de 640 px. Dépliée, elle occupait trois lignes et 60 px
+        // en bas de carte sur téléphone, par-dessus la légende et l'état
+        // d'accueil (docs/AUDIT_MOBILE.md, constat M7). Elle reste
+        // accessible : c'est une obligation ODbL et Licence Ouverte, pas un
+        // ornement. « Repliée » se lit au sens de MapLibre : dépliée à
+        // l'affichage, repliée au premier glisser de la carte.
       })
     } catch {
       // WebGL indisponible : l'application reste utilisable sans carte.
@@ -86,20 +88,36 @@ export function useMapInstance(
     // Exposé en lecture pour les tests e2e (état du fond de carte et des sources).
     ;(window as { __sentiersMap?: MaplibreMap }).__sentiersMap = map
 
+    /*
+      Prête au premier style chargé, comme le dit `ready` — et non au seul
+      `load`, qui attend aussi les tuiles (#545). Mesuré le 18/10 : quand le
+      fond IGN échoue et que le repli `setStyle` part pendant le premier
+      chargement, MapLibre n'émet parfois jamais `load` (3 lancements sur
+      20). `ready` restait faux pour la session, et aucun effet de données
+      ne remettait rien à la carte : une carte vide pour qui ouvre
+      l'application quand l'IGN répond mal. `load` reste écouté : il ne
+      coûte rien, et couvre un style chargé avant que l'écouteur existe.
+    */
     map.on('load', () => {
       setReady(true)
     })
     map.on('style.load', () => {
+      setReady(true)
       setStyleEpoch((epoch) => epoch + 1)
     })
 
-    // Repli automatique sur les tuiles OSM si le flux IGN échoue.
+    // Repli automatique sur les tuiles OSM si le flux IGN échoue — trois
+    // fois de suite : une tuile IGN reçue remet le compte à zéro (#569).
+    map.on('sourcedata', (event) => {
+      const { sourceId, tile } = event as { sourceId?: string; tile?: unknown }
+      if (sourceId === 'basemap' && tile !== undefined) {
+        compteurDeRepli.current.succes()
+      }
+    })
     map.on('error', (event: MapErrorEvent) => {
       const sourceId = (event as { sourceId?: string }).sourceId
-      if (sourceId !== 'basemap' || repliFait.current) return
-      erreursTuiles.current += 1
-      if (erreursTuiles.current >= ERREURS_AVANT_REPLI) {
-        repliFait.current = true
+      if (sourceId !== 'basemap') return
+      if (compteurDeRepli.current.echec()) {
         map.setStyle(baseStyle(OSM_TILES, ATTRIBUTION_OSM))
       }
     })

@@ -75,6 +75,38 @@
   overflow-wrap: anywhere;
 }
 
+/*
+  En gros texte à 390 px, « Progression » ne tient pas dans le quart de la
+  largeur : `overflow-wrap` le coupait en « Progressi / on », seconde ligne
+  hors de l'écran (#556, mesuré le 19/10). La barre affiche alors
+  « Progrès » ; le mot entier reste dans l'arbre d'accessibilité, masqué à
+  l'œil seulement (même technique que `.sr-only`).
+
+  Choix de présentation, tranché au jugement le 21/10 (§2). Écartés : l'icône
+  seule (« une icône seule se devine, et se devine mal »,
+  `core/maquetteOnglets.ts`) et une barre plus haute, qui garde le mot
+  coupé et prend sa hauteur à la carte. Lié au gros texte plutôt qu'à une
+  largeur mesurée : c'est lui qui fait déborder, et la barre n'existe que
+  sous le point de rupture.
+*/
+.libelleCourt {
+  display: none;
+}
+
+:root[data-gros-texte='oui'] .libelleLong {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+:root[data-gros-texte='oui'] .libelleCourt {
+  display: inline;
+}
+
 /* Pas de règle qui masque la barre.
 
    Il y en avait une — `@media (min-width: 800px) { display: none }` — posée

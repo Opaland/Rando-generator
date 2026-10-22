@@ -52,6 +52,28 @@ describe('bboxChunks', () => {
   it('rejette une liste de coordonnées vide', () => {
     expect(() => bboxChunks([])).toThrow()
   })
+
+  /*
+    Trouvé par une vague de mutation du 17/10 : les trois tests ci-dessus
+    ne font varier que la longitude (une seule latitude, 45.4, pour tous
+    les points) — la condition de découpe sur la latitude
+    (`nextMaxLat - nextMinLat > maxSpanDeg`) n'était donc exercée par
+    aucun test. Un sentier nord-sud (la Chartreuse, le Vercors) l'atteint
+    pourtant exactement comme un sentier est-ouest atteint l'autre moitié
+    de la condition.
+  */
+  it('découpe aussi un long tracé nord-sud, pas seulement est-ouest', () => {
+    const long: LonLat[] = []
+    for (let i = 0; i <= 200; i++) long.push([4.5, 45.4 + i * 0.01])
+    const chunks = bboxChunks(long)
+    expect(chunks.length).toBeGreaterThan(1)
+    for (const chunk of chunks) {
+      expect(chunk.north - chunk.south).toBeLessThan(0.25 + 0.04)
+    }
+    for (let i = 1; i < chunks.length; i++) {
+      expect(chunks[i]!.south).toBeLessThan(chunks[i - 1]!.north)
+    }
+  })
 })
 
 describe('buildPoiQuery', () => {

@@ -213,6 +213,7 @@
   --ombre-flottante: 0 2px 10px rgba(30, 43, 35, 0.22); /* au-dessus de la carte */
   --ombre-panneau: 0 4px 18px rgba(30, 43, 35, 0.25); /* dialogues, accueil */
   --ombre-feuille: 0 -3px 16px rgba(30, 43, 35, 0.22); /* feuille mobile, qui monte */
+  --ombre-bord: rgba(30, 43, 35, 0.16); /* .ombres-defilement : « ça continue » */
   /* Deux formes pour deux propriétés, et il a fallu les séparer.
 
      `--anneau-focus` valait `0 0 0 1px var(--rouge-balisage)` — quatre
@@ -307,12 +308,20 @@
   /* Paliers d'empilement des overlays de carte (du plus bas au plus haut).
      Un seul endroit à consulter avant d'ajouter un nouvel overlay. */
   --z-overlay-legend: 3; /* MapLegend : légende des couleurs de réseau */
-  --z-overlay-guide: 4; /* EmptyState : guide de premier lancement */
   --z-overlay-card: 5; /* ItineraryCard : fiche résumé flottante */
   --z-overlay-detail: 6; /* ItineraryDetail : panneau détail (altimétrie, POI, 3D) */
   --z-overlay-draw: 7; /* RouteDrawer : panneau de tracé d'itinéraire */
   --z-overlay-locate: 8; /* LocateButton : « où suis-je », toujours atteignable */
-  --z-feuille: 9; /* Panneau de contrôle en feuille glissante (téléphone) */
+  --z-overlay-guide: 9; /* EmptyState : guide de premier lancement — au-dessus
+                           de « Ma position » et de « Démarrer » : remontés
+                           sous le zoom (#556, 21/10), ils peignaient la croix
+                           qui le ferme. Une couche qu'on referme d'un geste
+                           peut cacher le reste ; sa croix, non. */
+  --z-credit-carte: 10; /* Crédit de la carte : au-dessus de toute surimpression
+                          (#553, tranché par Cédric le 20/10). L'ODbL et la
+                          Licence Ouverte l'exigent lisible ; la fiche le
+                          recouvrait à 42-100 %, et « Démarrer » peignait son ⓘ. */
+  --z-feuille: 11; /* Panneau de contrôle en feuille glissante (téléphone) */
   /* Hauteur de la barre d'onglets du prototype #171. Mesurée à 50 px et
      posée ici plutôt que recopiée : la feuille doit réserver exactement
      cette hauteur, et deux nombres séparés dérivent en silence — le mien
@@ -360,6 +369,11 @@
      `ItineraryDetail.module.css`. */
   --largeur-fiche: 380px;
   --hauteur-fiche: min(50vh, 480px);
+  /* Même raison pour le panneau de tracé d'itinéraire (#544) : les commandes
+     de la carte s'écartent de lui en dérivant de ces nombres-ci, repris
+     tels quels par `RouteDrawer.module.css`. */
+  --largeur-trace: 340px;
+  --hauteur-trace: min(60vh, 460px);
   /* Hauteur de la feuille repliée : juste sa poignée. Posée ici parce que
      deux choses en dépendent — la feuille elle-même, et les commandes de la
      carte qui doivent rester au-dessus d'elle pour ne pas cacher
@@ -388,10 +402,14 @@
      Le repli additionne le pire cas de chaque terme : réserver trop de place
      coûte quelques pixels, en recouvrir une mention exigée par l'ODbL et la
      Licence Ouverte coûte autre chose. */
+  /* Le bas du zoom et de la boussole, mesuré par `map/useBasDesCommandes.ts`
+     depuis le haut de la carte ; « Démarrer » et « Ma position » se posent
+     dessous. Le repli garde leur ancienne place (224 px) avant la mesure. */
+  --bas-des-commandes: 214px;
   --bande-attribution: calc(
     64px + var(--hauteur-onglets) + var(--hauteur-poignee)
   );
-  --z-onglets: 10; /* Prototype #171 : barre d'onglets, au-dessus de la
+  --z-onglets: 12; /* Prototype #171 : barre d'onglets, au-dessus de la
                       feuille — une navigation que la feuille dépliée
                       recouvrirait ne serait plus une navigation. */
 }
@@ -831,6 +849,14 @@ details[open] > .acc-summary::after {
     width: 44px;
     height: 44px;
   }
+
+  /* Le « (i) » du crédit tombe sous le plancher de `button` ci-dessus, mais
+     son icône est une image de fond de 24 px que MapLibre laisse en
+     `repeat` : porté à 44 px, il la répétait en 2 × 2 — quatre ⓘ (#555). */
+  .maplibregl-map .maplibregl-ctrl-attrib-button {
+    background-repeat: no-repeat;
+    background-position: center;
+  }
 }
 
 /* Un champ de saisie garde par défaut la largeur de vingt caractères, quelle
@@ -890,6 +916,47 @@ aside :is(button, label, p, li, h2, h3, span, output) {
   aside button {
     min-width: var(--cible-mini);
   }
+}
+
+/*
+  Ombres de défilement : le bord annonce qu'il continue.
+
+  Sans marque, un texte coupé au ras du bord se lit comme un texte fini —
+  c'est ce qui a fait dire « coupé à moitié » plutôt que « il faut faire
+  défiler » (retour du 24/08). Le navigateur ne dessine plus de barre de
+  défilement permanente, donc rien ne le disait.
+
+  Technique sans JavaScript : deux dégradés en `local` (qui défilent avec le
+  contenu) masquent deux ombres en `scroll` (qui restent collées au cadre).
+  En haut de course, le dégradé opaque recouvre l'ombre haute ; au milieu,
+  les deux ombres apparaissent ; en bas, la basse disparaît. La marque dit
+  donc *où l'on en est*, pas seulement qu'il y a du contenu.
+
+  Une classe nommée plutôt qu'un bloc recopié (§4) : écrite dans la fiche
+  seule, elle y était effacée trois lignes plus bas par un raccourci
+  `background`, et ne s'est jamais peinte (trouvé le 21/10). Elle sert la
+  fiche et le guide de premier lancement (#570, 4). À poser sur l'élément
+  qui défile, après tout `background` qu'il porterait.
+*/
+.ombres-defilement {
+  background-color: var(--papier);
+  background-image:
+    linear-gradient(var(--papier) 30%, rgba(var(--papier-rvb), 0)),
+    linear-gradient(rgba(var(--papier-rvb), 0), var(--papier) 70%),
+    linear-gradient(var(--ombre-bord), transparent),
+    linear-gradient(transparent, var(--ombre-bord));
+  background-position:
+    0 0,
+    0 100%,
+    0 0,
+    0 100%;
+  background-repeat: no-repeat;
+  background-size:
+    100% 28px,
+    100% 28px,
+    100% 10px,
+    100% 10px;
+  background-attachment: local, local, scroll, scroll;
 }
 
 /* Réservé aux lecteurs d'écran : visible pour eux, absent de l'écran.
@@ -1033,6 +1100,9 @@ aside :is(button, label, p, li, h2, h3, span, output) {
     --ombre-flottante: 0 2px 10px rgba(0, 0, 0, 0.55);
     --ombre-panneau: 0 4px 18px rgba(0, 0, 0, 0.6);
     --ombre-feuille: 0 -3px 16px rgba(0, 0, 0, 0.55);
+    /* Sur un papier presque noir, une ombre ne se voit pas : la marque de
+       défilement s'y éclaircit au lieu de s'assombrir (revue du sprint 1). */
+    --ombre-bord: rgba(255, 255, 255, 0.14);
   }
 
   /*
@@ -1056,9 +1126,9 @@ aside :is(button, label, p, li, h2, h3, span, output) {
   ## Pourquoi une feuille d'impression est plus qu'un confort ici
 
   L'application promet que rien ne quitte le navigateur. Le corollaire est
-  qu'il n'y a **pas de « partager par mail »** : le papier est le seul chemin
-  hors de l'appareil qui ne trahisse pas la promesse. C'est le geste le plus
-  aligné avec le produit, et c'était le seul qui n'avait jamais été dessiné.
+  qu'il n'y a **pas de « partager par mail »** : le papier, comme l'export
+  GPX, l'image du bilan et la sauvegarde, sort de l'appareil par vous et non
+  par un serveur. C'est le geste le plus aligné avec le produit.
 
   Persona neuf de la revue globale du 28/08 : **Paul, 62 ans**, prépare ses
   sorties sur ordinateur et met la fiche dans la poche de son coupe-vent. Pas
@@ -1139,8 +1209,45 @@ aside :is(button, label, p, li, h2, h3, span, output) {
   [data-testid='onboarding-rouvrir'],
   /* Le bouton qui déclenche l'impression n'a rien à faire sur la feuille
      qu'il imprime (issue #369). */
-  [data-testid='itinerary-detail-imprimer'] {
+  [data-testid='itinerary-detail-imprimer'],
+  /* Ni les commandes de l'écran (issue #552) : la barre d'onglets, en
+     `position: fixed`, sortait au bas de chaque page par-dessus le zoom du
+     profil ; « Démarrer » coupait une ligne de son cadre. Un bouton sur du
+     papier ne se touche pas. */
+  [data-testid='barre-onglets'],
+  [data-testid='demarrer-rapide'],
+  [data-testid='locate-toggle'],
+  [data-testid='itinerary-detail-close'],
+  [data-testid='profil-zoom'],
+  /* Ni ce qui flotte sur la carte : `<main>` statique à l'impression, le
+     guide et la carte d'itinéraire se calaient sur la page, par-dessus la
+     liste imprimée (revue du sprint 1, 21/10). La fiche, elle, est la
+     feuille quand elle est ouverte. */
+  [data-testid='onboarding'],
+  [data-testid='itinerary-card'],
+  [data-testid='route-drawer'],
+  /* Ni les boutons de la fiche, ni les phrases qui n'existent que pour eux
+     — tranché par Cédric le 21/10 (#552), même règle que les commandes de
+     l'écran. La consigne « Parcourez le profil… » non plus : on ne parcourt
+     pas du papier. */
+  [data-testid='detail-3d-toggle'],
+  [data-testid='itinerary-detail-export'],
+  [data-testid='emporter-bloc'],
+  [data-testid='declare-bloc'],
+  /* L'état « déclaré » aussi : sa phrase reste, son bouton non (revue du
+     sprint 3 — #552 n'avait masqué que l'état d'avant). */
+  [data-testid='declare-retirer'],
+  [data-testid='declare-retirer-confirm'],
+  [data-testid='elevation-readout'] {
     display: none !important;
+  }
+
+  /* La pastille du réseau garde sa couleur de balisage : les navigateurs
+     n'impriment pas les fonds par défaut, et « PR » sortait blanc (#552,
+     rendu d'un vrai PDF le 21/10). */
+  [data-testid='itinerary-detail'] [class*='badge'] {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
 
   /*
@@ -1199,6 +1306,9 @@ aside :is(button, label, p, li, h2, h3, span, output) {
     display: block !important;
     margin-top: var(--espace-6);
     padding-top: var(--espace-4);
+    /* La marge de la fiche qu'il suit : sans elle, sa première lettre
+       touchait le bord du papier (rendu PDF du 21/10). */
+    padding-inline: var(--espace-7);
     border-top: 1px solid #000;
     font-size: 0.75rem;
     break-inside: avoid;
@@ -1239,6 +1349,13 @@ aside :is(button, label, p, li, h2, h3, span, output) {
     Sans fiche ouverte, c'est la liste qu'on imprime — le panneau redevient
     une page ordinaire au lieu d'une colonne de hauteur fixe.
   */
+  /*
+    `<main>` aussi : une A4 fait 794 px CSS, sous le point de rupture, et le
+    papier s'imprime donc en disposition téléphone, où `<main>` est posé en
+    absolu. La mise en page tombait à 0 px, et le crédit imprimé passait
+    sous la fiche, en haut de la page 1 (rendu d'un vrai PDF, 21/10).
+  */
+  [data-testid='layout'] > main,
   [data-testid='layout'],
   [data-testid='sidebar'] {
     display: block !important;

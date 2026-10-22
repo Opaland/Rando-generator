@@ -32,6 +32,7 @@
  * qui la donnent, dont ceux qui exercent chacune des sept actions.
  */
 
+import type { AllocateurPerso } from '../core/identifiantsPerso.ts'
 import type { Itinerary, LonLat } from '../core/types.ts'
 import {
   buildRoutingGraph,
@@ -46,6 +47,7 @@ import {
   fetchElevationProfile,
   ElevationError,
 } from '../core/elevation.ts'
+import { attributionDuTrace } from '../core/attributionDuTrace.ts'
 import { polylineLengthMeters } from '../core/sampling.ts'
 
 /** Ce que le tracé ajoute à l'état du store. */
@@ -121,7 +123,7 @@ export const TRACE_VIDE: EtatTrace = { drawMode: false, ...TRACE_PERIMEE }
  * ajoutée ici est une dépendance qu'on voit grandir, au lieu d'un accès
  * qu'on découvre en cherchant un défaut.
  */
-export interface DependancesTrace {
+interface DependancesTrace {
   set: (partiel: Partial<EtatTrace>) => void
   /**
    * Range l'itinéraire tracé : il est enregistré, ajouté aux itinéraires
@@ -150,8 +152,13 @@ export interface DependancesTrace {
    * compte donc les constructions.
    */
   itinerairesDuGraphe: () => { balises: Itinerary[]; perso: Itinerary[] }
-  /** Prochain identifiant libre pour un itinéraire perso (ids négatifs). */
-  prochainIdentifiantPerso: () => number
+  /**
+   * Le distributeur de numéros perso du store (#543). Le numéro de chemin
+   * n'est plus celui de la relation : l'import numérote ses chemins à part,
+   * et le premier tracé après un import à plusieurs tronçons tombait sur l'un
+   * d'eux.
+   */
+  identifiantsPerso: () => Promise<AllocateurPerso>
   etatTrace: () => EtatTrace
   /** Ferme la fiche détail, qui occupe la même zone d'écran. */
   fermerLaFiche: () => void
@@ -278,10 +285,16 @@ export function trancheTrace(deps: DependancesTrace): ActionsTrace {
       const { drawPath, drawGainLoading } = deps.etatTrace()
       if (drawPath.length < 2 || drawGainLoading) return
       deps.set({ drawGainLoading: true, drawError: null })
+      // Le tracé peut changer pendant l'attente, et ce changement remet déjà
+      // le D+ à `null`. La réponse d'un tracé qui n'est plus à l'écran ne
+      // doit pas l'écraser : elle affichait 400 m sous un tracé dont ce
+      // n'était pas le dénivelé (#569). Même règle pour la panne.
+      const perime = () => deps.etatTrace().drawPath !== drawPath
       try {
         // Une seule requête, à la fin : une par clic ferait vingt appels
         // pour un chiffre qui n'intéresse qu'au moment d'enregistrer.
         const profile = await fetchElevationProfile(drawPath)
+        if (perime()) return
         const stats = elevationStats(profile.elevations)
         deps.set({
           drawGainMeters: stats ? Math.round(stats.gain) : null,
@@ -295,6 +308,7 @@ export function trancheTrace(deps: DependancesTrace): ActionsTrace {
               }),
         })
       } catch (error) {
+        if (perime()) return
         deps.set({
           drawGainMeters: null,
           drawError:
@@ -322,15 +336,19 @@ export function trancheTrace(deps: DependancesTrace): ActionsTrace {
     async saveDrawnItinerary(name) {
       const { drawPath } = deps.etatTrace()
       if (drawPath.length < 2) return
-      const id = deps.prochainIdentifiantPerso()
+      const identifiants = await deps.identifiantsPerso()
+      const { balises, perso } = deps.itinerairesDuGraphe()
+      // La source des sentiers suivis : le crayon copie leur géométrie (#557).
+      const attribution = attributionDuTrace(drawPath, [...balises, ...perso])
       const itineraire: Itinerary = {
-        osmRelationId: id,
+        osmRelationId: identifiants.relation(),
         ref: null,
         name: name.trim() || 'Itinéraire tracé',
         network: 'PERSO',
-        ways: [{ osmWayId: id, coords: drawPath }],
+        ways: [{ osmWayId: identifiants.chemin(), coords: drawPath }],
         totalMeters: polylineLengthMeters(drawPath),
         fetchedAt: new Date().toISOString(),
+        ...(attribution && { attribution }),
       }
       await deps.enregistrerLeTrace(itineraire)
     },

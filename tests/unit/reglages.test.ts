@@ -156,6 +156,29 @@ describe('quand le magasin refuse', () => {
   })
 })
 
+describe('quand accéder à localStorage lève', () => {
+  // Un navigateur verrouillé peut faire lever l'accès à la propriété
+  // elle-même — pas seulement refuser une opération dessus. `magasin()` le
+  // couvre d'un `try`.
+  beforeEach(() => {
+    Object.defineProperty(globalThis, 'localStorage', {
+      configurable: true,
+      get() {
+        throw new DOMException('refusé', 'SecurityError')
+      },
+    })
+  })
+
+  it('ne lève pas, et ne prétend rien', () => {
+    expect(reglagesSynchronesDisponibles()).toBe(false)
+    expect(lireReglage('completionPct')).toBeUndefined()
+    expect(ecrireReglage('completionPct', 90)).toBe(false)
+    expect(() => {
+      effacerReglage('completionPct')
+    }).not.toThrow()
+  })
+})
+
 describe('quand il n’y a pas de magasin du tout', () => {
   beforeEach(() => {
     vi.stubGlobal('localStorage', undefined)

@@ -1,4 +1,5 @@
 import type { Itinerary, LonLat, Network, Track } from './types.ts'
+import { tranchesDe } from './segmentsDeTrace.ts'
 
 /**
  * Export GPX : de quoi charger un itinéraire dans une montre, un GPS ou une
@@ -53,9 +54,10 @@ export function gpxAttributionFor(network: Network): GpxAttribution | null {
         type de sentier, pas sa provenance — et les confondre produisait un
         export muet.
 
-        La provenance se lit maintenant sur l'itinéraire (`attributionDe`).
-        Ce repli-ci ne vaut donc que pour ce qui a réellement été dessiné
-        dans l'application.
+        La provenance se lit maintenant sur l'itinéraire (`attributionDe`) —
+        y compris pour un tracé dessiné, qui porte celle des sentiers qu'il
+        suit (#557). Ce repli ne vaut donc que pour un `PERSO` dont on ne
+        sait rien.
       */
       return null
   }
@@ -79,8 +81,10 @@ export function attributionDe(itinerary: Itinerary): GpxAttribution | null {
  *
  * On ne l'invente pas — une attribution fausse est pire qu'absente. On
  * prévient que l'export sera muet, et la personne décide de ce qu'elle en
- * fait. Rien à dire pour un tracé dessiné à la main : il n'a pas de source
- * manquante, il n'en a pas.
+ * fait. Rien à dire pour un tracé dessiné dans l'application : il porte
+ * la source des sentiers qu'il suit (`attributionDuTrace`, #557). Ce
+ * commentaire le disait « sans source », et c'était faux — le crayon suit
+ * la géométrie du graphe, il ne la dessine pas.
  */
 export function mentionDeSource(itinerary: Itinerary): string | null {
   if (attributionDe(itinerary)) return null
@@ -99,7 +103,7 @@ export interface GpxWaypoint {
   name: string
 }
 
-export interface GpxExportOptions {
+interface GpxExportOptions {
   name: string
   coords: LonLat[]
   attribution: GpxAttribution | null
@@ -120,6 +124,8 @@ export interface GpxExportOptions {
    * d'un itinéraire-cible, qui n'a jamais été marché.
    */
   pointTimes?: (string | null)[]
+  /** Où commence chaque tronçon, aligné sur `coords` (#560). */
+  debutsDeSegment?: number[]
 }
 
 function escapeXml(text: string): string {
@@ -149,6 +155,17 @@ export function buildGpxDocument(options: GpxExportOptions): string {
         : ''
       return `      <trkpt lat="${lat.toFixed(7)}" lon="${lon.toFixed(7)}">${balise}</trkpt>`
     })
+  // Un <trkseg> par tronçon : la coupure d'une pause survit à l'export, et
+  // l'application qui relira le fichier ne reliera pas ce qu'on n'a pas
+  // marché (#560).
+  const segments = tranchesDe({
+    points: coords,
+    ...(options.debutsDeSegment && { debutsDeSegment: options.debutsDeSegment }),
+  })
+    .map(
+      ([debut, fin]) =>
+        `    <trkseg>\n${points.slice(debut, fin).join('\n')}\n    </trkseg>`,
+    )
     .join('\n')
 
   // L'ordre des éléments de <metadata> est imposé par le schéma GPX 1.1 :
@@ -182,9 +199,7 @@ ${copyright}    <time>${escapeXml(createdAt)}</time>
   </metadata>
 ${blocReperes}  <trk>
     <name>${safeName}</name>
-    <trkseg>
-${points}
-    </trkseg>
+${segments}
   </trk>
 </gpx>
 `
@@ -221,6 +236,7 @@ export function gpxDocumentFromTrack(track: Track): string {
   return buildGpxDocument({
     name: trackDisplayName(track),
     coords: track.points,
+    ...(track.debutsDeSegment && { debutsDeSegment: track.debutsDeSegment }),
     attribution: null,
     // La date de la sortie plutôt que celle de son rangement en base ; à
     // défaut (trace importée sans date lisible), le moment de l'import

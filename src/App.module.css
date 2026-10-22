@@ -168,7 +168,9 @@
   min-width: 44px;
   min-height: 44px;
   border: none;
-  background: none;
+  /* Opaque : collant, il passe par-dessus ce qui défile, et sans fond on
+     voyait à travers lui des boutons dont il volait le tap (#570, 2). */
+  background: var(--papier);
   border-radius: var(--rayon-md);
   font-size: var(--texte-vedette);
   line-height: 1;
@@ -233,7 +235,10 @@
 .rappelGuide {
   position: absolute;
   left: var(--espace-7);
-  bottom: var(--espace-7);
+  /* Au-dessus du crédit de la carte, comme « Ma position » et l'état vide :
+     depuis que le crédit passe au-dessus des surimpressions (#553), il
+     interceptait le tap sur ce bouton (refermer.spec, 21/10). */
+  bottom: calc(var(--espace-7) + var(--bande-attribution));
   z-index: var(--z-overlay-guide);
   padding: var(--espace-4) var(--espace-6);
   min-height: 44px;
@@ -440,6 +445,23 @@
   :root[data-maquette='onglets'] .sidebar {
     bottom: calc(var(--hauteur-onglets) + env(safe-area-inset-bottom, 0px));
   }
+
+  /* Relevée de la barre, la feuille doit aussi la retrancher de sa hauteur :
+     `100 %` est celle de toute la mise en page, et la feuille pleine montait
+     d'autant au-dessus de l'en-tête — sommet à y 28 sur un en-tête qui finit
+     à 60 (#570, 1), dernière ligne du slogan coupée en gros texte (#556, 3).
+     Les 24 px de carte qu'annonce `.pleine` redeviennent vrais. */
+  :root[data-maquette='onglets'] .pleine {
+    max-height: calc(
+      100% - 24px - var(--hauteur-onglets) - env(safe-area-inset-bottom, 0px)
+    );
+  }
+
+  :root[data-maquette='onglets'] .sidebar[data-onglet]:not([data-onglet='carte']).pleine {
+    max-height: calc(
+      100% - var(--hauteur-onglets) - env(safe-area-inset-bottom, 0px)
+    );
+  }
 }
 
 /*
@@ -524,6 +546,51 @@
     bottom: calc(
       var(--hauteur-feuille-moitie) + env(safe-area-inset-bottom, 0px)
     );
+  }
+
+  /*
+    Fiche ouverte, elle monte plus haut que la feuille à moitié : jusqu'à
+    `--hauteur-fiche`, poignée et onglets compris. Le crédit, relevé de
+    48 vh seulement, se posait sur sa marge droite (#577). Même spécificité
+    que la règle précédente : celle-ci l'emporte parce qu'elle vient après.
+
+    Les 10 px de plus ne sont pas une marge de confort. Au doigt, le ⓘ
+    passe à 44 px (plancher tactile, index.css) dans un crédit replié que
+    MapLibre dessine sur 24 px, bouton ancré en haut : il déborde de
+    44 − 24 − 10 (la marge basse de MapLibre) = 10 px sous son contrôle,
+    mesuré tel quel. Agrandir le crédit à 44 px pour le contenir, essayé,
+    le faisait monter sur « Enregistrer » du panneau de tracé à 800 px.
+
+    Replié seulement. Déplié, ses 124 px montaient sur « Ma position » et, à
+    360 × 640 en gros texte, sous l'en-tête — trois licences non peintes
+    (revue du sprint 2). Déplié, il reste sur la fiche, au-dessus de tout,
+    comme tranché le 20/10. Le coin bas gauche n'est pas relevé : il est
+    vide.
+  */
+  :root[data-fiche='ouverte']
+    .main:not(:has(:global(.maplibregl-compact-show)))
+    :global(.maplibregl-ctrl-bottom-right) {
+    bottom: calc(
+      var(--hauteur-fiche) + 10px + env(safe-area-inset-bottom, 0px)
+    );
+  }
+}
+
+/*
+  Au-dessus du point de rupture, la fiche occupe toute la hauteur du bord
+  droit : le zoom, en haut à droite, s'en écarte comme « Ma position »
+  (LocateButton.module.css). Mesuré le 19/10 (#553) : à 1 280 le centre des
+  trois boutons était peint par la fiche, et à 1 024 au doigt taper « + »
+  fermait la fiche. Relever le zoom au-dessus d'elle aurait seulement
+  inversé le recouvrement.
+*/
+@media (min-width: 801px) {
+  :root[data-fiche='ouverte'] .main :global(.maplibregl-ctrl-top-right) {
+    right: calc(var(--largeur-fiche) + 12px);
+  }
+  /* Le panneau de tracé prend lui aussi la hauteur qu'il y a (#570, 3). */
+  :root[data-trace='ouvert'] .main :global(.maplibregl-ctrl-top-right) {
+    right: calc(var(--largeur-trace) + 12px);
   }
 }
 

@@ -118,4 +118,32 @@ describe('reperesDuProfil', () => {
   it('expose le seuil au-delà duquel un point ne jalonne plus', () => {
     expect(REPERE_MAX_METERS).toBe(250)
   })
+
+  it('garde le premier point à égale distance, pas le dernier rencontré', () => {
+    /*
+      Trouvé par mutation du 17/10 : `distance < minimum` devenu `<=`
+      survivait, parce qu'aucun test ne plaçait un repère exactement à
+      égale distance de deux points du profil. Un profil dédié, aux points
+      rapprochés, pour que le milieu reste sous REPERE_MAX_METERS des deux.
+    */
+    // Un écart en puissance de deux, pour que les deux soustractions de
+    // `distanceMeters` soient bit à bit symétriques : une égalité construite
+    // en décimal (6.401/6.4015/6.402) ne tient pas, l'arrondi binaire des
+    // littéraux décimaux rendant les deux distances subtilement inégales.
+    const base = 6.4
+    const ecart = 2 ** -14
+    const profilRapproche: ElevationProfile = {
+      distances: [0, 100, 200],
+      elevations: [1_000, 1_010, 1_020],
+      coords: [
+        [6.3, 45.2],
+        [base - ecart, 45.2],
+        [base + ecart, 45.2],
+      ],
+    }
+    const reperes = reperesDuProfil(profilRapproche, [
+      poi('milieu', base, 45.2, 'pass', 'Milieu'),
+    ])
+    expect(reperes[0]?.distanceMeters).toBe(100)
+  })
 })

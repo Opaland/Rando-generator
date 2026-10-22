@@ -25,7 +25,7 @@
 
 export type NiveauTolerance = 'precis' | 'normal' | 'souple'
 
-export interface Niveau {
+interface Niveau {
   id: NiveauTolerance
   libelle: string
   /** Ce que le choix change sur le terrain, pas dans l'algorithme. */

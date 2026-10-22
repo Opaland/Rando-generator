@@ -24,7 +24,7 @@
  */
 
 /** Ce qu'on sait d'une zone au moment de l'afficher. */
-export interface FaitsDeZone {
+interface FaitsDeZone {
   /** Combien d'itinéraires sont à l'écran. */
   itineraires: number
   /**
@@ -63,4 +63,55 @@ export function messageDeZone(faits: FaitsDeZone): string | null {
     return `${String(perdues)} itinéraire${pluriel ? 's' : ''} de cette zone ${pluriel ? 'sont découpés' : 'est découpé'} en tronçons qu’OpenStreetMap n’a pas rendus : ${pluriel ? 'ils ne sont donc pas affichés' : 'il n’est donc pas affiché'}. Le reste de la zone est complet.`
   }
   return null
+}
+
+/**
+ * Le message quand les miroirs Overpass sont injoignables et qu'on retombe
+ * sur une zone déjà en cache, même périmée (#404, troisième chemin — sorti
+ * de `trancheZone.ts` au sprint 8 d'octobre, issue #539).
+ *
+ * « Réessayez avec “Actualiser les tracés” » — le conseil de la zone vide —
+ * est délibérément écarté ici : c'est exactement le geste qui vient
+ * d'échouer, et le proposer enverrait quelqu'un refaire ce qui ne marchera
+ * pas. Une zone vide se voit à l'écran ; elle n'a pas besoin d'une marche à
+ * suivre qui ne marchera pas. C'est pour ce seul mot que cette fonction
+ * n'appelle pas simplement `messageDeZone` tel quel.
+ */
+export function messageDeRepliSurCache(faits: FaitsDeZone): string {
+  const diagnostic = faits.itineraires === 0 ? null : messageDeZone(faits)
+  return (
+    'Serveurs OpenStreetMap injoignables : affichage des tracés en cache (ils datent peut-être un peu).' +
+    (diagnostic === null ? '' : ` ${diagnostic}`)
+  )
+}
+
+/**
+ * Le message de la zone restaurée au démarrage (#550, quatrième chemin).
+ *
+ * Elle se montre même trop vieille ou d'un autre format : aucune requête ne
+ * part au démarrage sans un geste, et une copie datée vaut mieux qu'un écran
+ * vide hors réseau. C'est un choix de présentation (§2), pas un seuil : le
+ * verdict vient de `pourquoiPerimee` (`db/database.ts`), la règle du chemin
+ * normal, et l'appelant le passe dans `perimee`.
+ *
+ * Une date et une raison, comme Mousse de Poche (« extrait du … ») : une
+ * « copie ancienne » ne disait ni de quand, ni ce qui manque.
+ */
+export function messageDeRestauration(
+  faits: FaitsDeZone & {
+    perimee: 'ancienne' | 'future' | 'age' | null
+    telechargeeLe: string
+  },
+): string | null {
+  const diagnostic = messageDeZone(faits)
+  if (faits.perimee === null) return diagnostic
+  const le = new Date(faits.telechargeeLe).toLocaleDateString('fr-FR')
+  const raison = {
+    age: `Tracés téléchargés le ${le}. « Actualiser les tracés » ira chercher les corrections apportées depuis.`,
+    // Schéma 1 : sans le balisage peint ; avant : sans le revêtement non plus
+    // (`SCHEMA_ZONE`). « comme » reste vrai pour l'un et l'autre.
+    ancienne: `Tracés enregistrés par une version précédente de Sentiers, le ${le} : des informations ajoutées depuis, comme le balisage peint, n’y figurent pas. « Actualiser les tracés » les ajoute.`,
+    future: `Tracés enregistrés par une version plus récente de Sentiers, le ${le}. Rechargez la page pour passer à cette version, ou utilisez « Actualiser les tracés » pour les relire avec celle-ci.`,
+  }[faits.perimee]
+  return raison + (diagnostic === null ? '' : ` ${diagnostic}`)
 }

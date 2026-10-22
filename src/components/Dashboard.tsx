@@ -120,11 +120,10 @@ export function Dashboard() {
   })
   const chiffres =
     matching && global
-      ? chiffresDeCompletion(global, itineraries, parcoursDeclares, {
-          mesuresParItineraire: new Map(
-            matching.results.map((r) => [r.itineraryId, r.doneMeters]),
-          ),
-        })
+      ? chiffresDeCompletion(
+          { global, samples: matching.samples },
+          parcoursDeclares,
+        )
       : null
   const itineraireFete = celebration
     ? byId.get(celebration.itineraryId)

@@ -1,5 +1,18 @@
 import { describe, it, expect } from 'vitest'
-import { formatChrono } from '../../src/lib/format.ts'
+import {
+  formatChrono,
+  formatDetour,
+  formatDistance,
+  formatDenivele,
+  formatPct,
+  displayName,
+} from '../../src/lib/format.ts'
+import type { Itinerary } from '../../src/core/types.ts'
+import {
+  COMPLETION_CHOICES,
+  MILESTONES,
+  isCompleted,
+} from '../../src/core/milestones.ts'
 
 /**
  * Le chronomètre de l'écran de marche (issue #152, pierre 3).
@@ -31,3 +44,148 @@ describe('formatChrono', () => {
     expect(formatChrono(-5_000)).toBe('0:00')
   })
 })
+
+describe('formatPct', () => {
+  // Trouvé par mutation du 17/10 : jamais testé directement avec une valeur
+  // à plus d'une décimale, donc `maximumFractionDigits: 1` pouvait
+  // disparaître sans qu'aucun test ne s'en aperçoive.
+  it('garde une décimale, pas plus', () => {
+    expect(formatPct(34.567)).toBe('34,5 %')
+    expect(formatPct(34)).toBe('34 %')
+  })
+
+  /*
+    Issue #566 : `formatPct` arrondissait au plus proche, `isCompleted` et
+    les jalons comparent la valeur brute. À 94,95 %, l'écran affichait
+    « 95 % » sans la coche d'un seuil à 95 ; à 99,95 %, « 100 % » avec
+    100 m restants. L'affichage et le seuil doivent dire la même chose,
+    pour toute valeur — d'où une grille fine plutôt que deux exemples.
+  */
+  it('n’affiche jamais un seuil que le calcul n’a pas atteint', () => {
+    expect(formatPct(94.95)).toBe('94,9 %')
+    expect(formatPct(99.95)).toBe('99,9 %')
+    const seuils = [...new Set([...COMPLETION_CHOICES, ...MILESTONES])]
+    for (let milliemes = 0; milliemes <= 100_000; milliemes += 7) {
+      const pct = milliemes / 1_000
+      const affiche = Number(formatPct(pct).replace(' %', '').replace(',', '.'))
+      for (const seuil of seuils) {
+        expect(affiche >= seuil, `${String(pct)} % contre ${String(seuil)}`).toBe(
+          isCompleted(pct, seuil),
+        )
+      }
+    }
+  })
+
+  it('affiche bien le seuil quand il est atteint', () => {
+    expect(formatPct(95)).toBe('95 %')
+    expect(formatPct(100)).toBe('100 %')
+    expect(formatPct(54.5)).toBe('54,5 %')
+  })
+})
+
+describe('formatDistance', () => {
+  // Trouvé par mutation du 17/10 : aucun test n'utilisait exactement 1 000 m,
+  // la frontière entre l'affichage en mètres et en kilomètres.
+  it('bascule en kilomètres à partir de 1 000 m, pas juste après', () => {
+    expect(formatDistance(1_000)).toBe('1 km')
+    expect(formatDistance(990)).toBe('990 m')
+  })
+
+  /*
+    Trouvé par mutation du 17/10 : aucun test n'utilisait une distance
+    négative ou infinie. La garde `Number.isFinite(meters) && meters > 0`
+    protège de deux défauts différents, et chacun a besoin de sa propre
+    valeur pour se révéler.
+  */
+  it('ne rend pas de distance négative', () => {
+    expect(formatDistance(-50)).toBe('0 m')
+  })
+
+  it('ne rend pas de distance infinie', () => {
+    expect(formatDistance(Number.POSITIVE_INFINITY)).toBe('0 m')
+  })
+})
+
+describe('formatDetour', () => {
+  // Trouvé par mutation du 17/10 : seul appelé depuis PoiSection.tsx, sans
+  // test unitaire direct — toute sa fonction (une délégation à
+  // formatDistance) avait une couverture nulle.
+  it('délègue à formatDistance', () => {
+    expect(formatDetour(150)).toBe('150 m')
+  })
+})
+
+describe('displayName', () => {
+  function itineraire(
+    ref: string | null,
+    name: string | null,
+    osmRelationId = 42,
+  ): Itinerary {
+    return {
+      osmRelationId,
+      ref,
+      name,
+      network: 'GR',
+      ways: [],
+      totalMeters: 0,
+      fetchedAt: '2026-01-01T00:00:00Z',
+    }
+  }
+
+  it('préfère la ref OSM', () => {
+    expect(displayName(itineraire('GR 7', 'Tour du Pilat'))).toBe('GR 7')
+  })
+
+  it('se replie sur le nom quand la ref manque', () => {
+    expect(displayName(itineraire(null, 'Tour du Pilat'))).toBe('Tour du Pilat')
+  })
+
+  // Trouvé par mutation du 17/10 : jamais testé avec ref ET nom absents —
+  // le seul cas qui atteint le dernier repli, l'identifiant OSM.
+  it('se replie sur l’identifiant quand ref et nom manquent tous deux', () => {
+    expect(displayName(itineraire(null, null, 42))).toBe('Itinéraire 42')
+  })
+})
+
+/*
+  Revue du 20/10 : tronquer sans tolérance prenait l'erreur flottante pour
+  une valeur. `57 / 100 * 100` vaut 56,99999999999999 — « 56,9 % » au lieu
+  de « 57 % », et 512 paires (fait, total) sur les totaux jusqu'à 2 000.
+*/
+describe('formatPct et l’erreur flottante', () => {
+  it('57 sur 100 s’affiche 57 %', () => {
+    expect(formatPct((57 / 100) * 100)).toBe('57 %')
+    expect(formatPct((29 / 100) * 100)).toBe('29 %')
+    expect(formatPct((23 / 40) * 100)).toBe('57,5 %')
+  })
+
+  it('aucune fraction exacte au dixième ne perd son dernier chiffre', () => {
+    for (let total = 1; total <= 400; total++) {
+      for (let fait = 0; fait <= total; fait++) {
+        const exact = (fait * 1000) / total
+        if (!Number.isInteger(exact)) continue
+        const attendu = new Intl.NumberFormat('fr-FR', {
+          maximumFractionDigits: 1,
+        }).format(exact / 10)
+        expect(formatPct((fait / total) * 100), `${String(fait)}/${String(total)}`).toBe(`${attendu} %`)
+      }
+    }
+  })
+})
+
+/*
+  Issue #571 : trois formes pour le même dénivelé — « 1 234 m D+ » dans
+  l'historique, « 1234 m D+ » dans la liste, « D+ 1234 m » sur les traces et
+  le tracé. Tranché par Cédric le 20/10 : « 1 234 m D+ » partout.
+*/
+describe('formatDenivele', () => {
+  it('écrit le nombre, l’unité, puis le sens', () => {
+    expect(formatDenivele(420)).toBe('420 m D+')
+    expect(formatDenivele(420, '−')).toBe('420 m D−')
+  })
+
+  it('sépare les milliers à la française et arrondit au mètre', () => {
+    expect(formatDenivele(1234.4)).toMatch(/^1[\s\u202f]234 m D\+$/)
+  })
+})
+

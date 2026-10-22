@@ -18,13 +18,16 @@
  *
  * ## Ce que ce module garde, et ce qu'il ne garde pas
  *
- * Il **garde** : un point de vos traces, écrit à pleine précision, dans le
- * corps d'une requête que l'application envoie.
+ * Il **garde** : un point de vos traces — ou de la sortie en cours —, écrit
+ * à pleine précision, dans le corps **ou l'adresse** d'une requête que
+ * l'application envoie (l'adresse depuis #558).
  *
  * Il ne garde pas :
  *
  * - ce que le navigateur envoie lui-même — images, polices, feuilles de
  *   style — qui ne passe ni par `fetch` ni par XHR ;
+ * - ce que demande le service worker, qui a son propre `fetch` : les
+ *   tuiles du corridor qu'on emporte, notamment (#558) ;
  * - un corps binaire ou compressé, qu'on ne lit pas ;
  * - une trace transformée avant d'être envoyée — arrondie, projetée,
  *   chiffrée. Un détecteur qui prétendrait attraper ça mentirait.
@@ -52,12 +55,6 @@ import type { LonLat } from './types.ts'
  * principal, à chaque requête.
  */
 export const PRECISION_MINIMALE = 5
-
-/** Un point de l'échantillon : ses deux coordonnées, à pleine précision. */
-export interface PointSurveille {
-  lon: string
-  lat: string
-}
 
 /**
  * Les écritures d'une coordonnée qu'on saura reconnaître.
@@ -98,7 +95,9 @@ export function echantillonDeTrace(
   const pris: LonLat[] = []
   if (coords.length <= combien) pris.push(...coords)
   else {
-    const pas = (coords.length - 1) / (combien - 1)
+    // Un seul point demandé : le départ. Sans ce cas, le pas valait
+    // `(n − 1) / 0`, et `0 × ∞` donnait NaN pour indice.
+    const pas = combien === 1 ? 0 : (coords.length - 1) / (combien - 1)
     for (let i = 0; i < combien; i += 1) {
       pris.push(coords[Math.round(i * pas)] as LonLat)
     }
@@ -137,4 +136,56 @@ export function corpsContientUnPoint(
     if (corps.includes(lon) && corps.includes(lat)) return true
   }
   return false
+}
+
+/**
+ * Cette requête emporte-t-elle un point de l'échantillon — dans son corps,
+ * **ou dans son adresse** ?
+ *
+ * Le compteur ne regardait que le corps (#558). Or la seule voie par
+ * laquelle des coordonnées partent aujourd'hui en clair est une URL GET :
+ * l'altimétrie, `lon=…&lat=…`. Un point placé là, corps `null`, donnait
+ * zéro. L'adresse est lue décodée — `%7C` est un `|` — et telle quelle si
+ * elle est mal encodée : une URL cassée ne doit pas faire tomber le
+ * compteur, ni lui faire manquer ce qu'elle porte en clair.
+ */
+export function requeteContientUnPoint(
+  url: string,
+  corps: string | null | undefined,
+  echantillon: readonly string[],
+): boolean {
+  if (corpsContientUnPoint(corps, echantillon)) return true
+  const paires = pairesDeLAdresse(url)
+  if (paires) {
+    return paires.some((paire) => corpsContientUnPoint(paire, echantillon))
+  }
+  let adresse = url
+  try {
+    adresse = decodeURIComponent(url)
+  } catch {
+    // Mal encodée : on la lit telle quelle.
+  }
+  return corpsContientUnPoint(adresse, echantillon)
+}
+
+/**
+ * Les points d'une adresse `lon=a|b|…&lat=x|y|…`, remis par paires.
+ *
+ * Les cent longitudes y viennent d'un bloc, les cent latitudes d'un autre :
+ * chercher la longitude d'un point et sa latitude dans toute l'adresse ne
+ * vérifie pas qu'elles forment **un** point (revue du 20/10). Quelqu'un qui
+ * a marché le GR et ouvre son profil pouvait voir crier à la fuite. `null`
+ * quand l'adresse n'a pas cette forme.
+ */
+function pairesDeLAdresse(url: string): string[] | null {
+  let parametres: URLSearchParams
+  try {
+    parametres = new URL(url).searchParams
+  } catch {
+    return null
+  }
+  const lons = parametres.get('lon')?.split('|')
+  const lats = parametres.get('lat')?.split('|')
+  if (!lons || !lats || lons.length !== lats.length) return null
+  return lons.map((lon, i) => `${lon} ${lats[i] ?? ''}`)
 }

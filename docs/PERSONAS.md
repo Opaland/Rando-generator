@@ -155,9 +155,9 @@ que la seconde lecture a trouvé, et qui n'existait pas avant.
 | Camille — préparer hors connexion | **Levé** (#153) : service worker + bouton « Emporter cette randonnée » |
 | Sylvie — « j'ai fait celui-là » sans trace GPX | **Levé** (#158) : `DeclarerParcouru.tsx`, itinéraire déclaré parcouru |
 | Camille — étapes calées sur les refuges, export du plan | **Levé** (#161) : `calerLesEtapesSurLesCouchages` dans `core/stages.ts` |
-| Karim — grosse archive jamais mesurée | **Levé** (#159) |
+| Karim — grosse archive jamais mesurée | **Mesuré, pas levé** (#159, #539) : 800 activités ne s'importent pas en 25 min (`MESURE_BIBLIOTHEQUE_08_10.md`) ; le calcul de correspondance domine (`MESURE_BIBLIOTHEQUE_SPRINT9.md`) |
 | Marc — le constat ne mène à aucune action | **Levé** (#160) : `core/lienOsm.ts`, lien direct vers la relation OSM |
-| Léa — l'export GPX ne portait pas d'attribution | **Levé**, dans #87 : `attribution: lecture.source` posé sur l'itinéraire à l'import (`src/store/trancheImport.ts:398`, commentaire qui la cite nommément), affiché sur la fiche et porté dans l'export GPX (`attributionDe`/`mentionDeSource`, `ItineraryDetail.tsx`). |
+| Léa — l'export GPX ne portait pas d'attribution | **Levé**, dans #87 : `attribution: lecture.source` posé sur l'itinéraire à l'import (`src/store/trancheImport.ts`, `importCustomGpx` — commentaire qui la cite nommément), affiché sur la fiche et porté dans l'export GPX (`attributionDe`/`mentionDeSource`, `ItineraryDetail.tsx`). |
 
 *Six de ces sept lignes correspondent à des issues réellement fermées
 (#131, #132, #133, #145, #153, #158, #159, #160, #161), retrouvées closes
@@ -180,6 +180,15 @@ Métropole. Trouvé en vérifiant que la ligne précédente ne recopiait pas
 seulement l'existence d'un type TypeScript sans vérifier le chemin de code
 réellement emprunté par Léa (§1bis) ; un numéro d'issue existant dans le
 code ne dit pas si l'issue elle-même est close.*
+
+**Corrigé depuis** (cette seconde moitié) : #541 (17/10) affiche « Source :
+{auteur} » dans « Mes itinéraires » dès qu'une attribution existe
+(`CustomItineraries.tsx`, via `attributionDe`), sans introduire de réseau
+distinct — `network: 'PERSO'` reste le réseau de tout import, le routage du
+matching et l'export GPX s'appuyant déjà sur cette étiquette pour un sens
+différent de « source institutionnelle ». Deux e2e (`tests/e2e/attribution-
+import.spec.ts`) couvrent le cas positif et l'absence de mention inventée.
+Reste ouvert : les PDIPR hors Isère (#20, #87).
 
 ## Ce que la seconde passe a trouvé
 
@@ -384,6 +393,14 @@ Ce qui rend le défaut instructif : le dépôt **connaissait la règle** et
 l'appliquait déjà deux fois — le revêtement « autre » se distingue par les
 tirets, l'itinéraire déclaré parcouru aussi. Le réseau, lui, n'avait que la
 couleur.
+
+**Corrigé depuis**, en deux temps : la carte d'abord (09/09, #530) — deux
+couches tiretées (`trails-base-grp`/`trails-done-grp`) distinguent GRP sur
+le tracé — puis la légende (17/10), qui gardait une pastille pleine pour
+les deux réseaux malgré la carte déjà corrigée : même règle, oubliée au
+troisième endroit où elle s'applique (§4ter). `NETWORK_TIRETS`
+(`src/lib/networkDisplay.ts`) suit maintenant le même gabarit que
+`TERRAIN_TIRETS` dans `MapLegend.tsx`.
 
 ### Ahmed, 51 ans, tablette en paysage — issue #363
 

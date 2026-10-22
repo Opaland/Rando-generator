@@ -34,12 +34,13 @@
  * choses distinctes.
  */
 
-import { GpxError, elevationGainMeters, trackFingerprint } from '../core/gpx.ts'
+import { GpxError, deniveleParTroncons, trackFingerprint } from '../core/gpx.ts'
 import { FitError } from '../core/fit.ts'
 import { TcxError } from '../core/tcx.ts'
 import { GeoJsonError } from '../core/geojson.ts'
 import { polylineLengthMeters } from '../core/sampling.ts'
 import { espacementTropGrand } from '../core/matching.ts'
+import type { AllocateurPerso } from '../core/identifiantsPerso.ts'
 import type { Itinerary, Track } from '../core/types.ts'
 import type { SentiersDb } from '../db/database.ts'
 import { deposerLeResultatDeLImport } from './epilogueDImport.ts'
@@ -148,6 +149,16 @@ export interface DependancesImport {
   sortirDeLaDemonstration: () => Promise<void>
   /** Ferme la fiche détail si elle montre l'itinéraire supprimé. */
   fermerLaFicheSi: (id: number) => void
+  /**
+   * Oublie la déclaration, l'objectif et les POI emportés d'un itinéraire
+   * supprimé — sans quoi son numéro, redonné, les transmet (#549).
+   */
+  oublierLesReferences: (id: number) => Promise<void>
+  /**
+   * Le distributeur de numéros perso du store, une fois la base lue (#543).
+   * Avant, la mémoire est vide et −1 peut déjà être pris en base.
+   */
+  identifiantsPerso: () => Promise<AllocateurPerso>
 }
 
 /** Les champs du store que la tranche lit et écrit sans les posséder. */
@@ -221,9 +232,14 @@ export function trancheImport(deps: DependancesImport): ActionsImport {
           if (espacement !== null) {
             errors.push(`${file.name} : ${messageTropEspacee(espacement)}`)
           }
-          if (parsed.points.length === 0) {
+          // Un point seul ne trace rien : il était rangé à « 0 km » sans un
+          // mot. Refusé, comme le tracé dessiné et l'itinéraire importé —
+          // décision de Cédric, 20/10 (#567).
+          if (parsed.points.length < 2) {
             errors.push(
-              `${file.name} : aucun point de trace exploitable dans ce fichier.`,
+              parsed.points.length === 0
+                ? `${file.name} : aucun point de trace exploitable dans ce fichier.`
+                : `${file.name} : une trace demande au moins deux points, ce fichier n’en a qu’un.`,
             )
             continue
           }
@@ -233,8 +249,14 @@ export function trancheImport(deps: DependancesImport): ActionsImport {
             points: parsed.points,
             date: parsed.date,
             importedAt: new Date().toISOString(),
-            elevationGain: elevationGainMeters(parsed.elevations),
+            elevationGain: deniveleParTroncons(
+              parsed.elevations,
+              parsed.debutsDeSegment,
+            ),
             times: parsed.times,
+            ...(parsed.debutsDeSegment && {
+              debutsDeSegment: parsed.debutsDeSegment,
+            }),
             hdops: parsed.hdops,
             precisionsMetres: parsed.precisionsMetres,
             // La zone du moment, si une zone est chargée (#206). Rien
@@ -302,33 +324,6 @@ export function trancheImport(deps: DependancesImport): ActionsImport {
       await deps.sortirDeLaDemonstration()
       const errors: string[] = []
       const imported: Itinerary[] = []
-      let nextId = Math.min(
-        0,
-        ...deps.etat().customItineraries.map((i) => i.osmRelationId),
-      )
-      /*
-        Un compteur unique pour les chemins, partagé par tous les tracés et
-        tous les fichiers de l'import (issue #440).
-
-        L'ancienne forme réservait mille identifiants par itinéraire —
-        `nextId * 1_000 - index` — et se recouvrait au mille-et-unième
-        tronçon : un tracé et le suivant partageaient alors un numéro, la
-        carte dessinait l'un avec les coordonnées de l'autre, et la
-        progression se créditait au mauvais itinéraire. Un compteur sans
-        plafond n'a pas ce défaut, et n'oblige plus à choisir un nombre que
-        rien ne justifie (§2).
-
-        `reduce` plutôt qu'un `Math.min(...)` étalé : une bibliothèque déjà
-        fournie peut porter des milliers de chemins, et l'étalement les passe
-        tous en arguments d'un seul appel.
-      */
-      let nextWayId = deps
-        .etat()
-        .customItineraries.reduce(
-          (plancher, itin) =>
-            itin.ways.reduce((bas, way) => Math.min(bas, way.osmWayId), plancher),
-          0,
-        )
       const liste = [...files]
       for (const [index, file] of liste.entries()) {
         try {
@@ -359,16 +354,22 @@ export function trancheImport(deps: DependancesImport): ActionsImport {
             '',
           )
           const db = await deps.baseOuverte()
+          /*
+            Demandé à chaque fichier, et non une fois au départ : un
+            instantané pris avant la boucle ignorait ce qu'un second import
+            ou un tracé recevaient pendant ce temps (#543). Les chemins ont
+            leur propre compteur, sans plafond (#440).
+          */
+          const identifiants = await deps.identifiantsPerso()
           for (const [rang, trail] of exploitables.entries()) {
-            nextId -= 1
             const ways = trail.lines
               .filter((ligne) => ligne.length >= 2)
-              .map((ligne) => {
-                nextWayId -= 1
-                return { osmWayId: nextWayId, coords: ligne }
-              })
+              .map((ligne) => ({
+                osmWayId: identifiants.chemin(),
+                coords: ligne,
+              }))
             const itinerary: Itinerary = {
-              osmRelationId: nextId,
+              osmRelationId: identifiants.relation(),
               ref: null,
               // Un GeoJSON peut décrire cent sentiers : chacun garde son nom,
               // et à défaut le fichier suivi de son rang — sans quoi la liste
@@ -421,6 +422,7 @@ export function trancheImport(deps: DependancesImport): ActionsImport {
       const db = await deps.baseOuverte()
       if (db) await db.deleteCustomItinerary(id)
       deps.fermerLaFicheSi(id)
+      await deps.oublierLesReferences(id)
       deps.set((state) => ({
         customItineraries: state.customItineraries.filter(
           (i) => i.osmRelationId !== id,
@@ -438,12 +440,25 @@ export function trancheImport(deps: DependancesImport): ActionsImport {
     async importerDoublon(id) {
       const doublon = deps.etat().importDoublons.find((d) => d.id === id)
       if (!doublon) return
+      // Écrire d'abord, retirer ensuite (#559) : retiré avant une écriture
+      // refusée — appareil plein —, le doublon disparaissait de la liste
+      // comme de la base, sans un mot. Il reste proposé, et on le dit.
+      const db = await deps.baseOuverte()
+      try {
+        if (db) await db.saveTrack(doublon.track)
+      } catch {
+        deps.set((state) => ({
+          importErrors: [
+            ...state.importErrors,
+            `${doublon.filename} : le navigateur a refusé de l’enregistrer.`,
+          ],
+        }))
+        return
+      }
       deps.set((state) => ({
         importDoublons: state.importDoublons.filter((d) => d.id !== id),
+        tracks: [...state.tracks, doublon.track],
       }))
-      const db = await deps.baseOuverte()
-      if (db) await db.saveTrack(doublon.track)
-      deps.set((state) => ({ tracks: [...state.tracks, doublon.track] }))
       await deps.recompute()
     },
 

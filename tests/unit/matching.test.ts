@@ -181,4 +181,27 @@ describe('runMatching — fixtures de matching', () => {
     expect(byNetwork.GRP.totalMeters).toBe(0)
     expect(global.totalMeters).toBe(2200)
   })
+
+  /*
+    Trouvé par une vague de mutation du 17/10 : `byNetwork[réseau].pct` n'était
+    vérifié par aucun test, alors que `Dashboard.tsx` l'affiche directement
+    (une barre de progression par réseau). Le mutant qui supprime
+    `finalizePct(byNetwork[network])` survivait — chaque réseau serait resté
+    figé à 0 % sans qu'aucune porte ne le voie.
+  */
+  it('calcule le pourcentage par réseau, pas seulement les mètres', () => {
+    const gr = straightLine(4.5, LAT, 1000, 100)
+    const pr = straightLine(4.5, LAT + 0.05, 1000, 100)
+    const itinGr = makeItinerary(1, [{ osmWayId: 10, coords: gr }], {
+      network: 'GR',
+    })
+    const itinPr = makeItinerary(2, [{ osmWayId: 20, coords: pr }], {
+      network: 'PR',
+      ref: 'PR TEST',
+    })
+    const { byNetwork } = runMatching([itinGr, itinPr], gr, opts())
+    expect(byNetwork.GR.pct).toBe(100)
+    expect(byNetwork.PR.pct).toBe(0)
+    expect(byNetwork.GRP.pct).toBe(0)
+  })
 })

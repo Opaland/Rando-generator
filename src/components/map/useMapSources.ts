@@ -10,6 +10,10 @@ import { useAppStore } from '../../store/appStore.ts'
 import { useReseauxVisibles } from '../../store/reseauxVisibles.ts'
 import { itinerairesVisibles } from '../../core/lisibilite.ts'
 import { poisToGeoJSON, revetementToGeoJSON } from './style.ts'
+import {
+  chargerReseauDeFond,
+  useReseauDeFond,
+} from '../../store/reseauDeFond.ts'
 
 /**
  * Pousse les données de l'application dans les sources GeoJSON de la carte.
@@ -86,6 +90,7 @@ const SOURCES_DONNEES = [
 const SOURCES_DESSIN = ['draw', 'draw-points'] as const
 const SOURCES_POSITION = ['user-position'] as const
 const SOURCES_REPERE = ['elevation-hover'] as const
+const SOURCES_FOND = ['pdipr'] as const
 
 export function useMapSources(
   mapRef: RefObject<MaplibreMap | null>,
@@ -105,6 +110,8 @@ export function useMapSources(
   const parcoursDeclares = useAppStore((s) => s.parcoursDeclares)
   const drawWaypoints = useAppStore((s) => s.drawWaypoints)
   const detailItineraryId = useAppStore((s) => s.detailItineraryId)
+  const zoneKey = useAppStore((s) => s.zoneKey)
+  const reseauDeFond = useReseauDeFond((s) => s.reseau)
   /*
     Les réseaux repliés ne sont pas dessinés (#322).
 
@@ -298,4 +305,22 @@ export function useMapSources(
     return appliquerQuandPret(map, SOURCES_REPERE, apply)
   }, [mapRef, elevationHover, ready, styleEpoch])
 
+  // Le réseau balisé du Département (PDIPR, #87) : demandé à chaque
+  // changement de zone, vide hors des zones qu'un PDIPR couvre.
+  useEffect(() => {
+    void chargerReseauDeFond(zoneKey)
+  }, [zoneKey])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !ready) return
+    const apply = () => {
+      void map.getSource<GeoJSONSource>('pdipr')?.setData(reseauDeFond)
+      // Témoin pour les e2e, comme `__sentiersTrailStats` : un fond ne se
+      // lit pas au pixel sans WebGL.
+      ;(window as { __sentiersReseauDeFond?: number }).__sentiersReseauDeFond =
+        reseauDeFond.features.length
+    }
+    return appliquerQuandPret(map, SOURCES_FOND, apply)
+  }, [mapRef, reseauDeFond, ready, styleEpoch])
 }

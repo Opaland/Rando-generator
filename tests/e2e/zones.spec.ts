@@ -1,5 +1,12 @@
 import { test, expect } from '@playwright/test'
-import { appelsOverpassStabilisesA, afficherTousLesReseaux, mockExternalNetwork } from './helpers.ts'
+import {
+  appelsOverpassStabilisesA,
+  afficherTousLesReseaux,
+  estAlEcran,
+  fermerLeGuide,
+  mockExternalNetwork,
+} from './helpers.ts'
+import pilatFixture from '../fixtures/overpass/pilat.json' with { type: 'json' }
 
 test('les départements d’Auvergne-Rhône-Alpes sont chargeables', async ({
   page,
@@ -86,6 +93,43 @@ test('une zone qu’Overpass n’arrive pas à rendre le dit, au lieu de se dire
   // Le second miroir doit avoir été essayé : un miroir qui répond « je n'y
   // arrive pas » n'est pas un miroir qui a réussi.
   expect(appels).toBe(2)
+})
+
+/**
+ * Issue #550 — la zone restaurée au démarrage taisait ce qu'elle a de
+ * travers. Une zone tronquée par Overpass (`remark` **et** des données) dit
+ * « vos pourcentages sont surestimés » au chargement ; au rechargement, elle
+ * revenait du cache en silence, section repliée.
+ *
+ * On mesure ce qui est **peint** : l'alerte vit dans un `<details>` replié
+ * par défaut sur une zone restaurée, où `toBeVisible` ne suffit pas (§1bis).
+ */
+test('une zone tronquée le redit quand elle revient du cache au démarrage', async ({
+  page,
+}) => {
+  await mockExternalNetwork(page)
+  await page.route('**/api/interpreter', (route) => {
+    void route.fulfill({
+      status: 200,
+      json: {
+        ...(pilatFixture as object),
+        remark: 'runtime error: Query run out of memory using about 2048 MB of RAM.',
+      },
+    })
+  })
+  await page.goto('/')
+  await fermerLeGuide(page)
+  await page.getByTestId('zone-pilat').click()
+  await expect(page.getByTestId('zone-error')).toContainText('surestimés', {
+    timeout: 20_000,
+  })
+
+  await page.reload()
+  await fermerLeGuide(page)
+  const alerte = page.getByTestId('zone-error')
+  await expect(alerte).toContainText('surestimés', { timeout: 15_000 })
+  await alerte.scrollIntoViewIfNeeded()
+  await expect.poll(() => estAlEcran(page, 'zone-error')).toBe(true)
 })
 
 /**

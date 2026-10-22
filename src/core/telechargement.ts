@@ -64,7 +64,7 @@ export function estAltimetrie(url: URL): boolean {
   )
 }
 
-export interface RessourcesRandonnee {
+interface RessourcesRandonnee {
   /** Adresses des tuiles du corridor, dédoublonnées et dans un ordre stable. */
   tuiles: string[]
   /** Adresse du profil altimétrique, ou `null` s'il n'y a pas de géométrie. */

@@ -1,6 +1,6 @@
 import { distanceMeters } from './geo.ts'
 import { GEO_OPTIONS } from './geolocation.ts'
-import { elevationGainMeters } from './gpx.ts'
+import { deniveleParTroncons } from './gpx.ts'
 import {
   dureeEnMarche,
   dureeTotale,
@@ -109,25 +109,16 @@ function segmentCompte(
 }
 
 /**
- * Découpe les points en tronçons continus, coupés aux pauses et aux trous
- * GPS silencieux (`segmentCompte`) — pour que le dénivelé se calcule
- * segment par segment, comme la distance et le profil, plutôt que sur la
- * suite brute des altitudes.
+ * Où la trace d'une sortie se coupe : là où l'écran ne comptait pas le pas
+ * — la même règle (`segmentCompte`), pour que l'historique, la carte et
+ * l'export disent ce que l'écran disait (#560 : 2 km à l'écran de fin,
+ * 7 km dans l'historique). Partagée par la trace rangée et la provisoire.
  */
-function segmentsMarches(e: Enregistrement): PointBrut[][] {
-  const segments: PointBrut[][] = []
-  let courant: PointBrut[] = []
-  let avant: PointBrut | null = null
-  for (const point of e.points) {
-    if (avant !== null && !segmentCompte(avant, point, e.intervalles)) {
-      segments.push(courant)
-      courant = []
-    }
-    courant.push(point)
-    avant = point
-  }
-  if (courant.length > 0) segments.push(courant)
-  return segments
+function debutsDeSegment(e: Enregistrement): number[] {
+  return e.points.flatMap((point, i) => {
+    const avant = e.points[i - 1]
+    return avant && !segmentCompte(avant, point, e.intervalles) ? [i] : []
+  })
 }
 
 /**
@@ -142,25 +133,22 @@ function segmentsMarches(e: Enregistrement): PointBrut[][] {
  * 25/09, `elevationGainMeters` délègue réellement à `elevationStats` : il
  * n'existe plus qu'une seule formule, donc plus rien à diverger.
  *
- * Calculé segment par segment (`segmentsMarches`) depuis le 25/09 : c'était
+ * Calculé tronçon par tronçon depuis le 25/09 — coupé par
+ * `debutsDeSegment`, la règle de la trace rangée, et additionné par
+ * `deniveleParTroncons`, celle de la trace importée (#560) : c'était
  * le seul des trois chiffres de l'écran de marche à ignorer `segmentCompte`
  * — `distanceParcourue` et `profilDeSortie` le consultaient déjà, lui non,
  * et un trou GPS silencieux (écran verrouillé) pouvait ajouter au dénivelé
  * la différence d'altitude entre deux points qu'aucune marche ne relie.
  */
 export function deniveleParcouru(e: Enregistrement): number | null {
-  let gain = 0
-  let hasData = false
-  for (const segment of segmentsMarches(e)) {
-    const gainDuSegment = elevationGainMeters(segment.map((p) => p.altitude))
-    if (gainDuSegment === null) continue
-    hasData = true
-    gain += gainDuSegment
-  }
-  return hasData ? gain : null
+  return deniveleParTroncons(
+    e.points.map((p) => p.altitude),
+    debutsDeSegment(e),
+  )
 }
 
-export interface ChiffresSortie {
+interface ChiffresSortie {
   distanceMetres: number
   dureeTotaleMs: number
   dureeEnMarcheMs: number
@@ -224,6 +212,7 @@ export function versTrace(e: Enregistrement, id: string): Track | null {
     times: e.points.map((point) => point.instant),
     hdops: null,
     precisionsMetres: e.points.map((point) => point.precisionMetres),
+    debutsDeSegment: debutsDeSegment(e),
   }
 }
 
@@ -297,11 +286,12 @@ export function traceProvisoire(e: Enregistrement): Track | null {
     times: e.points.map((point) => point.instant),
     hdops: null,
     precisionsMetres: e.points.map((point) => point.precisionMetres),
+    debutsDeSegment: debutsDeSegment(e),
   }
 }
 
 /** Ce qu'il y a à dire sur un chiffre vide, ou `null` s'il n'y a rien à dire. */
-export interface ExplicationsSortie {
+interface ExplicationsSortie {
   distance: string | null
   denivele: string | null
 }

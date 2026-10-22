@@ -176,12 +176,29 @@ Dans cet ordre, parce que chacun suppose le précédent :
 
 ## Jalon 4 — Élargir la donnée
 
-- **#87 — les PDIPR ouverts des départements** (Ain, Isère, puis les autres).
-  C'est le plus gros gain de couverture pour le moins d'effort : un jeu par
-  département, déjà ouvert, déjà structuré ;
-- **#88 — l'API Geotrek du Parc du Pilat**, ~200 circuits balisés ;
-- **#160 — Marc voit ce qui manque dans OSM et ne peut rien en faire** :
-  rendre la contribution possible depuis la constatation.
+Revérifié le 18/10 contre GitHub : **#160 est close** (#259, le lien
+« ouvrir dans OpenStreetMap »). Restent ouverts :
+
+- **#87 — les PDIPR ouverts des départements.** **Isère livrée le 18/10**
+  (`ed3c871`), en **réseau de fond** et non en itinéraires : ses 16 862
+  tronçons n'ont ni nom ni ref, Cédric a tranché qu'on les montre sans les
+  compter. Les 2 102 de Grenoble-Alpes Métropole sont écartés, l'export
+  les plaçant au large de l'Afrique. Restent :
+  - **Ain** — **livré le 21/10** (`538e412`, #574), en réseau de fond lui
+    aussi : 480 boucles nommées et diffusables, montrées sans être
+    comptées. Les compter attend une règle de dédoublonnage avec OSM,
+    81 boucles y étant déjà (mesure sur #574) — à trancher par Cédric ;
+  - **Savoie** (PDIPR73) et **Haute-Savoie** (PDIPR 2023), trouvés sur
+    datARA le 18/10 — **bloqués sur une décision juridique de Cédric** :
+    leur condition n'est pas une licence nommée (« utilisation libre sous
+    réserve de mentionner la source et la date de sa dernière mise à
+    jour »), et la republication dans Sentiers est à lui de juger, comme
+    pour #88. Téléchargement par « panier » Prodige ; WFS pour la Savoie ;
+  - **Rhône** — l'API GeoJSON de datARA répond `403 Accès interdit` (#20) ;
+- **#88 — l'API Geotrek du Parc du Pilat**, ~200 circuits balisés.
+  **Bloquée, pas juste en attente** : l'issue interdit d'intégrer quoi que
+  ce soit avant d'avoir écrit au Parc pour la licence et vérifié les
+  en-têtes CORS — aucun des deux n'est fait. Ne pas commencer le code.
 
 Un mot de prudence appris à #179 : **tout ajout à la requête Overpass se
 mesure avant d'être livré**, et le cache de zone porte désormais une version
@@ -193,32 +210,47 @@ question qu'on ne leur a pas posée.
 
 ## Jalon 5 — La dette, quand elle gêne et pas avant
 
-- **#155 — découper `appStore.ts`** en tranches. Déjà traité aux trois
-  quarts (1 566 lignes à l'ouverture, 1 082 aujourd'hui, plafond testé à
-  1 105 par `tests/unit/plafondDuStore.test.ts` — le chiffre ne regrossit
-  plus entre deux revues sans qu'un test ne le dise) ;
-- **#159 — mesurer une grosse bibliothèque** : 800 activités à l'import ;
-- **#93 — tuiles vectorielles**. Gros chantier, gain réel, aucune urgence ;
-- **#170 — la distance est fausse à l'antiméridien**. P3 assumé : personne ne
-  randonne à cheval sur la ligne de changement de date.
+Revérifié le 18/10 contre GitHub : **#155, #159 et #170 sont closes**
+(découpage d'`appStore.ts` par tranches nommées, mesure de bibliothèque
+#256, antiméridien borné #251). Restent ouverts :
+
+- **#539 — import d'une grosse bibliothèque, suite de #159** : mesuré
+  quadratique à tort (artefact de la fixture de banc), puis le vrai bug
+  trouvé et corrigé le 18/10 — `windowedSpeedMps` (`core/matching.ts`)
+  balayait sans borne quand l'horodatage de deux activités concaténées se
+  chevauchait (un écart négatif ne dépassait jamais une fenêtre positive).
+  Ce qui reste ouvert dans l'issue elle-même : une vraie bibliothèque
+  peut-elle présenter un horodatage non monotone pour une autre raison
+  (pause GPS, changement d'heure) ? Non mesuré sur un export réel ;
+- **#93 — tuiles vectorielles**. Le banc de mesure zone dense/clairsemée
+  existe ; **la décision d'y passer reste un choix d'architecture** (« aucun
+  serveur » remis en cause), pas un correctif — à soumettre à Cédric, pas à
+  trancher seul (§2). Aucune urgence déclarée.
 
 ---
 
 ## Issues livrées qui restent à clore
 
-À vérifier une par une avant de fermer — le code est fait, l'issue peut
-demander davantage :
+Revérifié le 18/10, contre le code et contre GitHub, pas contre ce
+document : **#149, #175, #178, #179 sont closes depuis le 25/08** — la
+mise à jour en indiquait trois (#160, #155, #170, #93 aussi réglés ou
+mesurés depuis), le présent paragraphe lui-même a dormi sept semaines sans
+qu'on le relise (CLAUDE.md §4bis : une affirmation non revérifiée vieillit
+sans que personne s'en aperçoive). Seul #171 reste ouvert à bon droit :
 
 | Issue | Ce qui est livré | Réserve |
 |---|---|---|
-| #149 | Horodatage et hdop conservés par les trois parseurs | — |
-| #175 | Historique consultable, recherche, groupement par année | — |
-| #178 | Confidentialité montrée : le journal des sorties réseau | — |
-| #179 | Pente, revêtement, déduction depuis `highway` | — |
 | #171 | Onglets en disposition par défaut | **La séance E2 n'a pas eu lieu.** Ne pas fermer sur le seul code |
 
 `#162` (renommer le dépôt) et `#15` (nom définitif) sont liés et attendent
 une décision, pas du code.
+
+**Ce document entier date du 22/08** et n'a pas suivi les sprints 1 à 9
+(enregistrement #152, matching v3 #150, GR Nord #537, variantes #333,
+découpage d'`appStore.ts` #155, mesures #93/#539 — voir
+`docs/PLAN_AGENTIQUE_16_10.md` et `docs/AUDIT_APPLICATIF_17_10.md` pour
+l'état réel au 17/10). Les jalons 1 à 3 ci-dessus sont obsolètes ; seuls
+les jalons 4 et 5 ci-dessous restent à jour de ce qui est encore ouvert.
 
 ---
 

@@ -41,6 +41,15 @@ describe('margeBassePanneau', () => {
     const ailleurs = rect({ top: 500, bottom: 800, left: 900, right: 1300 })
     expect(margeBassePanneau(cadre, ailleurs)).toBe(0)
   })
+
+  // Trouvé par mutation du 17/10 : aucun test n'atteignait exactement la
+  // frontière des 80 % de largeur gênée — tous les cas existants en sont
+  // loin, que ce soit en dessous ou largement au-dessus.
+  it('ne réserve toujours rien pile à la frontière des 80 %', () => {
+    const large: Rect = { top: 0, bottom: 1000, left: 0, right: 1000, width: 1000 }
+    const panneau = rect({ top: 700, bottom: 1000, left: 100, right: 900 })
+    expect(margeBassePanneau(large, panneau)).toBe(0)
+  })
 })
 
 /**

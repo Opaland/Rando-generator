@@ -71,6 +71,15 @@ describe('mentionDeSource', () => {
     expect(mentionDeSource(makeItinerary(1, WAYS, { network: 'GR' }))).toBeNull()
   })
 
+  it('ne dit rien quand la source est connue, même pour un fichier importé', () => {
+    // Trouvé par mutation du 17/10 : le test précédent ne porte pas
+    // `importe: true`, donc la garde « source connue » et la garde
+    // « pas un import » rendaient le même résultat par coïncidence.
+    expect(
+      mentionDeSource(makeItinerary(1, WAYS, { network: 'GR', importe: true })),
+    ).toBeNull()
+  })
+
   it('ne dit rien d’un tracé dessiné à la main', () => {
     expect(
       mentionDeSource(makeItinerary(-1, WAYS, { network: 'PERSO' })),

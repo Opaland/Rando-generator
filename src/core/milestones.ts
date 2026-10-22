@@ -29,9 +29,6 @@ export const COMPLETION_CHOICES: readonly number[] = [90, 95, 100]
 
 export const DEFAULT_COMPLETION_PCT = 95
 
-/** Ancien nom, conservé pour les appels qui n'ont pas à connaître le réglage. */
-export const COMPLETION_PCT = DEFAULT_COMPLETION_PCT
-
 /**
  * Ramène une valeur quelconque à l'un des seuils proposés.
  *
@@ -84,7 +81,7 @@ export function isCompleted(
   return pct >= seuil
 }
 
-export interface MilestoneCrossing {
+interface MilestoneCrossing {
   itineraryId: number
   milestone: number
 }

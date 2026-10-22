@@ -19,7 +19,7 @@
  * seulement un ornement.
  */
 
-export type Destination =
+type Destination =
   | 'sentiers'
   | 'fond-de-carte'
   | 'altimetrie'
@@ -39,16 +39,22 @@ export interface EntreeJournal {
  * celle qu'« À propos » énumère depuis #168 — si elles divergent, c'est
  * l'inventaire qui est faux, pas le compteur.
  */
-const CONNUS: { hote: RegExp; chemin?: RegExp; destination: Destination }[] = [
-  { hote: /(^|\.)overpass-api\.de$/, destination: 'sentiers' },
-  { hote: /(^|\.)kumi\.systems$/, destination: 'sentiers' },
+const CONNUS: {
+  hote: RegExp
+  chemin?: RegExp
+  destination: Destination
+  /** L'hôte que l'application contacte réellement — absent s'il ne l'est pas. */
+  contacte?: string
+}[] = [
+  { hote: /(^|\.)overpass-api\.de$/, destination: 'sentiers', contacte: 'overpass-api.de' },
+  { hote: /(^|\.)kumi\.systems$/, destination: 'sentiers', contacte: 'overpass.kumi.systems' },
   // Deux services chez le même hôte : seul le chemin les sépare. L'un voit
   // où vous regardez, l'autre quel itinéraire vous ouvrez — « À propos » les
   // présente comme distincts, le compteur doit faire pareil.
-  { hote: /(^|\.)data\.geopf\.fr$/, chemin: /altimetrie|elevation/i, destination: 'altimetrie' },
-  { hote: /(^|\.)data\.geopf\.fr$/, destination: 'fond-de-carte' },
-  { hote: /(^|\.)tile\.openstreetmap\.org$/, destination: 'fond-de-carte' },
-  { hote: /(^|\.)api-adresse\.data\.gouv\.fr$/, destination: 'recherche-commune' },
+  { hote: /(^|\.)data\.geopf\.fr$/, chemin: /altimetrie|elevation/i, destination: 'altimetrie', contacte: 'data.geopf.fr' },
+  { hote: /(^|\.)data\.geopf\.fr$/, destination: 'fond-de-carte', contacte: 'data.geopf.fr' },
+  { hote: /(^|\.)tile\.openstreetmap\.org$/, destination: 'fond-de-carte', contacte: 'tile.openstreetmap.org' },
+  { hote: /(^|\.)api-adresse\.data\.gouv\.fr$/, destination: 'recherche-commune', contacte: 'api-adresse.data.gouv.fr' },
   { hote: /(^|\.)data\.grandlyon\.com$/, destination: 'sentiers' },
 ]
 
@@ -78,7 +84,10 @@ function origineParDefaut(): string {
 /**
  * Les hôtes que l'application contacte réellement, à plat.
  *
- * Dérivée de `CONNUS` plutôt que recopiée : la politique de sécurité de
+ * Dérivée de `CONNUS` plutôt que recopiée — et vraiment, depuis le 20/10 :
+ * jusque-là, ce commentaire le disait d'un tableau écrit à la main, que
+ * rien ne tenait d'accord avec `CONNUS` (#571, §4bis). Chaque entrée porte
+ * maintenant l'hôte qu'elle contacte. La politique de sécurité de
  * contenu (`deploy/csp.conf`) est comparée à cette liste dans les deux sens
  * par `tests/unit/csp.test.ts`. Un hôte oublié dans la politique casse
  * l'application chez la personne ; un hôte en trop ouvre une porte que
@@ -90,11 +99,7 @@ function origineParDefaut(): string {
  * puisque c'est elle qui décide si l'hôte doit être joignable.
  */
 export const HOTES_CONTACTES: readonly string[] = [
-  'overpass-api.de',
-  'overpass.kumi.systems',
-  'data.geopf.fr',
-  'tile.openstreetmap.org',
-  'api-adresse.data.gouv.fr',
+  ...new Set(CONNUS.flatMap((connu) => (connu.contacte ? [connu.contacte] : []))),
 ]
 
 export function classerSortie(
@@ -140,7 +145,7 @@ export function classerSortie(
   return { destination: 'inconnue', hote }
 }
 
-export interface GroupeDestination {
+interface GroupeDestination {
   destination: Destination
   hotes: string[]
   nombre: number
@@ -170,7 +175,7 @@ export function noterSortie(
   return copie
 }
 
-export interface ResumeJournal {
+interface ResumeJournal {
   /** Requêtes parties vers un tiers. Les fichiers du site n'en sont pas. */
   total: number
   parDestination: GroupeDestination[]

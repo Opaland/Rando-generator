@@ -8,6 +8,7 @@ import {
 } from '../core/telechargement.ts'
 import type { LonLat } from '../core/types.ts'
 import { emporter, emporterPois } from '../lib/emporter.ts'
+import { conteneurServiceWorker } from '../lib/serviceWorker.ts'
 import { fetchPoisOuEchec } from '../core/poi.ts'
 import { useAppStore } from '../store/appStore.ts'
 import styles from './BoutonEmporter.module.css'
@@ -80,7 +81,7 @@ export function BoutonEmporter({
   const fini = progres?.fini === true
 
   return (
-    <div className={styles.bloc}>
+    <div className={styles.bloc} data-testid="emporter-bloc">
       <button
         type="button"
         className="btn-secondary"
@@ -88,7 +89,7 @@ export function BoutonEmporter({
         disabled={adresses.length === 0 || enCours || fini}
         onClick={() => {
           const stop = emporter(
-            'serviceWorker' in navigator ? navigator.serviceWorker : undefined,
+            conteneurServiceWorker(),
             adresses,
             setProgres,
           )
@@ -128,8 +129,8 @@ export function BoutonEmporter({
       {progres === null && !sansServiceWorker && (
         <p className={styles.aide}>
           Fond de carte et relief, gardés pour le jour où vous n’aurez pas de
-          réseau. Le poids dépend du terrain : il s’affiche pendant le
-          téléchargement.
+          réseau. Le poids annoncé est une estimation, qui dépend du
+          terrain&nbsp;; le poids réel s’affiche pendant le téléchargement.
         </p>
       )}
       {enCours && (

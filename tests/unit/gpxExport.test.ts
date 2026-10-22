@@ -4,6 +4,7 @@ import {
   gpxAttributionFor,
   gpxDocumentFromTrack,
   gpxFilename,
+  trackDisplayName,
 } from '../../src/core/gpxExport.ts'
 import type { LonLat, Track } from '../../src/core/types.ts'
 
@@ -117,6 +118,29 @@ describe('buildGpxDocument', () => {
   it('ne pose aucun <time> de point sans pointTimes', () => {
     expect(gpx).not.toMatch(/<trkpt[^>]*>[\s\S]*?<time>/)
   })
+
+  it('ne laisse pas de ligne vide entre les métadonnées et la trace sans repère', () => {
+    /*
+      Trouvé par mutation du 17/10 : sans repère, `blocReperes` doit être
+      une chaîne vide, pas `\n` tout seul — l'ordre des éléments du schéma
+      GPX 1.1 est strict, et le commentaire du code le dit : une montre
+      refuse parfois un fichier qui l'enfreint, sans message.
+    */
+    expect(gpx).toContain('</metadata>\n  <trk>')
+  })
+
+  it('élague les espaces du nom avant de l’écrire', () => {
+    // Trouvé par mutation du 17/10 : `.trim()` sur le nom n'était jamais
+    // mis à l'épreuve d'un nom entouré d'espaces.
+    const espace = buildGpxDocument({
+      name: '  Boucle du Crêt  ',
+      coords: COORDS,
+      attribution: null,
+      createdAt: CREATED_AT,
+    })
+    expect(espace).toContain('<name>Boucle du Crêt</name>')
+    expect(espace).not.toContain('<name>  Boucle')
+  })
 })
 
 describe('gpxDocumentFromTrack', () => {
@@ -204,6 +228,27 @@ describe('gpxAttributionFor', () => {
 
   it('n’attribue rien pour un itinéraire créé par l’utilisateur', () => {
     expect(gpxAttributionFor('PERSO')).toBeNull()
+  })
+})
+
+describe('trackDisplayName', () => {
+  it('retire l’extension en fin de nom', () => {
+    expect(trackDisplayName({ filename: 'sortie.gpx' } as Track)).toBe('sortie')
+    expect(trackDisplayName({ filename: 'sortie.FIT' } as Track)).toBe('sortie')
+  })
+
+  it('ne retire rien pour un nom qui ne se termine pas par l’une de ces extensions', () => {
+    // Trouvé par mutation du 17/10 : l'ancre `$` absente laisserait
+    // « .gpx » disparaître n'importe où dans le nom, pas seulement à la fin.
+    expect(trackDisplayName({ filename: 'export.gpx.ancien' } as Track)).toBe(
+      'export.gpx.ancien',
+    )
+  })
+
+  it('ne pose pas d’extension sur une sortie enregistrée, qui n’en a pas', () => {
+    expect(trackDisplayName({ filename: 'Sortie enregistrée' } as Track)).toBe(
+      'Sortie enregistrée',
+    )
   })
 })
 

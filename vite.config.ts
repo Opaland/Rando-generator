@@ -14,8 +14,11 @@ import { poserLaPolitique } from './src/lib/baliseDePolitique.ts'
  * page au moment où elle charge ses scripts, et l'application serait vide au
  * premier lancement hors connexion.
  *
- * Les données de zone (public/data) sont volontairement exclues : elles ne
- * concernent qu'un territoire, et pèsent plus lourd que l'application.
+ * Les données de zone (public/data) sont exclues — elles ne concernent
+ * qu'un territoire, et pèsent plus lourd que l'application —, **sauf** les
+ * boucles de la Métropole, précachées plus bas pour la démonstration et le
+ * Rhône hors ligne. Ce commentaire disait « volontairement exclues » sans
+ * l'exception (#571).
  */
 function precacheServiceWorker(): Plugin {
   return {

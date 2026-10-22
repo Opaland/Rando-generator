@@ -2,9 +2,20 @@
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 0;
+  /*
+    Sous le point de rupture, au-dessus de la poignée et de la barre
+    d'onglets, comme la fiche (voir ItineraryDetail.module.css) : posé à
+    `bottom: 0`, le panneau passait sous le plan de la feuille, et même
+    repliée elle peignait par-dessus le nom et « Enregistrer » — 0 point sur
+    80 mesuré à 390 × 844 le 18/10 (#546). Monter le plan du panneau aurait
+    recouvert la navigation ; c'est donc à lui de laisser leur bande.
+  */
+  bottom: calc(
+    var(--hauteur-poignee) + var(--hauteur-onglets) +
+      env(safe-area-inset-bottom, 0px)
+  );
   z-index: var(--z-overlay-draw);
-  max-height: min(60vh, 460px);
+  max-height: var(--hauteur-trace);
   overflow-y: auto;
   background: var(--papier);
   border-top: 5px solid var(--encre);
@@ -80,8 +91,16 @@
   .panel {
     left: auto;
     right: 12px;
-    bottom: 12px;
-    width: min(340px, calc(100% - 24px));
+    /* Au-dessus du crédit de la carte, comme « Ma position » (#544). Posé à
+       douze pixels du bord, le panneau masquait 40 % de la ligne
+       d'attribution à 1 280 × 720 — mesuré le 18/10, 48 points peints sur
+       80. La bande est remesurée à l'exécution par `MapView`. */
+    bottom: calc(12px + var(--bande-attribution));
+    width: min(var(--largeur-trace), calc(100% - 24px));
+    /* La hauteur qu'il y a, comme la fiche au PC : le plafond de téléphone
+       (`--hauteur-trace`) laissait en gros texte « Enregistrer » sous le bas
+       visible du panneau — 5 px peints sur 45 à 1 024 (#570, 3). */
+    max-height: calc(100% - 24px - var(--bande-attribution));
     border-radius: var(--rayon-lg);
     border-top-width: 1px;
     border-left: 5px solid var(--encre);

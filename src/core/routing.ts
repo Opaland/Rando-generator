@@ -24,7 +24,7 @@ const SNAP_PRECISION_DEG = 1e-5
 /** Distance maximale par défaut entre un clic et le réseau, en mètres. */
 const DEFAULT_SNAP_METERS = 150
 
-export interface RoutingEdge {
+interface RoutingEdge {
   to: string
   meters: number
 }

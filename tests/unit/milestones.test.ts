@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest'
 import {
   COMPLETION_CHOICES,
   franchissementTientEncore,
-  COMPLETION_PCT,
   DEFAULT_COMPLETION_PCT,
   MILESTONES,
   normalizeCompletionPct,
@@ -62,7 +61,7 @@ describe('isCompleted', () => {
     // Règle empruntée à CityStrides : exiger 100 % punit l'utilisateur pour
     // des tronçons impraticables, des déviations ou une géométrie OSM
     // imparfaite. Le seuil est annoncé, jamais présenté comme du 100 %.
-    expect(COMPLETION_PCT).toBe(95)
+    expect(DEFAULT_COMPLETION_PCT).toBe(95)
     expect(isCompleted(94.9)).toBe(false)
     expect(isCompleted(95)).toBe(true)
     expect(isCompleted(100)).toBe(true)
@@ -108,7 +107,31 @@ describe('crossedMilestones', () => {
     )
     expect(franchis.map((f) => f.milestone)).toEqual([100, 25])
   })
+
+  it('départage deux franchissements du même jalon par l’identifiant, croissant', () => {
+    // Aucun test n'atteignait ce départage (vague de mutation du 19/10) :
+    // l'ordre d'arrivée des résultats décidait alors de l'annonce faite en
+    // premier. Les résultats arrivent ici à l'envers de l'ordre attendu.
+    const franchis = crossedMilestones(
+      new Map([
+        [9, 40],
+        [3, 40],
+      ]),
+      [result(9, 60), result(3, 60)],
+    )
+    expect(franchis.map((f) => f.itineraryId)).toEqual([3, 9])
+  })
 })
+
+/*
+  Survivants laissés, et pourquoi (§6bis) :
+  - `typeof valeur !== 'number'` forcé à faux, ou son `||` changé en `&&`,
+    dans `normalizeCompletionPct` : `Number.isFinite` refuse déjà tout ce qui
+    n'est pas un nombre, sans conversion. La garde est redondante, pas creuse ;
+  - `jalonAvant !== null` forcé à vrai, et `jalon !== null` dans
+    `franchissementTientEncore` : un nombre comparé à `null` le compare à
+    zéro, et aucun jalon ne vaut zéro.
+*/
 
 describe('seuil de complétion réglable', () => {
   it('propose trois seuils, dont celui par défaut', () => {
@@ -138,6 +161,26 @@ describe('seuil de complétion réglable', () => {
     expect(normalizeCompletionPct(150)).toBe(100)
     expect(normalizeCompletionPct(Number.NaN)).toBe(DEFAULT_COMPLETION_PCT)
     expect(normalizeCompletionPct(undefined)).toBe(DEFAULT_COMPLETION_PCT)
+  })
+
+  it('refuse une valeur qui n’est pas un nombre, même si elle y ressemble', () => {
+    /*
+      Trouvé par mutation du 17/10 : désactiver la garde `typeof !==
+      'number'` survivait à `normalizeCompletionPct(undefined)` et
+      `(NaN)`, parce que `Math.abs(choix - valeur)` rend `NaN` pour ces
+      deux-là — une comparaison `NaN < ecart` est toujours fausse, donc la
+      boucle ne change jamais `plusProche`, et le résultat retombe par
+      coïncidence sur le défaut. Une chaîne numérique ne produit pas de
+      `NaN` : `Math.abs(90 - '150')` vaut 60, bien réel.
+    */
+    expect(normalizeCompletionPct('150')).toBe(DEFAULT_COMPLETION_PCT)
+  })
+
+  it('garde le premier seuil rencontré en cas d’égalité de distance', () => {
+    // Trouvé par mutation du 17/10 : `distance < ecart` devenu `<=`
+    // survivait, parce qu'aucune valeur testée n'était à égale distance de
+    // deux seuils. 92,5 est à 2,5 de 90 et de 95 ; 90 est rencontré en premier.
+    expect(normalizeCompletionPct(92.5)).toBe(90)
   })
 })
 

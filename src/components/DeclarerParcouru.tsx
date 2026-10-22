@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { useAppStore } from '../store/appStore.ts'
+import { ConfirmDeleteButton } from './ConfirmDeleteButton.tsx'
 import styles from './DeclarerParcouru.module.css'
+import { dateAffichee, jourLocal } from '../core/valeurLue.ts'
+import { useHorloge } from '../lib/useHorloge.ts'
 
 /**
  * « Je l'ai fait » — cocher un itinéraire sans trace GPX (issue #158).
@@ -24,15 +27,16 @@ export function DeclarerParcouru({ itineraryId }: { itineraryId: number }) {
   const retirer = useAppStore((s) => s.retirerParcoursDeclare)
   const [saisieOuverte, setSaisieOuverte] = useState(false)
   const [date, setDate] = useState('')
+  // L'heure du montage suffit pour borner le champ : pas besoin d'un
+  // battement par seconde pour savoir quel jour on est.
+  const maintenant = useHorloge(false)
 
   const declaration = parcoursDeclares.find(
     (d) => d.itineraryId === itineraryId,
   )
 
   if (declaration) {
-    const quand = declaration.date
-      ? new Date(declaration.date).toLocaleDateString('fr-FR')
-      : null
+    const quand = dateAffichee(declaration.date)
     return (
       <div className={styles.bloc} data-testid="declare-etat">
         <p className={styles.fait}>
@@ -43,23 +47,24 @@ export function DeclarerParcouru({ itineraryId }: { itineraryId: number }) {
           Déclaré, pas mesuré : ce parcours n’entre pas dans votre pourcentage
           et n’apparaît pas dans les tronçons restants.
         </p>
-        <button
-          type="button"
-          className="btn-link"
-          data-testid="declare-retirer"
-          onClick={() => {
+        {/* La même voie que « Mes sorties », confirmation comprise : un
+            double-clic sur « Valider » faisait apparaître ce bouton sous le
+            curseur, et le second clic retirait la déclaration (#551). */}
+        <ConfirmDeleteButton
+          label="Retirer cette déclaration"
+          texte="Retirer cette déclaration"
+          testId="declare-retirer"
+          onConfirm={() => {
             void retirer(itineraryId)
           }}
-        >
-          Retirer cette déclaration
-        </button>
+        />
       </div>
     )
   }
 
   if (!saisieOuverte) {
     return (
-      <div className={styles.bloc}>
+      <div className={styles.bloc} data-testid="declare-bloc">
         <button
           type="button"
           className="btn-secondary"
@@ -88,7 +93,7 @@ export function DeclarerParcouru({ itineraryId }: { itineraryId: number }) {
         className={styles.date}
         data-testid="declare-date"
         value={date}
-        max={new Date().toISOString().slice(0, 10)}
+        max={jourLocal(maintenant)}
         onChange={(e) => {
           setDate(e.target.value)
         }}

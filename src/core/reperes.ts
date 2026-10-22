@@ -28,7 +28,7 @@ export const REPERE_MAX_METERS = 250
  */
 const KINDS_REPERES: PoiKind[] = ['pass', 'peak', 'hut', 'bivouac']
 
-export interface Repere {
+interface Repere {
   id: string
   name: string
   kind: PoiKind

@@ -1,9 +1,10 @@
 import 'fake-indexeddb/auto'
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import {
   openSentiersDb,
   isFresh,
   zoneUtilisable,
+  pourquoiPerimee,
   SCHEMA_ZONE,
   CACHE_TTL_MS,
   DB_VERSION,
@@ -175,6 +176,40 @@ describe('réglages', () => {
     await db.setSetting('toleranceMeters', 25)
     expect(await db.getSetting('toleranceMeters')).toBe(25)
   })
+
+  /*
+    Issue #569, point 4 — la sonde de la revue : `relu = 40 (attendu 80) |
+    valeur dans IDB = 80`. Quand `localStorage` refuse d'écrire, la valeur
+    part dans IndexedDB ; mais `getSetting` lit d'abord `localStorage`, qui
+    gardait l'ancienne. Le réglage semblait revenir en arrière tout seul.
+  */
+  it('relit la valeur écrite en repli, pas l’ancienne restée en localStorage', async () => {
+    const boite = new Map<string, string>([
+      ['sentiers.reglage.toleranceMeters', '40'],
+    ])
+    vi.stubGlobal('localStorage', {
+      get length() {
+        return boite.size
+      },
+      clear: () => {
+        boite.clear()
+      },
+      getItem: (k: string) => boite.get(k) ?? null,
+      setItem: () => {
+        throw new DOMException('plein', 'QuotaExceededError')
+      },
+      removeItem: (k: string) => {
+        boite.delete(k)
+      },
+      key: (i: number) => [...boite.keys()][i] ?? null,
+    })
+    try {
+      await db.setSetting('toleranceMeters', 80)
+      expect(await db.getSetting('toleranceMeters')).toBe(80)
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
 })
 
 /**
@@ -214,6 +249,24 @@ describe('zoneUtilisable', () => {
   it('refuse une version qu’elle ne connaît pas', () => {
     expect(zoneUtilisable({ ...zone, schema: SCHEMA_ZONE + 1 }, bientot)).toBe(
       false,
+    )
+  })
+
+  /*
+    La raison du refus, pour la dire (#550). Le format passe avant l'âge :
+    une copie d'un autre format manque d'informations, quel que soit son
+    âge, et c'est ce qui change le plus ce qu'on voit.
+  */
+  it('dit pourquoi elle refuse', () => {
+    const actuelle = { ...zone, schema: SCHEMA_ZONE }
+    expect(pourquoiPerimee(actuelle, bientot)).toBeNull()
+    expect(pourquoiPerimee(actuelle, plusTard)).toBe('age')
+    expect(pourquoiPerimee(zone, plusTard)).toBe('ancienne')
+    expect(pourquoiPerimee({ ...zone, schema: SCHEMA_ZONE - 1 }, bientot)).toBe(
+      'ancienne',
+    )
+    expect(pourquoiPerimee({ ...zone, schema: SCHEMA_ZONE + 1 }, bientot)).toBe(
+      'future',
     )
   })
 })

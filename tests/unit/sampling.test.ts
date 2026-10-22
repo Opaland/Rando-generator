@@ -130,3 +130,18 @@ describe('slicePolyline', () => {
     expect(slicePolyline([], 0, 100)).toEqual([])
   })
 })
+
+/*
+  Survivants de la vague de mutation du 19/10, tous équivalents (§6bis) —
+  vérifiés un par un, écrits ici pour qu'on ne les rechasse pas :
+  - `segLen === 0` retiré dans `sampleWay` : la boucle d'un segment nul ne
+    fait rien, et `toNext` n'en est pas changé ;
+  - `>=` en `>` sous la tolérance EPSILON : les deux ne diffèrent qu'à
+    1e-6 m près ;
+  - `coords.length < 2` retiré dans `slicePolyline` : la longueur totale
+    vaut zéro, et `fin <= debut` rend `[]` juste après ;
+  - `debut <= segDebut` en `<` ou forcé à faux, et `fin >= segFin` en `>` :
+    à l'égalité, l'interpolation rend le sommet lui-même ;
+  - `portion.length >= 2` forcé à vrai : une portion non vide reçoit
+    toujours deux points dès son premier segment.
+*/

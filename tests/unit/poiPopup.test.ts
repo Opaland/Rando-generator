@@ -47,6 +47,16 @@ describe('poiPopupHtml', () => {
     expect(html).not.toContain('<b>')
   })
 
+  it('échappe aussi &, >, " et \', pas seulement <', () => {
+    /*
+      Trouvé par mutation du 18/10 : seul `<` était éprouvé, parce que seul
+      un nom contenant `<img ...>` avait été testé. Les quatre autres
+      entités de la table n'étaient jamais exercées.
+    */
+    const html = poiPopupHtml({ name: `T&"'>est`, kind: 'hut' })
+    expect(html).toContain('T&amp;&quot;&#39;&gt;est')
+  })
+
   it('tient debout sans aucune propriété', () => {
     expect(poiPopupHtml(undefined)).toContain('<strong>')
   })

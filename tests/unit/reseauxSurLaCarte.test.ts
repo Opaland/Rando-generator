@@ -151,6 +151,12 @@ describe('GR et GRP se distinguent par la forme, pas seulement la couleur (#360)
    * `-grp` (§4/§4ter).
    */
   it('TRAILS_CLIQUABLES ne nomme que des couches qui existent vraiment', () => {
+    /*
+      Trouvé par mutation du 18/10 : une liste vidée rendait cette boucle
+      vide, donc verte sans rien vérifier (§1bis). La ligne suivante force
+      la boucle à avoir quelque chose à parcourir.
+    */
+    expect(TRAILS_CLIQUABLES.length).toBeGreaterThan(0)
     const style = baseStyle('https://exemple/{z}/{x}/{y}', 'attribution')
     const idsReels = new Set(style.layers.map((c) => c.id))
     for (const id of TRAILS_CLIQUABLES) {
@@ -158,5 +164,56 @@ describe('GR et GRP se distinguent par la forme, pas seulement la couleur (#360)
         true,
       )
     }
+  })
+})
+
+describe('la source raster lit bien l’URL de tuiles fournie', () => {
+  it('porte l’URL donnée, pas une source vide', () => {
+    // Trouvé par mutation du 18/10 : aucun test ne lisait `sources.basemap`.
+    const style = baseStyle('https://exemple/{z}/{x}/{y}', 'attribution')
+    const basemap = style.sources['basemap'] as { tiles?: string[] }
+    expect(basemap.tiles).toEqual(['https://exemple/{z}/{x}/{y}'])
+  })
+})
+
+describe('le revêtement se filtre par tirets, pas l’inverse (#…)', () => {
+  // Trouvé par mutation du 18/10 : aucun test ne lisait ces deux filtres.
+  function couche(id: string) {
+    const style = baseStyle('https://exemple/{z}/{x}/{y}', 'attribution')
+    return style.layers.find((c) => c.id === id) as
+      | { filter?: unknown }
+      | undefined
+  }
+
+  it('trails-revetement exclut les tronçons en tirets', () => {
+    expect(couche('trails-revetement')?.filter).toEqual([
+      '!=',
+      ['get', 'tirets'],
+      true,
+    ])
+  })
+
+  it('trails-revetement-autre ne garde que les tronçons en tirets', () => {
+    expect(couche('trails-revetement-autre')?.filter).toEqual([
+      '==',
+      ['get', 'tirets'],
+      true,
+    ])
+  })
+})
+
+describe('trails-selected filtre par l’itinéraire sélectionné', () => {
+  it('démarre sur un identifiant qu’aucun itinéraire réel ne porte', () => {
+    /*
+      Trouvé par mutation du 18/10 : `-1` → `1` ne cassait rien, faute de
+      test lisant ce filtre. `MapView.tsx` le réécrit ensuite avec le
+      véritable id au clic — cette valeur n'est que le repli initial, mais
+      elle doit rester hors de l'espace des id réels (tous positifs).
+    */
+    const style = baseStyle('https://exemple/{z}/{x}/{y}', 'attribution')
+    const couche = style.layers.find((c) => c.id === 'trails-selected') as
+      | { filter?: unknown }
+      | undefined
+    expect(couche?.filter).toEqual(['==', ['get', 'itineraryId'], -1])
   })
 })

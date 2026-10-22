@@ -197,6 +197,50 @@ describe('penteMaximaleSurTroncons', () => {
   it('rend « sans altitude » quand il n’y a vraiment rien', () => {
     expect(penteMaximaleSurTroncons([]).etat).toBe('sans-altitude')
   })
+
+  it('rend « sans altitude », pas « trop fine », pour un seul tronçon sans aucune altitude', () => {
+    /*
+      Trouvé par mutation du 17/10 : le test précédent ne vaut que mélangé à
+      un tronçon « trop fine » — le seul cas qu'il couvrait. Un unique
+      tronçon « sans altitude », seul dans la liste, prenait la même branche
+      que « trop fine » sous le mutant (`mesure.pasLePlusLong` y est
+      `undefined`, et `Math.max(0, undefined)` vaut `NaN`, ce qui faisait
+      quand même passer l'ancien test puisqu'il ne lisait pas la valeur).
+    */
+    const mesure = penteMaximaleSurTroncons([profil([0, 100], [null, null])])
+    expect(mesure.etat).toBe('sans-altitude')
+  })
+
+  it('garde la longueur du tronçon le plus raide en cas d’égalité entre tronçons', () => {
+    // Même logique que pour un seul profil (voir pente.test.ts) : sur une
+    // égalité de pourcentage entre deux tronçons, le premier doit l'emporter.
+    const troncons = [
+      profil([0, 100], [100, 110]), // 10 m sur 100 m : 10 %.
+      profil([1_000, 1_050], [200, 205]), // 5 m sur 50 m : 10 % aussi.
+    ]
+    const mesure = penteMaximaleSurTroncons(troncons)
+    expect(mesure.etat).toBe('mesuree')
+    if (mesure.etat !== 'mesuree') return
+    expect(mesure.pente.surMetres).toBe(100)
+  })
+
+  it('retient le plus long pas vu entre tous les tronçons, pas le dernier', () => {
+    /*
+      Trouvé par mutation du 17/10 : `Math.max` remplacé par `Math.min`, et
+      `pasLePlusLong ?? 0` remplacé par `pasLePlusLong && 0`, survivaient
+      tous deux au test existant parce qu'il ne comparait que deux tronçons
+      dans l'ordre croissant — où « garder le max » et « garder le dernier »
+      se confondent. Ici le tronçon le plus large (0,9 m) passe en premier.
+    */
+    const troncons = [
+      profil([0, 0.9], [100, 101]),
+      profil([500, 500.4], [100, 103]),
+    ]
+    const mesure = penteMaximaleSurTroncons(troncons)
+    expect(mesure.etat).toBe('trop-fine')
+    if (mesure.etat !== 'trop-fine') return
+    expect(mesure.pasLePlusLong).toBeCloseTo(0.9, 2)
+  })
 })
 
 describe('interruptionsDuTrace', () => {

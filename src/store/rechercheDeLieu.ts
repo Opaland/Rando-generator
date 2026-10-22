@@ -58,7 +58,7 @@ export const RECHERCHE_AU_REPOS: EtatRecherche = {
   lieuxVides: false,
 }
 
-export interface DependancesRecherche {
+interface DependancesRecherche {
   set: (partiel: Partial<EtatRecherche>) => void
 }
 

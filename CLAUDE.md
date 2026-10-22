@@ -219,12 +219,15 @@ Trois pièges mesurés sur ce dépôt :
   sources. Un `npm run build` dont on masque la sortie peut échouer en
   silence et laisser tester une version périmée.
 - **`PW_CHROMIUM_PATH=/opt/pw-browsers/chromium` pour toute commande qui
-  lance Playwright** — `e2e`, `monkey`, `mesure`, `reel`, `chargement`,
-  `panneau`. Cette phrase-là a
+  lance Chromium** — `e2e`, `monkey`, `mesure`, `reel`, `chargement`,
+  `panneau`, `dense`, `og-image`. Cette phrase-là a
   déjà été trop étroite une fois : le 31/08, `npm run monkey` a rendu trois
   échecs au milieu d'une porte verte, faute de la variable, et la seule
   commande annoncée avec elle était `e2e` (issue #435). `npm run listes`
-  garde maintenant l'accord entre cette liste et `package.json`.
+  garde maintenant l'accord entre cette liste et `package.json` — y compris
+  pour `og-image`, qui lance Chromium directement (`chromium.launch(…)`)
+  sans passer par le CLI `playwright test`, et qu'un motif cherchant ce seul
+  littéral ne pouvait pas voir (08/10).
 
   **`--workers=1` n'est plus à taper** : `playwright.config.ts` le pose hors
   CI (#491). Le drapeau était la deuxième moitié du même raté — un garde-fou
@@ -394,7 +397,7 @@ touché un fichier lu par `vite.config.ts`, on redémarre.
 Les règles d'écran (`tests/e2e/regles-d-ecran.spec.ts`) posent cinq
 questions mesurables — qu'est-ce qui est peint par-dessus quoi, qu'est-ce
 qui est écrasé, qu'est-ce qui déborde sans le dire, qu'est-ce qu'on ne peut
-pas toucher, qu'est-ce qui sort du cadre — à quatre largeurs et dans huit
+pas toucher, qu'est-ce qui sort du cadre — à quatre largeurs et dans onze
 états.
 
 Les états ne sont pas décoratifs. La première version n'auscultait
@@ -412,6 +415,20 @@ cinq n'ouvrait. Ses seize commandes n'avaient jamais été mesurées. Élargie,
 la sonde a trouvé du neuf le jour même — deux boutons radio à 22 px, sous le
 plancher de 24 px de WCAG 2.5.8. **Ce qui est replié par défaut est ce qu'une
 sonde oublie par défaut.**
+
+Le 17/10, le même trou a repris une forme différente : pas un `<details>`
+replié, un **onglet non actif** — en disposition compacte, `App.tsx` ne
+monte même pas les sections de « Sorties » et « Réglages » hors de leur
+onglet. Six états sur six passaient tous par « carte » ou « progression » ;
+aucun n'avait jamais ouvert les deux autres. L'audit du 17/10
+(`docs/AUDIT_APPLICATIF_17_10.md`) les a mesurés à la main sans rien y
+trouver — les deux états les rendent permanents. Vérifié avant de le
+croire (§1) : une injection de `min-width: 3000px` sur la ligne d'un import
+personnalisé est passée inaperçue tant que la règle de cascade qui
+l'annulait silencieusement (un second `min-width` écrit juste après, dans
+le fichier source de ce test lui-même) n'a pas été vue et corrigée — sans
+quoi ces deux états auraient rejoint la liste des sondes qui ne peuvent pas
+échouer.
 
 ## 6sexies. Ce qui est mesurable se mesure ; le reste se décide, et se dit
 
@@ -455,3 +472,24 @@ fait ; le nom promettait plus que le contenu.
 Certaines issues demandent une preuve humaine — #173 exige que Théo et
 Jeanine mènent une tâche sans aide. Le code peut être fini quand l'issue ne
 l'est pas. Le dire dans la PR plutôt que laisser le `Closes` parler.
+
+## 11. Le budget de tokens se gère, lui aussi
+
+Demande de Cédric (12/10) : le quota se vide avant la fin de la semaine.
+`docs/OPTIMISATION_TOKENS.md` mesure où ça part et ce qui n'économise rien
+(déléguer à un agent, compresser plus souvent) — à relire en début de
+session, pas seulement une fois. Deux pratiques qui en sortent, à tenir
+par défaut :
+
+- ne pas relancer à la main lint/listes/textes/chemins/typecheck/tests
+  avant un commit : `.claude/hooks/porte-avant-commit.sh` les relance déjà
+  et bloque le commit si l'un d'eux est rouge — coverage/build/e2e/monkey
+  restent hors hook, ceux-là se vérifient à la main ;
+- grouper les éditions de `CLAUDE.md`/`README.md` plutôt que les étaler
+  dans la session : chaque édition de ce fichier en recharge l'intégralité
+  dans le contexte, environ 6 000 tokens au 12/10 ;
+- **un commit dont le diff ne touche que `docs/`, `README.md`,
+  `CLAUDE.md` ou `scripts/jumelles/` committe sur lint + listes + textes +
+  chemins + typecheck seuls**, sans coverage/build/e2e/monkey (tranché le
+  13/10, §1.3 du plan) — dès qu'un seul fichier hors de cette liste est
+  touché, la porte complète reste de mise.

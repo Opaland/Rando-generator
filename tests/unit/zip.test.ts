@@ -89,6 +89,31 @@ describe('readZipEntry', () => {
     const entree = { ...listZipEntries(archive)[0]!, method: 99 }
     await expect(readZipEntry(archive, entree)).rejects.toThrow(ZipError)
   })
+
+  /*
+    Trouvé par une vague de mutation du 17/10 : la garde qui détecte un
+    en-tête local tronqué (`debut + 30 > buffer.byteLength`) pouvait être
+    retirée sans qu'aucun test ne le voie. Sans elle, `getUint32` sur un
+    décalage hors limites lève un `RangeError` du moteur — un message
+    technique en anglais — au lieu du `ZipError` en français que l'écran
+    d'import affiche. Un dépôt interrompu en cours de téléchargement, ou
+    une archive coupée par un navigateur, suffit à l'atteindre.
+  */
+  it('refuse une archive coupée avant l’en-tête local, avec un message lisible', async () => {
+    const archive = await buildZip([{ nom: 'a.gpx', contenu: GPX }])
+    const entree = listZipEntries(archive)[0]!
+    const tronque = archive.slice(0, entree.localHeaderOffset + 10)
+    await expect(readZipEntry(tronque, entree)).rejects.toThrow(ZipError)
+  })
+
+  it('refuse une archive coupée dans les données d’une entrée', async () => {
+    const archive = await buildZip([{ nom: 'a.gpx', contenu: GPX, methode: 0 }])
+    const entree = listZipEntries(archive)[0]!
+    // En-tête local (30 o) + nom, mais aucun octet de donnée après.
+    const finDeLentete = entree.localHeaderOffset + 30 + entree.name.length
+    const tronque = archive.slice(0, finDeLentete)
+    await expect(readZipEntry(tronque, entree)).rejects.toThrow(ZipError)
+  })
 })
 
 describe('entreesDeTrace', () => {

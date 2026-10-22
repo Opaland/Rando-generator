@@ -166,6 +166,21 @@ describe('les boucles locales n’atterrissent pas dans une zone qu’on a quitt
     expect(etat.itineraries).toEqual([])
     expect(appels.recompute).toBe(0)
   })
+
+  it('ne plante pas quand fetch lui-même échoue, pas seulement une réponse en erreur', async () => {
+    /*
+      Trouvé par mutation du 17/10 : le `.catch(() => [])` de
+      `fetchJsonItineraries` n'était exercé par aucun test — les tests
+      existants simulent une réponse HTTP en erreur (status 404/503), que
+      le `response.ok ? ... : null` gère déjà sans jamais lever. Seul un
+      rejet de `fetch` lui-même (coupure réseau) atteint ce `.catch`.
+    */
+    vi.stubGlobal('fetch', () => Promise.reject(new Error('réseau coupé')))
+    const { actions, etat, appels } = await trancheFraiche('rhone', [])
+    await expect(actions.mergeLocalBoucles('rhone')).resolves.toBeUndefined()
+    expect(etat.itineraries).toEqual([])
+    expect(appels.recompute).toBe(0)
+  })
 })
 
 describe('les boucles locales ne se comptent pas deux fois', () => {
@@ -238,6 +253,18 @@ describe('un échec ne se mémorise pas', () => {
         ' toute la session : elles ne revenaient qu’au rechargement de la page.',
     ).toHaveLength(BOUCLES.length)
     expect(requetes).toHaveLength(2)
+  })
+})
+
+describe('un succès se mémorise', () => {
+  it('ne télécharge l’asset qu’une fois, même après plusieurs fusions', async () => {
+    // Trouvé par mutation du 17/10 : la remise à zéro du cache sur échec
+    // devenue inconditionnelle survivait — aucun test n'appelait deux fois
+    // de suite une fusion qui a réussi la première fois.
+    const { actions } = await trancheFraiche('rhone', [])
+    await actions.mergeLocalBoucles('rhone')
+    await actions.mergeLocalBoucles('rhone')
+    expect(requetes).toHaveLength(1)
   })
 })
 

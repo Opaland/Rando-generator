@@ -35,7 +35,7 @@ import { RESEAUX_FILTRABLES } from '../core/reseaux.ts'
  * Un test le dit, parce que c'est le genre d'effet de bord qu'un filtre
  * d'affichage attrape sans qu'on l'ait voulu.
  */
-export interface EtatReseauxVisibles {
+interface EtatReseauxVisibles {
   /** Les réseaux montrés, dans l'ordre de la charte. */
   reseauxVisibles: readonly Network[]
   /** Montre ou replie un réseau. */

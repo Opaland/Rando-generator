@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useAppStore } from '../store/appStore.ts'
 import { polylineLengthMeters } from '../core/sampling.ts'
-import { formatKm } from '../lib/format.ts'
+import { formatDenivele, formatKm } from '../lib/format.ts'
 import styles from './RouteDrawer.module.css'
 
 /**
@@ -56,7 +56,7 @@ export function RouteDrawer() {
       <p className={styles.stats} data-testid="route-drawer-stats">
         {drawWaypoints.length} étape{drawWaypoints.length > 1 ? 's' : ''}
         {canSave && ` · ${formatKm(meters)}`}
-        {drawGainMeters !== null && ` · D+ ${drawGainMeters} m`}
+        {drawGainMeters !== null && ` · ${formatDenivele(drawGainMeters)}`}
       </p>
 
       {drawError && (

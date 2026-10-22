@@ -62,4 +62,16 @@ describe('lienSortant', () => {
     expect(lienSortant('//exemple.fr')).toBeNull()
     expect(lienSortant('exemple.fr')).toBeNull()
   })
+
+  /**
+   * L'autre moitié du nettoyage, que la vague de mutation du 19/10 a trouvée
+   * sans test : une adresse **valide** qu'entourent des blancs est rendue
+   * nettoyée, pas refusée. C'est le cas ordinaire d'un tag OSM tapé à la main
+   * (`website= https://…`) — remplacer ce qu'on retire par autre chose que
+   * rien faisait perdre ces liens sans un mot.
+   */
+  it('rend nettoyée une adresse valide entourée de blancs', () => {
+    expect(lienSortant(' https://refuge.example/\n')).toBe('https://refuge.example/')
+    expect(lienSortant('\thttp://exemple.fr')).toBe('http://exemple.fr')
+  })
 })

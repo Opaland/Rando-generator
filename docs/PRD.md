@@ -73,7 +73,7 @@ largement hors de notre contrôle.
 |---|---|---|
 | Boucles communales de la Métropole de Lyon | ✅ | Fusionnées, licence citée |
 | Lire un GeoJSON de sentiers quelconque | ✅ #128 | Import générique, projection refusée si non WGS84 |
-| PDIPR départementaux (Ain, Isère, …) | ⏸️ #87 | **Bloqué** : sources injoignables depuis le conteneur ; le Rhône n'a pas activé le téléchargement chez le producteur |
+| PDIPR départementaux (Ain, Isère, …) | 🟡 #87 | **Isère livrée le 18/10, en réseau de fond** : 15 313 tronçons sans nom ni ref, montrés mais jamais comptés (décision de Cédric — en faire des itinéraires supposerait d'inventer leurs limites). Les 2 102 tronçons de Grenoble-Alpes Métropole sont écartés : l'export les place au large de l'Afrique. **Ain livré le 21/10, en réseau de fond** (#574) : 480 boucles nommées et diffusables, montrées, pas comptées — 81 sont déjà dans OSM (≥ 80 % couvertes, mesuré) ; les compter attend une règle de dédoublonnage à trancher. Le Rhône n'a pas activé le téléchargement chez le producteur |
 | API Geotrek du Parc du Pilat (~200 circuits) | ⏸️ #88 | **Bloqué** : même raison |
 | Cartoguides du Rhône manquants dans OSM | ⏸️ #20 | **Bloqué** : demande d'interroger Overpass en vrai |
 
@@ -91,7 +91,7 @@ supposé.
 | **Enregistrer une sortie** | ✅ | Démarrer / pause / terminer / abandonner ; survit à un onglet tué, reprise en pause ; la position ne quitte pas l'appareil. Batterie non mesurée (`docs/PROTOCOLE_BATTERIE.md`) |
 | Import GPX, FIT, TCX, archives ZIP Strava/Garmin | ✅ | Détection à la signature, pas à l'extension |
 | Export d'un itinéraire en GPX avec attribution ODbL | ✅ | |
-| Sauvegarde complète exportable et réimportable | ✅ #132 | Aller-retour vérifié sur base effacée ; restaurer ajoute sans écraser |
+| Sauvegarde complète exportable et réimportable | ✅ #132 | Aller-retour vérifié sur base effacée ; restaurer ajoute sans écraser, et ne reprend jamais les réglages (#559) |
 | Le prix du « tout local » est annoncé | ✅ #132 | Dit dans « À propos » et dans la section Sauvegarde |
 
 **Non-but, définitif** : un compte et une synchronisation serveur.
@@ -116,7 +116,7 @@ supposé.
 | Zones prédéfinies et grands itinéraires en un clic | ✅ | |
 | Recherche par nom de ville (BAN) | ✅ #131 | « Introuvable » et « en panne » sont deux messages distincts |
 | Filtres de découverte (distance, D+, durée, boucle, proximité) | ✅ | |
-| Vocabulaire du premier écran (« ref », « GRP », « tolérance ») | 🔜 | Reste à reprendre : juste, mais suppose tout acquis |
+| Vocabulaire du premier écran (« ref », « GRP », « tolérance ») | ✅ | `tests/e2e/scenario.spec.ts`, « le premier écran explique son vocabulaire au lieu de le supposer acquis » — vérifié vert le 17/10, marqué 🔜 depuis le 20/08 sans que personne ne remarque que c'était fait (§4bis) |
 
 ---
 

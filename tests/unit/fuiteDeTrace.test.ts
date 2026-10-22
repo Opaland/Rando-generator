@@ -26,6 +26,20 @@ describe('echantillonDeTrace', () => {
     expect(echantillonDeTrace([], 10)).toEqual([])
   })
 
+  it('ne lève pas quand on ne demande qu’un point', () => {
+    /*
+      Trouvé en lisant les survivants de la vague du 19/10 : le pas valait
+      `(n − 1) / 0`, l'infini, `0 × ∞` donne NaN, et `coords[NaN]` rendait
+      undefined — la fonction levait. Latent : l'application en demande
+      douze. Un seul point, c'est le départ, celui qui dit d'où l'on part.
+    */
+    const deux: [number, number][] = [
+      [4.512345, 45.412345],
+      [4.6, 45.5],
+    ]
+    expect(echantillonDeTrace(deux, 1)).toEqual(echantillonDeTrace([deux[0] as [number, number]], 1))
+  })
+
   it('borne le travail : au plus quatre écritures par point retenu', () => {
     /*
       La recherche tourne à chaque requête sortante, sur le fil principal :
@@ -110,4 +124,34 @@ describe('corpsContientUnPoint', () => {
     expect(corpsContientUnPoint(null, ech)).toBe(false)
     expect(corpsContientUnPoint('45.412345|4.512345', [])).toBe(false)
   })
+
+  /*
+    Trouvé par une vague de mutation du 17/10 : aucun test ne postait un
+    point dans sa forme **arrondie**, alors que `formesDe` en garde deux
+    précisément pour ce cas (45.412345 s'arrondit à 45.41235 mais se
+    tronque à 45.41234 — les deux diffèrent). Une bibliothèque qui arrondit
+    une coordonnée avant de l'envoyer, plutôt que de la tronquer, ne
+    laissait aucun test vérifier qu'elle est quand même détectée. Sans la
+    forme arrondie, ce point précis serait une fuite réelle que le
+    compteur ne compterait pas.
+  */
+  it('reconnaît un point posté dans sa forme arrondie, pas seulement tronquée', () => {
+    const corps = JSON.stringify({ lon: 4.51234, lat: 45.41235 })
+    expect(corpsContientUnPoint(corps, ech)).toBe(true)
+  })
 })
+
+/*
+  Survivants de la vague du 19/10, équivalents (§6bis) :
+  - `coords.length === 0 || combien <= 0` affaibli de toutes les façons : une
+    trace vide ne pousse rien, et un `combien` nul ou négatif ne fait pas
+    tourner la boucle ;
+  - `coords.length <= combien` en `<` : à l'égalité, le pas vaut 1 et l'on
+    prend les mêmes points ; forcé à faux, des points en double — les mêmes
+    chaînes, cherchées deux fois ;
+  - `arrondie === tronquee` forcé à faux : la même chaîne en double ;
+  - `echantillon.length === 0` retiré : la boucle sur un échantillon vide
+    rend `false` d'elle-même ;
+  - `!lon || !lat` : chaque entrée de l'échantillon est fabriquée par
+    `echantillonDeTrace` avec ses deux moitiés.
+*/

@@ -27,15 +27,28 @@ const fichiers: Record<string, string> = import.meta.glob<string>(
 
 /** Les plafonds, en lignes — voir plafondDuStore.test.ts pour la méthode. */
 const PLAFONDS: Record<string, number> = {
-  'ItineraryList.tsx': 970,
-  'ItineraryDetail.tsx': 965,
+  // Panneau « Trouver une sortie » sorti dans DiscoveryFiltersPanel.tsx
+  // (dette du 17/10, le plafond approchait 970 avec 5 lignes de marge).
+  'ItineraryList.tsx': 625,
+  'DiscoveryFiltersPanel.tsx': 410,
+  // Section « Points d'intérêt » sortie dans PoiSection.tsx (dette du
+  // 17/10, même mouvement que DiscoveryFiltersPanel.tsx).
+  'ItineraryDetail.tsx': 790,
+  'PoiSection.tsx': 250,
   'TrackManager.tsx': 580,
   'ElevationChart.tsx': 495,
   'ZonePicker.tsx': 400,
-  'About.tsx': 325,
+  // « Données et licences » sortie dans DonneesEtLicences.tsx le 18/10 : le
+  // PDIPR de l'Isère (#87) portait About.tsx à 342 lignes. Redescendu de 325
+  // à 270 (253 après) : un plafond qu'on ne redescend pas après un découpage
+  // autorise à reprendre ce qu'on vient de rendre.
+  'About.tsx': 270,
+  'DonneesEtLicences.tsx': 120,
   'Dashboard.tsx': 295,
   'Enregistreur.tsx': 225,
-  'CustomItineraries.tsx': 195,
+  // #541 : la source déclarée d'un import, visible dans la liste plutôt que
+  // seulement dans la fiche détaillée — quatre lignes de JSX et un commentaire.
+  'CustomItineraries.tsx': 200,
   'BoutonEmporter.tsx': 180,
   'MapView.tsx': 175,
   'Settings.tsx': 175,
@@ -47,7 +60,10 @@ const PLAFONDS: Record<string, number> = {
   'DeclarerParcouru.tsx': 135,
   'SortiesReseau.tsx': 135,
   'ItineraryCard.tsx': 130,
-  'MapLegend.tsx': 120,
+  // Relevé de 120 à 135 le 18/10 : le réseau de fond PDIPR (#87) est une
+  // couche de plus sur la carte, et nommer ce qui est peint est exactement
+  // le travail de ce composant — l'entrée a sa place ici, pas ailleurs.
+  'MapLegend.tsx': 135,
   'OfflineBanner.tsx': 115,
   'NextOuting.tsx': 115,
   'EmptyState.tsx': 105,

@@ -69,7 +69,9 @@ test('depuis la carte, chaque onglet montre son contenu', async ({ page }) => {
   const attendu = {
     sorties: 'enregistreur',
     progression: 'global-pct',
-    reglages: 'settings-title',
+    // Depuis le 21/10 (#576, décision de Cédric), Réglages s'ouvre sur
+    // « Affichage » : le gros texte avant la précision GPS.
+    reglages: 'affichage-title',
   } as const
 
   for (const [onglet, cible] of Object.entries(attendu)) {
@@ -102,6 +104,14 @@ test('depuis la carte, chaque onglet montre son contenu', async ({ page }) => {
       })
       .toBe(true)
   }
+
+  // « Affichage » est monté sur tous les onglets depuis #576 : sa présence ne
+  // prouve plus qu'on est dans Réglages (revue du sprint 3). La section des
+  // réglages, elle, n'est montée que là.
+  await page.getByTestId('onglet-progression').click()
+  await expect(page.getByTestId('settings')).toHaveCount(0)
+  await page.getByTestId('onglet-reglages').click()
+  await expect(page.getByTestId('settings')).toHaveCount(1)
 })
 
 test('changer d’onglet ne referme jamais ce qui est ouvert', async ({ page }) => {

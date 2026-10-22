@@ -129,7 +129,16 @@ export function BarreOnglets({
               />
             )}
           </span>
-          <span className={styles.libelle}>{onglet.libelle}</span>
+          {onglet.libelleCourt === undefined ? (
+            <span className={styles.libelle}>{onglet.libelle}</span>
+          ) : (
+            <span className={styles.libelle}>
+              <span className={styles.libelleLong}>{onglet.libelle}</span>
+              <span className={styles.libelleCourt} aria-hidden="true">
+                {onglet.libelleCourt}
+              </span>
+            </span>
+          )}
           {onglet.cle === 'sorties' && sortie !== null && (
             <span className="sr-only">{ANNONCE_SORTIE[sortie]}</span>
           )}

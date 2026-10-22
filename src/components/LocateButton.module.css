@@ -37,8 +37,43 @@
   }
 }
 
+/*
+  Le panneau de tracé d'itinéraire occupe le même coin, et pour la même
+  raison les commandes s'en écartent (#544). Mesuré le 18/10 à 1 280 × 720 :
+  « Ma position » était peint par-dessus « Enregistrer », et « Démarrer une
+  sortie » par-dessus « Fermer la boucle » — le tracé ne pouvait plus être
+  enregistré qu'au clavier. Le cas avait été réglé pour la fiche, jamais
+  pour ce panneau-ci : aucun état des règles d'écran ne l'ouvrait.
+*/
+@media (min-width: 801px) {
+  :root[data-trace='ouvert'] .wrapper {
+    right: calc(12px + var(--largeur-trace) + 12px);
+  }
+}
+
 @media (max-width: 800px) {
+  /* Pleine largeur sous le point de rupture : les commandes passent
+     au-dessus, à sa hauteur maximale — réserver trop coûte quelques pixels,
+     recouvrir « Enregistrer » coûte le tracé. */
+  /* Le panneau est posé au-dessus de la poignée et de la barre d'onglets
+     depuis #546 : le bouton doit compter la même bande, sans quoi il
+     redescendait de 108 px sur le « × » du panneau (#554). Et `top: auto`,
+     parce que la règle `top: 224px` plus bas s'ajoutait à ce `bottom` et
+     étirait le bouton en capsule — 44 × 88 à 390 px, 44 × 144 à 800. */
+  :root[data-trace='ouvert'] .wrapper {
+    top: auto;
+    bottom: calc(
+      12px + var(--hauteur-trace) + var(--hauteur-poignee) +
+        var(--hauteur-onglets) + env(safe-area-inset-bottom, 0px)
+    );
+  }
+}
+
+@media (max-width: 800px) {
+  /* `top: auto` comme pour le tracé (#554) : sans lui, le `top` mesuré
+     s'ajoutait à ce `bottom` et étirait le bouton — 56 px à 800, 21/10. */
   :root[data-fiche='ouverte'] .wrapper {
+    top: auto;
     bottom: calc(
       12px + var(--hauteur-fiche) + var(--hauteur-poignee) +
         var(--hauteur-onglets) + env(safe-area-inset-bottom, 0px)
@@ -126,10 +161,15 @@
 /* Sur téléphone, le panneau de contrôle est une feuille glissante ancrée en
    bas : le bouton « où suis-je » y disparaissait dessous quelle que soit la
    position de la feuille. Il passe donc en haut à droite, sous les commandes
-   de zoom, où il reste atteignable dans les trois positions. */
+   de zoom, où il reste atteignable dans les trois positions.
+
+   Juste dessous, mesuré (`map/useBasDesCommandes.ts`) : la constante de
+   224 px laissait 82 px de vide, et « Ma position » finissait sous le crédit
+   et, en gros texte, sous la feuille à mi-course (#556). Le repli garde
+   l'ancienne place tant que la mesure n'est pas faite. */
 @media (max-width: 800px) {
   .wrapper {
-    top: 224px;
+    top: calc(var(--bas-des-commandes) + 10px);
     right: 8px;
     bottom: auto;
   }

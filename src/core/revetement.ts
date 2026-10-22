@@ -126,7 +126,7 @@ export function libelleRevetement(valeur: string | null | undefined): string {
  * sépare ce qu'OpenStreetMap dit de ce que nous en déduisons, et interdit
  * de présenter une supposition comme un relevé.
  */
-export type OrigineRevetement = 'renseigne' | 'deduit' | 'inconnu'
+type OrigineRevetement = 'renseigne' | 'deduit' | 'inconnu'
 
 /**
  * Les types de voie dont on déduit un revêtement dur.
@@ -170,7 +170,7 @@ const CHEMINS_NATURELS = new Set(['track', 'path', 'bridleway'])
  * renseignement.
  */
 
-export interface Revetement {
+interface Revetement {
   famille: FamilleRevetement
   origine: OrigineRevetement
   /** Valeur OSM brute ; `null` dès qu'on déduit — on n'a pas *lu* « bitume ». */
@@ -304,7 +304,7 @@ export function bandesDeRevetement(itinerary: Itinerary): Bande[] {
 }
 
 /** Un tronçon de tracé, avec sa géométrie et ce qu'on sait de son sol. */
-export interface SegmentRevetement {
+interface SegmentRevetement {
   coords: LonLat[]
   famille: FamilleRevetement
   origine: OrigineRevetement
@@ -345,7 +345,7 @@ export function segmentsDeRevetement(
   return segments
 }
 
-export interface Couverture {
+interface Couverture {
   /** Longueur dont le revêtement est **lu** dans OpenStreetMap. */
   connuMetres: number
   /** Longueur dont le revêtement est **déduit** du type de voie. */
@@ -408,7 +408,7 @@ export function couvertureRevetement(bandes: Bande[]): Couverture {
  * Les parts somment donc toujours à 1 — sauf sur un itinéraire sans
  * longueur, où elles valent toutes 0 plutôt que `NaN`.
  */
-export type PartsRevetement = Record<FamilleRevetement, number>
+type PartsRevetement = Record<FamilleRevetement, number>
 
 export function partsDeRevetement(itinerary: Itinerary): PartsRevetement {
   const parts: PartsRevetement = {

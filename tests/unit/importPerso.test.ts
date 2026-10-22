@@ -102,6 +102,13 @@ describe('importer ses propres itinéraires', () => {
     // Les identifiants perso sont négatifs : ils ne doivent jamais heurter
     // une relation OSM, dont les identifiants sont positifs.
     expect(itineraire?.osmRelationId).toBeLessThan(0)
+    /*
+      Trouvé par mutation du 17/10 : `totalMeters` n'était jamais lu par
+      aucun test de ce fichier — ni ici, ni dans les autres. Une somme
+      remplacée par une soustraction (longueur négative) ou par une
+      fonction muette (`NaN`) serait passée inaperçue.
+    */
+    expect(itineraire?.totalMeters).toBeGreaterThan(0)
   })
 
   it('donne un nom distinct à chaque sentier d’un même fichier', async () => {

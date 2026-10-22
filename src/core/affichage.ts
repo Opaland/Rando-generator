@@ -15,7 +15,7 @@
 
 export type ModeAffichage = 'complet' | 'simple'
 
-export interface Mode {
+interface Mode {
   id: ModeAffichage
   libelle: string
   explication: string
@@ -104,7 +104,7 @@ export function rappelGuideVisible(
 }
 
 /** Ce que chaque mode laisse voir. */
-export interface Sections {
+interface Sections {
   zone: boolean
   /**
    * Enregistrer une sortie ne se replie pas en mode simple (issue #152).

@@ -8,6 +8,8 @@ import {
   type TrancheSortie,
 } from '../../src/store/enregistrementSlice.ts'
 import { openSentiersDb, type SentiersDb } from '../../src/db/database.ts'
+import { entete } from '../../src/core/reprise.ts'
+import { enregistreurVide } from '../../src/core/recorder.ts'
 import type { Track } from '../../src/core/types.ts'
 import type { Veilleur } from '../../src/store/veilleGeo.ts'
 
@@ -28,6 +30,12 @@ let horloge = T0
 let etat: EtatSortie
 let base: SentiersDb
 let rangees: Track[]
+/**
+ * Ce que `rangerTrace` répond : la trace est-elle sur le disque ? Une
+ * fonction plutôt qu'un booléen, pour qu'un test puisse faire attendre le
+ * rangement — c'est pendant cette attente qu'une autre sortie peut démarrer.
+ */
+let rangement: () => Promise<boolean>
 let demonstrationQuittee: number
 let veilleurs: Veilleur[]
 let veilleDisponible: boolean
@@ -75,7 +83,7 @@ function ports(): PortsSortie {
     base: () => base,
     rangerTrace: (trace) => {
       rangees.push(trace)
-      return Promise.resolve()
+      return rangement()
     },
     quitterDemonstration: () => {
       demonstrationQuittee += 1
@@ -102,6 +110,7 @@ beforeEach(async () => {
   horloge = T0
   etat = etatSortieInitial()
   rangees = []
+  rangement = () => Promise.resolve(true)
   demonstrationQuittee = 0
   veilleurs = []
   demandesDeVeille = []
@@ -120,6 +129,29 @@ async function marcher(n: number): Promise<void> {
   }
   await tranche.ecrituresTerminees()
 }
+
+describe('l’horloge par défaut', () => {
+  // Trouvé par mutation du 17/10 : chaque test de ce fichier fournit son
+  // propre `maintenant`, donc le repli sur `Date.now()` n'était jamais
+  // atteint.
+  it('utilise Date.now() quand aucune horloge n’est injectée', () => {
+    const avecHorloge = ports()
+    const sansHorloge = creerTrancheSortie({
+      lire: avecHorloge.lire,
+      poser: avecHorloge.poser,
+      base: avecHorloge.base,
+      rangerTrace: avecHorloge.rangerTrace,
+      quitterDemonstration: avecHorloge.quitterDemonstration,
+      veille: avecHorloge.veille,
+    })
+    const avant = Date.now()
+    sansHorloge.actions.demarrerSortie()
+    const apres = Date.now()
+    expect(etat.enregistrement.demarreA).not.toBeNull()
+    expect(etat.enregistrement.demarreA).toBeGreaterThanOrEqual(avant)
+    expect(etat.enregistrement.demarreA).toBeLessThanOrEqual(apres)
+  })
+})
 
 describe('démarrer', () => {
   it('ouvre la veille, quitte la démonstration, et part de zéro', async () => {
@@ -296,6 +328,79 @@ describe('terminer', () => {
   })
 })
 
+describe('terminer, quand la trace ne peut pas être écrite (#560)', () => {
+  /*
+    Le tampon était vidé **avant** de ranger la trace, et l'échec du
+    rangement avalé par un `catch {}` : mesuré par la revue du 19/10, six
+    points sur le disque avant « Terminer », zéro après, aucun message. Une
+    sortie de quatre heures n'existait plus qu'en mémoire.
+  */
+  it('garde le tampon, le dit, et la repropose au démarrage suivant', async () => {
+    await marcher(4)
+    rangement = () => Promise.resolve(false)
+    horloge = T0 + 30_000
+    await tranche.actions.terminerSortie()
+    await tranche.ecrituresTerminees()
+
+    expect(await base.compterPointsEnregistres()).toBe(4)
+    expect(etat.sortieErreur).toMatch(/reproposée/)
+
+    // Le message promet une reprise : on la vérifie avant de l'écrire.
+    etat = etatSortieInitial()
+    const apres = creerTrancheSortie(ports())
+    await apres.reprendreAuDemarrage(base)
+    expect(etat.enregistrement.etat).toBe('pause')
+    expect(etat.enregistrement.points).toHaveLength(4)
+    expect(etat.sortieReprise).toBe(true)
+  })
+
+  it('vide le tampon une fois la trace écrite, et pas avant', async () => {
+    await marcher(3)
+    let ecrire: (ecrite: boolean) => void = () => undefined
+    rangement = () =>
+      new Promise((r) => {
+        ecrire = r
+      })
+    const fin = tranche.actions.terminerSortie()
+    await tranche.ecrituresTerminees()
+    expect(await base.compterPointsEnregistres()).toBe(3)
+
+    ecrire(true)
+    await fin
+    await tranche.ecrituresTerminees()
+    expect(await base.compterPointsEnregistres()).toBe(0)
+    expect(etat.sortieErreur).toBeNull()
+  })
+
+  /*
+    Le rangement attend l'appariement, qui peut durer. Une sortie démarrée
+    pendant ce temps a déjà effacé l'ancien tampon et commencé à écrire le
+    sien : le vidage tardif de la précédente ne doit pas l'emporter.
+  */
+  it('ne vide pas le tampon d’une sortie démarrée pendant le rangement', async () => {
+    await marcher(2)
+    let ecrire: (ecrite: boolean) => void = () => undefined
+    rangement = () =>
+      new Promise((r) => {
+        ecrire = r
+      })
+    horloge = T0 + 10_000
+    const fin = tranche.actions.terminerSortie()
+
+    horloge = T0 + 20_000
+    tranche.actions.demarrerSortie()
+    horloge = T0 + 21_000
+    tranche.surPosition(position(21))
+    await tranche.ecrituresTerminees()
+
+    ecrire(true)
+    await fin
+    await tranche.ecrituresTerminees()
+    expect(await base.compterPointsEnregistres()).toBe(1)
+    expect(await base.lireEntete()).toBeDefined()
+  })
+})
+
 describe('abandonner', () => {
   it('ne laisse ni trace ni tampon', async () => {
     await marcher(5)
@@ -445,6 +550,23 @@ describe('la pause et la reprise', () => {
     expect(veilleurs).toEqual(['sortie'])
   })
 
+  /*
+    Le bandeau « Position introuvable… » est un `role="alert"` : resté
+    affiché pendant que l'enregistrement repart, il annonce une panne qui
+    n'existe plus (#560).
+  */
+  it('efface l’alerte GPS en reprenant', async () => {
+    await marcher(2)
+    tranche.surErreurGeo({ code: 2, message: '' } as GeolocationPositionError)
+    expect(etat.sortieErreur).not.toBeNull()
+
+    horloge = T0 + 60_000
+    tranche.actions.poursuivreSortie()
+
+    expect(etat.enregistrement.etat).toBe('enregistrement')
+    expect(etat.sortieErreur).toBeNull()
+  })
+
   it('ne rouvre pas la veille si la reprise n’a pas eu lieu', () => {
     tranche.actions.poursuivreSortie()
     expect(veilleurs).toEqual([])
@@ -498,6 +620,17 @@ describe('la reprise au démarrage', () => {
   })
 
   it('ne trouve rien à reprendre sur une base neuve', async () => {
+    await tranche.reprendreAuDemarrage(base)
+    expect(etat.enregistrement.etat).toBe('repos')
+    expect(etat.sortieReprise).toBe(false)
+  })
+
+  it('ne trouve rien à reprendre quand l’en-tête ne décrit rien à reprendre', async () => {
+    // `if (!tete) return` protège l'absence totale d'en-tête ; ce cas-ci est
+    // différent — l'en-tête existe mais décrit un enregistreur « vide »
+    // (`demarreA: null`), que `reprendreApresInterruption` rend `null` à son
+    // tour.
+    await base.ecrireEntete(entete(enregistreurVide(), T0))
     await tranche.reprendreAuDemarrage(base)
     expect(etat.enregistrement.etat).toBe('repos')
     expect(etat.sortieReprise).toBe(false)

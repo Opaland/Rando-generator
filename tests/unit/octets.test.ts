@@ -21,6 +21,19 @@ describe('formatOctets', () => {
     expect(formatOctets(-5)).toBe('0 o')
     expect(formatOctets(Number.NaN)).toBe('0 o')
   })
+
+  // Trouvé par mutation du 17/10 : la frontière ko/Mo, à exactement un
+  // mégaoctet, n'était jamais testée pile sur la borne.
+  it('passe en Mo à exactement un mégaoctet, pas juste après', () => {
+    expect(formatOctets(1024 * 1024)).toBe('1 Mo')
+  })
+
+  // Trouvé par mutation du 17/10 : aucun test n'avait une valeur en Mo avec
+  // plus d'une décimale, donc `maximumFractionDigits: 1` pouvait disparaître
+  // sans qu'aucun test ne s'en aperçoive.
+  it('arrondit les Mo à une décimale, pas plus', () => {
+    expect(formatOctets(1024 * 1024 * 3.567)).toBe('3,6 Mo')
+  })
 })
 
 describe('formatAnciennete', () => {
@@ -37,5 +50,15 @@ describe('formatAnciennete', () => {
 
   it('ne rend pas d’ancienneté négative', () => {
     expect(formatAnciennete(-10)).toBe('aujourd’hui')
+  })
+
+  // Trouvé par mutation du 17/10 : les deux frontières (jours/mois à 60,
+  // mois/années à 730) n'étaient jamais testées pile sur la borne.
+  it('passe aux mois à exactement 60 jours, pas juste après', () => {
+    expect(formatAnciennete(60)).toBe('il y a 2 mois')
+  })
+
+  it('passe aux années à exactement 730 jours, pas juste après', () => {
+    expect(formatAnciennete(730)).toBe('il y a 2 ans')
   })
 })

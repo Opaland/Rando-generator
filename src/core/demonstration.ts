@@ -23,7 +23,7 @@ const PART_PARTIELLE = 0.55
 /** En deçà, un itinéraire est trop court pour qu'une sortie s'y lise. */
 const POINTS_MINIMUM = 2
 
-export interface SortieDeDemonstration {
+interface SortieDeDemonstration {
   nom: string
   /** Identifiant de l'itinéraire suivi, pour expliquer ce que la démo montre. */
   itineraire: number

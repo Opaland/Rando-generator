@@ -104,6 +104,18 @@ describe('ce qu’on refuse de dessiner', () => {
     expect(figureDuBalisage(undefined)).toBeNull()
     expect(figureDuBalisage('')).toBeNull()
   })
+
+  /*
+    Trouvé par mutation du 17/10 : « red:red::IVV:white » — une balise qui
+    ne porte qu'un texte, sans premier plan (voir le commentaire de
+    `lireBalisage` dans src/core/balisage.ts) — n'était testée nulle part.
+    `couleurDe('')` et `formeDe('')` reposaient sur `?.` pour rendre `null`
+    plutôt que de lever sur l'absence de correspondance de la regex ; sans
+    ce `?.`, ce cas précis fait planter la fonction au lieu de rendre null.
+  */
+  it('un premier plan vide (balise qui ne porte qu’un texte)', () => {
+    expect(figureDuBalisage('red:red::IVV:white')).toBeNull()
+  })
 })
 
 /**

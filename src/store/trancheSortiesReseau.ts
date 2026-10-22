@@ -24,10 +24,10 @@
 
 import { noterSortie, type EntreeJournal } from '../core/journalSortant.ts'
 import {
-  corpsContientUnPoint,
+  requeteContientUnPoint,
   echantillonDeTrace,
 } from '../core/fuiteDeTrace.ts'
-import type { Track } from '../core/types.ts'
+import type { LonLat, Track } from '../core/types.ts'
 
 /**
  * Points surveillés par trace (issue #178).
@@ -73,12 +73,15 @@ export const SORTIES_RESEAU_AU_REPOS: EtatSortiesReseau = {
 }
 
 /** Ce que la tranche a besoin de savoir du reste du store. */
-export interface DependancesSortiesReseau {
+interface DependancesSortiesReseau {
   set: (
     partiel:
       | Partial<EtatSortiesReseau>
       | ((
-          etat: EtatSortiesReseau & { tracks: Track[] },
+          etat: EtatSortiesReseau & {
+          tracks: Track[]
+          enregistrement?: { points: readonly { lon: number; lat: number }[] }
+        },
         ) => Partial<EtatSortiesReseau>),
   ) => void
 }
@@ -99,10 +102,17 @@ export function trancheSortiesReseau(
           avec `tracks` à chaque import, suppression et restauration — le
           §4 en germe. Si le coût se voyait un jour, il se mémoïserait.
         */
-        const echantillon = etat.tracks.flatMap((trace) =>
-          echantillonDeTrace(trace.points, POINTS_SURVEILLES_PAR_TRACE),
+        // La sortie en cours aussi : « À propos » promet qu'elle n'est
+        // envoyée à personne, « ni pendant, ni après » (#558).
+        const enCours = (etat.enregistrement?.points ?? []).map(
+          (p): LonLat => [p.lon, p.lat],
         )
-        const emporte = corpsContientUnPoint(corps, echantillon)
+        const echantillon = [...etat.tracks.map((t) => t.points), enCours]
+          .filter((points) => points.length > 0)
+          .flatMap((points) =>
+            echantillonDeTrace(points, POINTS_SURVEILLES_PAR_TRACE),
+          )
+        const emporte = requeteContientUnPoint(url, corps, echantillon)
         return {
           sortiesReseau: noterSortie(etat.sortiesReseau, url),
           requetesAvecTrace: etat.requetesAvecTrace + (emporte ? 1 : 0),
