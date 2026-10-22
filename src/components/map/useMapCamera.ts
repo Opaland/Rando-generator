@@ -2,6 +2,7 @@ import { useEffect, type RefObject } from 'react'
 import { LngLatBounds, type Map as MaplibreMap } from 'maplibre-gl'
 import { itineraryCoords } from '../../core/mapdata.ts'
 import { bearingDegrees } from '../../core/geo.ts'
+import { empriseACadrer } from '../../core/emprisesDeZone.ts'
 import { margeBassePanneau } from '../../lib/mapPadding.ts'
 import { useAppStore } from '../../store/appStore.ts'
 import type { LonLat } from '../../core/types.ts'
@@ -19,6 +20,7 @@ export function useMapCamera(
   ready: boolean,
 ): void {
   const itineraries = useAppStore((s) => s.itineraries)
+  const zoneKey = useAppStore((s) => s.zoneKey)
   const customItineraries = useAppStore((s) => s.customItineraries)
   const selectedItineraryId = useAppStore((s) => s.selectedItineraryId)
   const detailItineraryId = useAppStore((s) => s.detailItineraryId)
@@ -32,6 +34,20 @@ export function useMapCamera(
     if (!map || !ready) return
     const source = itineraries.length > 0 ? itineraries : customItineraries
     if (source.length === 0) return
+    // L'emprise de la zone, et non celle de ce qu'elle a rapporté : un GR de
+    // grande traversée y arrive en entier et emportait le cadrage (#578).
+    const emprise = itineraries.length > 0 ? empriseACadrer(zoneKey) : null
+    if (emprise) {
+      const [ouest, sud, est, nord] = emprise
+      map.fitBounds(
+        [
+          [ouest, sud],
+          [est, nord],
+        ],
+        { padding: 48, duration: 400 },
+      )
+      return
+    }
     const bounds = new LngLatBounds()
     for (const itin of source) {
       for (const way of itin.ways) {
@@ -41,7 +57,7 @@ export function useMapCamera(
     if (!bounds.isEmpty()) {
       map.fitBounds(bounds, { padding: 48, duration: 400 })
     }
-  }, [mapRef, itineraries, customItineraries, ready])
+  }, [mapRef, itineraries, customItineraries, zoneKey, ready])
 
   // Zoom sur l'itinéraire quand il est sélectionné (liste ou clic carte).
   useEffect(() => {
