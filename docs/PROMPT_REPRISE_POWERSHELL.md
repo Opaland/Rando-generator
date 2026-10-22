@@ -4,11 +4,13 @@ Deux parties :
 - la mise en route de la machine, à faire une seule fois ;
 - le prompt à coller dans Claude Code à chaque reprise.
 
-La dernière session (locale, Windows, journée autonome du 21/10) s'est
-arrêtée au commit qui met ce fichier à jour, sur la branche
-`claude/sentiers-hiking-tracker-h28emt`. Bilan : arbre du 20/10 commité,
-trois sprints livrés (#573, #574, #575), chacun avec revue adverse et
-démonstration sur le réseau réel.
+La dernière session (locale, Windows, 22/10) s'est arrêtée au commit qui
+met ce fichier à jour, sur la branche `claude/sentiers-hiking-tracker-h28emt`.
+Bilan : cinq épopées ouvertes (#579 à #583), quatre closes. #578 (cadrage
+de zone) et #577 (ⓘ du crédit) livrées, chacune reprise après sa revue
+adverse ; #572 et le sous-point 3 de #560 trouvés déjà livrés ;
+`.gitattributes`, `cross-env`, et le retrait de `libelleCompletion`.
+Quatre décisions attendent Cédric (§3).
 
 ---
 
@@ -90,7 +92,7 @@ rouges sur l'arbre propre le 19/10. Depuis 01e991e (20/10), **plus aucun
 rouge** : le 21/10, une douzaine de portes complètes sous Windows, monkey
 compris, sont sorties vertes sans un échec résiduel. Une porte est donc
 « verte » quand **tout** est vert ; un test rouge est à expliquer, pas à
-excuser. #572 reste ouverte pour le recalage des 14 tests qu'attend Cédric.
+excuser. #572 est fermée depuis le 22/10.
 
 ---
 
@@ -112,27 +114,29 @@ Avant tout :
    (docs/PROMPT_REPRISE_POWERSHELL.md, §1, §3 et §4), et
    docs/OPTIMISATION_TOKENS.md.
 3. Vérifie que les hooks tournent : jq --version, gh auth status,
-   bash --version, et git config core.autocrlf qui doit valoir false.
+   bash --version. (Les fins de ligne ne se règlent plus : .gitattributes,
+   depuis le 22/10.)
 
 Puis, dans cet ordre :
 
 A. Une seule question groupée (AskUserQuestion) pour les décisions du §3
-   de ce fichier, recommandation en premier. Ne commence aucun sprint
-   avant mes réponses ; ce que je laisse « plus tard » reste ouvert.
+   de ce fichier, recommandation en premier. AVANT de la poser, vérifie
+   sur GitHub que chaque point est encore ouvert et non livré (git log,
+   issue) : le 22/10, deux points sur dix étaient déjà faits. Ne commence
+   aucun sprint avant mes réponses ; ce que je laisse « plus tard » reste
+   ouvert.
 
-B. Une revue courte du projet : ce qui a changé depuis le 21/10, les
-   issues ouvertes, et ce que la skill revue-globale demande de mesurer.
-   Pas une revue globale complète : la dernière date du 19/10, et les
-   trois sprints du 21/10 ont chacun eu leur revue.
+B. Une revue courte du projet : ce qui a changé depuis le 22/10 et les
+   issues ouvertes. Pas une revue globale complète (la dernière date du
+   19/10) — sauf si je la demande.
 
 C. Des EPIC + US sur GitHub (une épopée par sprint, label epic), puis des
-   sprints d'une épopée au plus. Candidats, à confirmer par mes réponses :
-   - #578 (le cadrage de zone emporté par les GR de grande traversée), si
-     je tranche la piste ;
-   - #577 (le ⓘ du crédit sur la marge de la fiche) ;
-   - les deux points « sans mesure » de #570 ;
-   - #290 volet 2 (peindre le tracé selon son balisage), si je tranche ;
-   - #296 (chercher l'historique par lieu).
+   sprints d'une épopée au plus, selon mes réponses. Candidats :
+   - #290 volet 2 (le tracé à la couleur de son balisage), si je tranche
+     les questions du §3 ;
+   - #584, #585 et l'US 3.2 de #581 (#296), selon mes réponses ;
+   - #565 (sortie autour de minuit, UTC contre heure locale) et #566
+     (95 % sans la coche « bouclé ») : bugs ouverts, à relire d'abord.
 
 D. À la fin de chaque sprint : revue adverse (agent relecteur-adverse),
    puis démonstration sur le réseau réel avec la skill carte-reelle, au
@@ -157,6 +161,9 @@ Méthode, sans exception (CLAUDE.md) :
   issue par un commentaire qui cite le commit ; ne rien fermer qui
   demande une preuve humaine (§10).
 - Ne prétends rien que tu n'as pas vérifié (§5).
+- Un sous-agent reçoit dans son prompt ce qui lui est interdit : ni
+  worktree, ni jonction vers node_modules, ni npm ci / install / build,
+  rien de supprimé hors de son scratchpad (incident du 22/10).
 
 Communication : des points d'étape COURTS — fait / en cours / attend ma
 décision — à chaque fin d'étape, pas un fil continu. Je me suis perdu le
@@ -170,53 +177,56 @@ avec le prompt du lendemain.
 
 ## 3. Ce qui attend la décision de Cédric
 
-Tranché le 21/10, et déjà codé : l'Ain reste en fond et ne compte jamais
-(#574) ; les boutons de la fiche ne sortent plus sur le papier (#552) ;
-« Affichage » en tête de Réglages, déplié (#576).
+Tranché le 22/10 et codé : #578 cadre sur l'emprise de la zone
+administrative (19 zones embarquées ; la Nouvelle-Calédonie, dont la
+limite va des Chesterfield à Matthew–Hunter, reste cadrée sur ses
+itinéraires — tranché au jugement, écrit dans le script) ; #572 fermée ;
+`.gitattributes` et `cross-env` ; `libelleCompletion` retiré. La routine
+cloud « Sentiers — backlog autonome » est désactivée.
 
 Reste ouvert :
 
-- **#578** — choisir une zone cadre la moitié de la France : l'emprise des
-  GR de grande traversée emporte celle de la zone. Trois pistes sur
-  l'issue (emprise de la zone administrative, portions dans la zone, ou un
-  quantile des points). Vu deux fois en démonstration.
-- **#577** — au téléphone, le ⓘ du crédit (au-dessus de tout depuis le
-  20/10) se pose sur la marge droite de la fiche.
-- **#572** — le correctif de caméra avec le recalage des 14 tests, ou le
-  laisser.
-- **#570, deux points sans mesure** — la feuille pleine en revenant sur
-  « Carte » en gros texte ; l'intertitre orphelin à 1 024.
-- **#290 volet 2** — peindre le tracé de la couleur de son balisage :
-  69 % des relations mesurées portent un `osmc:symbol`, dont 12 sur 18
-  bicolores. Que faire d'un balisage bicolore ?
-- **#560, sous-point 3** — la distance de l'historique compte le trajet
-  fait pendant une pause.
-- **Rhône (#20, #87)** — l'API GeoJSON datARA répond toujours 403 le
-  21/10. **Savoie / Haute-Savoie** : la décision juridique (licence non
-  nommée) reste à prendre.
-- **Outillage Windows** — `.gitattributes` et `cross-env`, pas faits sans
-  accord.
-- **`libelleCompletion`, `COMPLETION_PCT`** — à trancher ou à retirer
-  (`REVUE_GLOBALE_19_10.md`).
-- **La tâche planifiée « Sentiers — backlog autonome »** continue de se
-  déclencher dans le cloud : à désactiver si le travail reste local.
+- **#290 volet 2** — le bicolore est tranché (couleur principale = le
+  champ « voie » d'`osmc:symbol`), mais la carte entière est colorée **par
+  réseau** : légende GR / PR / non déclaré, couleurs vérifiées en vision
+  deutéranope (#335, #360), bande de terrain interdite de couleurs de
+  balisage. À trancher : quelles couches passent au balisage, ce que
+  devient la légende, quelle couleur sans `osmc:symbol` (5,7 %).
+- **#584** — au téléphone, fiche ouverte, la bande de carte est trop
+  courte : ▶ sur le « − » du zoom (390 en gros texte, 360), boussole hors
+  carte, ⓘ sous « Ma position » à 320 × 480. Que fait-on céder ?
+- **#585** — à 1 024 à la souris, la liste des zones s'arrête sous un
+  intertitre seul. Les ombres de défilement ne s'y peignent pas (boutons
+  opaques) : trois pistes sur l'issue.
+- **#296** — chercher par lieu une sortie importée hors zone : les vrais
+  contours des 19 zones, ~300 ko bruts à ~100 m de simplification. Le
+  poids vaut-il la réponse, et à quel seuil ?
+- **Rhône (#20, #87)** — datARA répond toujours 403 le 22/10 (UUID
+  complet `e18f588f-1eca-4131-86ea-92985b2d8475`). **Savoie / Haute-Savoie** :
+  la décision juridique reste à prendre.
+- **Agent `relecteur-adverse`** — proposé : lui interdire dans sa
+  définition les worktrees à jonction vers `node_modules` (voir §4).
 - **Preuves humaines** — #173 (Théo et Jeanine, seuls), #528 (un vrai
   lecteur d'écran). **Non vérifié sur un vrai téléphone** : Retour qui
   ferme la fiche (#568), l'IP du réseau local (#561), le double-tap (#551).
 
-## 4. Ce que la journée du 21/10 a appris
+## 4. Ce que la journée du 22/10 a appris
 
-- **La carte réelle trouve ce que les bouchons cachent.** En une journée :
-  le crédit sur le bas de la fiche, les boucles de l'Ain invisibles de
-  près, le gros texte introuvable, des boutons sur le papier, le cadrage de
-  zone (#578). Aucun n'était visible dans un test vert. Skill
-  `carte-reelle`.
-- **Une mesure jetable se configure comme la vraie** (§1bis) : trois de
-  mes sondes ont menti le même jour — une requête Overpass qui ne
-  rapportait pas les chemins, des boîtes pdf.js qui ne disent pas ce qui
-  est peint, un parcours de tabulation qui s'arrêtait au premier `<svg>`.
-  Chaque fois, c'est un témoin ou une image qui a tranché.
-- **Sous Windows**, ne pas découper un commit hunk par hunk via Python
-  (CR et lignes décalées), et vérifier qu'un remplacement scripté a bien
-  écrit avant de lancer ce qu'il modifie : `npm run pdipr` a réécrit le
-  jeu de l'Isère au lieu de préparer l'Ain (restauré).
+- **Le prompt de reprise vieillit comme un commentaire** (§4bis) : #572 et
+  #560 (3) y figuraient comme à faire, livrés depuis deux jours. La
+  question groupée en a tiré une décision sur une prémisse fausse, qu'il a
+  fallu reposer. D'où l'étape A : vérifier avant de demander.
+- **La revue adverse trouve ce que le test du correctif ne pose pas** :
+  deux fois sur deux sprints, une régression dans un état voisin — la
+  sortie de démonstration, le crédit déplié. Les tests du correctif ne
+  regardaient que l'état réparé.
+- **Une sonde jetable ment encore** (§1bis), trois fois ce jour : un lien
+  coupé sur deux lignes dont le centre tombe sur le texte voisin, des
+  ombres « présentes » mais peintes sous des boutons opaques, un
+  `grep $''` qui comptait tout. Chaque fois, une image ou un témoin a
+  tranché.
+- **Un sous-agent peut abîmer le dépôt** : en retirant un worktree jetable
+  dont `node_modules` était une jonction, la revue a effacé celui du dépôt
+  (réparé par `npm ci`). Lui dire ce qui est interdit, dans le prompt.
+- **Overpass réel** a expiré deux fois sur quatre démonstrations ; relancer
+  une fois suffit. Les miroirs saturés, Nominatim rend les emprises.
