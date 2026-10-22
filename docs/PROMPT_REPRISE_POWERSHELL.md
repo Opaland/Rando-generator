@@ -8,11 +8,11 @@ La dernière session (locale, Windows, 22/10) s'est arrêtée sur `main`, une
 fois fusionnée la PR qui met ce fichier à jour. Depuis le 22/10, plus de
 branche longue : une issue = une branche partie de `main` = une PR
 (`AGENTS.md`).
-Bilan : cinq épopées ouvertes (#579 à #583), quatre closes. #578 (cadrage
-de zone) et #577 (ⓘ du crédit) livrées, chacune reprise après sa revue
-adverse ; #572 et le sous-point 3 de #560 trouvés déjà livrés ;
-`.gitattributes`, `cross-env`, et le retrait de `libelleCompletion`.
-Quatre décisions attendent Cédric (§3).
+Bilan du 22/10 : #578 et #577 livrées, #584 en partie ; la branche longue
+fusionnée sur `main` (#586) ; le mode de développement d'ISTQBFinder mis en
+place (#588 agents `ines` et `parcours`, #589 permissions, #590
+`AGENTS.md` et intégrations Copilot / Gemini) ; une revue globale
+(`docs/REVUE_GLOBALE_22_10.md`) ; 20 issues ouvertes par les agents et la revue (#591 à #596, #600 à #613).
 
 ---
 
@@ -109,10 +109,10 @@ seulement CI verte, après avoir remis main à jour dans la branche. Jamais
 de commit direct sur main.
 
 Avant tout :
-1. git fetch et git status : arbre propre et à jour, sinon arrête-toi et
-   dis-le-moi. Vérifie la CI du dernier commit de la branche et l'état
-   de main (CI et GitHub Pages) — CLAUDE.md §7.
-2. Relis CLAUDE.md en entier (il fait foi), puis ce fichier
+1. git checkout main, git pull, git status : arbre propre et à jour,
+   sinon arrête-toi et dis-le-moi. Vérifie l'état de main (CI, image de
+   production, GitHub Pages) — CLAUDE.md §7 — et les PR encore ouvertes.
+2. Relis CLAUDE.md en entier (il fait foi, AGENTS.md compris), puis ce fichier
    (docs/PROMPT_REPRISE_POWERSHELL.md, §1, §3 et §4), et
    docs/OPTIMISATION_TOKENS.md.
 3. Vérifie que les hooks tournent : jq --version, gh auth status,
@@ -129,21 +129,26 @@ A. Une seule question groupée (AskUserQuestion) pour les décisions du §3
    ouvert.
 
 B. Une revue courte du projet : ce qui a changé depuis le 22/10 et les
-   issues ouvertes. Pas une revue globale complète (la dernière date du
-   19/10) — sauf si je la demande.
+   issues ouvertes. Pas de revue globale : la dernière date du 22/10
+   (docs/REVUE_GLOBALE_22_10.md).
 
-C. Des EPIC + US sur GitHub (une épopée par sprint, label epic), puis des
-   sprints d'une épopée au plus, selon mes réponses. Candidats :
-   - #290 volet 2 (le tracé à la couleur de son balisage), si je tranche
-     les questions du §3 ;
-   - #584, #585 et l'US 3.2 de #581 (#296), selon mes réponses ;
-   - #565 (sortie autour de minuit, UTC contre heure locale) et #566
-     (95 % sans la coche « bouclé ») : bugs ouverts, à relire d'abord.
+C. Les issues retenues, une par une, chacune sur sa branche et sa PR.
+   Candidats, par ordre de gravité, à confirmer par mes réponses :
+   - #600 (déclarer pendant la démonstration écrit en base — test d'abord)
+     et #601 (une fiche « ouverte » survit au changement de zone) ;
+   - #592 (zone vide qui ne recadre pas) et #594 (légende qui annonce un GR
+     non dessiné) : correctifs mesurables, sans décision ;
+   - #612 (dist/ jamais vidé) et #613 (npm audit) : outillage ;
+   - les textes #602 à #608, groupés par surface ;
+   - #585 (fondu + chevron, avis d'Inès) et #296 (contours à ~100 m,
+     mesurer d'abord), décidés le 22/10 ;
+   - #587 (Chromium qui cale en CI) : mesurer avant de corriger.
 
-D. À la fin de chaque sprint : revue adverse (agent relecteur-adverse),
-   puis démonstration sur le réseau réel avec la skill carte-reelle, au
-   nom des personas concernés, et traitement des retours (corrigés avec
-   un test vu rouge, ou ouverts en issue).
+D. Pour une question d'écran, l'agent ines ; pour une démonstration ou
+   « est-ce que X y arrive ? », l'agent parcours avec la persona nommée ;
+   après chaque PR qui touche src/, l'agent relecteur-adverse. Leurs
+   « Questions à choix » me sont posées par AskUserQuestion ; leurs
+   défauts sont corrigés avec un test vu rouge, ou ouverts en issue.
 
 Méthode, sans exception (CLAUDE.md) :
 - TDD sur src/core ; chaque correctif a son test vu ROUGE avant, et
@@ -179,56 +184,57 @@ avec le prompt du lendemain.
 
 ## 3. Ce qui attend la décision de Cédric
 
-Tranché le 22/10 et codé : #578 cadre sur l'emprise de la zone
-administrative (19 zones embarquées ; la Nouvelle-Calédonie, dont la
-limite va des Chesterfield à Matthew–Hunter, reste cadrée sur ses
-itinéraires — tranché au jugement, écrit dans le script) ; #572 fermée ;
-`.gitattributes` et `cross-env` ; `libelleCompletion` retiré. La routine
-cloud « Sentiers — backlog autonome » est désactivée.
+Tranché le 22/10 : #584 (▶ s'efface fiche ouverte — livré ; reste le cas
+360 px), #585 (fondu — Inès recommande d'y peindre un chevron), #296
+(contours acceptés, ~100 m, mesurer avant de livrer), le mode
+d'ISTQBFinder (livré : #588, #589, #590).
 
 Reste ouvert :
 
-- **#290 volet 2** — le bicolore est tranché (couleur principale = le
-  champ « voie » d'`osmc:symbol`), mais la carte entière est colorée **par
-  réseau** : légende GR / PR / non déclaré, couleurs vérifiées en vision
-  deutéranope (#335, #360), bande de terrain interdite de couleurs de
-  balisage. À trancher : quelles couches passent au balisage, ce que
-  devient la légende, quelle couleur sans `osmc:symbol` (5,7 %).
-- **#584** — au téléphone, fiche ouverte, la bande de carte est trop
-  courte : ▶ sur le « − » du zoom (390 en gros texte, 360), boussole hors
-  carte, ⓘ sous « Ma position » à 320 × 480. Que fait-on céder ?
-- **#585** — à 1 024 à la souris, la liste des zones s'arrête sous un
-  intertitre seul. Les ombres de défilement ne s'y peignent pas (boutons
-  opaques) : trois pistes sur l'issue.
-- **#296** — chercher par lieu une sortie importée hors zone : les vrais
-  contours des 19 zones, ~300 ko bruts à ~100 m de simplification. Le
-  poids vaut-il la réponse, et à quel seuil ?
-- **Rhône (#20, #87)** — datARA répond toujours 403 le 22/10 (UUID
-  complet `e18f588f-1eca-4131-86ea-92985b2d8475`). **Savoie / Haute-Savoie** :
-  la décision juridique reste à prendre.
-- **Agent `relecteur-adverse`** — proposé : lui interdire dans sa
-  définition les worktrees à jonction vers `node_modules` (voir §4).
-- **Preuves humaines** — #173 (Théo et Jeanine, seuls), #528 (un vrai
-  lecteur d'écran). **Non vérifié sur un vrai téléphone** : Retour qui
-  ferme la fiche (#568), l'IP du réseau local (#561), le double-tap (#551).
+- **#585** — trois questions d'Inès (sur l'issue) : chevron dans le fondu
+  ou dégradé seul ; partout ou seulement 800-1 100 px ; corriger dans le
+  même lot la marge invalide `-var(--espace-2)` de `.groupTitle`.
+- **#584, cas 360 px** — la bande au-dessus de la fiche fait 260 px (130
+  en gros texte), le zoom seul 132 : boussole sous « Ma position », et le
+  « − » aussi selon les polices (Linux). Que fait-on céder encore ?
+- **#290 volet 2** — couches, légende, couleur sans `osmc:symbol`.
+- **#591** — le rayon de « autour d'une ville » (12 km, 0 itinéraire à
+  Nouméa ; 8 à 20 km) : il change ce qui est calculé (§2).
+- **#593** — fond de carte hors couverture IGN (Nouvelle-Calédonie dès le
+  zoom 8) : un autre fond, ou le dire à l'écran.
+- **#594, volet 2** — replier les GR quand ils sont la majorité d'une zone
+  (décision du 25/08 à revoir).
+- **#608** — qu'appelle-t-on « hébergement marchand » (gîtes d'étape) ?
+- **Rhône (#20, #87)** — datARA 403 le 22/10 ; **Savoie / Haute-Savoie** :
+  décision juridique.
+- **Clé d'API** collée le 22/10 dans la conversation : à révoquer.
+- **Preuves humaines** — #173, #528 ; non vérifié sur un vrai téléphone :
+  #568, #561, #551.
 
 ## 4. Ce que la journée du 22/10 a appris
 
 - **Le prompt de reprise vieillit comme un commentaire** (§4bis) : #572 et
-  #560 (3) y figuraient comme à faire, livrés depuis deux jours. La
-  question groupée en a tiré une décision sur une prémisse fausse, qu'il a
-  fallu reposer. D'où l'étape A : vérifier avant de demander.
+  #560 (3) y figuraient comme à faire, livrés depuis deux jours. D'où
+  l'étape A : vérifier avant de demander.
 - **La revue adverse trouve ce que le test du correctif ne pose pas** :
-  deux fois sur deux sprints, une régression dans un état voisin — la
-  sortie de démonstration, le crédit déplié. Les tests du correctif ne
-  regardaient que l'état réparé.
-- **Une sonde jetable ment encore** (§1bis), trois fois ce jour : un lien
-  coupé sur deux lignes dont le centre tombe sur le texte voisin, des
-  ombres « présentes » mais peintes sous des boutons opaques, un
-  `grep $''` qui comptait tout. Chaque fois, une image ou un témoin a
+  deux fois sur deux sprints, une régression dans un état voisin (la sortie
+  de démonstration, le crédit déplié).
+- **Un vert local peut tenir aux polices** : le test de #584 passait sous
+  Windows et rougissait sous Linux à 360 px. C'est une sonde parlante
+  (« sous locate-toggle (151-195 px) ») qui l'a dit, pas un booléen.
+- **Une sonde jetable ment encore** (§1bis) : un lien coupé sur deux
+  lignes, des ombres peintes sous des boutons opaques, un `grep` du
+  caractère CR qui comptait tout. Chaque fois, une image ou un témoin a
   tranché.
-- **Un sous-agent peut abîmer le dépôt** : en retirant un worktree jetable
-  dont `node_modules` était une jonction, la revue a effacé celui du dépôt
-  (réparé par `npm ci`). Lui dire ce qui est interdit, dans le prompt.
-- **Overpass réel** a expiré deux fois sur quatre démonstrations ; relancer
-  une fois suffit. Les miroirs saturés, Nominatim rend les emprises.
+- **Un sous-agent peut abîmer le dépôt** : un worktree jetable à jonction
+  a effacé `node_modules`. Les interdits sont maintenant écrits dans
+  `AGENTS.md` et dans les agents.
+- **Les agents-personas trouvent ce que les bouchons cachent** : le
+  parcours de Zoé sur le réseau réel a rendu six défauts en une passe, et
+  Inès a corrigé l'issue même qu'on lui soumettait.
+- **Une PR peut contenir le défaut qu'elle combat** : `AGENTS.md` et
+  `CLAUDE.md` écrivaient chacun l'exception « docs seuls », déjà
+  divergentes le jour de leur naissance (§4ter) — vu par la revue globale,
+  corrigé avant la fusion.
+- **Overpass réel** expire souvent ; relancer une fois. Les miroirs
+  saturés, Nominatim rend les emprises.
