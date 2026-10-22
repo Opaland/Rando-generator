@@ -7,6 +7,12 @@ qui relève du jugement est ici, et repose sur ma discipline.
 Chaque règle vient d'un raté réel, daté. Ce ne sont pas des principes
 généraux, ce sont des cicatrices.
 
+Les consignes communes à tous les assistants — une issue = une PR depuis
+`main`, la porte, la sécurité — vivent dans `AGENTS.md` (source unique,
+lue aussi par Copilot et Gemini), importé ici :
+
+@AGENTS.md
+
 ---
 
 ## 1. Un test qui ne peut pas échouer ne prouve rien
