@@ -20,7 +20,6 @@ export function useMapCamera(
   ready: boolean,
 ): void {
   const itineraries = useAppStore((s) => s.itineraries)
-  const zoneKey = useAppStore((s) => s.zoneKey)
   const customItineraries = useAppStore((s) => s.customItineraries)
   const selectedItineraryId = useAppStore((s) => s.selectedItineraryId)
   const detailItineraryId = useAppStore((s) => s.detailItineraryId)
@@ -36,6 +35,13 @@ export function useMapCamera(
     if (source.length === 0) return
     // L'emprise de la zone, et non celle de ce qu'elle a rapporté : un GR de
     // grande traversée y arrive en entier et emportait le cadrage (#578).
+    //
+    // La clé se lit sans s'abonner. Chaque chargement la pose dans le même
+    // `set` que les itinéraires (`setItineraries`), donc l'effet repart déjà
+    // avec elle ; la seule à changer seule est la sortie de démonstration,
+    // et y recadrer arrachait la carte à ce qu'on regardait (revue du
+    // sprint 1, `demonstration.spec.ts`).
+    const { zoneKey } = useAppStore.getState()
     const emprise = itineraries.length > 0 ? empriseACadrer(zoneKey) : null
     if (emprise) {
       const [ouest, sud, est, nord] = emprise
@@ -57,7 +63,7 @@ export function useMapCamera(
     if (!bounds.isEmpty()) {
       map.fitBounds(bounds, { padding: 48, duration: 400 })
     }
-  }, [mapRef, itineraries, customItineraries, zoneKey, ready])
+  }, [mapRef, itineraries, customItineraries, ready])
 
   // Zoom sur l'itinéraire quand il est sélectionné (liste ou clic carte).
   useEffect(() => {

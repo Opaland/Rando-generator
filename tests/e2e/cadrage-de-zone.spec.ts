@@ -101,15 +101,17 @@ test('choisir une zone cadre la zone, pas la grande traversée qui la touche', a
           c.sud <= PILAT.sud &&
           c.est >= PILAT.est &&
           c.nord >= PILAT.nord
-        // … et la carte ne s'étend pas à plus d'un parc de marge : le bout
-        // normand de la traversée (1,0° E, 48,6° N) en est loin dehors.
+        // … et la carte s'y serre : pas plus de 0,6 parc de marge de chaque
+        // côté. Plus lâche, la vue de départ de la carte (centre 4,55 / 45,5,
+        // zoom 9) passait déjà ce critère avant tout cadrage — mesuré par la
+        // revue du sprint 1 : 0,39° de marge à l'ouest, soit 0,72 parc.
         const largeur = PILAT.est - PILAT.ouest
         const hauteur = PILAT.nord - PILAT.sud
         const serre =
-          c.ouest >= PILAT.ouest - 2 * largeur &&
-          c.est <= PILAT.est + 2 * largeur &&
-          c.sud >= PILAT.sud - 2 * hauteur &&
-          c.nord <= PILAT.nord + 2 * hauteur
+          c.ouest >= PILAT.ouest - 0.6 * largeur &&
+          c.est <= PILAT.est + 0.6 * largeur &&
+          c.sud >= PILAT.sud - 0.6 * hauteur &&
+          c.nord <= PILAT.nord + 0.6 * hauteur
         return { contientLaZone, serre }
       },
       { timeout: 15_000 },
