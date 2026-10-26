@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import { contenuLegende } from '../../src/core/legende.ts'
+import { RESEAUX_FILTRABLES } from '../../src/core/reseaux.ts'
 import type { Itinerary, Network } from '../../src/core/types.ts'
+
+/** Aucun filtre de réseau : tout ce qui est chargé est dessiné. */
+const TOUS: ReadonlySet<Network> = new Set(RESEAUX_FILTRABLES)
 
 /**
  * AUDIT_UX.md, constat U6 — la légende occupait 100 px sur les 350 de carte
@@ -35,8 +39,36 @@ describe('contenuLegende', () => {
       itineraires: [itineraire('GR'), itineraire('PR'), itineraire('GR')],
       itinerairesPerso: [],
       aDesTraces: false,
+      reseauxVisibles: TOUS,
     })
     expect(contenu.reseaux).toEqual(['GR', 'PR'])
+  })
+
+  /*
+    Issue #594 — en Nouvelle-Calédonie, le filtre par défaut masquait le seul
+    GR de la zone, et la légende l'annonçait en rouge au-dessus d'une carte
+    qui n'en dessinait aucun. Elle lit maintenant le même filtre que la
+    carte (`itinerairesVisibles`).
+  */
+  it('ne nomme pas un réseau que le filtre retire de la carte', () => {
+    const contenu = contenuLegende({
+      itineraires: [itineraire('GR'), itineraire('PR')],
+      itinerairesPerso: [itineraire('PERSO')],
+      aDesTraces: false,
+      reseauxVisibles: new Set<Network>(['PR']),
+    })
+    // Les itinéraires perso n'ont pas de filtre : ils restent nommés.
+    expect(contenu.reseaux).toEqual(['PR', 'PERSO'])
+  })
+
+  it('n’a plus rien à nommer quand le filtre retire tout', () => {
+    const contenu = contenuLegende({
+      itineraires: [itineraire('GR')],
+      itinerairesPerso: [],
+      aDesTraces: false,
+      reseauxVisibles: new Set<Network>(),
+    })
+    expect(contenu.vide).toBe(true)
   })
 
   it('garde l’ordre de la charte, pas celui d’arrivée', () => {
@@ -44,6 +76,7 @@ describe('contenuLegende', () => {
       itineraires: [itineraire('LOCAL'), itineraire('PR'), itineraire('GR')],
       itinerairesPerso: [],
       aDesTraces: false,
+      reseauxVisibles: TOUS,
     })
     expect(contenu.reseaux).toEqual(['GR', 'PR', 'LOCAL'])
   })
@@ -53,6 +86,7 @@ describe('contenuLegende', () => {
       itineraires: [itineraire('GR')],
       itinerairesPerso: [itineraire('PERSO')],
       aDesTraces: false,
+      reseauxVisibles: TOUS,
     })
     expect(contenu.reseaux).toEqual(['GR', 'PERSO'])
   })
@@ -67,6 +101,7 @@ describe('contenuLegende', () => {
       itineraires: [itineraire('GR')],
       itinerairesPerso: [],
       aDesTraces: false,
+      reseauxVisibles: TOUS,
     })
     expect(sans.etats).toBe(false)
 
@@ -74,6 +109,7 @@ describe('contenuLegende', () => {
       itineraires: [itineraire('GR')],
       itinerairesPerso: [],
       aDesTraces: true,
+      reseauxVisibles: TOUS,
     })
     expect(avec.etats).toBe(true)
   })
@@ -87,6 +123,7 @@ describe('contenuLegende', () => {
       itineraires: [],
       itinerairesPerso: [],
       aDesTraces: false,
+      reseauxVisibles: TOUS,
     })
     expect(contenu.reseaux).toEqual([])
     expect(contenu.etats).toBe(false)
@@ -99,6 +136,7 @@ describe('contenuLegende', () => {
         itineraires: [itineraire('GR')],
         itinerairesPerso: [],
         aDesTraces: false,
+        reseauxVisibles: TOUS,
       }).vide,
     ).toBe(false)
     // Des traces sans itinéraire : il reste parcouru/restant à expliquer.
@@ -107,6 +145,7 @@ describe('contenuLegende', () => {
         itineraires: [],
         itinerairesPerso: [],
         aDesTraces: true,
+        reseauxVisibles: TOUS,
       }).vide,
     ).toBe(false)
   })
@@ -135,6 +174,7 @@ describe('les familles de terrain', () => {
       itineraires: [gr],
       itinerairesPerso: [],
       aDesTraces: false,
+      reseauxVisibles: TOUS,
     })
     expect(contenu.terrains).toEqual([])
   })
@@ -144,6 +184,7 @@ describe('les familles de terrain', () => {
       itineraires: [gr],
       itinerairesPerso: [],
       aDesTraces: false,
+      reseauxVisibles: TOUS,
       itineraireRegarde: gr.osmRelationId,
     })
     expect(contenu.terrains).toEqual(['dur', 'naturel'])
@@ -161,6 +202,7 @@ describe('les familles de terrain', () => {
       itineraires: [muet],
       itinerairesPerso: [],
       aDesTraces: false,
+      reseauxVisibles: TOUS,
       itineraireRegarde: muet.osmRelationId,
     })
     expect(contenu.terrains).toEqual([])
@@ -171,6 +213,7 @@ describe('les familles de terrain', () => {
       itineraires: [],
       itinerairesPerso: [],
       aDesTraces: false,
+      reseauxVisibles: TOUS,
     })
     expect(contenu.vide).toBe(true)
   })
@@ -189,6 +232,7 @@ describe('le réseau balisé du Département', () => {
       itineraires: [],
       itinerairesPerso: [],
       aDesTraces: false,
+      reseauxVisibles: TOUS,
       reseauDeFond: true,
     })
     expect(contenu.reseauDeFond).toBe(true)
@@ -201,6 +245,7 @@ describe('le réseau balisé du Département', () => {
       itineraires: [itineraire('GR')],
       itinerairesPerso: [],
       aDesTraces: false,
+      reseauxVisibles: TOUS,
     })
     expect(contenu.reseauDeFond).toBe(false)
   })

@@ -1,5 +1,6 @@
 import type { Itinerary, Network } from './types.ts'
 import { ORDRE_DES_RESEAUX } from './reseaux.ts'
+import { itinerairesVisibles } from './lisibilite.ts'
 import {
   segmentsDeRevetement,
   type FamilleRevetement,
@@ -69,20 +70,33 @@ export function contenuLegende({
   itineraires,
   itinerairesPerso,
   aDesTraces,
+  reseauxVisibles,
   itineraireRegarde = null,
   reseauDeFond = false,
 }: {
   itineraires: Itinerary[]
   itinerairesPerso: Itinerary[]
   aDesTraces: boolean
+  /**
+   * Le filtre de réseau du panneau, celui que la carte applique (#594).
+   * Obligatoire : un réseau masqué que la légende annonce encore est le
+   * défaut même que ce paramètre corrige.
+   */
+  reseauxVisibles: ReadonlySet<Network>
   /** L'itinéraire dont la fiche est ouverte, seul à porter une bande. */
   itineraireRegarde?: number | null
   /** Des tronçons PDIPR sont-ils effectivement peints ? */
   reseauDeFond?: boolean
 }): ContenuLegende {
   const tous = [...itineraires, ...itinerairesPerso]
+  // Ce que la carte dessine, par la même fonction qu'elle : les itinéraires
+  // perso n'ont pas de filtre (`useMapSources`).
+  const dessines = [
+    ...itinerairesVisibles(itineraires, reseauxVisibles),
+    ...itinerairesPerso,
+  ]
   const presents = new Set<Network>()
-  for (const itineraire of tous) {
+  for (const itineraire of dessines) {
     presents.add(itineraire.network)
   }
   const reseaux = ORDRE_DES_RESEAUX.filter((network) => presents.has(network))
