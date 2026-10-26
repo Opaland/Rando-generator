@@ -84,3 +84,61 @@ describe('démarrer une sortie quitte la démonstration', () => {
     expect(useAppStore.getState().demonstration).toBe(false)
   })
 })
+
+/**
+ * Issue #600 — l'écran de la démonstration promet « Rien n'est enregistré »,
+ * mais déclarer un parcours écrivait en base sans passer par la garde : la
+ * déclaration survivait à la démonstration, et `quitterDemonstration` la
+ * relisait comme une donnée réelle.
+ *
+ * Déclarer est un geste réel, sur une boucle réelle : comme démarrer une
+ * sortie ou importer, il fait sortir de la démonstration avant d'écrire.
+ */
+describe('déclarer ou tracer quitte la démonstration', () => {
+  async function enDemonstration(): Promise<number> {
+    await useAppStore.getState().init()
+    await useAppStore.getState().demarrerDemonstration()
+    expect(useAppStore.getState().demonstration).toBe(true)
+    const boucle = useAppStore.getState().itineraries[0]
+    expect(boucle).toBeDefined()
+    return boucle!.osmRelationId
+  }
+
+  it('éteint la démonstration avant d’écrire la déclaration', async () => {
+    const id = await enDemonstration()
+
+    await useAppStore.getState().declarerParcours(id, null)
+
+    expect(useAppStore.getState().demonstration).toBe(false)
+    // Les sorties fictives sont parties : ce qui reste est réel.
+    expect(useAppStore.getState().tracks).toEqual([])
+    expect(useAppStore.getState().parcoursDeclares.map((d) => d.itineraryId)).toEqual([id])
+  })
+
+  it('éteint la démonstration avant de retirer une déclaration', async () => {
+    const id = await enDemonstration()
+
+    await useAppStore.getState().retirerParcoursDeclare(id)
+
+    expect(useAppStore.getState().demonstration).toBe(false)
+  })
+
+  // Trouvé par la relecture adverse du correctif : le tracé à la main est le
+  // même défaut par un autre chemin, et `quitterDemonstration` le relisait.
+  it('éteint la démonstration avant d’enregistrer un tracé à la main', async () => {
+    await enDemonstration()
+    useAppStore.setState({
+      drawPath: [
+        [4.8, 45.7],
+        [4.81, 45.71],
+      ],
+    })
+
+    await useAppStore.getState().saveDrawnItinerary('Mon tracé')
+
+    expect(useAppStore.getState().demonstration).toBe(false)
+    expect(useAppStore.getState().customItineraries.map((i) => i.name)).toEqual([
+      'Mon tracé',
+    ])
+  })
+})
