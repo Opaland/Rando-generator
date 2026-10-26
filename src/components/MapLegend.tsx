@@ -13,6 +13,7 @@ import {
 } from '../lib/revetementDisplay.ts'
 import { GRIS_VERT } from '../lib/couleursPartagees.ts'
 import { useReseauDeFond } from '../store/reseauDeFond.ts'
+import { useReseauxVisibles } from '../store/reseauxVisibles.ts'
 import styles from './MapLegend.module.css'
 
 /**
@@ -32,10 +33,12 @@ export function MapLegend() {
   const aDesTraces = useAppStore((s) => s.tracks.length > 0)
   const itineraireRegarde = useAppStore((s) => s.detailItineraryId)
   const reseauDeFond = useReseauDeFond((s) => s.reseau.features.length > 0)
+  const reseauxVisibles = useReseauxVisibles((s) => s.reseauxVisibles)
   const contenu = contenuLegende({
     itineraires,
     itinerairesPerso,
     aDesTraces,
+    reseauxVisibles: new Set(reseauxVisibles),
     itineraireRegarde,
     reseauDeFond,
   })
