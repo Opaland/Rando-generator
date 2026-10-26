@@ -32,7 +32,6 @@ export function useMapCamera(
     const map = mapRef.current
     if (!map || !ready) return
     const source = itineraries.length > 0 ? itineraries : customItineraries
-    if (source.length === 0) return
     // L'emprise de la zone, et non celle de ce qu'elle a rapporté : un GR de
     // grande traversée y arrive en entier et emportait le cadrage (#578).
     //
@@ -56,7 +55,10 @@ export function useMapCamera(
       padding: { top: 48, left: 48, right: 48, bottom: 48 + recouvre },
       duration: 400,
     }
-    const emprise = itineraries.length > 0 ? empriseACadrer(zoneKey) : null
+    // Une zone qui n'a rien rendu se cadre aussi : son emprise ne dépend pas
+    // de ce qu'elle a rapporté, et sans elle la carte restait sur la vue
+    // d'avant sous le nom de la nouvelle zone (#592).
+    const emprise = empriseACadrer(zoneKey)
     if (emprise) {
       const [ouest, sud, est, nord] = emprise
       map.fitBounds(

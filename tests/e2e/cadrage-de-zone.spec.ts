@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 import {
   fermerLeGuide,
   mockExternalNetwork,
@@ -53,22 +53,12 @@ interface Cadre {
   nord: number
 }
 
-test('choisir une zone cadre la zone, pas la grande traversée qui la touche', async ({
-  page,
-}) => {
-  const overpass = await mockExternalNetwork(page)
-  overpass.setFixture({
-    ...pilatFixture,
-    elements: [...pilatFixture.elements, GRANDE_TRAVERSEE],
-  })
-  await page.goto('/')
-  await page.getByTestId('zone-pilat').click()
-  await expect(page.getByTestId('zone-meta')).toContainText('itinéraires', {
-    timeout: 15_000,
-  })
-  await waitForMapReady(page)
-
-  // Le cadrage est animé : une seule photo peut être prise en vol (§1bis).
+/**
+ * Attend que la carte, immobile, contienne tout le parc et s'y serre.
+ *
+ * Le cadrage est animé : une seule photo peut être prise en vol (§1bis).
+ */
+async function attendreLaZoneCadree(page: Page): Promise<void> {
   const cadre = () =>
     page.evaluate((): Cadre | null => {
       const map = (
@@ -121,6 +111,40 @@ test('choisir une zone cadre la zone, pas la grande traversée qui la touche', a
       { timeout: 15_000 },
     )
     .toEqual({ contientLaZone: true, serre: true })
+}
+
+test('choisir une zone cadre la zone, pas la grande traversée qui la touche', async ({
+  page,
+}) => {
+  const overpass = await mockExternalNetwork(page)
+  overpass.setFixture({
+    ...pilatFixture,
+    elements: [...pilatFixture.elements, GRANDE_TRAVERSEE],
+  })
+  await page.goto('/')
+  await page.getByTestId('zone-pilat').click()
+  await expect(page.getByTestId('zone-meta')).toContainText('itinéraires', {
+    timeout: 15_000,
+  })
+  await waitForMapReady(page)
+
+  await attendreLaZoneCadree(page)
+})
+
+/**
+ * Issue #592 — une zone qui ne rend aucun itinéraire ne recadrait pas : la
+ * carte restait sur sa vue de départ, et Zoé lisait « Autour de Nouméa »
+ * au-dessus de Saint-Étienne. L'emprise de la zone est connue sans ses
+ * itinéraires (#578) : c'est elle qu'on cadre.
+ */
+test('une zone sans itinéraire est cadrée quand même', async ({ page }) => {
+  const overpass = await mockExternalNetwork(page)
+  overpass.setFixture({ ...pilatFixture, elements: [] })
+  await page.goto('/')
+  await page.getByTestId('zone-pilat').click()
+  await waitForMapReady(page)
+
+  await attendreLaZoneCadree(page)
 })
 
 /**
