@@ -524,6 +524,7 @@ export const useAppStore = create<AppState>()((set, get) => {
       zoneError: null,
       selectedItineraryId: null,
     })
+    get().fermerLaFicheOrpheline()
   }
 
   /**
@@ -817,7 +818,6 @@ export const useAppStore = create<AppState>()((set, get) => {
       réelle ne peut s'en nourrir.
     */
     async declarerParcours(itineraryId, date) {
-      // Un geste réel : la démonstration s'efface avant d'écrire (#600).
       await sortirDeLaDemonstration(get)
       const parcours = {
         itineraryId,
