@@ -26,6 +26,8 @@
     "vitest.mutation.config.ts",
     "playwright.config.ts",
     "src/lib/baliseDePolitique.ts",
+    "src/lib/viderLaSortie.ts",
+    "tests/unit/viderLaSortie.test.ts",
     "tests/e2e",
     "tests/fixtures/gpx.ts",
     "tests/fixtures/verdictReseau.ts",

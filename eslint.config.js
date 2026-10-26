@@ -47,6 +47,35 @@ export default tseslint.config(
     },
   },
   {
+    /*
+      `fs.rmSync` ne supprime rien, sans erreur, sous un chemin non ASCII
+      (Node 24.13, Windows, mesuré le 26/10 — #612) : `dist/` n'était plus
+      vidé, et le générateur d'intégrations annonçait « supprimé » des
+      fichiers restés en place. Une règle plutôt qu'une consigne : elle ne
+      demande à personne de s'en souvenir.
+    */
+    files: ['**/*.{js,mjs,ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        ...['fs', 'node:fs'].map((name) => ({
+          name,
+          importNames: ['rmSync'],
+          message:
+            'rmSync ne supprime rien sous un chemin accentué (#612) : fs.promises.rm, ou unlinkSync pour un fichier.',
+        })),
+      ],
+      'no-restricted-properties': [
+        'error',
+        {
+          property: 'rmSync',
+          message:
+            'rmSync ne supprime rien sous un chemin accentué (#612) : fs.promises.rm, ou unlinkSync pour un fichier.',
+        },
+      ],
+    },
+  },
+  {
     // Dans les tests, l'assertion non nulle est idiomatique après un toHaveLength.
     files: ['tests/**/*.ts'],
     rules: {
