@@ -22,7 +22,8 @@ import type { SentiersDb } from '../db/database.ts'
  * - `quitterDemonstration` remet tout à zéro **et relit la base**, parce
  *   qu'on revient à ce qui existait avant ;
  * - `sortirDeLaDemonstration` est la garde que les autres tranches appellent
- *   avant d'écrire quoi que ce soit — export, import, chargement de zone.
+ *   avant d'écrire quoi que ce soit — export, import, chargement de zone,
+ *   déclaration d'un parcours, tracé à la main (#600).
  *
  * ## La cicatrice qui part avec
  *

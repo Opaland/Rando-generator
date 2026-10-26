@@ -352,7 +352,8 @@ async function protegerLeStockage(): Promise<void> {
 
 /**
  * Quitte la démonstration avant toute opération qui touche aux données
- * réelles — import, export, restauration.
+ * réelles — import, export, restauration, déclaration d'un parcours,
+ * tracé à la main.
  *
  * Nommé plutôt que recopié : le premier passage avait couvert l'import et
  * l'export mais oublié la restauration, et une garde qu'on récrit à la main
@@ -816,6 +817,8 @@ export const useAppStore = create<AppState>()((set, get) => {
       réelle ne peut s'en nourrir.
     */
     async declarerParcours(itineraryId, date) {
+      // Un geste réel : la démonstration s'efface avant d'écrire (#600).
+      await sortirDeLaDemonstration(get)
       const parcours = {
         itineraryId,
         date,
@@ -832,6 +835,7 @@ export const useAppStore = create<AppState>()((set, get) => {
     },
 
     async retirerParcoursDeclare(itineraryId) {
+      await sortirDeLaDemonstration(get)
       set((etat) => ({
         parcoursDeclares: etat.parcoursDeclares.filter(
           (d) => d.itineraryId !== itineraryId,
@@ -1031,6 +1035,7 @@ export const useAppStore = create<AppState>()((set, get) => {
         get().closeItineraryDetail()
       },
       async enregistrerLeTrace(itineraire) {
+        await sortirDeLaDemonstration(get)
         const { db } = get()
         if (db) await db.saveCustomItinerary(itineraire)
         set((state) => ({
