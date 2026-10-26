@@ -57,6 +57,27 @@ test('zone chargée : seuls ses réseaux, et pas les états', async ({ page }) =
 })
 
 /**
+ * Issue #594 — le filtre par défaut replie les GR (#322), et la légende les
+ * annonçait quand même : en Nouvelle-Calédonie, « GR » en rouge au-dessus
+ * d'une carte qui n'en dessinait aucun. Elle lit maintenant le même filtre
+ * que la carte, et le GR revient quand on l'affiche.
+ */
+test('un réseau replié par le filtre n’est pas annoncé', async ({ page }) => {
+  test.skip(!(await ouvrir(page)), 'WebGL indisponible')
+  await page.getByTestId('zone-pilat').click()
+  await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
+    timeout: 15_000,
+  })
+
+  const legende = page.getByTestId('map-legend')
+  await expect(legende.locator('[data-reseau="PR"]')).toBeVisible()
+  await expect(legende.locator('[data-reseau="GR"]')).toHaveCount(0)
+
+  await afficherTousLesReseaux(page)
+  await expect(legende.locator('[data-reseau="GR"]')).toBeVisible()
+})
+
+/**
  * GR et GRP se confondent en vision deutéranope (ΔE 6,9, issue #360) : la
  * carte s'en distingue déjà par la forme (`trails-base-grp`/`trails-done-grp`,
  * tireté `[4,2]`, `style.ts`), mais la légende ne montrait qu'une pastille
