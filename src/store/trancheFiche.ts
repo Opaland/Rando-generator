@@ -75,6 +75,8 @@ export interface EtatFiche {
 export interface ActionsFiche {
   openItineraryDetail: (id: number) => void
   closeItineraryDetail: () => void
+  /** Referme la fiche si son itinéraire n'est plus chargé (#601). */
+  fermerLaFicheOrpheline: () => void
   toggleView3D: () => void
   setElevationHover: (point: ProfilePoint | null) => void
   focusOn: (coords: LonLat) => void
@@ -127,6 +129,12 @@ export function trancheFiche(deps: DependancesFiche): ActionsFiche {
     réponse tardive de la fiche abandonnée écraserait celle qu'on regarde.
   */
   let sequence = 0
+
+  function fermer(): void {
+    // Le numéro avance : une réponse encore en vol ne rouvrira rien.
+    sequence += 1
+    deps.set({ ...FICHE_FERMEE })
+  }
 
   return {
     openItineraryDetail(id) {
@@ -185,10 +193,19 @@ export function trancheFiche(deps: DependancesFiche): ActionsFiche {
       )
     },
 
-    closeItineraryDetail() {
-      // Le numéro avance : une réponse encore en vol ne rouvrira rien.
-      sequence += 1
-      deps.set({ ...FICHE_FERMEE })
+    closeItineraryDetail: fermer,
+
+    /*
+      Une fiche dont l'itinéraire a disparu — la zone a changé — ne se peint
+      plus, mais tout ce qui lit « fiche ouverte » (`detailItineraryId`) y
+      croyait encore : crédit relevé, ▶ caché, Retour qui ferme une fiche
+      invisible. Un itinéraire qui traverse les deux zones, ou perso, la
+      garde ouverte.
+    */
+    fermerLaFicheOrpheline() {
+      const id = deps.etatFiche().detailItineraryId
+      if (id !== null && deps.itineraireParId(id) === undefined)
+        fermer()
     },
 
     toggleView3D() {

@@ -1292,6 +1292,41 @@ describe('annonces et bilans, cycle de vie', () => {
     // Le bilan nommait des itinéraires qui ne sont plus chargés.
     expect(useAppStore.getState().outingDetail).toBeNull()
   })
+
+  /*
+    Issue #601 — la fiche restait « ouverte » (`detailItineraryId` posé) sur
+    un itinéraire que la nouvelle zone n'a pas : `ItineraryDetail` ne peint
+    plus rien, mais tout ce qui lit « fiche ouverte » — crédit relevé, ▶
+    caché, Retour — continuait d'y croire.
+  */
+  it('changer de zone referme la fiche d’un itinéraire qui n’y est plus', async () => {
+    await useAppStore.getState().init()
+    await useAppStore.getState().loadZone('pilat')
+    const id = useAppStore.getState().itineraries[0]?.osmRelationId ?? 0
+    useAppStore.getState().openItineraryDetail(id)
+    expect(useAppStore.getState().detailItineraryId).toBe(id)
+
+    fetchMock.mockImplementation(() =>
+      Promise.resolve(reponseOverpass({ elements: [] })),
+    )
+    await useAppStore.getState().loadZone('loire')
+
+    expect(useAppStore.getState().itineraries.map((i) => i.osmRelationId)).not.toContain(id)
+    expect(useAppStore.getState().detailItineraryId).toBeNull()
+  })
+
+  it('garde la fiche ouverte si la nouvelle zone a le même itinéraire', async () => {
+    await useAppStore.getState().init()
+    await useAppStore.getState().loadZone('pilat')
+    const id = useAppStore.getState().itineraries[0]?.osmRelationId ?? 0
+    useAppStore.getState().openItineraryDetail(id)
+
+    // La même réponse Overpass : l'itinéraire traverse les deux zones.
+    await useAppStore.getState().loadZone('loire')
+
+    expect(useAppStore.getState().itineraries.map((i) => i.osmRelationId)).toContain(id)
+    expect(useAppStore.getState().detailItineraryId).toBe(id)
+  })
 })
 
 describe('seuil de complétion', () => {
