@@ -1233,6 +1233,8 @@ aside :is(button, label, p, li, h2, h3, span, output) {
   [data-testid='detail-3d-toggle'],
   [data-testid='itinerary-detail-export'],
   [data-testid='emporter-bloc'],
+  /* Ni le constat qui le remplace hors du plan IGN (#593). */
+  [data-testid='fond-indisponible'],
   [data-testid='declare-bloc'],
   /* L'état « déclaré » aussi : sa phrase reste, son bouton non (revue du
      sprint 3 — #552 n'avait masqué que l'état d'avant). */
