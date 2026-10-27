@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { afficherTousLesReseaux, mockExternalNetwork, buildGpx } from './helpers.ts'
+import { afficherTousLesReseaux, buildGpx, estAlEcran, mockExternalNetwork } from './helpers.ts'
 import type { Page } from '@playwright/test'
 
 /**
@@ -317,4 +317,35 @@ test('importer pendant la démonstration ne recadre pas la carte', async ({
   await page.waitForTimeout(1_000)
   await expect.poll(zoom).not.toBeNull()
   expect(await zoom()).toBeCloseTo(16, 1)
+})
+
+/**
+ * Issue #615 — un geste réel pendant la démonstration l'éteignait en
+ * silence : les sorties fictives partaient, le bandeau s'effaçait, et rien
+ * ne disait pourquoi. Le geste choisi ici est le chargement d'une zone, l'un
+ * des chemins de la garde `sortirDeLaDemonstration` ; les autres sont
+ * éprouvés par `sortieQuitteLaDemonstration.test.ts`.
+ */
+test('sortir de la démonstration par un geste réel le dit, et l’avis se referme', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await mockExternalNetwork(page)
+  await mockBoucles(page)
+  await page.goto('/')
+  await page.getByTestId('voir-un-exemple').click()
+  await expect(page.getByTestId('demo-banner')).toBeVisible({ timeout: 10_000 })
+
+  await page.getByTestId('zone-pilat').click()
+  await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
+    timeout: 15_000,
+  })
+
+  // Peint, et non seulement présent (§1bis).
+  await expect.poll(() => estAlEcran(page, 'demo-terminee')).toBe(true)
+  await expect(page.getByTestId('demo-terminee')).toContainText('sorties fictives sont retirées')
+  await expect(page.getByTestId('demo-banner')).toHaveCount(0)
+
+  await page.getByTestId('demo-terminee').getByRole('button', { name: 'Compris' }).click()
+  await expect(page.getByTestId('demo-terminee')).toHaveCount(0)
 })

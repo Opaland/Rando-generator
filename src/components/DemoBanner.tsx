@@ -12,8 +12,20 @@ import styles from './DemoBanner.module.css'
 export function DemoBanner() {
   const demonstration = useAppStore((s) => s.demonstration)
   const quitterDemonstration = useAppStore((s) => s.quitterDemonstration)
+  const finDeDemonstration = useAppStore((s) => s.finDeDemonstration)
+  const oublierFin = useAppStore((s) => s.oublierFinDeDemonstration)
   const [sortie, setSortie] = useState(false)
 
+  // Un geste réel l'a éteinte : le dire, plutôt que vider le tableau (#615).
+  if (!demonstration && finDeDemonstration)
+    return (
+      <div className={styles.bandeau} role="status" data-testid="demo-terminee">
+        <p className={styles.texte}>Démonstration terminée : les sorties fictives sont retirées.</p>
+        <button type="button" className={styles.quitter} onClick={oublierFin}>
+          Compris
+        </button>
+      </div>
+    )
   if (!demonstration) return null
 
   return (

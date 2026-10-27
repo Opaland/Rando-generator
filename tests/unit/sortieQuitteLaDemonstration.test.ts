@@ -142,3 +142,78 @@ describe('déclarer ou tracer quitte la démonstration', () => {
     ])
   })
 })
+
+/**
+ * Issue #615 — la sortie par un geste réel était muette : les trois sorties
+ * fictives disparaissaient, les pourcentages retombaient, le bandeau
+ * s'effaçait, et rien ne disait pourquoi.
+ *
+ * Décision de Cédric du 26/10 : un avis bref, posé dans la garde nommée
+ * pour qu'il vaille pour tous les chemins (CLAUDE.md §4). Ces questions
+ * passent donc par les vrais gestes, pas par la tranche seule.
+ */
+describe('l’avis de fin de démonstration', () => {
+  async function enDemonstration(): Promise<number> {
+    await useAppStore.getState().init()
+    await useAppStore.getState().demarrerDemonstration()
+    const boucle = useAppStore.getState().itineraries[0]
+    expect(boucle).toBeDefined()
+    return boucle!.osmRelationId
+  }
+
+  it('se pose quand un geste réel fait sortir de la démonstration', async () => {
+    const id = await enDemonstration()
+    expect(useAppStore.getState().finDeDemonstration).toBe(false)
+
+    await useAppStore.getState().declarerParcours(id, null)
+
+    expect(useAppStore.getState().finDeDemonstration).toBe(true)
+  })
+
+  it('se pose aussi par un autre chemin : le tracé à la main', async () => {
+    await enDemonstration()
+    useAppStore.setState({
+      drawPath: [
+        [4.8, 45.7],
+        [4.81, 45.71],
+      ],
+    })
+    await useAppStore.getState().saveDrawnItinerary('Mon tracé')
+
+    expect(useAppStore.getState().finDeDemonstration).toBe(true)
+  })
+
+  it('ne se pose pas quand on quitte soi-même par le bandeau', async () => {
+    // « Quitter la démonstration » est le geste qui l'annonce : le redire
+    // serait du bruit.
+    await enDemonstration()
+    await useAppStore.getState().quitterDemonstration()
+
+    expect(useAppStore.getState().finDeDemonstration).toBe(false)
+  })
+
+  it('ne se pose pas hors démonstration', async () => {
+    await useAppStore.getState().init()
+    useAppStore.setState({
+      drawPath: [
+        [4.8, 45.7],
+        [4.81, 45.71],
+      ],
+    })
+    await useAppStore.getState().saveDrawnItinerary('Mon tracé')
+
+    expect(useAppStore.getState().finDeDemonstration).toBe(false)
+  })
+
+  it('se referme, et une nouvelle démonstration repart sans lui', async () => {
+    const id = await enDemonstration()
+    await useAppStore.getState().declarerParcours(id, null)
+    useAppStore.getState().oublierFinDeDemonstration()
+    expect(useAppStore.getState().finDeDemonstration).toBe(false)
+
+    // Un avis resté ouvert ne survit pas à la démonstration suivante.
+    useAppStore.setState({ finDeDemonstration: true })
+    await useAppStore.getState().demarrerDemonstration()
+    expect(useAppStore.getState().finDeDemonstration).toBe(false)
+  })
+})

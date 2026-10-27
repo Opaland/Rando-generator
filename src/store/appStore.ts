@@ -77,7 +77,7 @@ import {
   type EtatRecherche,
 } from './rechercheDeLieu.ts'
 import { trancheSauvegarde } from './trancheSauvegarde.ts'
-import { trancheDemonstration } from './trancheDemonstration.ts'
+import { DEMONSTRATION_AU_REPOS, trancheDemonstration, type AvisDeDemonstration } from './trancheDemonstration.ts'
 export type { DoublonEnAttente } from './trancheImport.ts'
 import {
   trancheImport,
@@ -157,7 +157,7 @@ interface AppState
     EtatRecherche,
     ActionsRecherche,
     EtatSortiesReseau,
-    ActionsSortiesReseau {
+    ActionsSortiesReseau, AvisDeDemonstration {
   // Persistance
   db: SentiersDb | null
   dbWarning: string | null
@@ -603,7 +603,7 @@ export const useAppStore = create<AppState>()((set, get) => {
     ...SORTIES_RESEAU_AU_REPOS,
     ...trancheSortiesReseau({ set }),
     ...IMPORT_AU_REPOS,
-    demonstration: false,
+    ...DEMONSTRATION_AU_REPOS,
     stockage: null,
     ...AFFICHAGE_PAR_DEFAUT,
     backupMessage: null,
