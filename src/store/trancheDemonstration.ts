@@ -45,11 +45,33 @@ interface ActionsDemonstration {
   demarrerDemonstration: () => Promise<void>
   arreterDemonstration: () => Promise<void>
   quitterDemonstration: () => Promise<void>
+  oublierFinDeDemonstration: () => void
 }
+
+/**
+ * L'avis de fin (#615) : un geste réel venait d'éteindre la démonstration,
+ * le tableau se vidait, et rien ne disait pourquoi.
+ *
+ * Posé par `arreterDemonstration`, que seule la garde nommée
+ * `sortirDeLaDemonstration` appelle (`appStore.ts`) — il vaut donc pour tous
+ * ses chemins, comme Cédric l'a demandé le 26/10. Pas par
+ * `quitterDemonstration` : le bouton du bandeau est le geste qui l'annonce.
+ */
+export interface AvisDeDemonstration {
+  finDeDemonstration: boolean
+  oublierFinDeDemonstration: () => void
+}
+
+/** L'état de la démonstration au démarrage de l'application. */
+export const DEMONSTRATION_AU_REPOS = {
+  demonstration: false,
+  finDeDemonstration: false,
+} as const
 
 /** L'état que la tranche réécrit, au-delà de son propre drapeau. */
 export interface EcritureDemonstration {
   demonstration: boolean
+  finDeDemonstration: boolean
   itineraries: Itinerary[]
   tracks: Track[]
   customItineraries: Itinerary[]
@@ -121,6 +143,7 @@ export function trancheDemonstration(
       const maintenant = deps.maintenant()
       deps.set({
         demonstration: true,
+        finDeDemonstration: false,
         itineraries: boucles,
         zoneKey: ZONE_DEMONSTRATION.cle,
         zoneLabel: ZONE_DEMONSTRATION.libelle,
@@ -144,6 +167,7 @@ export function trancheDemonstration(
       const enDemonstration = etat.zoneKey === ZONE_DEMONSTRATION.cle
       deps.set({
         demonstration: false,
+        finDeDemonstration: true,
         // Les sorties fictives partent ; les boucles restent, elles sont
         // réelles. La zone est renommée pour ce qu'elle est vraiment.
         tracks: etat.tracks.filter((t) => !t.id.startsWith(PREFIXE_FICTIF)),
@@ -154,10 +178,15 @@ export function trancheDemonstration(
       await deps.recalculer()
     },
 
+    oublierFinDeDemonstration() {
+      deps.set({ finDeDemonstration: false })
+    },
+
     async quitterDemonstration() {
       if (!deps.lire().demonstration) return
       deps.set({
         demonstration: false,
+        finDeDemonstration: false,
         itineraries: [],
         tracks: [],
         zoneKey: null,
