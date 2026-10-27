@@ -39,6 +39,9 @@ const { trancheZone } = await import('../../src/store/trancheZone.ts')
 
 function harnais() {
   const affichees: { cle: string; libelle: string; n: number }[] = []
+  const persistees: string[] = []
+  /** Chaque valeur de `zoneLoading` posée, dans l'ordre. */
+  const chargements: boolean[] = []
   const etat = {
     db: null,
     zoneKey: null as string | null,
@@ -53,10 +56,15 @@ function harnais() {
       const bout =
         typeof partiel === 'function' ? (partiel as (e: unknown) => object)(etat) : partiel
       Object.assign(etat, bout)
+      const charge = (bout as { zoneLoading?: boolean }).zoneLoading
+      if (charge !== undefined) chargements.push(charge)
     },
     etat: () => etat,
     baseOuverte: () => Promise.resolve(null),
-    persistLastZone: () => Promise.resolve(),
+    persistLastZone: (cle: string) => {
+      persistees.push(cle)
+      return Promise.resolve()
+    },
     oublierLaZoneEnCache: () => Promise.resolve(),
     recompute: () => Promise.resolve(),
     setItineraries: (cle: string, libelle: string, itineraires: unknown[]) => {
@@ -67,7 +75,7 @@ function harnais() {
     oublierLesLieux: () => {},
     sortirDeLaDemonstration: () => Promise.resolve(),
   } as unknown as DependancesZone
-  return { actions: trancheZone(deps), affichees, etat }
+  return { actions: trancheZone(deps), affichees, etat, persistees, chargements }
 }
 
 const NOUMEA = { label: 'Nouméa', contexte: '98818', center: [166.45, -22.27] as [number, number] }
@@ -127,5 +135,43 @@ describe('« autour de » vide s’élargit à 25 km (#591)', () => {
     // Directement à 25 km : rejouer 12 km d'abord referait la requête vide.
     expect(reseau.requetes.map((r) => /around:(\d+)/.exec(r)?.[1])).toEqual(['25000'])
     expect(affichees.at(-1)?.libelle).toBe('Autour de Nouméa, élargi à 25 km')
+  })
+
+  /*
+    Trouvés par la relecture adverse du 27/10 : les 12 km vides étaient
+    affichés, enregistrés comme dernière zone et annoncés « aucun
+    itinéraire » **avant** que la relance soit décidée. Annuler pendant la
+    seconde requête laissait alors à l'écran une zone vide sans un mot, et
+    au démarrage suivant on y revenait.
+  */
+  it('n’affiche ni n’enregistre les 12 km vides qu’on va remplacer', async () => {
+    const { actions, affichees, persistees, chargements } = harnais()
+    await actions.loadAutour(NOUMEA)
+
+    expect(affichees.map((a) => a.cle)).toEqual(['autour:166.4500,-22.2700,25000'])
+    expect(persistees).toEqual(['autour:166.4500,-22.2700,25000'])
+    // Le témoin ne retombe pas entre les deux requêtes : une seule attente.
+    expect(chargements).toEqual([true, true, false])
+  })
+
+  it('annuler pendant la relance ne laisse pas une zone vide sans un mot', async () => {
+    let relacher: (v: unknown) => void = () => undefined
+    reseau.repondre = (requete) =>
+      requete.includes('around:25000')
+        ? new Promise((resolve) => (relacher = resolve))
+        : Promise.resolve({ elements: [] })
+    const { actions, affichees, persistees, etat } = harnais()
+    const enCours = actions.loadAutour(NOUMEA)
+    await vi.waitFor(() => {
+      expect(reseau.requetes).toHaveLength(2)
+    })
+    actions.cancelZoneLoad()
+    relacher(PILAT)
+    await enCours
+
+    expect(affichees).toEqual([])
+    expect(persistees).toEqual([])
+    expect(etat.zoneKey).toBeNull()
+    expect(etat.zoneLoading).toBe(false)
   })
 })

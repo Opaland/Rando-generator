@@ -1,4 +1,5 @@
 import { RAYON_AUTOUR_METERS } from './overpass.ts'
+import type { Lieu } from './geocode.ts'
 import type { LonLat } from './types.ts'
 
 /**
@@ -67,4 +68,21 @@ export function libelleAutour(nom: string, rayon: number): string {
 /** Le nom du lieu, relu dans le libellé de la zone pour l'actualiser. */
 export function nomDuLieuAutour(libelle: string | null): string {
   return (libelle ?? '').replace(/^Autour de /, '').replace(/, élargi à \d+ km$/, '')
+}
+
+/**
+ * Ce qu'il faut pour rejouer une recherche « autour » sans le lieu
+ * d'origine : la clé porte le centre et le rayon, le libellé le nom.
+ * `null` si la clé est abîmée.
+ */
+export function rejouerAutour(
+  cle: string,
+  libelle: string | null,
+): { lieu: Lieu; rayon: number } | null {
+  const autour = lireCleAutour(cle)
+  if (autour === null) return null
+  return {
+    lieu: { label: nomDuLieuAutour(libelle), contexte: null, center: autour.center },
+    rayon: autour.rayon,
+  }
 }

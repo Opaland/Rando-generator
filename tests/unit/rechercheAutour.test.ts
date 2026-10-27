@@ -6,6 +6,7 @@ import {
   lireCleAutour,
   nomDuLieuAutour,
   rayonSuivant,
+  rejouerAutour,
 } from '../../src/core/rechercheAutour.ts'
 import { RAYON_AUTOUR_METERS } from '../../src/core/overpass.ts'
 
@@ -96,5 +97,20 @@ describe('le libellé d’une recherche « autour »', () => {
     expect(nomDuLieuAutour('Autour de Nouméa, élargi à 25 km')).toBe('Nouméa')
     expect(nomDuLieuAutour('Autour de Chaponost')).toBe('Chaponost')
     expect(nomDuLieuAutour(null)).toBe('')
+  })
+})
+
+describe('rejouer une recherche « autour »', () => {
+  it('rend le lieu et le rayon, relus dans la clé et le libellé', () => {
+    expect(
+      rejouerAutour('autour:166.4500,-22.2700,25000', 'Autour de Nouméa, élargi à 25 km'),
+    ).toEqual({
+      lieu: { label: 'Nouméa', contexte: null, center: [166.45, -22.27] },
+      rayon: RAYON_ELARGI_METERS,
+    })
+  })
+
+  it('ne rejoue rien d’une clé abîmée', () => {
+    expect(rejouerAutour('autour:4.8', 'Autour de Lyon')).toBeNull()
   })
 })
