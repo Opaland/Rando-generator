@@ -6,6 +6,7 @@ import {
 import { EMPRISES_DE_ZONE } from '../../src/core/emprisesDeZone.donnees.ts'
 import { distanceMeters } from '../../src/core/geo.ts'
 import { RAYON_AUTOUR_METERS, ZONES } from '../../src/core/overpass.ts'
+import { RAYON_ELARGI_METERS } from '../../src/core/rechercheAutour.ts'
 
 /**
  * Issue #578 — choisir une zone cadrait la moitié de la France : l'emprise
@@ -81,6 +82,16 @@ describe('empriseACadrer', () => {
     )
     expect(distanceMeters([lon, lat], [lon, nord])).toBeCloseTo(
       RAYON_AUTOUR_METERS,
+      -1,
+    )
+  })
+
+  it('« autour de » élargi cadre le cercle élargi, pas celui d’origine (#591)', () => {
+    const emprise = empriseACadrer(`autour:166.45,-22.27,${String(RAYON_ELARGI_METERS)}`)
+    expect(emprise).not.toBeNull()
+    const [ouest] = emprise ?? [0]
+    expect(distanceMeters([166.45, -22.27], [ouest, -22.27])).toBeCloseTo(
+      RAYON_ELARGI_METERS,
       -1,
     )
   })
