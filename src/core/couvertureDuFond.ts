@@ -1,3 +1,8 @@
+import { IGN_TILES } from '../components/map/style.ts'
+import { tuileDe, urlDeTuile } from './corridor.ts'
+import { ZOOMS_TERRAIN } from './telechargement.ts'
+import type { LonLat } from './types.ts'
+
 /**
  * Le plan IGN couvre-t-il l'endroit d'une randonnée ? Issue #593.
  *
@@ -23,16 +28,33 @@ export function couvertureDuStatut(statut: number | null): Couverture {
 }
 
 /**
- * Sonde la première tuile de la liste — celles d'un corridor partagent un
- * territoire — et rend son verdict. `recuperer` est `fetch` en production,
- * injecté pour être mesurable.
+ * La tuile qui contient le départ, au zoom le plus bas qu'« Emporter »
+ * télécharge — ou `null` sans trace.
+ *
+ * Pas la première tuile du corridor : c'était la voisine nord-ouest du
+ * départ, la marge d'une tuile autour du point (relecture adverse du 27/10).
+ * Le zoom le plus bas, parce qu'un 404 y veut dire « rien du tout ». Une
+ * couverture qui s'arrête plus haut — mesuré à Hendaye : 200 à z12, 404 à
+ * z16 — reste proposée, et ses tuiles manquantes se comptent en échecs,
+ * comme avant. Un corridor à cheval sur deux territoires n'est jugé que sur
+ * son départ : c'est une limite, pas une garantie.
+ */
+export function tuileTemoin(coords: readonly LonLat[]): string | null {
+  const depart = coords[0]
+  const zoom = ZOOMS_TERRAIN[0]
+  if (depart === undefined || zoom === undefined) return null
+  return urlDeTuile(tuileDe(depart[0], depart[1], zoom), IGN_TILES)
+}
+
+/**
+ * Sonde la tuile témoin et rend son verdict. `recuperer` est `fetch` en
+ * production, injecté pour être mesurable.
  */
 export async function sonderLeFond(
-  tuiles: readonly string[],
+  temoin: string | null,
   recuperer: (url: string) => Promise<{ status: number }>,
 ): Promise<Couverture> {
-  const temoin = tuiles[0]
-  if (temoin === undefined) return 'inconnu'
+  if (temoin === null) return 'inconnu'
   try {
     const reponse = await recuperer(temoin)
     return couvertureDuStatut(reponse.status)

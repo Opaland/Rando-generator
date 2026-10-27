@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { couvertureDuStatut, sonderLeFond } from '../../src/core/couvertureDuFond.ts'
+import { couvertureDuStatut, sonderLeFond, tuileTemoin } from '../../src/core/couvertureDuFond.ts'
 
 /**
  * Issue #593 — en Nouvelle-Calédonie, le plan IGN rend 404 dès le zoom 8
@@ -32,6 +32,28 @@ describe('couvertureDuStatut', () => {
   })
 })
 
+describe('tuileTemoin', () => {
+  it('est la tuile qui contient le départ, au zoom le plus bas emporté', () => {
+    /*
+      Relecture adverse du 27/10 : la première tuile du corridor était sa
+      voisine nord-ouest — la marge d'une tuile autour du point. Le témoin
+      est maintenant la tuile du départ lui-même : Lyon, z12, ligne 1461,
+      colonne 2103 — la voisine nord-ouest serait 1460 / 2102.
+      Le zoom le plus bas parce qu'un 404 y veut dire « rien du tout » ; une
+      couverture qui s'arrête plus haut (Hendaye : 200 à z12, 404 à z16)
+      reste proposée, et ses tuiles manquantes se comptent en échecs.
+    */
+    const url = tuileTemoin([[4.835, 45.764]])
+    expect(url).toContain('TILEMATRIX=12&')
+    expect(url).toContain('TILEROW=1461&')
+    expect(url).toContain('TILECOL=2103')
+  })
+
+  it('ne propose rien pour une trace vide', () => {
+    expect(tuileTemoin([])).toBeNull()
+  })
+})
+
 describe('sonderLeFond', () => {
   it('rend le verdict du statut de la tuile témoin', async () => {
     const vues: string[] = []
@@ -39,22 +61,22 @@ describe('sonderLeFond', () => {
       vues.push(url)
       return Promise.resolve({ status: 404 })
     }
-    expect(await sonderLeFond(['https://t/1', 'https://t/2'], recuperer)).toBe('absent')
+    expect(await sonderLeFond('https://t/1', recuperer)).toBe('absent')
     expect(vues).toEqual(['https://t/1'])
   })
 
   it('ne dit rien quand la requête échoue', async () => {
     const recuperer = () => Promise.reject(new TypeError('Failed to fetch'))
-    expect(await sonderLeFond(['https://t/1'], recuperer)).toBe('inconnu')
+    expect(await sonderLeFond('https://t/1', recuperer)).toBe('inconnu')
   })
 
-  it('ne sonde rien sans tuile', async () => {
+  it('ne sonde rien sans témoin', async () => {
     let appels = 0
     const recuperer = () => {
       appels += 1
       return Promise.resolve({ status: 200 })
     }
-    expect(await sonderLeFond([], recuperer)).toBe('inconnu')
+    expect(await sonderLeFond(null, recuperer)).toBe('inconnu')
     expect(appels).toBe(0)
   })
 })
