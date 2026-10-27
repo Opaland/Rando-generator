@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { OverpassError } from '../../src/core/overpass.ts'
+import pilat from '../fixtures/overpass/pilat.json' with { type: 'json' }
 import type { DependancesZone } from '../../src/store/trancheZone.ts'
 import { creerOubliDeZone } from '../../src/store/oubliDeZone.ts'
 import type { SentiersDb } from '../../src/db/database.ts'
@@ -72,7 +73,12 @@ vi.mock('../../src/core/overpass.ts', async () => {
     */
     fetchOverpass: () => {
       appelsOverpass.n += 1
-      if (reseau.repond) return Promise.resolve({ elements: [] })
+      /*
+        Une zone non vide : depuis #591, une recherche « autour » vide
+        s'élargit à 25 km — une seconde requête, un second oubli, que ce
+        fichier ne cherche pas à mesurer (voir rechercheAutourElargie.test.ts).
+      */
+      if (reseau.repond) return Promise.resolve(pilat)
       return Promise.reject(new OverpassError('miroirs injoignables (test)'))
     },
   }
