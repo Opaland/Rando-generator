@@ -7,6 +7,8 @@ import {
   type ProgresTelechargement,
 } from '../core/telechargement.ts'
 import type { LonLat } from '../core/types.ts'
+import { useCouvertureDuFond } from '../lib/useCouvertureDuFond.ts'
+import { tuileTemoin } from '../core/couvertureDuFond.ts'
 import { emporter, emporterPois } from '../lib/emporter.ts'
 import { conteneurServiceWorker } from '../lib/serviceWorker.ts'
 import { fetchPoisOuEchec } from '../core/poi.ts'
@@ -65,6 +67,8 @@ export function BoutonEmporter({
   */
   const [poisEmportes, setPoisEmportes] = useState<boolean | null>(null)
   const arreter = useRef<(() => void) | null>(null)
+  // Hors du plan IGN, rien à emporter : le bouton proposait des 404 (#593).
+  const fond = useCouvertureDuFond(tuileTemoin(coords))
 
   useEffect(
     () => () => {
@@ -79,6 +83,16 @@ export function BoutonEmporter({
 
   const enCours = progres !== null && !progres.fini
   const fini = progres?.fini === true
+
+  // Pas pendant un téléchargement lancé avant la réponse : il continuerait
+  // sans rien pour le suivre ni l'arrêter (relecture adverse du 27/10).
+  if (fond === 'absent' && progres === null)
+    return (
+      <p className={styles.aide} role="status" data-testid="fond-indisponible">
+        Fond de carte indisponible ici : le plan de l’IGN ne couvre pas cette
+        zone, il n’y a donc rien à emporter.
+      </p>
+    )
 
   return (
     <div className={styles.bloc} data-testid="emporter-bloc">
