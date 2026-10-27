@@ -4,15 +4,13 @@ Deux parties :
 - la mise en route de la machine, à faire une seule fois ;
 - le prompt à coller dans Claude Code à chaque reprise.
 
-La dernière session (locale, Windows, 22/10) s'est arrêtée sur `main`, une
-fois fusionnée la PR qui met ce fichier à jour. Depuis le 22/10, plus de
-branche longue : une issue = une branche partie de `main` = une PR
-(`AGENTS.md`).
-Bilan du 22/10 : #578 et #577 livrées, #584 en partie ; la branche longue
-fusionnée sur `main` (#586) ; le mode de développement d'ISTQBFinder mis en
-place (#588 agents `ines` et `parcours`, #589 permissions, #590
-`AGENTS.md` et intégrations Copilot / Gemini) ; une revue globale
-(`docs/REVUE_GLOBALE_22_10.md`) ; 20 issues ouvertes par les agents et la revue (#591 à #596, #600 à #613).
+La dernière session (locale, Windows, 26/10) s'est arrêtée sur `main`,
+une fois fusionnée la PR qui met ce fichier à jour. Une issue = une branche
+partie de `main` = une PR (`AGENTS.md`).
+Bilan du 26/10 : #600, #601, #592 corrigées et fusionnées (#616, #617,
+#618) ; #594 volet 1 (#619, l'issue reste ouverte pour le volet 2) ; #612
+(#620) et #613 (#621) **à fusionner si leur CI est verte** — vérifier à la
+reprise ; #615 ouverte ; revue globale (`docs/REVUE_GLOBALE_26_10.md`).
 
 ---
 
@@ -134,14 +132,15 @@ B. Une revue courte du projet : ce qui a changé depuis le 22/10 et les
 
 C. Les issues retenues, une par une, chacune sur sa branche et sa PR.
    Candidats, par ordre de gravité, à confirmer par mes réponses :
-   - #600 (déclarer pendant la démonstration écrit en base — test d'abord)
-     et #601 (une fiche « ouverte » survit au changement de zone) ;
-   - #592 (zone vide qui ne recadre pas) et #594 (légende qui annonce un GR
-     non dessiné) : correctifs mesurables, sans décision ;
-   - #612 (dist/ jamais vidé) et #613 (npm audit) : outillage ;
+   - #620 (#612) et #621 (#613) : les fusionner si la CI est verte sur un
+     commit qui contient main ;
+   - décidés le 26/10, à coder : #585 (fondu + chevron partout, marge
+     invalide corrigée dans le lot), #584 à 360 px (boussole masquée fiche
+     ouverte), #591 (12 km puis 20 km si vide, et l'écran le dit), #593
+     (hors IGN : le dire, ne pas l'emporter), #615 (dire la sortie de la
+     démonstration, dans la garde nommée) ;
    - les textes #602 à #608, groupés par surface ;
-   - #585 (fondu + chevron, avis d'Inès) et #296 (contours à ~100 m,
-     mesurer d'abord), décidés le 22/10 ;
+   - #296 (contours à ~100 m, mesurer d'abord), décidé le 22/10 ;
    - #587 (Chromium qui cale en CI) : mesurer avant de corriger.
 
 D. Pour une question d'écran, l'agent ines ; pour une démonstration ou
@@ -184,34 +183,46 @@ avec le prompt du lendemain.
 
 ## 3. Ce qui attend la décision de Cédric
 
-Tranché le 22/10 : #584 (▶ s'efface fiche ouverte — livré ; reste le cas
-360 px), #585 (fondu — Inès recommande d'y peindre un chevron), #296
-(contours acceptés, ~100 m, mesurer avant de livrer), le mode
-d'ISTQBFinder (livré : #588, #589, #590).
+Tranché le 26/10 (à coder, voir le §2) : #585 chevron + fondu partout ;
+#584 à 360 px, boussole masquée ; #591, 12 km élargi à 20 km si vide et
+annoncé ; #593, le dire sans emporter ; #615, un message de sortie de la
+démonstration pour tous les gestes.
 
 Reste ouvert :
 
-- **#585** — trois questions d'Inès (sur l'issue) : chevron dans le fondu
-  ou dégradé seul ; partout ou seulement 800-1 100 px ; corriger dans le
-  même lot la marge invalide `-var(--espace-2)` de `.groupTitle`.
-- **#584, cas 360 px** — la bande au-dessus de la fiche fait 260 px (130
-  en gros texte), le zoom seul 132 : boussole sous « Ma position », et le
-  « − » aussi selon les polices (Linux). Que fait-on céder encore ?
-- **#290 volet 2** — couches, légende, couleur sans `osmc:symbol`.
-- **#591** — le rayon de « autour d'une ville » (12 km, 0 itinéraire à
-  Nouméa ; 8 à 20 km) : il change ce qui est calculé (§2).
-- **#593** — fond de carte hors couverture IGN (Nouvelle-Calédonie dès le
-  zoom 8) : un autre fond, ou le dire à l'écran.
 - **#594, volet 2** — replier les GR quand ils sont la majorité d'une zone
-  (décision du 25/08 à revoir).
+  (décision du 25/08 à revoir). Le volet 1 est livré (#619).
+- **#290 volet 2** — couches, légende, couleur sans `osmc:symbol`.
 - **#608** — qu'appelle-t-on « hébergement marchand » (gîtes d'étape) ?
 - **Rhône (#20, #87)** — datARA 403 le 22/10 ; **Savoie / Haute-Savoie** :
   décision juridique.
 - **Clé d'API** collée le 22/10 dans la conversation : à révoquer.
+- **`fs.rmSync` sous un chemin accentué** (#612) : le signaler à Node, ou
+  vérifier une version plus récente ?
 - **Preuves humaines** — #173, #528 ; non vérifié sur un vrai téléphone :
   #568, #561, #551.
 
-## 4. Ce que la journée du 22/10 a appris
+## 4. Ce que la journée du 26/10 a appris
+
+- **La cause qu'une issue avance se mesure avant de se coder** : #612
+  disait « `emptyOutDir: true` probable ». Essayé, le témoin survivait. La
+  vraie cause était `fs.rmSync`, qui ne supprime rien sans erreur sous
+  « Moretti Cédric ». Elle a été trouvée en isolant chaque hypothèse sur
+  un fichier témoin, pas en relisant Vite.
+- **La relecture adverse a encore trouvé le chemin voisin** : le tracé à la
+  main écrivait en base pendant la démonstration, comme la déclaration
+  (#600). Trois sprints sur trois, maintenant.
+- **Un plafond sert le jour où il gêne** : #601 dépassait celui du store de
+  neuf lignes. La logique est allée dans sa tranche plutôt que de relever
+  le chiffre.
+- **Le hook « dist/ à jour » a refusé deux fois** une e2e lancée sur un
+  build raté. C'est la même famille que celle du 22/10 (§6quater), et cette
+  fois la garde a tenu.
+- **Fusionner deux PR vertes demande de remettre main entre les deux** :
+  `gh pr update-branch` le fait côté GitHub, sans toucher à l'arbre local
+  pendant une porte.
+
+## 5. Ce que la journée du 22/10 a appris
 
 - **Le prompt de reprise vieillit comme un commentaire** (§4bis) : #572 et
   #560 (3) y figuraient comme à faire, livrés depuis deux jours. D'où
