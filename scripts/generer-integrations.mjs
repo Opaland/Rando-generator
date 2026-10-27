@@ -21,7 +21,7 @@
 // sans régénérer fait rougir la porte — une garde qu'il faut penser à lancer
 // ne garde rien (CLAUDE.md §6quater).
 
-import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
 import { dirname, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -235,7 +235,9 @@ function generer() {
     }
   }
   for (const rel of orphelins(attendus)) {
-    rmSync(join(RACINE, rel))
+    // `unlinkSync` et non `rmSync`, qui ne supprime rien sous un chemin
+    // accentué, sans erreur (#612) : l'orphelin était annoncé « supprimé ».
+    unlinkSync(join(RACINE, rel))
     ecrits.push(`${rel} (supprimé)`)
   }
   return ecrits

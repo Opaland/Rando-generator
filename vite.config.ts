@@ -6,6 +6,7 @@ import path from 'node:path'
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import { poserLaPolitique } from './src/lib/baliseDePolitique.ts'
+import { viderLaSortie } from './src/lib/viderLaSortie.ts'
 
 /**
  * Inscrit la liste des fichiers construits dans public/sw.js, dont les noms
@@ -192,6 +193,17 @@ function poser(html: string, quoi: string): string {
   return poserLaPolitique(html, baliseDeLaPolitique(), quoi)
 }
 
+/** Vide `dist/` avant chaque construction : voir `src/lib/viderLaSortie.ts`. */
+function viderDist(): Plugin {
+  return {
+    name: 'sentiers-vider-dist',
+    apply: 'build',
+    async buildStart() {
+      await viderLaSortie(path.resolve('dist'))
+    },
+  }
+}
+
 function politiqueDansLaPage(): Plugin {
   return {
     name: 'sentiers-csp-balise',
@@ -219,7 +231,7 @@ function politiqueDansLaPage(): Plugin {
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), precacheServiceWorker(), politiqueDansLaPage()],
+  plugins: [viderDist(), react(), precacheServiceWorker(), politiqueDansLaPage()],
   base: './',
   /*
     Les mêmes en-têtes qu'en production, sur le serveur de prévisualisation.
