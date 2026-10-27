@@ -73,8 +73,13 @@
 
   `data-reste` vient de `useResteADefiler` : au bout de la course, la bande
   disparaît — un « ça continue » peint sur la dernière ligne serait faux.
-  `visibility` et non `display` : la marge négative la garde hors du flux,
-  la cacher ne déplace rien.
+  `visibility` et non `display` : la cacher ne déplace rien.
+
+  La marge négative ramène la ligne de grille de la bande à zéro, pas
+  au-dessous — une piste ne peut pas être négative —, et le gap qui la
+  précède restait : 10 px de papier vide au bout de la liste (relecture
+  adverse du 27/10, `scrollHeight` 1 531 contre 1 521). Le dernier groupe
+  rend ce gap par sa propre marge basse.
 */
 .listeDesZones::after {
   content: '▾';
@@ -95,6 +100,21 @@
 
 .listeDesZones[data-reste='non']::after {
   visibility: hidden;
+}
+
+.listeDesZones > :last-child {
+  margin-bottom: calc(-1 * var(--espace-5));
+}
+
+/*
+  Contraste élevé de Windows : le dégradé y est retiré, et le chevron se
+  peignait nu sur la bordure du bouton suivant (relecture adverse du
+  27/10). Un aplat de la couleur du fond lui rend sa bande.
+*/
+@media (forced-colors: active) {
+  .listeDesZones::after {
+    background: Canvas;
+  }
 }
 
 .zone,

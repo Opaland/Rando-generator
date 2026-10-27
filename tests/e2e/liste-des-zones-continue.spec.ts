@@ -80,6 +80,21 @@ for (const config of CONFIGURATIONS) {
           return avec.equals(sans)
         }, { message: '« ça continue » est encore peint au bout de la liste' })
         .toBe(true)
+
+      /*
+        Et la bande ne laisse rien derrière elle : au bout, le dernier bouton
+        touche le bas de la liste. Trouvé par la relecture adverse du 27/10 —
+        la ligne de grille de la bande gardait son gap, 10 px de vide.
+      */
+      const vide = await liste.evaluate((el) => {
+        const dernier = Array.from(el.querySelectorAll('button')).at(-1)
+        if (dernier === undefined) return null
+        return el.getBoundingClientRect().bottom - dernier.getBoundingClientRect().bottom
+      })
+      expect(vide, 'du vide sous le dernier bouton, au bout de la liste').not.toBeNull()
+      expect(vide!).toBeLessThan(1)
+      // Ni l'inverse : un dernier bouton qui passerait sous le bas serait rogné.
+      expect(vide!).toBeGreaterThan(-1)
     })
   })
 }
