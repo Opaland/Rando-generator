@@ -50,6 +50,51 @@
      sa propre place plutôt que de flotter par-dessus le texte. */
   scrollbar-gutter: stable;
   padding-right: var(--espace-2);
+  /* Le clavier n'amène pas un bouton sous le fondu ci-dessous : mesuré par
+     Inès le 22/10, « Ain » arrivait à 32 px sur 40 sous la bande. */
+  scroll-padding-bottom: 2rem;
+}
+
+/*
+  « Ça continue » (#585). Mesuré le 22/10 : selon la largeur, le pointeur et
+  la taille du texte, les 280 px coupaient sous un intertitre seul — rien ne
+  disait que la liste continuait.
+
+  Un pseudo-élément collant **au-dessus** du contenu, et non les ombres de
+  `.ombres-defilement` : celles-ci se peignent sur le fond de la liste, et
+  les boutons de zone, opaques, les recouvraient toutes — un test les
+  trouvait présentes, aucune n'était peinte (essai retiré le 22/10).
+
+  Le chevron porte le message que le fondu seul effaçait : à 1 024 px
+  souris, le fondu pâlissait le liseré du bouton suivant de 5,32:1 à 1,72:1,
+  le seul indice qui existait (avis d'Inès, #585). Décoratif, d'où le texte
+  de remplacement vide : la liste annonce déjà son contenu aux lecteurs
+  d'écran.
+
+  `data-reste` vient de `useResteADefiler` : au bout de la course, la bande
+  disparaît — un « ça continue » peint sur la dernière ligne serait faux.
+  `visibility` et non `display` : la marge négative la garde hors du flux,
+  la cacher ne déplace rien.
+*/
+.listeDesZones::after {
+  content: '▾';
+  content: '▾' / '';
+  position: sticky;
+  bottom: 0;
+  height: 2rem;
+  margin-top: calc(-2rem - var(--espace-5));
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: linear-gradient(rgba(var(--papier-rvb), 0), var(--papier) 75%);
+  color: var(--encre-douce);
+  font-size: var(--texte-titre-fort);
+  line-height: 1;
+  pointer-events: none;
+}
+
+.listeDesZones[data-reste='non']::after {
+  visibility: hidden;
 }
 
 .zone,
@@ -87,7 +132,9 @@
 }
 
 .groupTitle {
-  margin: var(--espace-2) 0 -var(--espace-2);
+  /* `-var(…)` n'est pas une valeur : la déclaration entière tombait, marge
+     calculée 0 (trouvé par Inès le 22/10, #585). */
+  margin: var(--espace-2) 0 calc(-1 * var(--espace-2));
   font-size: var(--texte-appui);
   text-transform: uppercase;
   letter-spacing: 0.05em;

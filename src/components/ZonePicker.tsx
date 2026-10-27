@@ -2,6 +2,7 @@ import { Fragment, useEffect, useState, type FormEvent } from 'react'
 import { FEATURED_ROUTES, ZONES } from '../core/overpass.ts'
 import { formatOctets } from '../lib/format.ts'
 import { useDefilerVersAlerte } from '../lib/useDefilerVersAlerte.ts'
+import { useResteADefiler } from '../lib/useResteADefiler.ts'
 import { useAppStore } from '../store/appStore.ts'
 import { GROUPES } from './zoneGroupes.ts'
 import styles from './ZonePicker.module.css'
@@ -47,6 +48,9 @@ export function ZonePicker() {
   const alerteZone = useDefilerVersAlerte<HTMLParagraphElement>(
     zoneError !== null,
   )
+
+  // Le fondu du bas de la liste ne se peint que s'il reste à défiler (#585).
+  const { ref: refListe, reste: resteSousLaListe } = useResteADefiler<HTMLDivElement>()
 
   const [refInput, setRefInput] = useState('')
   const [lieuInput, setLieuInput] = useState('')
@@ -239,8 +243,10 @@ export function ZonePicker() {
         plus de soixante-dix fichiers sans qu'aucun n'ait dû changer.
       */}
       <div
+        ref={refListe}
         className={styles.listeDesZones}
         data-testid="zone-liste"
+        data-reste={resteSousLaListe ? 'oui' : 'non'}
         role="group"
         aria-label="Liste des zones"
       >
