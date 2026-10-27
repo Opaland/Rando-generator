@@ -19,13 +19,17 @@ import {
  * Tranché par Cédric le 22/10 : fiche ouverte, ▶ s'efface. On y lit un
  * itinéraire ; le départ rapide revient dès qu'on referme la fiche.
  *
- * Ce que ça ne règle pas, mesuré le même jour : à 360 × 640 la bande de
+ * Ce que ça ne réglait pas, mesuré le même jour : à 360 × 640 la bande de
  * carte au-dessus de la fiche fait 260 px (130 en gros texte), et le zoom
- * seul en prend 132. La boussole y reste sous « Ma position » — et le « − »
- * aussi, selon la hauteur de l'en-tête : peint sous Windows, recouvert en CI
- * sous Linux (151-195 px sous « Ma position »), où les polices font un
- * en-tête plus haut. C'est la suite de #584, à trancher : à cette taille, on
- * n'affirme que ce que la décision garantit — ▶ effacé, « + » peint.
+ * seul en prend 132. La boussole y restait sous « Ma position » ; le
+ * 27/10, à 390 × 844 en gros texte aussi, sous les polices Linux de ce
+ * conteneur (259-303 px) alors que la CI la peignait.
+ *
+ * Tranché par Cédric le 27/10 : fiche ouverte, la boussole s'efface comme
+ * ▶, et revient avec la carte. Le « − » à 360 × 640 dépend encore de la
+ * hauteur de l'en-tête — peint sous Windows, recouvert en CI (151-195 px
+ * sous « Ma position ») — : on n'y affirme que ce que les décisions
+ * garantissent, « + » peint, ▶ et la boussole effacés.
  */
 /**
  * « ok », ou ce qui est peint à la place : un simple booléen disait
@@ -49,6 +53,8 @@ async function peintsParEuxMemes(page: Page): Promise<Record<string, string>> {
     return {
       zoomIn: peint('.maplibregl-ctrl-zoom-in'),
       zoomOut: peint('.maplibregl-ctrl-zoom-out'),
+      // Fiche ouverte au téléphone, effacée et non recouverte : `display:
+      // none` rend une boîte vide, que `peint` dit « sans taille ».
       boussole: peint('.maplibregl-ctrl-compass'),
       maPosition: peint('[data-testid="locate-toggle"]'),
     }
@@ -61,14 +67,14 @@ for (const vue of [
     largeur: 390,
     hauteur: 844,
     gros: true,
-    attendu: { zoomIn: 'ok', zoomOut: 'ok', boussole: 'ok', maPosition: 'ok' },
+    attendu: { zoomIn: 'ok', zoomOut: 'ok', boussole: 'sans taille', maPosition: 'ok' },
   },
   {
     nom: '360 × 640',
     largeur: 360,
     hauteur: 640,
     gros: false,
-    attendu: { zoomIn: 'ok', maPosition: 'ok' },
+    attendu: { zoomIn: 'ok', boussole: 'sans taille', maPosition: 'ok' },
   },
 ]) {
   test.describe(`fiche ouverte au doigt — ${vue.nom}`, () => {
@@ -78,7 +84,7 @@ for (const vue of [
       isMobile: true,
     })
 
-    test('le zoom reste entier, et ▶ revient à la fermeture de la fiche', async ({
+    test('le zoom reste entier, et ▶ comme la boussole reviennent à la fermeture de la fiche', async ({
       page,
     }) => {
       await mockExternalNetwork(page)
@@ -101,6 +107,16 @@ for (const vue of [
       await page.getByTestId('itinerary-detail-close').click()
       await ouvrirOnglet(page, 'carte')
       await expect(page.getByTestId('demarrer-rapide')).toBeVisible()
+      /*
+        La boussole aussi : elle retrouve une taille. Pas « peinte par
+        elle-même » : à 360 × 640 en CI, fiche fermée, la carte d'itinéraire
+        la recouvre (195-239 px, 27/10) — un recouvrement antérieur à ce
+        correctif, relevé sur #584, que ce test n'a pas à garder.
+      */
+      await expect
+        .poll(async () => (await peintsParEuxMemes(page)).boussole)
+        // « ok » ou « sous … » : affichée. Ni « sans taille », ni « absent ».
+        .toMatch(/^(ok|sous )/)
     })
   })
 }

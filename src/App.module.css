@@ -574,6 +574,29 @@
       var(--hauteur-fiche) + 10px + env(safe-area-inset-bottom, 0px)
     );
   }
+
+  /*
+    Fiche ouverte, la boussole s'efface, comme ▶ (#584). La bande de carte
+    au-dessus de la fiche ne tient pas le zoom, la boussole et « Ma
+    position » ensemble : mesuré le 22/10, 260 px à 360 × 640 (130 en gros
+    texte) pour 132 px de zoom seul ; le 27/10 à 390 × 844 en gros texte, la
+    boussole sous « Ma position » (259-303 px), polices Linux.
+
+    Tranché par Cédric le 27/10. La boussole ne sert qu'une fois la carte
+    tournée, et revient à la fermeture de la fiche. Pas de seuil de hauteur :
+    il en aurait fallu un qui dépende des polices et de la taille du texte,
+    c'est-à-dire un nombre inventé (§2) — la règle de ▶ n'en a pas non plus
+    (`App.tsx`, `compact && detailOuvert`).
+
+    Ce que ça coûte, relevé par la relecture adverse du 27/10 : une carte
+    tournée **avant** d'ouvrir la fiche le reste, et le seul retour au nord
+    passe alors par « Incliner la carte » puis « Remettre à plat »
+    (`useMapCamera.ts`) — au clavier, plus rien. Accepté avec la décision ;
+    la boussole revient à la fermeture de la fiche.
+  */
+  :root[data-fiche='ouverte'] .main :global(.maplibregl-ctrl-compass) {
+    display: none;
+  }
 }
 
 /*
