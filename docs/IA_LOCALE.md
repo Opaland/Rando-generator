@@ -33,7 +33,7 @@ Toutes envoient votre historique de randonnée à un tiers. C'est le modèle
 
 Or l'en-tête de Sentiers dit, sur chaque écran :
 
-> « Vos traces GPX ne quittent jamais votre navigateur — aucun compte, aucun
+> « Vos traces ne quittent jamais votre navigateur — aucun compte, aucun
 > serveur, aucune télémétrie. »
 
 **Il n'y a donc pas de version « on appelle une API » de cette

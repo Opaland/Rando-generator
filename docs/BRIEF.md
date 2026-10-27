@@ -95,7 +95,9 @@ rouvrir seulement avec un argument neuf.
   de terrain, et le dire évite l'accident.
 - **Pas de fil social, pas de photos, pas de commentaires, pas de notation
   d'itinéraires.** Existe en mieux ailleurs, et dilue le propos.
-- **Pas de météo, pas d'hébergements marchands.**
+- **Pas de météo, pas d'hôtels ni de campings commerciaux.** Les gîtes
+  d'étape et les refuges gardés sont signalés : ce sont des étapes du chemin
+  (décision du 27/10, #608).
 - **Pas de scraping de sources fermées.** Les données viennent
   d'OpenStreetMap et de l'open data public, avec leurs licences citées.
 - **Pas de mesure d'audience, pas de traceur, pas de police distante.**

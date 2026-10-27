@@ -124,7 +124,8 @@ supposé.
 
 Repris du brief, listé ici pour qu'aucune épopée ne s'y glisse par la bande :
 navigation vocale, fil social, photos, notation d'itinéraires, météo,
-hébergements marchands, compte utilisateur, mesure d'audience.
+hôtels et campings commerciaux (gîtes d'étape et refuges gardés, eux, sont
+signalés — #608), compte utilisateur, mesure d'audience.
 
 ## Comment un récit devient « fait »
 

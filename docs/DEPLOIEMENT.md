@@ -11,7 +11,7 @@ ce qu'il ne doit pas changer**.
 
 L'en-tête de chaque écran dit :
 
-> « Vos traces GPX ne quittent jamais votre navigateur — aucun compte, aucun
+> « Vos traces ne quittent jamais votre navigateur — aucun compte, aucun
 > serveur, aucune télémétrie. »
 
 Cette phrase reste vraie sur un serveur, à une condition : que le serveur ne
