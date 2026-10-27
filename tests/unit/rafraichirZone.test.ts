@@ -18,22 +18,16 @@ import { trancheZone, type DependancesZone } from '../../src/store/trancheZone.t
  * dont une seule coordonnée est illisible passait alors la garde et partait
  * dans `loadAutour` avec un centre `[NaN, 45.75]`.
  *
- * ## Le survivant voisin, qui n'en est pas un
+ * ## Où vit la garde depuis #591
  *
- * `lon === undefined || lat === undefined → &&` survit **même à ces
- * tests**, et c'est normal : `Number.isFinite(undefined)` vaut `false`, donc
- * la ligne suivante attrape déjà tout ce que celle-là attraperait. Cette
- * ligne ne garde rien à l'exécution — elle rétrécit le type : `.map(Number)`
- * rend `number | undefined`, et `center: [lon, lat]` exige deux nombres. La
- * retirer casse `tsc`, vérifié.
- *
- * **Ce constat n'est écrit qu'ici, et pas dans le code**, parce que
- * `trancheZone.ts` occupe 539 de ses 540 lignes de plafond
- * (`plafondDuStore.test.ts`) : il ne reste pas une ligne pour un
- * commentaire. Le plafond a fait exactement ce pour quoi il existe — dire
- * non —, et ce n'était pas à un lot sur les mutants de décider de le
- * relever. Qui voudra « simplifier » cette ligne trouvera ce fichier : il
- * porte le nom de la fonction.
+ * La lecture de la clé a quitté `trancheZone.ts` pour `lireCleAutour`
+ * (`src/core/rechercheAutour.ts`), qui la partage avec le cadrage : la clé
+ * porte maintenant aussi le rayon d'une recherche élargie. Le survivant
+ * équivalent que ce paragraphe décrivait — `lon === undefined || …`, qui ne
+ * servait qu'à rétrécir le type — n'existe plus sous cette forme : la
+ * déstructuration a une valeur par défaut, et seul `Number.isFinite`
+ * décide. Les questions ci-dessous passent toujours par `rafraichirZone`,
+ * pour garder ce que l'utilisateur voit, pas seulement le cœur.
  *
  * ## Pourquoi ça peut arriver pour de vrai
  *

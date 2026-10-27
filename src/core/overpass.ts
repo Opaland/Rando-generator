@@ -265,7 +265,9 @@ ${SORTIE_AVEC_TAGS}`
  * Une commune n'est pas une zone Overpass, et ses limites administratives ne
  * disent rien de l'endroit où l'on marche : on part du centre et on prend
  * douze kilomètres, la portée d'une sortie à la journée depuis chez soi. Plus
- * large ferait une requête lourde pour des sentiers qu'on n'ira pas voir.
+ * large ferait une requête lourde pour des sentiers qu'on n'ira pas voir —
+ * sauf là où ces douze kilomètres ne trouvent rien : la recherche s'élargit
+ * alors une fois (`RAYON_ELARGI_METERS`, `rechercheAutour.ts`, #591).
  */
 export const RAYON_AUTOUR_METERS = 12_000
 

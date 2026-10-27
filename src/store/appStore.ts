@@ -287,7 +287,7 @@ interface AppState
   /** Efface le compte rendu du dernier import de sauvegarde. */
   clearBackupMessage: () => void
   /** Charge les itinéraires dans un rayon autour d'un lieu trouvé. */
-  loadAutour: (lieu: Lieu, options?: { force?: boolean }) => Promise<void>
+  loadAutour: (lieu: Lieu, options?: { force?: boolean; rayon?: number }) => Promise<void>
   /**
    * Ajoute les boucles locales open data à la zone affichée.
    *

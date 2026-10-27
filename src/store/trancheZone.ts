@@ -45,6 +45,13 @@ import {
   libelleDeZone,
 } from '../core/overpass.ts'
 import { messageDeZone, messageDeRepliSurCache } from '../core/messageDeZone.ts'
+import {
+  cleAutour,
+  libelleAutour,
+  lireCleAutour,
+  nomDuLieuAutour,
+  rayonSuivant,
+} from '../core/rechercheAutour.ts'
 import type { Lieu } from '../core/geocode.ts'
 import { fetchPois } from '../core/poi.ts'
 import { reponseTronquee } from '../core/poisDeZone.ts'
@@ -84,7 +91,7 @@ interface EtatLuAilleurs {
 interface ActionsZone {
   loadZone: (zoneId: string, options?: { force?: boolean }) => Promise<void>
   loadRef: (ref: string, options?: { force?: boolean }) => Promise<void>
-  loadAutour: (lieu: Lieu, options?: { force?: boolean }) => Promise<void>
+  loadAutour: (lieu: Lieu, options?: { force?: boolean; rayon?: number }) => Promise<void>
   chargerPoisDeLaZone: () => Promise<void>
   cancelZoneLoad: () => void
   rafraichirZone: () => Promise<void>
@@ -159,7 +166,9 @@ export function trancheZone(deps: DependancesZone): ActionsZone {
     zoneLabel: string,
     query: string,
     force: boolean,
-  ): Promise<void> {
+  ): Promise<number | null> {
+    // Rend le nombre d'itinéraires affichés, ou `null` si rien ne l'a été —
+    // annulé, ou en panne sans copie : ce que `loadAutour` lit pour élargir.
     // Le numéro de séquence se prend AVANT tout `await`, sans exception.
     //
     // Ma première version sortait de la démonstration d'abord : un `await`
@@ -201,7 +210,7 @@ export function trancheZone(deps: DependancesZone): ActionsZone {
       } catch {
         cached = undefined
       }
-      if (!isCurrent()) return
+      if (!isCurrent()) return null
       const now = new Date().toISOString()
       if (cached && !force && zoneUtilisable(cached, now)) {
         deps.setItineraries(
@@ -223,7 +232,7 @@ export function trancheZone(deps: DependancesZone): ActionsZone {
         if (message !== null) deps.set({ zoneError: message })
         await deps.persistLastZone(zoneKey)
         await deps.recompute()
-        return
+        return cached.itineraries.length
       }
 
       try {
@@ -242,7 +251,7 @@ export function trancheZone(deps: DependancesZone): ActionsZone {
             if (isCurrent()) deps.set({ zoneLoadBytes: octets })
           },
         })
-        if (!isCurrent()) return
+        if (!isCurrent()) return null
         deps.set({ zoneLoadStage: 'processing' })
         const itineraries = parseOverpassResponse(data, now)
         /*
@@ -277,7 +286,7 @@ export function trancheZone(deps: DependancesZone): ActionsZone {
             // mémoire, le cache sera simplement absent au prochain démarrage.
           }
         }
-        if (!isCurrent()) return
+        if (!isCurrent()) return null
         // Enregistrée avant d'être affichée : si la zone est à l'écran, elle
         // sera restaurée au prochain démarrage. Dans l'autre ordre, recharger
         // la page dans la seconde qui suit interrompait l'écriture, et la
@@ -291,8 +300,9 @@ export function trancheZone(deps: DependancesZone): ActionsZone {
         })
         if (message !== null) deps.set({ zoneError: message })
         await deps.recompute()
+        return itineraries.length
       } catch (error) {
-        if (!isCurrent()) return
+        if (!isCurrent()) return null
         // Miroirs injoignables : on retombe sur le cache même périmé.
         if (cached) {
           deps.setItineraries(
@@ -315,7 +325,7 @@ export function trancheZone(deps: DependancesZone): ActionsZone {
           })
           await deps.persistLastZone(zoneKey)
           await deps.recompute()
-          return
+          return null
         }
         const message =
           error instanceof OverpassError || error instanceof DbError
@@ -330,6 +340,7 @@ export function trancheZone(deps: DependancesZone): ActionsZone {
         deps.set({ zoneLoading: false, zoneLoadStage: null, zoneLoadBytes: 0 })
       }
     }
+    return null
   }
 
   /**
@@ -426,16 +437,18 @@ export function trancheZone(deps: DependancesZone): ActionsZone {
     },
 
     async loadAutour(lieu, options = {}) {
-      const [lon, lat] = lieu.center
-      const zoneKey = `autour:${lon.toFixed(4)},${lat.toFixed(4)}`
+      const rayon = options.rayon ?? RAYON_AUTOUR_METERS
       const force = options.force ?? false
       deps.oublierLesLieux()
-      await loadFromOverpass(
-        zoneKey,
-        `Autour de ${lieu.label}`,
-        buildAroundQuery(lieu.center, RAYON_AUTOUR_METERS),
+      const trouves = await loadFromOverpass(
+        cleAutour(lieu.center, rayon),
+        libelleAutour(lieu.label, rayon),
+        buildAroundQuery(lieu.center, rayon),
         force,
       )
+      // Vide, et seulement vide : 25 km, une fois, en le disant (#591).
+      const suivant = rayonSuivant(rayon, trouves)
+      if (suivant !== null) await actions.loadAutour(lieu, { force, rayon: suivant })
     },
     async rafraichirZone() {
       const { zoneKey, zoneLabel } = deps.etat()
@@ -447,23 +460,13 @@ export function trancheZone(deps: DependancesZone): ActionsZone {
         if (zoneLabel) await actions.loadRef(zoneLabel, { force: true })
         return
       }
+      // La clé porte le centre et le rayon, pour rejouer la recherche sans
+      // avoir gardé le lieu d'origine — élargie, directement à son rayon.
       if (zoneKey.startsWith('autour:')) {
-        // La clé porte le centre de la recherche, précisément pour qu'on
-        // puisse la rejouer sans avoir gardé le lieu d'origine.
-        const [lon, lat] = zoneKey
-          .slice('autour:'.length)
-          .split(',')
-          .map(Number)
-        if (lon === undefined || lat === undefined) return
-        if (!Number.isFinite(lon) || !Number.isFinite(lat)) return
-        await actions.loadAutour(
-          {
-            label: (zoneLabel ?? '').replace(/^Autour de /, ''),
-            contexte: null,
-            center: [lon, lat],
-          },
-          { force: true },
-        )
+        const autour = lireCleAutour(zoneKey)
+        if (autour === null) return
+        const lieu = { label: nomDuLieuAutour(zoneLabel), contexte: null, center: autour.center }
+        await actions.loadAutour(lieu, { force: true, rayon: autour.rayon })
         return
       }
       await actions.loadZone(zoneKey, { force: true })

@@ -1,5 +1,5 @@
 import { EARTH_RADIUS_METERS } from './geo.ts'
-import { RAYON_AUTOUR_METERS } from './overpass.ts'
+import { lireCleAutour } from './rechercheAutour.ts'
 import { EMPRISES_DE_ZONE } from './emprisesDeZone.donnees.ts'
 
 /** Boîte englobante, en degrés : [ouest, sud, est, nord]. */
@@ -15,7 +15,8 @@ export type Emprise = readonly [number, number, number, number]
  *
  * - zone prédéfinie : l'emprise de sa limite OSM, embarquée
  *   (`scripts/emprises-de-zone.mjs`) — aucune requête de plus ;
- * - « autour de » : la boîte du cercle interrogé, qui est la zone ;
+ * - « autour de » : la boîte du cercle interrogé, qui est la zone — au
+ *   rayon élargi quand la recherche l'a été (#591) ;
  * - recherche par ref, ou rien de chargé : `null`. Là, l'itinéraire est la
  *   zone, et cadrer sur lui reste juste.
  */
@@ -23,14 +24,11 @@ export function empriseACadrer(zoneKey: string | null): Emprise | null {
   if (zoneKey === null) return null
   const embarquee = EMPRISES_DE_ZONE[zoneKey]
   if (embarquee !== undefined) return embarquee
-  if (zoneKey.startsWith('autour:')) {
-    const parts = zoneKey.slice('autour:'.length).split(',').map(Number)
-    if (parts.length !== 2) return null
-    const [lon, lat] = parts as [number, number]
-    if (!Number.isFinite(lon) || !Number.isFinite(lat)) return null
-    return empriseDuCercle(lon, lat, RAYON_AUTOUR_METERS)
-  }
-  return null
+  // Le cercle interrogé, rayon élargi compris (#591).
+  const autour = lireCleAutour(zoneKey)
+  if (autour === null) return null
+  const [lon, lat] = autour.center
+  return empriseDuCercle(lon, lat, autour.rayon)
 }
 
 function empriseDuCercle(lon: number, lat: number, rayon: number): Emprise {
