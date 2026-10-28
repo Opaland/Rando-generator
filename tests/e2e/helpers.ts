@@ -417,6 +417,27 @@ export function pilatInternational(): unknown {
 }
 
 /**
+ * La même, avec trois itinéraires internationaux au lieu d'un : la Via
+ * Lugdunum et deux copies, chacune sous sa propre référence — la Via garde
+ * le `ref` du GR 7 d'origine, et trois relations de même `ref` ne font qu'un
+ * itinéraire. Depuis #594 (volet 2), un international unique n'est plus
+ * replié.
+ */
+export function pilatTroisInternationaux(): unknown {
+  const data = pilatInternational() as {
+    elements: { id: number; tags?: Record<string, string> }[]
+  }
+  const via = data.elements.find((e) => e.id === 1001)
+  if (via?.tags === undefined) throw new Error('la Via de la fixture a disparu')
+  const copies = [1201, 1202].map((id) => ({
+    ...via,
+    id,
+    tags: { ...via.tags, name: `Via ${String(id)}`, ref: `E${String(id)}` },
+  }))
+  return { ...data, elements: [...data.elements, ...copies] }
+}
+
+/**
  * La même, plus un itinéraire dont le réseau n'est pas déclarable.
  *
  * Le Tour du Pilat (1003) n'a pas de `network` : c'est son `ref`, « GRP Tour

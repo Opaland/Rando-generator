@@ -10,6 +10,7 @@ import {
   mockTilesOk,
   ONGLETS,
   estAlEcran,
+  pilatTroisGr,
 } from './helpers.ts'
 
 /**
@@ -210,6 +211,9 @@ async function atteindre(
   const overpass = await mockExternalNetwork(page)
   await mockTilesOk(page)
   await mockElevation(page)
+  // Depuis #594 (volet 2), l'unique GR d'une zone n'est plus replié : le
+  // Pilat d'origine n'a plus rien à masquer. Trois GR, pour qu'il y en ait.
+  if (etat === 'réseaux masqués') overpass.setFixture(pilatTroisGr())
   /*
     Pour mesurer le bouton qui déplie les points d'intérêt, il faut qu'il y
     ait de quoi replier : la fixture ordinaire compte trop peu de points.
