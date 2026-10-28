@@ -146,7 +146,10 @@ par le CLI Playwright.
    itinéraires internationaux — sur la carte comme dans la liste. Un tel
    itinéraire traverse la zone de part en part : mesuré sur des fiches
    réelles, une boucle communale fait 8,6 km quand la Via Lugdunum en fait
-   153, et le tracé long **barre l'écran** au lieu de l'informer. Une
+   153, et le tracé long **barre l'écran** au lieu de l'informer. Sauf
+   quand la zone n'en compte qu'un ou deux : rien n'y est désencombré, et
+   le cacher la privait de son itinéraire principal — le GR NC1, seul GR de
+   Nouvelle-Calédonie (#594). Une
    ligne au-dessus de la liste dit combien sont ainsi **masqués** et les
    rend d'un clic — un itinéraire absent sans que rien ne le signale serait
    un mensonge par omission. Sur une fiche, la liste des points

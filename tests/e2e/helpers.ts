@@ -374,6 +374,27 @@ export function pilatGrOnly(): unknown {
 }
 
 /**
+ * La fixture du Pilat, avec trois GR au lieu d'un.
+ *
+ * Depuis #594 (volet 2), l'unique GR d'une zone n'est plus replié : le
+ * Pilat de la fixture, qui n'en a qu'un, ne montre donc plus le repli. Les
+ * tests du repli lui-même ont besoin d'une zone où les GR sont nombreux —
+ * deux copies du GR 7 sous d'autres références, sur les mêmes chemins.
+ */
+export function pilatTroisGr(): unknown {
+  const data = pilatFixture as unknown as {
+    elements: { id: number; tags?: Record<string, string> }[]
+  }
+  const gr7 = data.elements.find((e) => e.id === 1001)
+  if (gr7?.tags === undefined) throw new Error('le GR 7 de la fixture a disparu')
+  const copies = [
+    { id: 1101, ref: 'GR 9' },
+    { id: 1102, ref: 'GR 65' },
+  ].map(({ id, ref }) => ({ ...gr7, id, tags: { ...gr7.tags, ref, name: ref } }))
+  return { ...data, elements: [...data.elements, ...copies] }
+}
+
+/**
  * La fixture du Pilat, son GR 7 requalifié en itinéraire international.
  *
  * Passage par `unknown` : la fixture est typée par son propre littéral JSON,
@@ -393,6 +414,27 @@ export function pilatInternational(): unknown {
         : element,
     ),
   }
+}
+
+/**
+ * La même, avec trois itinéraires internationaux au lieu d'un : la Via
+ * Lugdunum et deux copies, chacune sous sa propre référence — la Via garde
+ * le `ref` du GR 7 d'origine, et trois relations de même `ref` ne font qu'un
+ * itinéraire. Depuis #594 (volet 2), un international unique n'est plus
+ * replié.
+ */
+export function pilatTroisInternationaux(): unknown {
+  const data = pilatInternational() as {
+    elements: { id: number; tags?: Record<string, string> }[]
+  }
+  const via = data.elements.find((e) => e.id === 1001)
+  if (via?.tags === undefined) throw new Error('la Via de la fixture a disparu')
+  const copies = [1201, 1202].map((id) => ({
+    ...via,
+    id,
+    tags: { ...via.tags, name: `Via ${String(id)}`, ref: `E${String(id)}` },
+  }))
+  return { ...data, elements: [...data.elements, ...copies] }
 }
 
 /**

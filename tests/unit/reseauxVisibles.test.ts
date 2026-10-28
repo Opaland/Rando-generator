@@ -89,3 +89,86 @@ describe('afficherTousLesReseaux', () => {
     expect(useReseauxVisibles.getState().reseauxVisibles).not.toContain('PERSO')
   })
 })
+
+/**
+ * #594, volet 2 : chaque zone repart de son propre défaut — l'unique GR
+ * d'une zone y est montré —, une fois, à son arrivée ; un choix fait ensuite
+ * dans la même zone n'est pas défait par un rechargement de ses itinéraires.
+ */
+describe('adapterALaZone', () => {
+  const nc1 = [
+    { network: 'GR' as const, ref: 'GR NC1', osmRelationId: 1 },
+    { network: 'INCONNU' as const, ref: null, osmRelationId: 2 },
+  ]
+
+  beforeEach(() => {
+    useReseauxVisibles.setState({ zoneAdaptee: null, signatureAdaptee: null, choixDansLaZone: false })
+  })
+
+  it('montre l’unique GR d’une zone qui arrive', () => {
+    useReseauxVisibles.getState().adapterALaZone('nouvelle-caledonie', nc1)
+    expect(useReseauxVisibles.getState().reseauxVisibles).toContain('GR')
+  })
+
+  it('ne défait pas un choix fait dans la même zone', () => {
+    useReseauxVisibles.getState().adapterALaZone('nouvelle-caledonie', nc1)
+    useReseauxVisibles.getState().basculerReseau('GR')
+    expect(useReseauxVisibles.getState().reseauxVisibles).not.toContain('GR')
+
+    // Les itinéraires de la même zone se relisent (boucles locales, cache) :
+    useReseauxVisibles.getState().adapterALaZone('nouvelle-caledonie', nc1)
+    expect(useReseauxVisibles.getState().reseauxVisibles).not.toContain('GR')
+  })
+
+  it('repart du défaut de la zone suivante', () => {
+    useReseauxVisibles.getState().adapterALaZone('nouvelle-caledonie', nc1)
+    const troisGr = [1, 2, 3].map((i) => ({
+      network: 'GR' as const,
+      ref: `GR ${String(i)}`,
+      osmRelationId: i,
+    }))
+    useReseauxVisibles.getState().adapterALaZone('isere', troisGr)
+    expect(useReseauxVisibles.getState().reseauxVisibles).not.toContain('GR')
+  })
+
+  it('attend que la zone ait des itinéraires', () => {
+    // Une zone vide (Overpass n'a rien rendu) ne fige rien : quand ses
+    // itinéraires arrivent, le défaut de la zone se pose. (Relecture du
+    // 27/10 : `setItineraries` pose clé et itinéraires ensemble, ce n'est
+    // donc pas le démarrage qui produit ce cas.)
+    useReseauxVisibles.getState().adapterALaZone('nouvelle-caledonie', [])
+    useReseauxVisibles.getState().adapterALaZone('nouvelle-caledonie', nc1)
+    expect(useReseauxVisibles.getState().reseauxVisibles).toContain('GR')
+  })
+
+  /*
+    Trouvés par la relecture adverse du 27/10 : poser le défaut « une fois
+    par clé » dépendait de l'ordre d'arrivée, et la clé seule ne dit pas si
+    la zone a changé.
+  */
+  it('reprend le défaut quand la même zone s’enrichit, tant que rien n’a été choisi', () => {
+    // La Nouvelle-Calédonie arrive d'abord d'OSM, puis le GR Nord embarqué
+    // la complète (`mergeLocalBoucles`) : le défaut doit suivre la liste
+    // complète, quel que soit l'ordre dans lequel React voit les deux.
+    const troisGr = [1, 2, 3].map((i) => ({
+      network: 'GR' as const,
+      ref: `GR ${String(i)}`,
+      osmRelationId: i,
+    }))
+    useReseauxVisibles.getState().adapterALaZone('z', troisGr.slice(0, 1))
+    expect(useReseauxVisibles.getState().reseauxVisibles).toContain('GR')
+    useReseauxVisibles.getState().adapterALaZone('z', troisGr)
+    expect(useReseauxVisibles.getState().reseauxVisibles).not.toContain('GR')
+  })
+
+  it('arrêter la démonstration ne défait pas un choix : même liste, autre clé', () => {
+    // `arreterDemonstration` renomme la zone (« demonstration » →
+    // « boucles-lyon ») sans en changer les itinéraires.
+    useReseauxVisibles.getState().adapterALaZone('demonstration', nc1)
+    useReseauxVisibles.getState().basculerReseau('LOCAL')
+    const choix = useReseauxVisibles.getState().reseauxVisibles
+    useReseauxVisibles.getState().adapterALaZone('boucles-lyon', nc1)
+    expect(useReseauxVisibles.getState().reseauxVisibles).toEqual(choix)
+  })
+})
+
