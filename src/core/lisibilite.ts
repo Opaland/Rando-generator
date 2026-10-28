@@ -83,24 +83,31 @@ export const GRANDS_ITINERAIRES_TOUJOURS_MONTRES = 2
  * `GRANDS_ITINERAIRES_TOUJOURS_MONTRES` itinéraires.
  *
  * Distincts par leur référence, espaces et casse ignorés : le GR NC1 arrive
- * en neuf relations-tronçons « GR NC1 », c'est un itinéraire, pas neuf. Sans
- * référence, une relation compte pour elle seule — rien ne dit que deux
- * relations sans `ref` forment le même chemin.
+ * en neuf relations-tronçons « GR NC1 », c'est un itinéraire, pas neuf.
+ *
+ * Sans référence, les étapes d'une même source hors OSM — même attribution —
+ * sont un seul itinéraire : les cinq étapes du GR Nord (Province Nord,
+ * `grNord.ts`) en font un, et la Nouvelle-Calédonie compte bien deux GR
+ * (décision de Cédric du 28/10). Sinon, une relation compte pour elle seule :
+ * rien ne dit que deux relations OSM sans `ref` forment le même chemin.
  */
 export function reseauxVisiblesPourLaZone(
   itineraires: readonly {
     network: Network
     ref: string | null
     osmRelationId: number
+    attribution?: { author: string } | null
   }[],
 ): Network[] {
   const parReseau = new Map<Network, Set<string>>()
   for (const i of itineraires) {
     if (!RESEAUX_REPLIES_PAR_DEFAUT.includes(i.network)) continue
     const cle =
-      i.ref === null || i.ref.trim() === ''
-        ? `#${String(i.osmRelationId)}`
-        : i.ref.replace(/\s+/g, '').toUpperCase()
+      i.ref !== null && i.ref.trim() !== ''
+        ? i.ref.replace(/\s+/g, '').toUpperCase()
+        : i.attribution
+          ? `source:${i.attribution.author}`
+          : `#${String(i.osmRelationId)}`
     const distincts = parReseau.get(i.network) ?? new Set<string>()
     distincts.add(cle)
     parReseau.set(i.network, distincts)

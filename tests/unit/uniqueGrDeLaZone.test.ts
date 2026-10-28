@@ -82,4 +82,25 @@ describe('reseauxVisiblesPourLaZone', () => {
     const zone = [itin('PR', 'PR 1', 1)]
     expect(reseauxVisiblesPourLaZone(zone)).toEqual(reseauxVisiblesParDefaut())
   })
+
+  it('compte les étapes d’une même source hors OSM pour un seul itinéraire', () => {
+    /*
+      Relecture adverse du 27/10 : la Nouvelle-Calédonie a deux GR, le NC1
+      (OSM, neuf tronçons « GR NC1 ») et le GR Nord (Province Nord, cinq
+      étapes sans référence, `grNord.ts`). Comptées une à une, elles
+      faisaient six « GR » et la zone restait repliée. Décision de Cédric du
+      28/10 : sans référence, les étapes d'une même source — même
+      attribution — sont un seul itinéraire.
+    */
+    const provinceNord = { author: 'Province Nord', license: 'x' }
+    const zone = [
+      ...Array.from({ length: 9 }, (_, i) => itin('GR', 'GR NC1', i)),
+      ...Array.from({ length: 5 }, (_, i) => ({
+        ...itin('GR', null, 100 + i),
+        attribution: provinceNord,
+      })),
+    ]
+    expect(reseauxVisiblesPourLaZone(zone)).toContain('GR')
+  })
 })
+
