@@ -161,8 +161,11 @@ par le CLI Playwright.
    Mais **ce tag est rare** — sur le seul jeu de données réel mesuré dans ce
    dépôt, une relation sur quatre le porte, et sa dernière modification OSM
    date de 2019. Faute de symbole lisible, la fiche **n'affiche pas de
-   ligne « Balisé »** plutôt que d'annoncer une marque approximative, et la
-   carte retombe sur la couleur du réseau.
+   ligne « Balisé »** plutôt que d'annoncer une marque approximative. La
+   carte, elle, est toujours peinte à la couleur du **réseau** : un seul
+   régime de couleurs, puisque la donnée ne permet pas un rendu uniforme
+   (#290). La balise réelle se lit, **dessinée**, dans chaque ligne de la
+   liste quand on sait la dessiner, et dans la fiche avec ses mots.
 
    Sélectionner un itinéraire dans la liste **zoome dessus** sur la carte.
    Un itinéraire parcouru à
