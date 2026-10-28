@@ -177,6 +177,12 @@ test('la balise est dessinée dans la ligne de la liste, sans ouvrir la fiche', 
   // La fixture n'en porte qu'une, `red:white:red_bar` : une seule ligne.
   await expect(liste.getByTestId('balise-ligne')).toHaveCount(1)
   await expect(ligne.getByTestId('balise-ligne')).toHaveCount(1)
+  /*
+    Amenée à l'écran d'abord : depuis #594 le GR 7 du Pilat est listé, et la
+    ligne du Sentier des Crêtes peut tomber sous le pli du panneau, où
+    `elementFromPoint` ne voit rien. Quelqu'un ferait défiler.
+  */
+  await ligne.scrollIntoViewIfNeeded()
   await expect
     .poll(() =>
       ligne.getByTestId('balise-ligne').evaluate((el) => {
