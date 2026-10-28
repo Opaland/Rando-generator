@@ -1194,7 +1194,7 @@ aside :is(button, label, p, li, h2, h3, span, output) {
     Le sélecteur d'origine ne désignait **aucun** élément : React monte dans
     `#root`, l'en-tête n'est donc pas un enfant direct de `body`. Mesuré en
     média print, il sortait à 1280×56 en `display: flex` — le logo, le
-    bandeau « Vos traces GPX ne quittent jamais votre navigateur », « Pourquoi
+    bandeau « Vos traces ne quittent jamais votre navigateur », « Pourquoi
     Sentiers » et « À propos », sur la fiche de route qu'on met dans sa poche.
 
     Et le test qui l'affirmait masqué passait sur un sélecteur vide :

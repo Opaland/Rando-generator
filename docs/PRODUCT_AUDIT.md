@@ -29,7 +29,7 @@ GPS, hors-ligne) n'est pas un virage vers A : sans lui, on ne peut pas
 utiliser l'app sur le terrain, donc pas alimenter la collection.
 
 Corollaire : **ne pas développer** de navigation vocale, de recherche
-d'hébergements marchands, de fil social, de photos, de météo. Chacune
+d'hôtels et de campings commerciaux, de fil social, de photos, de météo. Chacune
 existe en mieux ailleurs et dilue le propos.
 
 ## Les problèmes, par gravité

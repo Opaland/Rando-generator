@@ -8,7 +8,7 @@ import { HOTES_CONTACTES } from '../../src/core/journalSortant.ts'
  * l'application sur un serveur »).
  *
  * GitHub Pages ne permet aucun **en-tête** : la promesse écrite en haut de
- * chaque écran — « vos traces GPX ne quittent jamais votre navigateur » —
+ * chaque écran — « vos traces ne quittent jamais votre navigateur » —
  * n'était qu'une affirmation, gardée par des tests et par la bonne volonté.
  * Sur un serveur, elle devient **une règle appliquée par le navigateur** :
  * une requête vers un hôte non listé est refusée avant de partir.

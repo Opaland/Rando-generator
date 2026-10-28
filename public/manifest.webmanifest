@@ -1,7 +1,7 @@
 {
   "name": "Sentiers — progression sur les itinéraires de randonnée",
   "short_name": "Sentiers",
-  "description": "Mesurez votre progression sur les itinéraires balisés français à partir de vos traces GPX. 100 % local.",
+  "description": "Mesurez votre progression sur les itinéraires balisés français à partir de vos traces GPX, FIT ou TCX. 100 % local.",
   "lang": "fr",
   "start_url": ".",
   "display": "standalone",

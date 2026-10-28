@@ -2,13 +2,13 @@
 
 **Mesurez votre progression sur les itinéraires de randonnée balisés français.**
 
-Sentiers **enregistre votre sortie** — ou lit vos traces GPX — puis les
+Sentiers **enregistre votre sortie** — ou lit vos traces GPX, FIT ou TCX, une par une ou en archive ZIP — puis les
 compare aux tracés d'itinéraires (itinéraires internationaux, GR, GR de Pays,
 PR) issus d'OpenStreetMap
 et affiche votre complétion sur une carte et en statistiques : « j'ai
 parcouru 34 % du GR 7, 61 % des sentiers du Pilat ».
 
-- **Vos traces restent chez vous** : vos GPX ne quittent jamais votre
+- **Vos traces restent chez vous** : vos traces ne quittent jamais votre
   navigateur, et le calcul de complétion s'y fait de bout en bout. Aucun
   compte, aucun backend, aucune télémétrie. La persistance se fait en
   IndexedDB pour les traces et les zones, en `localStorage` pour les huit
@@ -113,7 +113,8 @@ par le CLI Playwright.
    et `pourquoi.html` le disent. La consommation de batterie n'est pas encore
    mesurée, donc pas encore annoncée : `docs/PROTOCOLE_BATTERIE.md` dit ce
    qu'il faut relever.
-3. **Importer des GPX** (multi-fichiers, drag & drop). Les traces sont listées
+3. **Importer des traces** — GPX, FIT, TCX, ou une archive ZIP qui en
+   contient (multi-fichiers, drag & drop). Les traces sont listées
    avec nom, date, distance et D+, persistées localement ; un double import
    du même fichier est détecté et mis de côté : il vous est proposé, et
    c'est vous qui l'ajoutez ou l'écartez. Sur un lot de fichiers, l'import
