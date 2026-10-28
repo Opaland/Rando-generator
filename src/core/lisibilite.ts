@@ -112,6 +112,42 @@ export function reseauxVisiblesPourLaZone(
   })
 }
 
+/** Ce dont `adapterLesReseaux` se souvient d'une adaptation à l'autre. */
+export interface MemoireDesReseaux {
+  zoneAdaptee: string | null
+  signatureAdaptee: string | null
+  choixDansLaZone: boolean
+}
+
+/**
+ * Ce qui change dans les réseaux visibles quand une zone (ré)arrive (#594).
+ *
+ * Sur la **liste** et non sur la seule clé (relecture adverse du 27/10) :
+ * arrêter la démonstration renomme la zone sans changer ses itinéraires, et
+ * ne doit pas défaire un choix ; la Nouvelle-Calédonie s'enrichit du GR Nord
+ * après coup, et le défaut doit suivre la liste complète quel que soit
+ * l'ordre d'arrivée — sans écraser un choix fait entre-temps dans la même
+ * zone. Rien sur une liste vide.
+ */
+export function adapterLesReseaux(
+  memoire: MemoireDesReseaux,
+  zoneKey: string,
+  itineraires: Parameters<typeof reseauxVisiblesPourLaZone>[0],
+): Partial<MemoireDesReseaux> & { reseauxVisibles?: Network[] } {
+  const signature = itineraires.map((i) => i.osmRelationId).join(',')
+  const memeZone = memoire.zoneAdaptee === zoneKey
+  if (itineraires.length === 0 || signature === memoire.signatureAdaptee) {
+    return memeZone ? {} : { zoneAdaptee: zoneKey }
+  }
+  if (memeZone && memoire.choixDansLaZone) return { signatureAdaptee: signature }
+  return {
+    zoneAdaptee: zoneKey,
+    signatureAdaptee: signature,
+    choixDansLaZone: false,
+    reseauxVisibles: reseauxVisiblesPourLaZone(itineraires),
+  }
+}
+
 /**
  * Ce qui reste à l'écran une fois le filtre de réseau appliqué.
  *
