@@ -54,8 +54,9 @@ export function About({
           <p>
             Vos traces — GPX, FIT, TCX — sont lues et analysées{' '}
             <strong>uniquement dans votre navigateur</strong>, et stockées
-            localement — les traces dans IndexedDB, les cartes emportées dans le
-            cache du navigateur, vos réglages dans le stockage local. Le calcul de complétion se fait chez vous,
+            localement — les traces et les points d’intérêt emportés dans
+            IndexedDB, les cartes emportées dans le cache du navigateur, vos
+            réglages dans le stockage local. Le calcul de complétion se fait chez vous,
             de bout en bout. Aucune trace, aucun identifiant, aucune mesure
             d’audience ne quitte votre appareil. Il n’y a ni compte, ni serveur
             applicatif.

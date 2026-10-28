@@ -55,7 +55,7 @@ const page = `<!doctype html>
     <div class="balise"><span class="blanc"></span><span class="rouge"></span></div>
     <h1>Sentiers</h1>
     <p class="accroche">Quelle part des sentiers balisés avez-vous déjà parcourue&nbsp;?</p>
-    <p class="pied">Vos traces GPX, lues dans votre navigateur.<br><strong>Sans compte, sans serveur.</strong></p>
+    <p class="pied">Vos traces, lues dans votre navigateur.<br><strong>Sans compte, sans serveur.</strong></p>
   </div>
   <div class="carte">
     <span class="quoi">GR 7 · Pilat</span>
