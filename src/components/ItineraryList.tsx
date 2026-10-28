@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { BalisePeinte } from './BalisePeinte.tsx'
 import { useAppStore } from '../store/appStore.ts'
 import {
   ALL_FILTERS,
@@ -502,6 +503,15 @@ export function ItineraryList() {
                 </span>
                 <span className={styles.rowMain}>
                   <span className={styles.rowName}>
+                    {/*
+                      La balise réelle, dessinée, dans la ligne (#290, volet
+                      2) : la carte peint le réseau, et 58 % des relations
+                      comparables y contredisaient l'arbre (mesure du
+                      30/08). Décision de Cédric du 27/10 : la carte garde
+                      la taxonomie, la balise se montre ici sans ouvrir la
+                      fiche. Rien quand on ne sait pas la dessiner.
+                    */}
+                    <BalisePeinte tag={itin.osmcSymbol ?? undefined} testId="balise-ligne" />
                     {displayName(itin)}
                     {trouesById.get(itin.osmRelationId) === true && (
                       <span

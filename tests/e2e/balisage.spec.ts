@@ -150,3 +150,52 @@ test('la balise est dessinée à côté de sa description', async ({ page }) => 
     'true',
   )
 })
+
+/**
+ * #290, volet 2 — la carte peint le tracé à la couleur de son **réseau** ;
+ * la fiche disait le balisage réel, mais il fallait l'ouvrir. Mesuré le
+ * 30/08 : 58 % des relations comparables ont une carte qui contredit l'arbre.
+ *
+ * Décision de Cédric du 27/10 (piste 3) : la carte garde la taxonomie, sans
+ * second régime de couleurs ; la balise réelle, dessinée, s'affiche dans
+ * **chaque ligne de la liste**. Peinte, pas seulement présente (§1bis) — et
+ * seulement là où on sait la dessiner.
+ */
+test('la balise est dessinée dans la ligne de la liste, sans ouvrir la fiche', async ({
+  page,
+}) => {
+  await mockExternalNetwork(page)
+  await page.goto('/')
+  await page.getByTestId('zone-pilat').click()
+  await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
+    timeout: 15_000,
+  })
+  await afficherTousLesReseaux(page)
+
+  const liste = page.getByTestId('itinerary-list')
+  const ligne = liste.getByRole('button', { name: /Sentier des Crêtes/ })
+  // La fixture n'en porte qu'une, `red:white:red_bar` : une seule ligne.
+  await expect(liste.getByTestId('balise-ligne')).toHaveCount(1)
+  await expect(ligne.getByTestId('balise-ligne')).toHaveCount(1)
+  /*
+    Amenée à l'écran d'abord : depuis #594 le GR 7 du Pilat est listé, et la
+    ligne du Sentier des Crêtes peut tomber sous le pli du panneau, où
+    `elementFromPoint` ne voit rien. Quelqu'un ferait défiler.
+  */
+  await ligne.scrollIntoViewIfNeeded()
+  await expect
+    .poll(() =>
+      ligne.getByTestId('balise-ligne').evaluate((el) => {
+        const r = el.getBoundingClientRect()
+        if (r.width === 0) return false
+        const p = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)
+        return p !== null && el.contains(p)
+      }),
+    )
+    .toBe(true)
+  // Décorative, donc hors du nom accessible du bouton : la ligne se nomme
+  // toujours par son itinéraire, sans rien de plus à entendre.
+  await expect(ligne.getByTestId('balise-ligne')).toHaveAttribute('aria-hidden', 'true')
+  await expect(ligne).toHaveAccessibleName(/Sentier des Crêtes/)
+  await expect(ligne).not.toHaveAccessibleName(/rectangle|balis/i)
+})

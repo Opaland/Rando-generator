@@ -14,7 +14,13 @@ import { ENCRE } from '../lib/couleursPartagees.ts'
  * (#360). D'où `aria-hidden` — la phrase voisine dit déjà tout, et la
  * répéter ferait entendre la balise deux fois.
  */
-export function BalisePeinte({ tag }: { tag: string | undefined }) {
+export function BalisePeinte({
+  tag,
+  testId = 'balise-peinte',
+}: {
+  tag: string | undefined
+  testId?: string
+}) {
   const figure = figureDuBalisage(tag)
   if (!figure) return null
 
@@ -32,7 +38,7 @@ export function BalisePeinte({ tag }: { tag: string | undefined }) {
     <svg
       viewBox="0 0 20 20"
       className="balise-peinte"
-      data-testid="balise-peinte"
+      data-testid={testId}
       aria-hidden="true"
       focusable="false"
     >
