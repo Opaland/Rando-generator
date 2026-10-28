@@ -3,6 +3,7 @@ import {
   afficherTousLesReseaux,
   mockExternalNetwork,
   pilatInternational,
+  pilatTroisInternationaux,
 } from './helpers.ts'
 
 /**
@@ -25,12 +26,16 @@ import {
  * qu'elle arrive jusqu'à l'écran.
  */
 
-async function chargerLeSecteur(page: import('@playwright/test').Page) {
+async function chargerLeSecteur(
+  page: import('@playwright/test').Page,
+  fixture: unknown = pilatInternational(),
+  attendus = '3 itinéraires',
+) {
   const overpass = await mockExternalNetwork(page)
-  overpass.setFixture(pilatInternational())
+  overpass.setFixture(fixture)
   await page.goto('/')
   await page.getByTestId('zone-pilat').click()
-  await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
+  await expect(page.getByTestId('zone-meta')).toContainText(attendus, {
     timeout: 15_000,
   })
 }
@@ -38,7 +43,8 @@ async function chargerLeSecteur(page: import('@playwright/test').Page) {
 test('il est replié au premier écran, comme les autres grands itinéraires', async ({
   page,
 }) => {
-  await chargerLeSecteur(page)
+  // Trois internationaux : depuis #594 (volet 2), un seul n'est plus replié.
+  await chargerLeSecteur(page, pilatTroisInternationaux(), '5 itinéraires')
 
   /*
     Le motif même du repli de #322 était la Via Lugdunum — 153 km, ~330
@@ -49,7 +55,7 @@ test('il est replié au premier écran, comme les autres grands itinéraires', a
   await expect(page.getByTestId('itinerary-list')).not.toContainText(
     'Via Lugdunum',
   )
-  await expect(page.getByTestId('list-masques')).toContainText('1 INTER')
+  await expect(page.getByTestId('list-masques')).toContainText('3 INTER')
 })
 
 test('la légende le nomme, et ne parle plus de réseau non déclaré', async ({

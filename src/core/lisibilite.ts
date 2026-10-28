@@ -66,6 +66,96 @@ export function reseauxVisiblesParDefaut(): Network[] {
 }
 
 /**
+ * Combien d'itinéraires distincts un réseau replié peut compter dans une
+ * zone et rester montré (#594, volet 2).
+ *
+ * En Nouvelle-Calédonie, le repli cachait le GR NC1, seul GR de la zone :
+ * rien n'y était désencombré, la zone perdait son itinéraire principal.
+ * Décision de Cédric du 27/10 : une zone qui n'en compte qu'un ou deux les
+ * montre. Ce « deux » est décidé, pas mesuré (§2) — il ne change que ce qui
+ * est dessiné au premier écran, jamais ce qui est compté.
+ */
+export const GRANDS_ITINERAIRES_TOUJOURS_MONTRES = 2
+
+/**
+ * Les réseaux montrés au premier écran **d'une zone** : le défaut, plus
+ * chaque réseau replié qui n'y compte pas plus de
+ * `GRANDS_ITINERAIRES_TOUJOURS_MONTRES` itinéraires.
+ *
+ * Distincts par leur référence, espaces et casse ignorés : le GR NC1 arrive
+ * en neuf relations-tronçons « GR NC1 », c'est un itinéraire, pas neuf.
+ *
+ * Sans référence, les étapes d'une même source hors OSM — même attribution —
+ * sont un seul itinéraire : les cinq étapes du GR Nord (Province Nord,
+ * `grNord.ts`) en font un, et la Nouvelle-Calédonie compte bien deux GR
+ * (décision de Cédric du 28/10). Sinon, une relation compte pour elle seule :
+ * rien ne dit que deux relations OSM sans `ref` forment le même chemin.
+ */
+export function reseauxVisiblesPourLaZone(
+  itineraires: readonly {
+    network: Network
+    ref: string | null
+    osmRelationId: number
+    attribution?: { author: string } | null
+  }[],
+): Network[] {
+  const parReseau = new Map<Network, Set<string>>()
+  for (const i of itineraires) {
+    if (!RESEAUX_REPLIES_PAR_DEFAUT.includes(i.network)) continue
+    const cle =
+      i.ref !== null && i.ref.trim() !== ''
+        ? i.ref.replace(/\s+/g, '').toUpperCase()
+        : i.attribution
+          ? `source:${i.attribution.author}`
+          : `#${String(i.osmRelationId)}`
+    const distincts = parReseau.get(i.network) ?? new Set<string>()
+    distincts.add(cle)
+    parReseau.set(i.network, distincts)
+  }
+  return RESEAUX_FILTRABLES.filter((reseau) => {
+    if (!RESEAUX_REPLIES_PAR_DEFAUT.includes(reseau)) return true
+    const n = parReseau.get(reseau)?.size ?? 0
+    return n > 0 && n <= GRANDS_ITINERAIRES_TOUJOURS_MONTRES
+  })
+}
+
+/** Ce dont `adapterLesReseaux` se souvient d'une adaptation à l'autre. */
+export interface MemoireDesReseaux {
+  zoneAdaptee: string | null
+  signatureAdaptee: string | null
+  choixDansLaZone: boolean
+}
+
+/**
+ * Ce qui change dans les réseaux visibles quand une zone (ré)arrive (#594).
+ *
+ * Sur la **liste** et non sur la seule clé (relecture adverse du 27/10) :
+ * arrêter la démonstration renomme la zone sans changer ses itinéraires, et
+ * ne doit pas défaire un choix ; la Nouvelle-Calédonie s'enrichit du GR Nord
+ * après coup, et le défaut doit suivre la liste complète quel que soit
+ * l'ordre d'arrivée — sans écraser un choix fait entre-temps dans la même
+ * zone. Rien sur une liste vide.
+ */
+export function adapterLesReseaux(
+  memoire: MemoireDesReseaux,
+  zoneKey: string,
+  itineraires: Parameters<typeof reseauxVisiblesPourLaZone>[0],
+): Partial<MemoireDesReseaux> & { reseauxVisibles?: Network[] } {
+  const signature = itineraires.map((i) => i.osmRelationId).join(',')
+  const memeZone = memoire.zoneAdaptee === zoneKey
+  if (itineraires.length === 0 || signature === memoire.signatureAdaptee) {
+    return memeZone ? {} : { zoneAdaptee: zoneKey }
+  }
+  if (memeZone && memoire.choixDansLaZone) return { signatureAdaptee: signature }
+  return {
+    zoneAdaptee: zoneKey,
+    signatureAdaptee: signature,
+    choixDansLaZone: false,
+    reseauxVisibles: reseauxVisiblesPourLaZone(itineraires),
+  }
+}
+
+/**
  * Ce qui reste à l'écran une fois le filtre de réseau appliqué.
  *
  * Générique sur la forme : la carte lui passe des itinéraires, un test lui

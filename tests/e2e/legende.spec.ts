@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { afficherTousLesReseaux, mockExternalNetwork, mockTilesOk, fermerLeGuide, buildGpx, hasMap, ouvrirOnglet } from './helpers.ts'
+import { afficherTousLesReseaux, mockExternalNetwork, mockTilesOk, fermerLeGuide, buildGpx, hasMap, ouvrirOnglet, pilatTroisGr } from './helpers.ts'
 import type { Page } from '@playwright/test'
 
 /**
@@ -16,8 +16,9 @@ import type { Page } from '@playwright/test'
 
 test.use({ viewport: { width: 390, height: 844 } })
 
-async function ouvrir(page: Page): Promise<boolean> {
-  await mockExternalNetwork(page)
+async function ouvrir(page: Page, fixture?: unknown): Promise<boolean> {
+  const overpass = await mockExternalNetwork(page)
+  if (fixture !== undefined) overpass.setFixture(fixture)
   await mockTilesOk(page)
   await page.goto('/')
   await fermerLeGuide(page)
@@ -63,9 +64,10 @@ test('zone chargée : seuls ses réseaux, et pas les états', async ({ page }) =
  * que la carte, et le GR revient quand on l'affiche.
  */
 test('un réseau replié par le filtre n’est pas annoncé', async ({ page }) => {
-  test.skip(!(await ouvrir(page)), 'WebGL indisponible')
+  test.skip(!(await ouvrir(page, pilatTroisGr())), 'WebGL indisponible')
+  // Trois GR : depuis #594 (volet 2), l'unique GR d'une zone n'est plus replié.
   await page.getByTestId('zone-pilat').click()
-  await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
+  await expect(page.getByTestId('zone-meta')).toContainText('5 itinéraires', {
     timeout: 15_000,
   })
 

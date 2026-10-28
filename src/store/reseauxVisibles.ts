@@ -1,6 +1,10 @@
 import { create } from 'zustand'
 import type { Network } from '../core/types.ts'
-import { reseauxVisiblesParDefaut } from '../core/lisibilite.ts'
+import {
+  adapterLesReseaux,
+  reseauxVisiblesParDefaut,
+  type reseauxVisiblesPourLaZone,
+} from '../core/lisibilite.ts'
 import { RESEAUX_FILTRABLES } from '../core/reseaux.ts'
 
 /**
@@ -42,12 +46,23 @@ interface EtatReseauxVisibles {
   basculerReseau: (reseau: Network) => void
   /** Rend tout ce qui était replié — le geste que la ligne d'annonce offre. */
   afficherTousLesReseaux: () => void
+  /** La zone et les itinéraires dont le défaut a été posé. */
+  zoneAdaptee: string | null
+  signatureAdaptee: string | null
+  /** Un réseau a été coché ou décoché depuis la dernière adaptation. */
+  choixDansLaZone: boolean
+  /** Repart du défaut de la zone (#594) : voir `adapterLesReseaux`. */
+  adapterALaZone: (
+    zoneKey: string,
+    itineraires: Parameters<typeof reseauxVisiblesPourLaZone>[0],
+  ) => void
 }
 
 export const useReseauxVisibles = create<EtatReseauxVisibles>((set) => ({
   reseauxVisibles: reseauxVisiblesParDefaut(),
   basculerReseau: (reseau) => {
     set((etat) => ({
+      choixDansLaZone: true,
       /*
         On reconstruit depuis l'ordre de la charte plutôt que d'ajouter en
         queue : sans cela, un réseau rendu après avoir été replié se
@@ -61,6 +76,12 @@ export const useReseauxVisibles = create<EtatReseauxVisibles>((set) => ({
   },
   afficherTousLesReseaux: () => {
     set({ reseauxVisibles: [...RESEAUX_FILTRABLES] })
+  },
+  zoneAdaptee: null,
+  signatureAdaptee: null,
+  choixDansLaZone: false,
+  adapterALaZone: (zoneKey, itineraires) => {
+    set((etat) => adapterLesReseaux(etat, zoneKey, itineraires))
   },
 }))
 
