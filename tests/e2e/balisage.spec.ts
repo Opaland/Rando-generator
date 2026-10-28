@@ -193,6 +193,9 @@ test('la balise est dessinée dans la ligne de la liste, sans ouvrir la fiche', 
       }),
     )
     .toBe(true)
-  // Décorative : le nom de la ligne ne change pas, rien n'est lu deux fois.
+  // Décorative, donc hors du nom accessible du bouton : la ligne se nomme
+  // toujours par son itinéraire, sans rien de plus à entendre.
   await expect(ligne.getByTestId('balise-ligne')).toHaveAttribute('aria-hidden', 'true')
+  await expect(ligne).toHaveAccessibleName(/Sentier des Crêtes/)
+  await expect(ligne).not.toHaveAccessibleName(/rectangle|balis/i)
 })
