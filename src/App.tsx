@@ -53,6 +53,7 @@ import { ZonePicker } from './components/ZonePicker.tsx'
 import { useEcranCompact } from './lib/ecran.ts'
 import { pourcentageMesurable } from './core/milestones.ts'
 import { useAppStore } from './store/appStore.ts'
+import { useReseauxVisibles } from './store/reseauxVisibles.ts'
 import styles from './App.module.css'
 import {
   attributionTexte,
@@ -177,6 +178,12 @@ function App() {
   // Retour ferme la fiche au lieu de quitter l'application (#568).
   useRetourFermeLaFiche(detailOuvert, fermerLaFiche)
   const itineraires = useAppStore((s) => s.itineraries)
+  const zoneKey = useAppStore((s) => s.zoneKey)
+  const adapterALaZone = useReseauxVisibles((s) => s.adapterALaZone)
+  // Chaque zone repart de son propre défaut : l'unique GR y est montré (#594).
+  useEffect(() => {
+    if (zoneKey !== null) adapterALaZone(zoneKey, itineraires)
+  }, [zoneKey, itineraires, adapterALaZone])
   const itinerairesPerso = useAppStore((s) => s.customItineraries)
   const traceOuvert = useAppStore((s) => s.drawMode)
   const compact = useEcranCompact()

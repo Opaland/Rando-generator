@@ -66,6 +66,53 @@ export function reseauxVisiblesParDefaut(): Network[] {
 }
 
 /**
+ * Combien d'itinéraires distincts un réseau replié peut compter dans une
+ * zone et rester montré (#594, volet 2).
+ *
+ * En Nouvelle-Calédonie, le repli cachait le GR NC1, seul GR de la zone :
+ * rien n'y était désencombré, la zone perdait son itinéraire principal.
+ * Décision de Cédric du 27/10 : une zone qui n'en compte qu'un ou deux les
+ * montre. Ce « deux » est décidé, pas mesuré (§2) — il ne change que ce qui
+ * est dessiné au premier écran, jamais ce qui est compté.
+ */
+export const GRANDS_ITINERAIRES_TOUJOURS_MONTRES = 2
+
+/**
+ * Les réseaux montrés au premier écran **d'une zone** : le défaut, plus
+ * chaque réseau replié qui n'y compte pas plus de
+ * `GRANDS_ITINERAIRES_TOUJOURS_MONTRES` itinéraires.
+ *
+ * Distincts par leur référence, espaces et casse ignorés : le GR NC1 arrive
+ * en neuf relations-tronçons « GR NC1 », c'est un itinéraire, pas neuf. Sans
+ * référence, une relation compte pour elle seule — rien ne dit que deux
+ * relations sans `ref` forment le même chemin.
+ */
+export function reseauxVisiblesPourLaZone(
+  itineraires: readonly {
+    network: Network
+    ref: string | null
+    osmRelationId: number
+  }[],
+): Network[] {
+  const parReseau = new Map<Network, Set<string>>()
+  for (const i of itineraires) {
+    if (!RESEAUX_REPLIES_PAR_DEFAUT.includes(i.network)) continue
+    const cle =
+      i.ref === null || i.ref.trim() === ''
+        ? `#${String(i.osmRelationId)}`
+        : i.ref.replace(/\s+/g, '').toUpperCase()
+    const distincts = parReseau.get(i.network) ?? new Set<string>()
+    distincts.add(cle)
+    parReseau.set(i.network, distincts)
+  }
+  return RESEAUX_FILTRABLES.filter((reseau) => {
+    if (!RESEAUX_REPLIES_PAR_DEFAUT.includes(reseau)) return true
+    const n = parReseau.get(reseau)?.size ?? 0
+    return n > 0 && n <= GRANDS_ITINERAIRES_TOUJOURS_MONTRES
+  })
+}
+
+/**
  * Ce qui reste à l'écran une fois le filtre de réseau appliqué.
  *
  * Générique sur la forme : la carte lui passe des itinéraires, un test lui

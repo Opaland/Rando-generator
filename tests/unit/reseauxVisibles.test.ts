@@ -89,3 +89,53 @@ describe('afficherTousLesReseaux', () => {
     expect(useReseauxVisibles.getState().reseauxVisibles).not.toContain('PERSO')
   })
 })
+
+/**
+ * #594, volet 2 : chaque zone repart de son propre défaut — l'unique GR
+ * d'une zone y est montré —, une fois, à son arrivée ; un choix fait ensuite
+ * dans la même zone n'est pas défait par un rechargement de ses itinéraires.
+ */
+describe('adapterALaZone', () => {
+  const nc1 = [
+    { network: 'GR' as const, ref: 'GR NC1', osmRelationId: 1 },
+    { network: 'INCONNU' as const, ref: null, osmRelationId: 2 },
+  ]
+
+  beforeEach(() => {
+    useReseauxVisibles.setState({ zoneAdaptee: null })
+  })
+
+  it('montre l’unique GR d’une zone qui arrive', () => {
+    useReseauxVisibles.getState().adapterALaZone('nouvelle-caledonie', nc1)
+    expect(useReseauxVisibles.getState().reseauxVisibles).toContain('GR')
+  })
+
+  it('ne défait pas un choix fait dans la même zone', () => {
+    useReseauxVisibles.getState().adapterALaZone('nouvelle-caledonie', nc1)
+    useReseauxVisibles.getState().basculerReseau('GR')
+    expect(useReseauxVisibles.getState().reseauxVisibles).not.toContain('GR')
+
+    // Les itinéraires de la même zone se relisent (boucles locales, cache) :
+    useReseauxVisibles.getState().adapterALaZone('nouvelle-caledonie', nc1)
+    expect(useReseauxVisibles.getState().reseauxVisibles).not.toContain('GR')
+  })
+
+  it('repart du défaut de la zone suivante', () => {
+    useReseauxVisibles.getState().adapterALaZone('nouvelle-caledonie', nc1)
+    const troisGr = [1, 2, 3].map((i) => ({
+      network: 'GR' as const,
+      ref: `GR ${String(i)}`,
+      osmRelationId: i,
+    }))
+    useReseauxVisibles.getState().adapterALaZone('isere', troisGr)
+    expect(useReseauxVisibles.getState().reseauxVisibles).not.toContain('GR')
+  })
+
+  it('attend que la zone ait des itinéraires', () => {
+    // Au démarrage, la clé est restaurée avant ses itinéraires : adapter sur
+    // une liste vide figerait le défaut général pour toute la zone.
+    useReseauxVisibles.getState().adapterALaZone('nouvelle-caledonie', [])
+    useReseauxVisibles.getState().adapterALaZone('nouvelle-caledonie', nc1)
+    expect(useReseauxVisibles.getState().reseauxVisibles).toContain('GR')
+  })
+})

@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { Network } from '../core/types.ts'
-import { reseauxVisiblesParDefaut } from '../core/lisibilite.ts'
+import { reseauxVisiblesParDefaut, reseauxVisiblesPourLaZone } from '../core/lisibilite.ts'
 import { RESEAUX_FILTRABLES } from '../core/reseaux.ts'
 
 /**
@@ -42,6 +42,18 @@ interface EtatReseauxVisibles {
   basculerReseau: (reseau: Network) => void
   /** Rend tout ce qui était replié — le geste que la ligne d'annonce offre. */
   afficherTousLesReseaux: () => void
+  /** La zone dont le défaut a été posé, pour ne le poser qu'une fois. */
+  zoneAdaptee: string | null
+  /**
+   * Repart du défaut de la zone qui arrive — l'unique GR y est montré
+   * (#594). Une fois par zone, et pas sur une liste vide : la clé restaurée
+   * au démarrage précède ses itinéraires, et un choix fait ensuite dans la
+   * zone ne doit pas être défait par une relecture de ses itinéraires.
+   */
+  adapterALaZone: (
+    zoneKey: string,
+    itineraires: Parameters<typeof reseauxVisiblesPourLaZone>[0],
+  ) => void
 }
 
 export const useReseauxVisibles = create<EtatReseauxVisibles>((set) => ({
@@ -61,6 +73,14 @@ export const useReseauxVisibles = create<EtatReseauxVisibles>((set) => ({
   },
   afficherTousLesReseaux: () => {
     set({ reseauxVisibles: [...RESEAUX_FILTRABLES] })
+  },
+  zoneAdaptee: null,
+  adapterALaZone: (zoneKey, itineraires) => {
+    set((etat) =>
+      etat.zoneAdaptee === zoneKey || itineraires.length === 0
+        ? etat
+        : { zoneAdaptee: zoneKey, reseauxVisibles: reseauxVisiblesPourLaZone(itineraires) },
+    )
   },
 }))
 

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { cocher, mockExternalNetwork } from './helpers.ts'
+import { cocher, mockExternalNetwork, pilatTroisGr } from './helpers.ts'
 
 /**
  * Les grands itinéraires ne s'imposent plus (issue #322).
@@ -61,11 +61,17 @@ async function reseauxDessines(
   return lireLesReseaux(page)
 }
 
+/**
+ * Le Pilat de la fixture **avec trois GR** : depuis #594 (volet 2), l'unique
+ * GR d'une zone n'est plus replié, et le Pilat d'origine n'en a qu'un. Le
+ * repli ne s'éprouve que là où il s'applique.
+ */
 async function chargerLePilat(page: import('@playwright/test').Page) {
-  await mockExternalNetwork(page)
+  const overpass = await mockExternalNetwork(page)
+  overpass.setFixture(pilatTroisGr())
   await page.goto('/')
   await page.getByTestId('zone-pilat').click()
-  await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
+  await expect(page.getByTestId('zone-meta')).toContainText('5 itinéraires', {
     timeout: 15_000,
   })
 }
@@ -97,7 +103,7 @@ test('la zone continue de compter tous ses itinéraires', async ({ page }) => {
     a décoché une case.
   */
   await chargerLePilat(page)
-  await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires')
+  await expect(page.getByTestId('zone-meta')).toContainText('5 itinéraires')
 })
 
 test('ce qui est masqué est annoncé, et se rend d’un clic', async ({
@@ -106,7 +112,7 @@ test('ce qui est masqué est annoncé, et se rend d’un clic', async ({
   await chargerLePilat(page)
 
   const annonce = page.getByTestId('list-masques')
-  await expect(annonce).toContainText('1 GR')
+  await expect(annonce).toContainText('3 GR')
   await expect(annonce).toContainText('masqué')
 
   await annonce.getByRole('button', { name: /tout afficher/i }).click()
@@ -145,4 +151,26 @@ test('la case du réseau rend le GR aux deux surfaces', async ({ page }) => {
       timeout: 15_000,
     })
     .toBe(true)
+})
+
+/**
+ * #594, volet 2 — l'unique GR d'une zone n'est pas replié. En
+ * Nouvelle-Calédonie, le GR NC1 était caché au premier écran : la zone
+ * perdait son seul GR, et rien n'y était désencombré. Le Pilat d'origine de
+ * la fixture n'en compte qu'un, le GR 7 : il est montré, liste et carte
+ * ensemble.
+ */
+test('l’unique GR d’une zone est montré dès le premier écran', async ({ page }) => {
+  await mockExternalNetwork(page)
+  await page.goto('/')
+  await page.getByTestId('zone-pilat').click()
+  await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
+    timeout: 15_000,
+  })
+
+  await expect(page.getByTestId('itinerary-list')).toContainText('GR 7')
+  await expect
+    .poll(async () => (await lireLesReseaux(page)).includes('GR'), { timeout: 15_000 })
+    .toBe(true)
+  await expect(page.getByTestId('list-masques')).toHaveCount(0)
 })
