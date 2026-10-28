@@ -391,7 +391,7 @@ function App() {
         */}
         <p className={styles.privacy}>
           <span className={styles.privacyLong}>
-            Vos traces GPX ne quittent jamais votre navigateur — aucun compte,
+            Vos traces ne quittent jamais votre navigateur — aucun compte,
             aucun serveur, aucune télémétrie.
           </span>
           <span className={styles.privacyShort}>
