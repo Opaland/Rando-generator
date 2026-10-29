@@ -570,9 +570,7 @@
   :root[data-fiche='ouverte']
     .main:not(:has(:global(.maplibregl-compact-show)))
     :global(.maplibregl-ctrl-bottom-right) {
-    bottom: calc(
-      var(--hauteur-fiche) + 10px + env(safe-area-inset-bottom, 0px)
-    );
+    bottom: calc(var(--haut-de-la-fiche) + 10px);
   }
 
   /*

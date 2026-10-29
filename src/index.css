@@ -369,6 +369,15 @@
      `ItineraryDetail.module.css`. */
   --largeur-fiche: 380px;
   --hauteur-fiche: min(50vh, 480px);
+  /* Le haut de la fiche, mesuré du bas du cadre : elle se pose au-dessus de
+     la poignée et des onglets, mais sa hauteur les compte déjà (empreinte de
+     #80). Ce qui s'écarte d'elle part de ce bord-ci : le crédit relevé, et
+     « Ma position » qui ne descend pas plus bas. Une formule recopiée du
+     panneau de tracé, qui, lui, ne les compte pas, posait le bouton 108 px
+     trop haut (#609). */
+  --haut-de-la-fiche: calc(
+    var(--hauteur-fiche) + env(safe-area-inset-bottom, 0px)
+  );
   /* Même raison pour le panneau de tracé d'itinéraire (#544) : les commandes
      de la carte s'écartent de lui en dérivant de ces nombres-ci, repris
      tels quels par `RouteDrawer.module.css`. */
@@ -393,7 +402,7 @@
      hauteur propre, plus tout ce qui la pousse vers le haut (barre d'onglets
      et poignée de la feuille sur téléphone).
 
-     Valeur de repli seulement : `MapView` la remesure à l'exécution et
+     Valeur de repli seulement : `map/useBandeAttribution.ts` la remesure et
      l'écrase sur la racine, parce que rien de tout cela n'est constant —
      mesuré, l'attribution occupe 64 px sur un téléphone de 390 px (trois
      lignes), 44 px entre 800 et 1280 (deux), 24 px à partir de 1600 (une),
