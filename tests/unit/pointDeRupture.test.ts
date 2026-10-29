@@ -29,6 +29,16 @@ const feuillesComposants = import.meta.glob('../../src/components/*.module.css',
   eager: true,
 })
 
+/*
+  Les sources TypeScript, pour la quatrième garde : aucune n'écrit la largeur
+  en clair (#610). Ce fichier-ci est hors de `src/`, il n'y est pas.
+*/
+const sourcesTs = import.meta.glob('../../src/**/*.{ts,tsx}', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+})
+
 const TOUTES: [string, string][] = [
   ['src/index.css', indexCssBrut],
   ['src/App.module.css', appCssBrut],
@@ -47,17 +57,35 @@ function sansCommentaires(css: string): string {
   return css.replace(/\/\*[\s\S]*?\*\//g, '')
 }
 
-/** Toutes les bornes en pixels employées dans une média-requête de largeur. */
+/**
+ * Toutes les bornes en pixels employées dans une média-requête de largeur —
+ * **chaque** condition du prélude, pas la première seule : `(max-width:
+ * 1100px) and (min-width: 700px)` ne rendait que la borne à 1100, et le 700
+ * interdit passait (#610).
+ */
 function bornes(cssBrut: string): { sens: 'max' | 'min'; valeur: number }[] {
   const css = sansCommentaires(cssBrut)
   const trouvees: { sens: 'max' | 'min'; valeur: number }[] = []
-  const motif = /@media[^{]*?\((max|min)-width:\s*(\d+(?:\.\d+)?)px\)/g
-  let m: RegExpExecArray | null
-  while ((m = motif.exec(css)) !== null) {
-    trouvees.push({ sens: m[1] as 'max' | 'min', valeur: Number(m[2]) })
+  for (const prelude of css.match(/@media[^{]*/g) ?? []) {
+    for (const m of prelude.matchAll(/\((max|min)-width:\s*(\d+(?:\.\d+)?)px\)/g)) {
+      trouvees.push({ sens: m[1] as 'max' | 'min', valeur: Number(m[2]) })
+    }
   }
   return trouvees
 }
+
+describe('la lecture des médias-requêtes', () => {
+  it('lit chaque condition de largeur du prélude, pas la première seule', () => {
+    expect(bornes('@media (max-width: 1100px) and (min-width: 700px) { a { b: c } }')).toEqual([
+      { sens: 'max', valeur: 1100 },
+      { sens: 'min', valeur: 700 },
+    ])
+  })
+
+  it('ne lit rien hors d’un prélude `@media`', () => {
+    expect(bornes('.a { max-width: 300px } @container (min-width: 400px) {}')).toEqual([])
+  })
+})
 
 describe('le point de rupture, en JS et en CSS', () => {
   it('n’est écrit qu’à une seule valeur en `max-width`', () => {
@@ -181,5 +209,22 @@ describe('la largeur écrite dans la suite de bout en bout', () => {
     )
     expect(declaration).not.toBeNull()
     expect(Number(declaration?.[1])).toBe(LARGEUR_COMPACTE_MAX)
+  })
+})
+
+/**
+ * Le quatrième monde : le TypeScript qui interroge `matchMedia` lui-même.
+ * `map/useCreditReplie.ts` écrivait `(max-width: 800px)` en clair — d'accord
+ * avec `LARGEUR_COMPACTE_MAX` ce jour-là, sans rien pour le garder : passer
+ * la constante à 820 aurait laissé le crédit déplié entre 801 et 820 px
+ * (#610). La requête s'importe d'`ecran.ts`, et nulle part ailleurs une
+ * largeur ne s'écrit en pixels dans une requête.
+ */
+describe('la largeur dans les sources TypeScript', () => {
+  it('ne s’écrit en clair dans aucune requête de largeur', () => {
+    const fautives = Object.entries(sourcesTs)
+      .filter(([, source]) => /\((?:max|min)-width:\s*\d/.test(source))
+      .map(([chemin]) => chemin.replace('../../', ''))
+    expect(fautives).toEqual([])
   })
 })
