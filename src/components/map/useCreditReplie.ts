@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import type { RefObject } from 'react'
+import { REQUETE_COMPACTE } from '../../lib/ecran.ts'
 
 const CREDIT_DEPLIE =
   '.maplibregl-ctrl-attrib.maplibregl-compact.maplibregl-compact-show'
@@ -59,7 +60,7 @@ export function useCreditReplie(
 
   useEffect(() => {
     if (!ready || !panneauOuvert) return
-    if (!window.matchMedia('(max-width: 800px)').matches) return
+    if (!window.matchMedia(REQUETE_COMPACTE).matches) return
     repliePourLaPlace.current = false
     replier(containerRef.current)
   }, [containerRef, ready, panneauOuvert])
