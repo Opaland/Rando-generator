@@ -161,9 +161,12 @@ par le CLI Playwright.
    **Le balisage vient de ce qui est peint sur l'arbre**, quand
    OpenStreetMap le porte : Sentiers lit le tag `osmc:symbol`, qui décrit la
    marque réelle, plutôt que de la déduire d'une ref commençant par « GR ».
-   Mais **ce tag est rare** — sur le seul jeu de données réel mesuré dans ce
-   dépôt, une relation sur quatre le porte, et sa dernière modification OSM
-   date de 2019. Faute de symbole lisible, la fiche **n'affiche pas de
+   Mais **ce tag est très inégal** : mesuré le 30/08 sur 124 relations dans
+   quatorze fenêtres choisies pour contraster les massifs (#290,
+   `npm run mesures-osm`, mesure 10), 73 % le portent et 70 % sont lisibles
+   — 18 sur 18 au Ballon d'Alsace, 0 sur 8 dans le Luberon. Un
+   échantillon, pas un inventaire : la proportion ne se cite pas comme « la
+   part en France ». Faute de symbole lisible, la fiche **n'affiche pas de
    ligne « Balisé »** plutôt que d'annoncer une marque approximative. Le
    tracé d'un itinéraire, sur la carte, est toujours peint à la couleur de
    son **réseau** : un seul régime de couleurs pour les tracés, puisque la
@@ -321,19 +324,19 @@ coupures se lisent dessus (issue #161).
 
 ### Une grosse bibliothèque
 
-**Ce n'est pas encore tenu.** Mesuré le 08/10/2026 sur des activités de
-2 h 30 à un point par seconde : 100 activités s'importent en **6,1 min**, et
-800 n'ont **pas fini en 25 min**, le plafond du test
-(`docs/MESURE_BIBLIOTHEQUE_08_10.md`). Le 14/10, la mesure a dit où :
-l'analyse des fichiers est rapide et linéaire, c'est le calcul de
-correspondance qui domine — 98,6 % du temps à 200 activités — et il croît
-plus vite que le carré du nombre de points
-(`docs/MESURE_BIBLIOTHEQUE_SPRINT9.md`). Le pourquoi, à l'intérieur de
-`core/matching.ts`, reste à établir. Reproductible avec `npm run mesure`.
+**800 activités s'importent en 2 min 36 s** (155,8 s), mesuré le 18/10 sur
+un banc synthétique d'activités de 2 h 30 à un point par seconde
+(`docs/MESURE_BIBLIOTHEQUE_08_10.md`, `npm run mesure`). Le 08/10, elles
+n'avaient pas fini en 25 minutes. La cause a été trouvée le 18/10 :
+`windowedSpeedMps` (`core/matching.ts`) balayait sans borne quand
+l'horodatage de deux activités concaténées se chevauchait (#539) ; elle est
+gardée depuis par `tests/unit/matching.perf.test.ts`. De 200 à 800
+activités, l'import coûte 4,5 fois plus pour quatre fois plus d'activités :
+proche du linéaire, sur deux points seulement.
 
-Le chiffre qui figurait ici — 800 activités en 94,7 s, le 23/08
-(`docs/MESURE_BIBLIOTHEQUE.md`) — n'a pas résisté aux deux mesures
-suivantes.
+Ce qui reste ouvert : le banc est synthétique. Aucun export réel n'a été
+mesuré, et une vraie bibliothèque pourrait présenter un horodatage non
+monotone pour une autre raison (pause GPS, changement d'heure).
 
 ### Deux onglets, une seule base
 
@@ -357,12 +360,14 @@ mathématique, et elle écarterait La Réunion, les Antilles ou la Guyane, où c
 calcul est parfaitement sain. Ce qui est refusé, c'est ce qu'on ne sait pas
 mesurer.
 
-Les cinq chemins par lesquels des coordonnées entrent portent la même garde,
-par la même fonction nommée : les lecteurs GPX, TCX et FIT, le GeoJSON déposé
-dans « Mes itinéraires », et la restauration de sauvegarde — traces comme
-itinéraires persos. Le GeoJSON et les itinéraires d'une sauvegarde l'avaient
-oubliée jusqu'au 20/10 (#559) : cette phrase en comptait quatre, et les
-disait tous gardés.
+Les chemins par lesquels un **fichier** fait entrer des coordonnées portent
+cette garde (`core/domaine.ts`) : les lecteurs GPX, TCX et FIT et le GeoJSON
+déposé dans « Mes itinéraires » appellent `verifierDomaine`, la restauration
+de sauvegarde — traces comme itinéraires persos — `traverseAntimeridien`. Le
+GeoJSON et les itinéraires d'une sauvegarde l'avaient oubliée jusqu'au 20/10
+(#559). **Deux chemins n'y passent pas**, et cette phrase les disait gardés
+(#604) : l'**enregistrement** d'une sortie, qui ne vérifie que la validité
+de chaque point (`estDansLeMonde`), et le **tracé à la main**.
 
 Le hachage spatial du matching, lui, a été corrigé plutôt que borné : il
 découpe l'espace en carrés **de degrés**, et une cellule qui fait 118 m de
@@ -423,10 +428,18 @@ Sur téléphone, la carte occupe tout le cadre et le panneau de contrôle devien
 une feuille à trois positions, qu'on fait passer de l'une à l'autre en
 touchant sa poignée — on ne la fait pas glisser : repliée sur cette seule
 poignée — qui
-affiche le pourcentage global —, à mi-hauteur, ou presque plein écran. Elle
-s'ouvre à mi-hauteur à la première visite, quand il n'y a rien à voir sur la
-carte et tout à faire dans le panneau, et reste basse au retour, quand la zone
-vient du cache. Chaque section reste un accordéon repliable.
+affiche le pourcentage global —, à mi-hauteur, ou presque plein écran. À la
+toute première visite, le guide de premier lancement est affiché et la
+feuille reste repliée sous lui ; une fois le guide fermé, elle s'ouvre à
+mi-hauteur, quand il n'y a rien à voir sur la carte et tout à faire dans le
+panneau. Elle reste basse au retour, quand la zone vient du cache
+(`positionInitiale`, `core/maquetteOnglets.ts`).
+
+Le panneau se range en **quatre onglets** — Carte, Sorties, Progression,
+Réglages —, dans une barre toujours visible. Sur téléphone, chaque onglet
+montre ses seules sections ; sur grand écran, où le panneau a la place de
+tout montrer, l'onglet amène à sa première section. Chaque section reste un
+accordéon repliable.
 
 Toute suppression (trace, itinéraire perso) demande une confirmation en deux
 temps — pas de boîte de dialogue native, un simple second clic sur
