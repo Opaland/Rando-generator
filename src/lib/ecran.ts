@@ -17,6 +17,14 @@ import { useEffect, useState } from 'react'
 export const LARGEUR_COMPACTE_MAX = 800
 
 /**
+ * La requête qui en dérive, pour quiconque interroge `matchMedia` : écrite
+ * en clair dans `map/useCreditReplie.ts`, elle était d'accord avec la
+ * constante sans que rien le garde (#610). `pointDeRupture.test.ts` refuse
+ * maintenant toute largeur en pixels dans une requête des sources.
+ */
+export const REQUETE_COMPACTE = `(max-width: ${String(LARGEUR_COMPACTE_MAX)}px)`
+
+/**
  * Vrai sur les écrans étroits — téléphones, et fenêtres réduites.
  *
  * L'état initial lit `matchMedia` plutôt que de supposer : un rendu qui
@@ -27,14 +35,11 @@ export function useEcranCompact(): boolean {
   const [compact, setCompact] = useState(
     () =>
       typeof window !== 'undefined' &&
-      window.matchMedia(`(max-width: ${String(LARGEUR_COMPACTE_MAX)}px)`)
-        .matches,
+      window.matchMedia(REQUETE_COMPACTE).matches,
   )
 
   useEffect(() => {
-    const requete = window.matchMedia(
-      `(max-width: ${String(LARGEUR_COMPACTE_MAX)}px)`,
-    )
+    const requete = window.matchMedia(REQUETE_COMPACTE)
     const suivre = (evenement: MediaQueryListEvent) => {
       setCompact(evenement.matches)
     }
