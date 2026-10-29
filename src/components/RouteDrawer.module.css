@@ -94,7 +94,8 @@
     /* Au-dessus du crédit de la carte, comme « Ma position » (#544). Posé à
        douze pixels du bord, le panneau masquait 40 % de la ligne
        d'attribution à 1 280 × 720 — mesuré le 18/10, 48 points peints sur
-       80. La bande est remesurée à l'exécution par `MapView`. */
+       80. La bande est remesurée à l'exécution par
+       `map/useBandeAttribution.ts`. */
     bottom: calc(12px + var(--bande-attribution));
     width: min(var(--largeur-trace), calc(100% - 24px));
     /* La hauteur qu'il y a, comme la fiche au PC : le plafond de téléphone
