@@ -225,7 +225,9 @@ Trois pièges mesurés sur ce dépôt :
   sources. Un `npm run build` dont on masque la sortie peut échouer en
   silence et laisser tester une version périmée.
 - **`PW_CHROMIUM_PATH=/opt/pw-browsers/chromium` pour toute commande qui
-  lance Chromium** — `e2e`, `monkey`, `mesure`, `reel`, `chargement`,
+  lance Chromium, dans le conteneur cloud** — ce chemin est celui du
+  conteneur ; sur un poste Windows, la variable ne se pose pas
+  (`docs/PROMPT_REPRISE_POWERSHELL.md`) — `e2e`, `monkey`, `mesure`, `reel`, `chargement`,
   `panneau`, `dense`, `og-image`. Cette phrase-là a
   déjà été trop étroite une fois : le 31/08, `npm run monkey` a rendu trois
   échecs au milieu d'une porte verte, faute de la variable, et la seule

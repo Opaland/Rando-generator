@@ -93,11 +93,10 @@ aux connecteurs OAuth.
 
 **Où il s'arrête.**
 
-- **Une archive de plusieurs centaines d'activités n'a pas été mesurée.** Le
-  développement s'est fait sur des archives synthétiques de quelques fichiers.
-  Le parsing est séquentiel avec une pause par fichier ; sur 800 activités, le
-  temps total est inconnu — et le quota IndexedDB aussi. À mesurer avant de
-  promettre quoi que ce soit.
+- **Une archive de plusieurs centaines d'activités n'avait pas été
+  mesurée.** *Corrigé depuis : 800 activités s'importent en 155,8 s le
+  18/10, pour 11 % du quota de stockage (`MESURE_BIBLIOTHEQUE_08_10.md`, banc
+  synthétique). Aucun export réel de Karim n'a été mesuré.*
 - **Ses sorties hors zone chargée ne comptent pas.** Le pourcentage porte sur
   les itinéraires de la zone téléchargée : une sortie en Bretagne n'apparaît
   nulle part tant qu'il n'a pas chargé la Bretagne. L'historique la compte en
@@ -155,11 +154,11 @@ que la seconde lecture a trouvé, et qui n'existait pas avant.
 | Camille — préparer hors connexion | **Levé** (#153) : service worker + bouton « Emporter cette randonnée » |
 | Sylvie — « j'ai fait celui-là » sans trace GPX | **Levé** (#158) : `DeclarerParcouru.tsx`, itinéraire déclaré parcouru |
 | Camille — étapes calées sur les refuges, export du plan | **Levé** (#161) : `calerLesEtapesSurLesCouchages` dans `core/stages.ts` |
-| Karim — grosse archive jamais mesurée | **Mesuré, pas levé** (#159, #539) : 800 activités ne s'importent pas en 25 min (`MESURE_BIBLIOTHEQUE_08_10.md`) ; le calcul de correspondance domine (`MESURE_BIBLIOTHEQUE_SPRINT9.md`) |
+| Karim — grosse archive jamais mesurée | **Levé** (#159, #539) : 800 activités s'importent en 155,8 s depuis le 18/10 (`MESURE_BIBLIOTHEQUE_08_10.md`), la cause trouvée (`windowedSpeedMps`) et gardée par `matching.perf.test.ts`. Sur banc synthétique : aucun export réel mesuré |
 | Marc — le constat ne mène à aucune action | **Levé** (#160) : `core/lienOsm.ts`, lien direct vers la relation OSM |
 | Léa — l'export GPX ne portait pas d'attribution | **Levé**, dans #87 : `attribution: lecture.source` posé sur l'itinéraire à l'import (`src/store/trancheImport.ts`, `importCustomGpx` — commentaire qui la cite nommément), affiché sur la fiche et porté dans l'export GPX (`attributionDe`/`mentionDeSource`, `ItineraryDetail.tsx`). |
 
-*Six de ces sept lignes correspondent à des issues réellement fermées
+*Toutes ces dix lignes, sauf celle de Léa (#87), correspondent à des issues réellement fermées
 (#131, #132, #133, #145, #153, #158, #159, #160, #161), retrouvées closes
 dans le code plutôt que dans ce document — le tableau datait tous du
 20-25/08 et aucune fermeture d'issue ne l'avait mis à jour. Même mécanisme
@@ -258,7 +257,7 @@ Ce que la seconde passe laissait ouvert l'est aussi, désormais : #158
 (cocher un itinéraire à la main), #159 (mesurer une grosse bibliothèque),
 #160 (lien vers l'éditeur OSM), #161 (étapes calées sur les refuges, export
 du plan), #153 (préparer hors connexion), #87 (attribution des couches
-importées) — les sept lignes du tableau « Ce qui est levé » ci-dessus.
+importées) — les dix lignes du tableau « Ce qui est levé » ci-dessus.
 
 
 ---
@@ -426,9 +425,13 @@ fond beige qui vide une cartouche.
 
 Ce que Paul révèle et qu'aucun autre persona ne voyait : l'application promet
 que rien ne quitte le navigateur, donc **il n'y a pas de « partager par
-mail »**. Le papier est le seul chemin hors de l'appareil qui ne trahisse pas
-la promesse — le geste le plus aligné avec le produit, et le seul qui n'avait
-jamais été dessiné.
+mail »**. Le papier est un chemin hors de l'appareil qui ne trahit pas la
+promesse — comme l'export GPX, l'image du bilan et la sauvegarde, qui sortent
+tous par un fichier que la personne choisit d'envoyer — et c'était le seul
+qui n'avait jamais été dessiné.
+
+*Corrigé depuis : la feuille d'impression est livrée depuis le 28/08 (#369),
+annoncée par un bouton de la fiche et dans le README.*
 
 ### Yuki, 27 ans, thème sombre toute l'année — issue #361
 
@@ -522,16 +525,14 @@ tenue à jour dans OpenStreetMap. `Nouvelle-Calédonie` est désormais une entr�
 de `ZONES` (groupe `nc`), au même titre que le Rhône ou un département — Zoé
 peut la choisir directement dans le panneau, sans dépendre d'une recherche.
 
-**Ce qui reste vrai, et qu'il faut continuer à dire.** Le géocodeur de la
-recherche par lieu (#131) est l'API Adresse de la BAN, documentée dans
-`src/core/geocode.ts` comme « couvrant la France entière » au sens
-administratif — métropole et DROM, mais pas la Nouvelle-Calédonie, qui n'a pas
-de code INSEE de commune. **Taper « Nouméa » dans la recherche ne trouvera
-donc toujours rien** : ce n'est pas corrigé, et ne peut pas l'être sans changer
-de géocodeur pour une collectivité de plus. Zoé doit ouvrir la liste des zones
-et y choisir « Nouvelle-Calédonie » — un clic de plus que ce que #504
-promettait pour tout le monde, mais un chemin qui existe et qui marche,
-plutôt que rien.
+**Ce qui était vrai, et ne l'est plus (#596).** Cette fiche disait que
+« Nouméa » ne se trouvait pas, l'API Adresse de la BAN ne couvrant pas la
+Nouvelle-Calédonie. **C'est faux aujourd'hui**, mesuré le 22/10 par l'agent
+`parcours` puis le 28/10 : la recherche rend « Nouméa — 988,
+Nouvelle-Calédonie » (citycode 98818). La phrase a vieilli comme le §4bis le
+décrit. Ce qui restait : « autour de Nouméa » rendait 0 itinéraire à 12 km ;
+depuis #591, la recherche s'élargit à 25 km quand rien n'est trouvé, et le
+dit. La zone « Nouvelle-Calédonie » de la liste reste l'autre chemin.
 
 Et #355 tient toujours : le MNT IGN ne couvre pas la Nouvelle-Calédonie
 (revérifié en direct le 11/09 : le service rend `-99999` sur des points près
