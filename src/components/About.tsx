@@ -199,7 +199,8 @@ export function About({
             </strong>
             , qui décrit la marque réellement peinte sur l’arbre — et non d’une
             référence commençant par «&nbsp;GR&nbsp;». Ce tag est{' '}
-            <strong>rare</strong>&nbsp;: quand il manque, la ligne
+            <strong>très inégal selon les massifs</strong>&nbsp;: quand il
+            manque, la ligne
             «&nbsp;Balisé&nbsp;» n’apparaît pas, plutôt que d’annoncer une
             marque approximative à quelqu’un qui la cherchera sur un poteau.
           </p>
