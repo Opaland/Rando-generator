@@ -1,4 +1,4 @@
-import { distanceMeters, distanceToSegmentMeters } from './geo.ts'
+import { METRES_PAR_DEGRE, distanceMeters, distanceToSegmentMeters } from './geo.ts'
 import { DETOUR_MAX_METRES } from './poiDistance.ts'
 import { itineraryCoords } from './mapdata.ts'
 import { MAX_POIS } from './poi.ts'
@@ -93,9 +93,13 @@ export const RAYON_DE_RECHERCHE_METERS = Math.max(...DETOURS_PROPOSES) / 2
  * direction. Le degré de longitude rétrécit avec la latitude ; on prend le
  * cas le plus défavorable de la France métropolitaine (51° N), pour que la
  * cellule soit partout au moins aussi large que le rayon.
+ *
+ * Le degré est celui de `geo.ts`, dont sortent les distances comparées au
+ * rayon. Avec 111 320 m, la cellule faisait 499,4 m pour un rayon de 500
+ * (#611) — `poisDeZone.test.ts` le mesure maintenant.
  */
-const DEG_PAR_METRE_LON = 1 / (111_320 * Math.cos((51 * Math.PI) / 180))
-const COTE_CELLULE_DEG = RAYON_DE_RECHERCHE_METERS * DEG_PAR_METRE_LON
+const DEG_PAR_METRE_LON = 1 / (METRES_PAR_DEGRE * Math.cos((51 * Math.PI) / 180))
+export const COTE_CELLULE_DEG = RAYON_DE_RECHERCHE_METERS * DEG_PAR_METRE_LON
 
 function cle(lon: number, lat: number): string {
   return `${String(Math.floor(lon / COTE_CELLULE_DEG))}:${String(Math.floor(lat / COTE_CELLULE_DEG))}`

@@ -6,6 +6,14 @@ export const EARTH_RADIUS_METERS = 6_371_000
 const DEG_TO_RAD = Math.PI / 180
 
 /**
+ * Mètres par degré de latitude, **dans le modèle de ce module** : la sphère
+ * de rayon `EARTH_RADIUS_METERS`. Ce qui se compare à `distanceMeters` doit
+ * en dériver ; `poisDeZone.ts` prenait 111 320 m, et sa cellule faisait
+ * 0,11 % de moins que le rayon qu'elle devait couvrir (#611).
+ */
+export const METRES_PAR_DEGRE = EARTH_RADIUS_METERS * DEG_TO_RAD
+
+/**
  * Distance approchée entre deux points par projection équirectangulaire.
  * Suffisante aux échelles d'un matching à 25–100 m de tolérance.
  */
