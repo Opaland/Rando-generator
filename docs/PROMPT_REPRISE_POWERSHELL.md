@@ -17,8 +17,9 @@ Bilan des 28 et 29/10 :
 - **fermées sans code**, parce que déjà corrigées par #586 qui ne les
   fermait pas, chacune revérifiée et commentée : #557, #558, #563, #565,
   #566 ;
-- **#637 (#587, Chromium en CI) à fusionner si sa CI est verte** — vérifier
-  à la reprise.
+- **#637** (#587, Chromium en CI : une borne par essai, trois essais) est
+  fusionnée elle aussi. À surveiller : un `::warning::` « essai n sur 3 »
+  dans un journal de CI dira si le pari du second essai tient.
 
 ---
 
@@ -142,8 +143,6 @@ B. Une revue courte du projet : ce qui a changé depuis le 29/10 et les
 
 C. Les issues retenues, une par une, chacune sur sa branche et sa PR.
    Candidats, par ordre de gravité, à confirmer par mes réponses :
-   - #637 (#587) : la fusionner si la CI est verte sur un commit qui
-     contient main ;
    - #296 (chercher par lieu, contours à ~100 m, décidé le 22/10) :
      mesurer d'abord, c'est le gros morceau du sprint 3 (#581) ;
    - #595 (« Itinéraire 18301286 » sur le GR NC1) : demande Overpass,
