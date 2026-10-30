@@ -187,6 +187,51 @@ describe('chercherHistorique — la zone au moment de l’import (#206)', () => 
   })
 })
 
+describe('chercherHistorique — le lieu où passe la trace (#296)', () => {
+  /*
+    #206 ne servait que les traces importées pendant qu'une zone était
+    chargée. Les contours des zones prédéfinies (tranché le 22/10) rangent
+    aussi les autres : celles d'avant #206, et celles importées hors zone.
+    Un contour fictif suffit ici ; le fichier réel est éprouvé dans
+    `lieuxDeTrace.test.ts`.
+  */
+  const carre: [number, number][] = [
+    [4, 45],
+    [5, 45],
+    [5, 46],
+    [4, 46],
+    [4, 45],
+  ]
+  const contours = {
+    seuilDegres: 0.001,
+    contours: {
+      // Le sélecteur réel du Pilat, pour que son nom vienne de `ZONES`.
+      'area["boundary"="protected_area"]["name"="Parc naturel régional du Pilat"]': {
+        relation: 1,
+        polygones: [[carre]],
+      },
+    },
+  }
+  // `trace()` pose ses points à 4,5° E et 45,4° N : dans le carré.
+  const garmin = trace('activity_18274639.gpx', '2026-06-15T08:00:00Z')
+  const ailleurs = {
+    ...trace('activity_1.gpx', '2026-06-16T08:00:00Z'),
+    points: [[2.35, 48.85] as [number, number]],
+  }
+
+  it('retrouve par le lieu une trace importée sans zone', () => {
+    const entrees = preparerHistorique([garmin, ailleurs], contours)
+    expect(
+      chercherHistorique(entrees, 'pilat').map((e) => e.track.filename),
+    ).toEqual(['activity_18274639.gpx'])
+  })
+
+  it('ne cherche rien de plus tant que les contours ne sont pas chargés', () => {
+    const entrees = preparerHistorique([garmin, ailleurs])
+    expect(chercherHistorique(entrees, 'pilat')).toEqual([])
+  })
+})
+
 describe('chercherHistorique', () => {
   const entrees = preparerHistorique([
     trace('Pilat-crêtes.gpx', '2026-06-15T08:00:00Z'),

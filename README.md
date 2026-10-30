@@ -136,7 +136,12 @@ par le CLI Playwright.
    sorties, les kilomètres et le D+, et trace un histogramme des distances
    par mois (12 derniers mois). Les mois sans sortie sont conservés à zéro —
    une interruption est une information. Les traces sans date sont comptées
-   dans les totaux et signalées comme absentes du graphique.
+   dans les totaux et signalées comme absentes du graphique. À partir de
+   trente sorties, la liste se range par année et se **cherche** : par nom
+   de fichier, par date, par la zone chargée à l'import, et par les zones
+   prédéfinies où passe la trace — « Pilat » retrouve
+   `activity_18274639.gpx`. Ces contours, simplifiés à ~100 m, sont
+   embarqués avec l'application : aucune position ne part pour ça.
 6. **Lire sa progression** : carte colorée (gris = non parcouru, couleur du
    balisage = parcouru — une légende compacte rappelle le code couleur par
    réseau), tableau de bord (% global, km faits/restants, répartition

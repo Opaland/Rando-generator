@@ -1,4 +1,5 @@
 import { trackDistanceMeters } from './history.ts'
+import { lieuxDeLaTrace, type ContoursDeZone } from './lieuxDeTrace.ts'
 import type { Track } from './types.ts'
 import { instantDe } from './valeurLue.ts'
 
@@ -60,7 +61,15 @@ function normaliser(texte: string): string {
     .replace(/[\u0300-\u036f]/g, '')
 }
 
-export function preparerHistorique(tracks: Track[]): EntreeHistorique[] {
+/**
+ * `contours` : ceux des zones prédéfinies (#296), chargés à part et plus
+ * tard que les traces. Tant qu'ils manquent, rien n'est cherchable de plus
+ * — et rien de moins.
+ */
+export function preparerHistorique(
+  tracks: Track[],
+  contours: ContoursDeZone | null = null,
+): EntreeHistorique[] {
   return tracks.map((track) => {
     const instant = instantDe(track.date)
     const date = instant === null ? null : new Date(instant)
@@ -81,6 +90,9 @@ export function preparerHistorique(tracks: Track[]): EntreeHistorique[] {
           // en base, et c'est sans conséquence — une chaîne vide ne
           // retire rien de cherchable.
           track.zoneALImport ?? '',
+          // Les zones où passe la trace (#296) : « Pilat » retrouve aussi
+          // une sortie importée avant #206, ou hors de toute zone.
+          ...(contours ? lieuxDeLaTrace(track.points, contours) : []),
           date ? date.toLocaleDateString('fr-FR') : '',
           date ? String(date.getFullYear()) : '',
         ].join(' '),
