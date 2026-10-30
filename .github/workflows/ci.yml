@@ -51,8 +51,32 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - name: Installer Chromium pour Playwright
-        run: npx playwright install --with-deps chromium
-        timeout-minutes: 10
+        # Issue #587 : le navigateur sort du cache, mais `--with-deps` passe
+        # par `apt`, et le miroir `azure.archive.ubuntu.com` est parfois lent.
+        # Mesuré, même image (ubuntu-26.04) et mêmes paquets : 21,9 Mo en
+        # 4 s le 29/10, contre 1,5 Mo en 3 min 19 s le 26/10. Cette fois-là,
+        # l'étape a dépassé ses 10 minutes sans qu'un test tourne. La piste
+        # « image Ubuntu 26 » de l'issue est écartée : les vertes y sont aussi.
+        #
+        # D'où une borne par essai, et trois essais : un essai qui cale est
+        # coupé, et le suivant rouvre ses connexions. Que le second tombe sur
+        # un miroir plus rapide est un pari, non une mesure.
+        #
+        # 180 s est tranché au jugé (§2, un délai de CI, pas un calcul) :
+        # l'étape entière prend 28 s quand le miroir répond, soit plus de
+        # six fois de marge. `timeout` tue le groupe de processus, apt
+        # compris (vérifié dans le conteneur), et `dpkg --configure -a`
+        # reprend une installation coupée en cours de route.
+        run: |
+          for essai in 1 2 3; do
+            if timeout 180 npx playwright install --with-deps chromium; then
+              exit 0
+            fi
+            echo "::warning::Installation de Chromium : essai ${essai} sur 3 échoué ou coupé à 180 s (#587)"
+            sudo dpkg --configure -a || true
+          done
+          exit 1
+        timeout-minutes: 12
       - name: Tests e2e
         run: npm run e2e
         # Une borne, et une seule chose à ne pas rater : elle doit être
