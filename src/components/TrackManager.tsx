@@ -22,6 +22,7 @@ import {
   trackDisplayName,
 } from '../core/gpxExport.ts'
 import { downloadTextFile } from '../lib/download.ts'
+import { useContoursDeZone } from '../lib/useContoursDeZone.ts'
 import styles from './TrackManager.module.css'
 import { dateAffichee } from '../core/valeurLue.ts'
 
@@ -71,7 +72,11 @@ export function TrackManager() {
   // Une seule mesure de longueur par trace, et non une par rendu : sur huit
   // cents traces de dix mille points, le rendu recalculait huit millions de
   // distances pour peindre une liste (issue #175).
-  const historique = useMemo(() => preparerHistorique(tracks), [tracks])
+  const contours = useContoursDeZone()
+  const historique = useMemo(
+    () => preparerHistorique(tracks, contours),
+    [tracks, contours],
+  )
   const declarations = useMemo(
     () =>
       listerDeclarations(

@@ -46,6 +46,9 @@ function precacheServiceWorker(): Plugin {
         // application installée les perdait hors ligne, alors que c'est
         // précisément dehors qu'on en a besoin (revue globale du cycle 2).
         './data/boucles-metropole-lyon.json',
+        // Les contours des zones (#296) : la recherche de l'historique par
+        // lieu doit marcher hors ligne comme le reste de l'historique.
+        './data/contours-de-zone.json',
         ...assets.map((nom) => `./assets/${nom}`),
       ]
       /*
