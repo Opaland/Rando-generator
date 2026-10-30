@@ -4,9 +4,18 @@ Deux parties :
 - la mise en route de la machine, à faire une seule fois ;
 - le prompt à coller dans Claude Code à chaque reprise.
 
-La dernière session (cloud, du 27 au 29/10) s'est arrêtée sur `main`, une
+La dernière session (locale, Windows, 30/10) s'est arrêtée sur `main`, une
 fois fusionnée la PR qui met ce fichier à jour. Une issue = une branche partie
 de `main` = une PR (`AGENTS.md`).
+
+Bilan du 30/10 :
+- **fusionnée** : #641 (#595, un tronçon sans nom ni ref se nomme de ses
+  extrémités) ;
+- **#604 fermée sans code**, sur décision de Cédric : la garde n'est pas
+  étendue ;
+- **#584 remesurée**, non tranchée : le tableau est sur l'issue ;
+- **revue globale** (`docs/REVUE_GLOBALE_30_10.md`) : #642, #643, #644 ouvertes,
+  liste PERSONAS sur #571.
 
 Bilan des 28 et 29/10 :
 - **fusionnées** : #629 (textes et image de partage), #630 (#594 volet 2 :
@@ -139,17 +148,21 @@ A. Une seule question groupée (AskUserQuestion) pour les décisions du §3
    aucun sprint avant mes réponses ; ce que je laisse « plus tard » reste
    ouvert.
 
-B. Une revue courte du projet : ce qui a changé depuis le 29/10 et les
-   issues ouvertes. Pas de revue globale : la dernière date du 26/10
-   (docs/REVUE_GLOBALE_26_10.md). Avant de coder une issue ancienne,
+B. Une revue courte du projet : ce qui a changé depuis le 30/10 et les
+   issues ouvertes. Pas de revue globale : la dernière date du 30/10
+   (docs/REVUE_GLOBALE_30_10.md). Avant de coder une issue ancienne,
    vérifie qu'elle n'est pas déjà corrigée : le 29/10, cinq issues du
-   19/10 l'étaient depuis #586 sans avoir été fermées.
+   19/10 l'étaient depuis #586 sans avoir été fermées. Regarde aussi ce qui
+   est arrivé sur main avant de commencer : le 30/10, #296 a été livrée
+   pendant que la session la gardait dans sa liste.
 
 C. Les issues retenues, une par une, chacune sur sa branche et sa PR.
    Candidats, par ordre de gravité, à confirmer par mes réponses :
-   - #595 (« Itinéraire 18301286 » sur le GR NC1) : demande Overpass,
-     injoignable depuis le conteneur cloud — à faire sur le PC ;
-   - ce que mes réponses au §3 auront tranché.
+   - #642 (la sonde IGN et les 25 km absents des textes) ;
+   - #643 (la recherche de la liste ne replie pas les accents) ;
+   - #571 : mesure CSP sous Firefox, décidée le 30/10 et non faite ; puis la
+     liste PERSONAS posée sur l'issue ;
+   - ce que mes réponses au §3 auront tranché (#584, #644).
 
 D. Pour une question d'écran, l'agent ines ; pour une démonstration ou
    « est-ce que X y arrive ? », l'agent parcours avec la persona nommée ;
@@ -191,21 +204,19 @@ avec le prompt du lendemain.
 
 ## 3. Ce qui attend la décision de Cédric
 
-Tranché et livré depuis le 27/10 : #594 volet 2, #290 volet 2, #608
-(« hôtels et campings commerciaux »), et le 28/10 « les étapes d'une même
-source comptent pour un GR » (#630).
+Tranché le 30/10 : #604, la garde n'est pas étendue (fermée) ; #571, mesurer
+sous Firefox avant de retirer quoi que ce soit de la CSP, Safari restant non
+vérifié.
 
 Reste ouvert :
 
-- **#584, la suite** — trois cas mesurés le 27/10, à trancher : à 320 × 480
-  le ⓘ replié sous « Ma position » ; à 360 × 640, fiche **fermée**, la
-  carte d'itinéraire recouvre la boussole (195-239 px, CI) ; et le coût de
-  la boussole effacée (pas de retour au nord simple fiche ouverte). **À
-  remesurer avant de trancher** : depuis #634 (#609), « Ma position » se
-  pose toujours au-dessus du crédit, ce qui change au moins le premier cas.
-- **#604, étendre la garde** des chemins d'entrée à l'enregistrement et au
-  tracé à la main ? Cela change ce qui est accepté (§2) ; le README dit
-  aujourd'hui ce qui est gardé et ce qui ne l'est pas.
+- **#584, la suite** — remesurée le 30/10 sous Windows, tableau sur l'issue.
+  Le ⓘ à 320 × 480 est réglé. Restent les recouvrements à 320 × 480 et à
+  360 × 640 en gros texte (zoom sous « Ma position » ou sous la carte
+  d'itinéraire), et le retour au nord fiche ouverte. Inès n'a pas encore été
+  consultée : à faire avant de poser la question.
+- **#644** — le nom d'une sortie de démonstration : `displayName` partout, ou
+  le nom avant la ref, écrit et testé ?
 - **#571, deux restes** : retirer `worker-src blob:` et `img-src blob:` de
   la CSP (mesurés inutiles sous Chromium seulement — Firefox et Safari à
   mesurer sur le PC) ; la relecture entière des fiches PERSONAS « non
@@ -224,7 +235,21 @@ Reste ouvert :
 - **Preuves humaines** — #173, #528 ; non vérifié sur un vrai téléphone :
   #568, #561, #551.
 
-## 4. Ce que les journées du 28 et du 29/10 ont appris
+## 4. Ce que la journée du 30/10 a appris
+
+- **La liste d'une session vieillit pendant la session** : #296 a été fusionnée
+  à 18 h, et `main` a bougé sous #641, dont la CI était verte sur un commit qui
+  ne la contenait pas. Le contrôle « `main` contenue » juste avant de fusionner
+  l'a vu.
+- **Une correction de jumeaux en laisse une** : #641 a réuni deux copies du
+  repli de `displayName`, et la troisième (#644) était dans la sortie de mon
+  `grep`. Elle ne s'écrit pas à l'identique : je l'ai lue sans la traiter, et
+  c'est le chasseur de jumeaux qui en a mesuré le désaccord.
+- **Une sonde discrète reste une sortie** : #593 a ajouté une requête vers l'IGN
+  que la liste de « À propos » ne connaît pas (#642). Aucune garde ne compare
+  cette liste aux requêtes réelles.
+
+## 4 (suite). Ce que les journées du 28 et du 29/10 ont appris
 
 - **Une issue ouverte n'est pas un défaut présent.** #586, la dernière
   fusion de la branche longue, a corrigé #557, #558, #563, #565 et #566
