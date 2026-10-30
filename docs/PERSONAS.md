@@ -90,6 +90,9 @@ Ouvre l'application le dimanche soir avec l'export de sa montre.
 **Ce qui marche.** GPX, FIT, TCX et l'archive ZIP complète de Strava ou Garmin
 s'importent sans rien envoyer nulle part — c'est le point fort du produit face
 aux connecteurs OAuth.
+Ses fichiers s'appellent `activity_18274639.gpx`, et il tape « Pilat » :
+*depuis le 30/10, la recherche de l'historique le trouve par les contours des
+zones prédéfinies, même importé hors de toute zone (#296).*
 
 **Où il s'arrête.**
 
