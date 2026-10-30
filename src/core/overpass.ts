@@ -389,6 +389,26 @@ function tagsUtiles(
   return Object.keys(retenus).length > 0 ? retenus : undefined
 }
 
+
+/**
+ * Le nom d'une relation, ou à défaut celui que ses extrémités lui donnent
+ * (#595 : les tronçons du GR NC1 n'ont ni `name` ni `ref`, et s'affichaient
+ * « Itinéraire 18301286 »).
+ *
+ * Seulement sans `ref` : une relation qui en a une s'affiche déjà par elle, et
+ * le nom y deviendrait un sous-titre neuf sur toutes les listes. Les deux
+ * extrémités, ou rien : une seule ne nomme pas un parcours. Le tiret plutôt
+ * qu'une flèche, qu'un lecteur d'écran prononce : tranché au jugement (§2),
+ * c'est de la présentation.
+ */
+function nomDeRelation(tags: Record<string, string>): string | null {
+  if (tags.name) return tags.name
+  if (tags.ref) return null
+  const depart = tags.from?.trim()
+  const arrivee = tags.to?.trim()
+  return depart && arrivee ? `${depart} – ${arrivee}` : null
+}
+
 /**
  * Les relations d'itinéraire dont le tracé n'est nulle part dans ce résultat.
  *
@@ -481,7 +501,7 @@ export function parseOverpassResponse(
     itineraries.push({
       osmRelationId: element.id,
       ref: tags.ref ?? null,
-      name: tags.name ?? null,
+      name: nomDeRelation(tags),
       network: classifyNetwork(tags),
       ways,
       totalMeters: ways.reduce(

@@ -1,3 +1,4 @@
+import { displayName } from '../lib/format.ts'
 import type { CompletionResult, Itinerary, Track } from './types.ts'
 import { instantDe } from './valeurLue.ts'
 
@@ -39,10 +40,7 @@ export function outingHighlights(
   const limit = options.limit ?? DEFAULT_LIMIT
   const minMeters = options.minMeters ?? MIN_OUTING_METERS
   const nameById = new Map(
-    itineraries.map((i) => [
-      i.osmRelationId,
-      i.ref ?? i.name ?? `Itinéraire ${i.osmRelationId}`,
-    ]),
+    itineraries.map((i) => [i.osmRelationId, displayName(i)]),
   )
   return results
     .filter((r) => r.doneMeters >= minMeters && nameById.has(r.itineraryId))

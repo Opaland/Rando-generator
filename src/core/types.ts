@@ -66,7 +66,10 @@ export interface Itinerary {
   osmRelationId: number
   /** ex. « GR 7 » */
   ref: string | null
-  /** ex. « Sentier des Crêtes du Pilat » */
+  /**
+   * ex. « Sentier des Crêtes du Pilat » ; sans `name` ni `ref` dans OSM, ses
+   * deux extrémités, « Ouénarou – Refuge des Tristaniopsis » (#595).
+   */
   name: string | null
   network: Network
   /** Géométries dédupliquées par way id. */
