@@ -17,6 +17,10 @@ Bilan des 28 et 29/10 :
 - **fermées sans code**, parce que déjà corrigées par #586 qui ne les
   fermait pas, chacune revérifiée et commentée : #557, #558, #563, #565,
   #566 ;
+- **#639 (#296)**, livrée le 30/10 : l'historique se cherche par les zones
+  prédéfinies où passe la trace (contours à ~100 m, 84 ko gzippés,
+  `public/data/contours-de-zone.json`, régénérés par
+  `scripts/contours-de-zone.mjs`). Recherche seulement, rien d'affiché.
 - **#637** (#587, Chromium en CI : une borne par essai, trois essais) est
   fusionnée elle aussi. À surveiller : un `::warning::` « essai n sur 3 »
   dans un journal de CI dira si le pari du second essai tient.
@@ -143,8 +147,6 @@ B. Une revue courte du projet : ce qui a changé depuis le 29/10 et les
 
 C. Les issues retenues, une par une, chacune sur sa branche et sa PR.
    Candidats, par ordre de gravité, à confirmer par mes réponses :
-   - #296 (chercher par lieu, contours à ~100 m, décidé le 22/10) :
-     mesurer d'abord, c'est le gros morceau du sprint 3 (#581) ;
    - #595 (« Itinéraire 18301286 » sur le GR NC1) : demande Overpass,
      injoignable depuis le conteneur cloud — à faire sur le PC ;
    - ce que mes réponses au §3 auront tranché.
