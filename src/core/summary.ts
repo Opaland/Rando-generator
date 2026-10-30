@@ -1,3 +1,4 @@
+import { displayName } from '../lib/format.ts'
 import type { AggregateStats } from './matching.ts'
 import { DEFAULT_COMPLETION_PCT, isCompleted } from './milestones.ts'
 import type { CompletionResult, Itinerary, Track } from './types.ts'
@@ -99,10 +100,7 @@ export function buildSummary(input: SummaryInput): Summary {
     completionPct = DEFAULT_COMPLETION_PCT,
   } = input
   const nameById = new Map(
-    itineraries.map((i) => [
-      i.osmRelationId,
-      i.ref ?? i.name ?? `Itinéraire ${i.osmRelationId}`,
-    ]),
+    itineraries.map((i) => [i.osmRelationId, displayName(i)]),
   )
 
   const top = results

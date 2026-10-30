@@ -1205,6 +1205,55 @@ describe('les questions que la vague a posées (#406)', () => {
   })
 
   /*
+    #595 : les tronçons du GR NC1 n'ont ni `name` ni `ref` dans OSM, et
+    s'affichaient « Itinéraire 18301286 ». Tags relevés sur Overpass le 30/10.
+  */
+  describe('une relation sans nom ni ref (#595)', () => {
+    function nomDe(tags: Record<string, string>): string | null {
+      const data = {
+        elements: [
+          {
+            type: 'relation',
+            id: 18301286,
+            tags: { route: 'hiking', ...tags },
+            members: [
+              {
+                type: 'way',
+                ref: 801,
+                geometry: [
+                  { lat: -22.2, lon: 166.7 },
+                  { lat: -22.2, lon: 166.71 },
+                ],
+              },
+            ],
+          },
+        ],
+      }
+      return parseOverpassResponse(data, FETCHED_AT)[0]!.name
+    }
+
+    it('se nomme de ses deux extrémités', () => {
+      expect(nomDe({ from: 'Ouénarou', to: 'Refuge des Tristaniopsis' })).toBe(
+        'Ouénarou – Refuge des Tristaniopsis',
+      )
+    })
+
+    it('garde son vrai nom quand elle en a un', () => {
+      expect(nomDe({ name: 'Tour du Pilat', from: 'A', to: 'B' })).toBe('Tour du Pilat')
+    })
+
+    it('n’invente pas de sous-titre à une relation qui a sa ref', () => {
+      expect(nomDe({ ref: 'GR 7', from: 'A', to: 'B' })).toBeNull()
+    })
+
+    it('ne se nomme pas d’une seule extrémité, même si l’autre est vide', () => {
+      expect(nomDe({ from: 'Ouénarou' })).toBeNull()
+      expect(nomDe({ to: 'Ouénarou' })).toBeNull()
+      expect(nomDe({ from: 'Ouénarou', to: '  ' })).toBeNull()
+    })
+  })
+
+  /*
     Deux survivants qu'on ne rechassera pas, injectés et vérifiés sans effet :
 
     - retirer `element.type !== 'relation'` du second passage laisse les
