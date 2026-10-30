@@ -204,6 +204,11 @@ function* pointsDuTrace(coords: LonLat[], z: number): Generator<LonLat> {
  * équirectangulaire majore sur les distances courtes qui nous intéressent,
  * et coûte un cosinus au lieu d'un haversine sur des dizaines de milliers
  * de segments.
+ *
+ * 111 320 m n'est pas le degré de `geo.ts` (111 195, sur sa sphère) : c'est
+ * le degré de longitude à l'équateur sur WGS84, le plus long de la Terre
+ * réelle. Un majorant voulu, et non une copie qui aurait divergé — il ne se
+ * compare à aucune distance de `geo.ts`, seulement à un pas (#611).
  */
 function distanceApprochee(a: LonLat, b: LonLat): number {
   const METRES_PAR_DEGRE = 111_320;

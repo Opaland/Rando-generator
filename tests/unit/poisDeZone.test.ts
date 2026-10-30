@@ -1,12 +1,14 @@
 import { describe, it, expect } from 'vitest'
 import {
   CATEGORIES_RECHERCHEES,
+  COTE_CELLULE_DEG,
   DETOURS_PROPOSES,
   RAYON_DE_RECHERCHE_METERS,
   detoursParItineraire,
   reponseTronquee,
 } from '../../src/core/poisDeZone.ts'
 import { DETOUR_MAX_METRES } from '../../src/core/poiDistance.ts'
+import { distanceMeters } from '../../src/core/geo.ts'
 import { MAX_POIS } from '../../src/core/poi.ts'
 import type { Itinerary, LonLat, PointOfInterest } from '../../src/core/types.ts'
 
@@ -153,6 +155,27 @@ describe('detoursParItineraire (#156)', () => {
     )
     expect(proche?.water).not.toBeNull()
     expect(loin?.water).toBeNull()
+  })
+
+  it('la cellule fait au moins le rayon, mesurée comme le module mesure (#611)', () => {
+    /*
+      La cellule se dimensionnait avec 111 320 m par degré ; les distances,
+      elles, sortent de `geo.ts` et de son rayon terrestre — 111 195 m par
+      degré. À 51° N en longitude, le cas même que le commentaire vise, la
+      cellule faisait 0,11 % de moins que le rayon : un POI dans le rayon
+      mais à plus d'une cellule du point de tracé n'était jamais examiné.
+
+      Mesurée avec `distanceMeters`, la primitive même du module, et non
+      avec une constante retapée ici : c'est le désaccord entre deux
+      constantes qui faisait le défaut.
+    */
+    const largeur = distanceMeters([0, 51], [COTE_CELLULE_DEG, 51])
+    const hauteur = distanceMeters([0, 51], [0, 51 + COTE_CELLULE_DEG])
+    // Égale au rayon, à l'arrondi flottant près (499,99999999999994 m) : un
+    // micromètre de jeu, quand le défaut en manquait 562 000 (499,44 m).
+    const JEU_FLOTTANT = 1e-6
+    expect(largeur).toBeGreaterThanOrEqual(RAYON_DE_RECHERCHE_METERS - JEU_FLOTTANT)
+    expect(hauteur).toBeGreaterThanOrEqual(RAYON_DE_RECHERCHE_METERS - JEU_FLOTTANT)
   })
 
   it('trouve un POI dans la cellule voisine, pas seulement la sienne', () => {
