@@ -4,15 +4,22 @@ Deux parties :
 - la mise en route de la machine, à faire une seule fois ;
 - le prompt à coller dans Claude Code à chaque reprise.
 
-La dernière session (cloud, 27/10) s'est arrêtée sur `main`, une fois
-fusionnée la PR qui met ce fichier à jour. Une issue = une branche partie de
-`main` = une PR (`AGENTS.md`).
-Bilan du 27/10 : #620, #621, #622 fusionnées ; #585 (#623), #591 (#625),
-#593 (#626) corrigées et fermées ; #584 en partie (#624, boussole effacée
-fiche ouverte — l'issue reste ouverte, voir le §3) ; #615 (#627) **à
-fusionner si sa CI est verte** — vérifier à la reprise. Quatre décisions
-prises le matin (#594, #290, #608, #584/#591/#593), notées sur leurs
-issues.
+La dernière session (cloud, du 27 au 29/10) s'est arrêtée sur `main`, une
+fois fusionnée la PR qui met ce fichier à jour. Une issue = une branche partie
+de `main` = une PR (`AGENTS.md`).
+
+Bilan des 28 et 29/10 :
+- **fusionnées** : #629 (textes et image de partage), #630 (#594 volet 2 :
+  ne jamais replier l'unique GR), #631 (#290 volet 2 : la balise dans chaque
+  ligne), #632 (README, #602 à #605), #633 (PERSONAS et CLAUDE.md, #596,
+  #606, #607), #634 (#609, « Ma position » sur le crédit), #635 (#610,
+  point de rupture), #636 (#611, cellule des POI) ;
+- **fermées sans code**, parce que déjà corrigées par #586 qui ne les
+  fermait pas, chacune revérifiée et commentée : #557, #558, #563, #565,
+  #566 ;
+- **#637** (#587, Chromium en CI : une borne par essai, trois essais) est
+  fusionnée elle aussi. À surveiller : un `::warning::` « essai n sur 3 »
+  dans un journal de CI dira si le pari du second essai tient.
 
 ---
 
@@ -128,21 +135,19 @@ A. Une seule question groupée (AskUserQuestion) pour les décisions du §3
    aucun sprint avant mes réponses ; ce que je laisse « plus tard » reste
    ouvert.
 
-B. Une revue courte du projet : ce qui a changé depuis le 27/10 et les
+B. Une revue courte du projet : ce qui a changé depuis le 29/10 et les
    issues ouvertes. Pas de revue globale : la dernière date du 26/10
-   (docs/REVUE_GLOBALE_26_10.md).
+   (docs/REVUE_GLOBALE_26_10.md). Avant de coder une issue ancienne,
+   vérifie qu'elle n'est pas déjà corrigée : le 29/10, cinq issues du
+   19/10 l'étaient depuis #586 sans avoir été fermées.
 
 C. Les issues retenues, une par une, chacune sur sa branche et sa PR.
    Candidats, par ordre de gravité, à confirmer par mes réponses :
-   - #627 (#615) : la fusionner si la CI est verte sur un commit qui
-     contient main ;
-   - décidés le 27/10, à coder : #594 volet 2 (ne jamais replier l'unique
-     GR d'une zone), #290 volet 2 (la balise dessinée dans chaque ligne de
-     la liste ; la carte garde la taxonomie), #608 (« marchand » = hôtels
-     et campings commerciaux : corriger le texte, pas le code) ;
-   - les textes #602 à #608, groupés par surface ;
-   - #296 (contours à ~100 m, mesurer d'abord), décidé le 22/10 ;
-   - #587 (Chromium qui cale en CI) : mesurer avant de corriger.
+   - #296 (chercher par lieu, contours à ~100 m, décidé le 22/10) :
+     mesurer d'abord, c'est le gros morceau du sprint 3 (#581) ;
+   - #595 (« Itinéraire 18301286 » sur le GR NC1) : demande Overpass,
+     injoignable depuis le conteneur cloud — à faire sur le PC ;
+   - ce que mes réponses au §3 auront tranché.
 
 D. Pour une question d'écran, l'agent ines ; pour une démonstration ou
    « est-ce que X y arrive ? », l'agent parcours avec la persona nommée ;
@@ -184,18 +189,25 @@ avec le prompt du lendemain.
 
 ## 3. Ce qui attend la décision de Cédric
 
-Tranché le 27/10 (à coder, voir le §2) : #594 volet 2, #290 volet 2,
-#608. Livré le 27/10 : #585, #591 (élargi à **25 km**, pas 20 — la valeur
-retenue ce jour-là), #593, #584 en partie, #615 (PR #627).
+Tranché et livré depuis le 27/10 : #594 volet 2, #290 volet 2, #608
+(« hôtels et campings commerciaux »), et le 28/10 « les étapes d'une même
+source comptent pour un GR » (#630).
 
 Reste ouvert :
 
-- **#584, la suite** — trois cas mesurés, à trancher : à 320 × 480 le ⓘ
-  replié sous « Ma position » ; à 360 × 640, fiche **fermée**, la carte
-  d'itinéraire recouvre la boussole (195-239 px, CI) ; et le coût de la
-  boussole effacée : une carte tournée avant d'ouvrir la fiche n'a plus de
-  retour au nord simple (« Incliner » puis « Remettre à plat », rien au
-  clavier). Remettre le nord à l'ouverture de la fiche au téléphone ?
+- **#584, la suite** — trois cas mesurés le 27/10, à trancher : à 320 × 480
+  le ⓘ replié sous « Ma position » ; à 360 × 640, fiche **fermée**, la
+  carte d'itinéraire recouvre la boussole (195-239 px, CI) ; et le coût de
+  la boussole effacée (pas de retour au nord simple fiche ouverte). **À
+  remesurer avant de trancher** : depuis #634 (#609), « Ma position » se
+  pose toujours au-dessus du crédit, ce qui change au moins le premier cas.
+- **#604, étendre la garde** des chemins d'entrée à l'enregistrement et au
+  tracé à la main ? Cela change ce qui est accepté (§2) ; le README dit
+  aujourd'hui ce qui est gardé et ce qui ne l'est pas.
+- **#571, deux restes** : retirer `worker-src blob:` et `img-src blob:` de
+  la CSP (mesurés inutiles sous Chromium seulement — Firefox et Safari à
+  mesurer sur le PC) ; la relecture entière des fiches PERSONAS « non
+  relues depuis » (#447).
 - **#615, deux réserves** de la relecture (non mesurées) : le focus tombe
   sur `body` après « Compris » (comme après « Quitter ») ; feuille repliée
   au téléphone, l'avis est monté mais caché.
@@ -210,7 +222,39 @@ Reste ouvert :
 - **Preuves humaines** — #173, #528 ; non vérifié sur un vrai téléphone :
   #568, #561, #551.
 
-## 4. Ce que la journée du 27/10 a appris
+## 4. Ce que les journées du 28 et du 29/10 ont appris
+
+- **Une issue ouverte n'est pas un défaut présent.** #586, la dernière
+  fusion de la branche longue, a corrigé #557, #558, #563, #565 et #566
+  sans les fermer. Chacune a été revérifiée dans le code et par ses tests
+  avant d'être fermée, avec un commentaire qui cite le commit — mais le
+  temps passé à les relire aurait pu l'être à coder.
+- **Une réserve de place peut être accidentelle et nécessaire à la fois**
+  (#609) : les 108 px de trop au-dessus de la fiche tenaient « Ma
+  position » hors du ⓘ du crédit. Les retirer, comme l'issue le proposait,
+  posait le bouton dessus. Mesurer d'abord, puis chercher **ce que la
+  réserve protégeait**.
+- **`ResizeObserver` ne voit pas un déplacement** : `--bande-attribution`
+  gardait la valeur de la feuille à mi-hauteur une fois la fiche ouverte,
+  parce que le crédit bouge sans changer de taille. Un `MutationObserver`
+  sur les attributs que lisent les règles CSS la remesure désormais.
+- **Un contrôle d'existence répond « vivant » pour un zombie** : `kill -0`
+  réussit sur un processus mort non récolté, et ce conteneur n'en récolte
+  aucun. La première mesure de #587 concluait donc que `timeout` laissait
+  vivre les petits-enfants — faux, `ps -o stat` disait `Z`. Même famille
+  que le §1bis : la question posée n'était pas celle qu'on croyait.
+- **Trois pièges d'outil, tous rencontrés** :
+  - `npx prettier` télécharge un Prettier réglé par défaut (le dépôt n'en
+    a pas) et réécrit tout en guillemets doubles avec points-virgules ;
+  - `pkill -f motif` tue le shell qui le lance, puisque le motif figure
+    dans sa propre ligne de commande ;
+  - `… | head -20` sur Playwright coupe la sortie : le résultat est
+    perdu, rediriger vers un fichier.
+- **Deux PR vertes séparément** se fusionnent l'une après l'autre en
+  remettant `main` dans la seconde (`update_pull_request_branch`), puis en
+  attendant la CI sur **ce** commit : fait à chaque fois, sans casse.
+
+## 4bis. Ce que la journée du 27/10 a appris
 
 - **La relecture adverse a trouvé un défaut réel sur quatre PR sur
   cinq**, et chaque fois là où le diff paraissait fini : un vide de 10 px et
@@ -237,7 +281,7 @@ Reste ouvert :
   gros texte rougissait ici et pas en CI (polices). Vérifié sur `main` sans
   le diff avant de le dire.
 
-## 4bis. Ce que la journée du 26/10 a appris
+## 4ter. Ce que la journée du 26/10 a appris
 
 - **La cause qu'une issue avance se mesure avant de se coder** : #612
   disait « `emptyOutDir: true` probable ». Essayé, le témoin survivait. La
