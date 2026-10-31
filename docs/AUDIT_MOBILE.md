@@ -52,6 +52,8 @@ proposition est « voir sa progression sur une carte », le rapport est inversé
 
 ### M2 — l'en-tête mange un cinquième de l'écran
 
+> Depuis le 31/10 (#584), la phrase n'est plus du tout dans l'en-tête au téléphone.
+
 La phrase de confidentialité (« Vos traces GPX ne quittent jamais votre
 navigateur — aucun compte, aucun serveur, aucune télémétrie ») se replie sur
 **sept lignes** dans une colonne étroite à côté du logo. Résultat : ~170 px

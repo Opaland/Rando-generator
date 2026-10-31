@@ -31,7 +31,7 @@ décider, pas à promettre.
 Toutes envoient votre historique de randonnée à un tiers. C'est le modèle
 économique, pas un défaut d'ingénierie.
 
-Or l'en-tête de Sentiers dit, sur chaque écran :
+Or l'en-tête de Sentiers dit sur grand écran, et « À propos » au téléphone :
 
 > « Vos traces ne quittent jamais votre navigateur — aucun compte, aucun
 > serveur, aucune télémétrie. »
@@ -225,7 +225,7 @@ un sentier, on suit ce que l'écran dit.
 ## 6. Ce qui est déjà décidé
 
 - **Aucun appel réseau vers un service d'IA.** Jamais, quelle que soit la
-  qualité du modèle. C'est la promesse de l'en-tête.
+  qualité du modèle. C'est la promesse de Sentiers.
 - **Aucune fonctionnalité existante ne dépendra du modèle.** Il s'ajoute, il
   ne remplace rien.
 - **Le poids s'annonce avant le téléchargement**, en mégaoctets — la taille du
