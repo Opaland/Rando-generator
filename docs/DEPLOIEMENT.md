@@ -125,7 +125,7 @@ suite :
    chercher un nouveau service worker tant qu'il croit avoir l'ancien.
 
 3. **La carte s'affiche.** Si la politique était trop stricte, elle ne
-   s'affiche pas du tout — MapLibre crée ses ouvriers depuis un blob. C'est
+   s'affiche pas du tout — sans `worker-src 'self'`, pas d'ouvrier MapLibre. C'est
    le symptôme le plus franc, et le plus facile à confondre avec une panne
    réseau.
 
