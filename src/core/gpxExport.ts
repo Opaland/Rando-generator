@@ -1,5 +1,6 @@
 import type { Itinerary, LonLat, Network, Track } from './types.ts'
 import { tranchesDe } from './segmentsDeTrace.ts'
+import { pourChercher } from './texte.ts'
 
 /**
  * Export GPX : de quoi charger un itinéraire dans une montre, un GPS ou une
@@ -256,11 +257,7 @@ export function gpxDocumentFromTrack(track: Track): string {
 
 /** Nom de fichier sûr, sans accent ni caractère interdit par les systèmes. */
 export function gpxFilename(name: string): string {
-  const slug = name
-    .normalize('NFD')
-    // Retire les diacritiques (« Crêt » → « Cret »).
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
+  const slug = pourChercher(name)
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
   return `sentiers-${slug || 'itineraire'}.gpx`
