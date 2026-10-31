@@ -93,13 +93,12 @@
 
 /* #541 : la source déclarée d'un import — visible sans survol, pour se
    distinguer d'un tracé personnel au premier regard, pas seulement dans
-   la fiche détaillée (où elle existait déjà, #87). */
+   la fiche détaillée (où elle existait déjà, #87). Sa propre ligne, entière :
+   dans la colonne du nom, le téléphone n'en montrait que 15 % (#542). */
 .source {
+  grid-column: 1 / -1;
   font-size: var(--texte-appui);
   color: var(--encre-douce);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .stats {
