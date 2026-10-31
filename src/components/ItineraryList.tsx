@@ -36,6 +36,7 @@ import { RESEAUX_FILTRABLES } from '../core/reseaux.ts'
 import { comptesMasques } from '../core/lisibilite.ts'
 import { useReseauxVisibles } from '../store/reseauxVisibles.ts'
 import { ProgressBalise } from './ProgressBalise.tsx'
+import { pourChercher } from '../core/texte.ts'
 import styles from './ItineraryList.module.css'
 
 type SortKey = 'pct' | 'name' | 'length' | 'duration'
@@ -294,7 +295,7 @@ export function ItineraryList() {
   )
 
   const rows = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase()
+    const normalizedQuery = pourChercher(query.trim())
     const filtered = itineraries.filter((itin) => {
       /*
         Le palier d'eau (issue #156). Écarter un itinéraire sans détour connu
@@ -310,9 +311,7 @@ export function ItineraryList() {
       const facts = factsById.get(itin.osmRelationId)
       if (facts && !matchesFilters(facts, filters)) return false
       if (!normalizedQuery) return true
-      return `${itin.ref ?? ''} ${itin.name ?? ''}`
-        .toLowerCase()
-        .includes(normalizedQuery)
+      return pourChercher(`${itin.ref ?? ''} ${itin.name ?? ''}`).includes(normalizedQuery)
     })
     const pctOf = (id: number) => resultById.get(id)?.pct ?? 0
     const minutesOf = (id: number) => factsById.get(id)?.minutes ?? 0
