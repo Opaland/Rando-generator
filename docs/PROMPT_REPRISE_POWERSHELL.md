@@ -17,6 +17,9 @@ Bilan du 31/10, en mode autonome à la demande de Cédric :
 - **#584 reste ouverte** : à 320 × 480, fiche ouverte, le « − » reste en partie
   couvert ;
 - **à vérifier sur un iPhone** : la carte, après #651 (Safari non mesuré).
+- **#655** (#542) : la source d'un import se lit en entier ;
+- **à fermer par Cédric**, la fermeture ayant été refusée par les permissions :
+  #333 (déjà livrée), #581 et #582 (sans démonstration de fin de sprint).
 
 Bilan du 30/10 :
 - **fusionnée** : #641 (#595, un tronçon sans nom ni ref se nomme de ses
@@ -168,8 +171,8 @@ B. Une revue courte du projet : ce qui a changé depuis le 31/10 et les
    pendant que la session la gardait dans sa liste.
 
 C. Les issues retenues, une par une, chacune sur sa branche et sa PR.
-   Candidats, à confirmer par mes réponses : #584 (le reste à 320 × 480) ;
-   #542 ; #333 ; #504.
+   Le 31/10, tout le reste s'est révélé bloqué : données, juridique, téléphone,
+   vraies personnes. Candidat : #584 (le reste à 320 × 480), si je le demande.
 
 D. Pour une question d'écran, l'agent ines ; pour une démonstration ou
    « est-ce que X y arrive ? », l'agent parcours avec la persona nommée ;
