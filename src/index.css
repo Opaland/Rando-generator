@@ -1219,6 +1219,7 @@ aside :is(button, label, p, li, h2, h3, span, output) {
   /* Le bouton qui déclenche l'impression n'a rien à faire sur la feuille
      qu'il imprime (issue #369). */
   [data-testid='itinerary-detail-imprimer'],
+  [data-testid='itinerary-detail-objectif'],
   /* Ni les commandes de l'écran (issue #552) : la barre d'onglets, en
      `position: fixed`, sortait au bas de chaque page par-dessus le zoom du
      profil ; « Démarrer » coupait une ligne de son cadre. Un bouton sur du

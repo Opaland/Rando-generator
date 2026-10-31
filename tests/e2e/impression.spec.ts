@@ -92,6 +92,9 @@ test('à l’impression, l’ossature disparaît et la fiche reste', async ({
   */
   await expect(page.getByTestId('map')).toBeHidden()
   await expect(page.getByTestId('sidebar')).toBeHidden()
+  // Une commande morte sur le papier (#584). Le compte d'abord (#385).
+  await expect(page.getByTestId('itinerary-detail-objectif')).toHaveCount(1)
+  await expect(page.getByTestId('itinerary-detail-objectif')).toBeHidden()
 
   /*
     Et la fiche, elle, est bien peinte — mesuré au point, pas au rectangle.

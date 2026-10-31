@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { longueursDeLItineraire } from '../core/longueurAffichee.ts'
+import { phraseDeJalon } from '../core/milestones.ts'
 import { useFocusDeLaFiche } from '../lib/focusDeLaFiche.ts'
 import { useAppStore } from '../store/appStore.ts'
 import { replierLesPois } from '../core/lisibilite.ts'
@@ -44,6 +45,7 @@ import {
 } from '../core/gpxExport.ts'
 import { downloadTextFile } from '../lib/download.ts'
 import { BoutonEmporter } from './BoutonEmporter.tsx'
+import { BoutonObjectif } from './BoutonObjectif.tsx'
 import { DeclarerParcouru } from './DeclarerParcouru.tsx'
 import { ElevationChart } from './ElevationChart.tsx'
 import { PoiSection } from './PoiSection.tsx'
@@ -86,6 +88,7 @@ export function ItineraryDetail() {
   const itineraries = useAppStore((s) => s.itineraries)
   const customItineraries = useAppStore((s) => s.customItineraries)
   const matching = useAppStore((s) => s.matching)
+  const seuilBoucle = useAppStore((s) => s.completionPct)
   const customMatching = useAppStore((s) => s.customMatching)
   const elevationProfile = useAppStore((s) => s.elevationProfile)
   const elevationError = useAppStore((s) => s.elevationError)
@@ -363,6 +366,9 @@ export function ItineraryDetail() {
           {formatKm(done)} parcourus · {formatKm(Math.max(0, total - done))}{' '}
           restants
         </p>
+        <p className={styles.km} data-testid="itinerary-detail-milestone">
+          {phraseDeJalon(pct, total, seuilBoucle)}
+        </p>
         {/*
           L'effort qualifié (issue #156), avec ce sur quoi il repose — et non
           le seul mot, qui pourrait passer pour une cotation.
@@ -398,6 +404,10 @@ export function ItineraryDetail() {
         >
           Exporter en GPX
         </button>
+        <BoutonObjectif
+          itineraryId={detailItineraryId}
+          testId="itinerary-detail-objectif"
+        />
         {/*
           La feuille d'impression existait depuis le 28/08 et rien ne le
           disait : `grep -i imprim` sur les sources, le README et le PRD ne
