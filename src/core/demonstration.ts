@@ -1,3 +1,4 @@
+import { displayName } from '../lib/format.ts'
 import type { Itinerary, LonLat } from './types.ts'
 
 /**
@@ -67,7 +68,7 @@ export function construireDemonstration(
       ? points.slice(0, Math.max(POINTS_MINIMUM, Math.floor(points.length * PART_PARTIELLE)))
       : points
     sorties.push({
-      nom: `Démonstration — ${itineraire.name ?? `itinéraire ${String(itineraire.osmRelationId)}`}`,
+      nom: `Démonstration — ${displayName(itineraire)}`,
       itineraire: itineraire.osmRelationId,
       points: retenus,
     })

@@ -1,5 +1,6 @@
 import { trackDistanceMeters } from './history.ts'
 import { lieuxDeLaTrace, type ContoursDeZone } from './lieuxDeTrace.ts'
+import { pourChercher } from './texte.ts'
 import type { Track } from './types.ts'
 import { instantDe } from './valeurLue.ts'
 
@@ -53,14 +54,6 @@ export const SEUIL_GROUPEMENT = 30
  */
 export const MAX_PAR_ANNEE = 200
 
-/** Minuscules, sans accents : personne ne tape « crêtes » avec l'accent. */
-function normaliser(texte: string): string {
-  return texte
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-}
-
 /**
  * `contours` : ceux des zones prédéfinies (#296), chargés à part et plus
  * tard que les traces. Tant qu'ils manquent, rien n'est cherchable de plus
@@ -82,7 +75,7 @@ export function preparerHistorique(
       instant,
       // La date telle qu'elle est affichée fait partie du texte cherchable :
       // la liste montre « 15/06/2026 », le chercher doit fonctionner.
-      cherchable: normaliser(
+      cherchable: pourChercher(
         [
           track.filename,
           // La zone au moment de l'import (#206) : « PNR du Pilat » se
@@ -105,7 +98,7 @@ export function chercherHistorique(
   entrees: EntreeHistorique[],
   requete: string,
 ): EntreeHistorique[] {
-  const terme = normaliser(requete.trim())
+  const terme = pourChercher(requete.trim())
   if (terme === '') return entrees
   return entrees.filter((e) => e.cherchable.includes(terme))
 }
