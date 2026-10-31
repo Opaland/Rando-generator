@@ -41,8 +41,9 @@ const PLAFONDS: Record<string, number> = {
   // « Données et licences » sortie dans DonneesEtLicences.tsx le 18/10 : le
   // PDIPR de l'Isère (#87) portait About.tsx à 342 lignes. Redescendu de 325
   // à 270 (253 après) : un plafond qu'on ne redescend pas après un découpage
-  // autorise à reprendre ce qu'on vient de rendre.
-  'About.tsx': 270,
+  // autorise à reprendre ce qu'on vient de rendre. 271 le 31/10 : la liste de
+  // ce qui sort doit nommer la sonde IGN et le rayon élargi (#642).
+  'About.tsx': 271,
   'DonneesEtLicences.tsx': 120,
   'Dashboard.tsx': 295,
   'Enregistreur.tsx': 225,
