@@ -125,6 +125,7 @@ describe('ce que la politique refuse', () => {
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",
+      "worker-src 'self';",
     ]) {
       expect(politique).toContain(attendu)
     }
