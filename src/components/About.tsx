@@ -106,7 +106,8 @@ export function About({
               kumi.systems) reçoit la <strong>zone demandée</strong>, la{' '}
               <strong>référence tapée</strong> («&nbsp;GR&nbsp;7&nbsp;») ou un{' '}
               <strong>rayon autour d’un point</strong>, quand vous chargez une
-              zone ou lancez une recherche. C’est de là que viennent les tracés.
+              zone ou lancez une recherche (12&nbsp;km, puis 25&nbsp;km si rien
+              n’y est trouvé). C’est de là que viennent les tracés.
               Overpass reçoit aussi, en plusieurs boîtes qui suivent le
               tracé, la <strong>forme de l’itinéraire dont vous ouvrez la
               fiche</strong> — pour y chercher les points d’intérêt à
@@ -119,7 +120,8 @@ export function About({
               continu tant que la carte est affichée. Autrement dit&nbsp;: où
               vous préparez vos sorties. Quand vous <strong>emportez</strong>{' '}
               un itinéraire, elle reçoit aussi celles de tout son corridor,
-              que vous ne regardez pas.
+              que vous ne regardez pas. Pour une <strong>fiche ouverte</strong>,
+              la tuile du départ, qui dit si le plan couvre l’itinéraire.
             </li>
             <li>
               <strong>OpenStreetMap</strong> reçoit la même chose, mais

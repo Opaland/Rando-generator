@@ -1,5 +1,11 @@
 import { test, expect } from '@playwright/test'
-import { afficherTousLesReseaux, mockExternalNetwork } from './helpers.ts'
+import {
+  afficherTousLesReseaux,
+  fermerLeGuide,
+  mockElevation,
+  mockExternalNetwork,
+  ouvrirLaFicheDuGr7,
+} from './helpers.ts'
 
 /**
  * Issue #178 — la confidentialité est écrite partout, ressentie nulle part.
@@ -149,4 +155,37 @@ test('une destination non répertoriée est refusée par le navigateur', async (
     refus,
     'la politique de sécurité doit refuser un hôte non déclaré',
   ).toBe('refusée')
+})
+
+/**
+ * #642 — « À propos » annonce que l'ouverture d'une fiche envoie à l'IGN la
+ * tuile du départ. La sonde est un `fetch` nu, sans préférence d'image dans
+ * son en-tête `accept`, là où MapLibre demande du webp. Compter les requêtes vers l'IGN
+ * aurait été vert sans elle, la carte en demandant de toute façon.
+ */
+test('ouvrir une fiche envoie à l’IGN une seule tuile témoin, au zoom 12', async ({ page }) => {
+  await mockExternalNetwork(page)
+  await mockElevation(page)
+  const sondes: string[] = []
+  page.on('request', (requete) => {
+    if (!requete.url().startsWith('https://data.geopf.fr/wmts')) return
+    void requete.allHeaders().then((entetes) => {
+      if (entetes.accept === '*/*') sondes.push(requete.url())
+    })
+  })
+  await page.goto('/')
+  await fermerLeGuide(page)
+  await page.getByTestId('zone-pilat').click()
+  await expect(page.getByTestId('zone-meta')).toContainText('3 itinéraires', {
+    timeout: 15_000,
+  })
+  await afficherTousLesReseaux(page)
+  expect(sondes, 'aucune sonde avant la fiche').toEqual([])
+
+  await ouvrirLaFicheDuGr7(page, false)
+  await expect.poll(() => sondes.length).toBe(1)
+  // Le poll s'arrête à la première : une seconde, plus tardive, passerait.
+  await page.waitForTimeout(1500)
+  expect(sondes).toHaveLength(1)
+  expect(sondes[0]).toMatch(/TILEMATRIX=12&/i)
 })
