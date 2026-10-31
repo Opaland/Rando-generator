@@ -30,6 +30,8 @@ elle est tenue en trois gestes.
   (`core/gpxExport`) et le bilan en image, jamais l'ensemble de ses traces.
   C'est le prix du « rien ne quitte votre navigateur », mais le prix doit être
   annoncé, et une sauvegarde manuelle le rendrait supportable.
+  *Corrigé depuis : une sauvegarde complète s'exporte et se réimporte
+  (`core/backup.ts`, `Backup.tsx`).*
 - **Vider le cache du navigateur efface tout.** Même remarque, même silence.
 
 ## Sylvie, 29 ans, débute la randonnée, téléphone uniquement
@@ -48,12 +50,15 @@ A marché trois fois cette année. Ne sait pas ce qu'est un GR. Cherche
   (« GR 7 »), pas un nom de commune (`ZONES` dans `core/overpass.ts`). Sylvie
   ne connaît ni sa ref ni son département de rattachement — elle connaît sa
   ville. C'est le premier écran, et il parle une langue qu'elle n'a pas.
+  *Corrigé depuis : un champ cherche une commune (`core/geocode.ts`,
+  `lieu-input` dans `ZonePicker.tsx`).*
 - **Le vocabulaire est celui du milieu.** « GR », « GRP », « PR », « ref »,
   « tolérance de matching » : rien n'est faux, tout suppose acquis. La page
   « À propos » explique les balisages, mais après coup.
 - **Sans trace GPX, l'application ne lui sert à rien.** Elle n'en a pas : ses
   sorties sont dans sa tête. Or Sentiers ne sait pas cocher un itinéraire à la
   main — il n'y a pas de « j'ai fait celui-là ».
+  *Corrigé depuis : `DeclarerParcouru.tsx`, sur la fiche (#158).*
 
 ## Camille, 34 ans, prépare la Grande Traversée des Alpes
 
@@ -75,11 +80,14 @@ qu'elle ignore — c'est rare.
   volontairement (README) : périmés, ils vaudraient moins qu'un message clair.
   Mais Camille prépare le soir au refuge, sans réseau. Le choix est défendable,
   la conséquence est réelle.
+  *Corrigé depuis, pour ce qu'on emporte : « Emporter » met de côté le fond et le
+  profil, et les points d'intérêt sont gardés en IndexedDB, avec leur date.*
 - **Les étapes ne se déplacent pas.** Le découpage est régulier, calculé, et
   c'est dit ; il ne tient pas compte des refuges, qui sont pourtant ce qui
   décide d'une étape en montagne.
 - **Aucun export de son plan.** Elle ne peut pas emporter le découpage dans sa
   montre : seul l'itinéraire complet s'exporte en GPX, pas les étapes.
+  *Corrigé depuis : les étapes s'exportent (`etapes-export`, fiche).*
 
 ## Karim, 41 ans, rentre de sortie, montre Garmin
 
@@ -104,6 +112,8 @@ zones prédéfinies, même importé hors de toute zone (#296).*
   les itinéraires de la zone téléchargée : une sortie en Bretagne n'apparaît
   nulle part tant qu'il n'a pas chargé la Bretagne. L'historique la compte en
   kilomètres, le tableau de bord l'ignore. Rien n'explique cet écart.
+  *Corrigé depuis : le tableau de bord dit combien de sorties sont hors zone
+  (`horsZone`, `Dashboard.tsx`, #133).*
 
 ## Marc, 55 ans, baliseur bénévole
 
@@ -121,6 +131,7 @@ sa donnée au lieu de la maquiller.
 - **Le constat ne mène à aucune action.** Marc voit qu'il manque 12 km à une
   relation ; il n'a aucun lien vers l'objet OSM pour aller le corriger. Un lien
   « ouvrir dans l'éditeur OSM » transformerait un signalement en contribution.
+  *Corrigé depuis : la fiche porte le lien (`core/lienOsm.ts`).*
 
 ## Léa, 38 ans, chargée de mission dans une collectivité
 
@@ -137,6 +148,8 @@ Son département vient d'ouvrir son PDIPR. Veut voir ce que ça donne.
   alors que c'est une obligation de la Licence Ouverte, et que le mécanisme
   existe déjà pour les boucles de la Métropole (réseau `LOCAL`). L'écart est
   assumé mais il devra se combler (issue #87).
+  *Corrigé depuis, pour l'attribution : `CustomItineraries.tsx` affiche « Source :
+  … » et l'export GPX la porte (#87, #541).*
 
 ---
 
