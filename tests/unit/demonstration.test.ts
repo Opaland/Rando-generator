@@ -83,6 +83,17 @@ describe('construireDemonstration', () => {
     }
   })
 
+  it('nomme une sortie comme la carte nomme son itinéraire (#644)', () => {
+    const [avecRef, seulementRef, anonyme] = construireDemonstration([
+      { ...boucle(1, 30), ref: 'GR 7', name: 'Tour du Pilat' },
+      { ...boucle(2, 30, 0.01), ref: 'GR 9', name: null },
+      { ...boucle(3, 30, 0.02), ref: null, name: null },
+    ])
+    expect(avecRef?.nom).toBe('Démonstration — GR 7')
+    expect(seulementRef?.nom).toBe('Démonstration — GR 9')
+    expect(anonyme?.nom).toBe('Démonstration — Itinéraire 3')
+  })
+
   it('ne fabrique rien s’il n’y a pas de quoi', () => {
     expect(construireDemonstration([])).toEqual([])
     expect(construireDemonstration([boucle(1, 1)])).toEqual([])
