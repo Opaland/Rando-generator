@@ -167,11 +167,6 @@ export function CustomItineraries() {
                 >
                   <span className={styles.nameCol}>
                     <span className={styles.name}>{name}</span>
-                    {source && (
-                      <span className={styles.source} data-testid="custom-source">
-                        Source : {source.author}
-                      </span>
-                    )}
                   </span>
                   <ProgressBalise
                     pct={pct}
@@ -182,6 +177,11 @@ export function CustomItineraries() {
                     <span className={styles.pct}>{formatPct(pct)}</span>
                     <span className={styles.km}>{formatKm(itin.totalMeters)}</span>
                   </span>
+                  {source && (
+                    <span className={styles.source} data-testid="custom-source">
+                      Source : {source.author}
+                    </span>
+                  )}
                 </button>
                 <ConfirmDeleteButton
                   label={`Supprimer l’itinéraire ${name}`}
