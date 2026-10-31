@@ -14,10 +14,13 @@ parcouru 34 % du GR 7, 61 % des sentiers du Pilat ».
   IndexedDB pour les traces et les zones, en `localStorage` pour les huit
   réglages — dont l'écriture, elle, est synchrone (issue #203).
 - **Ce qui sort quand même** : afficher une carte, c'est demander des images à
-  quelqu'un. Overpass reçoit la zone ou la référence cherchée, et la forme de
+  quelqu'un. Overpass reçoit la zone ou la référence cherchée, un rayon autour d'un
+  lieu (12 km, puis 25 km si rien n'y est trouvé), et la forme de
   l'itinéraire dont on ouvre la fiche (pour les points d'intérêt à
-  proximité) ; la Géoplateforme IGN les tuiles regardées et jusqu'à cent
-  points de l'itinéraire dont on ouvre le profil ; l'API Adresse le nom de
+  proximité) ; la Géoplateforme IGN les tuiles regardées, celles du corridor
+  d'un itinéraire emporté, celle du départ d'un itinéraire dont on ouvre la
+  fiche (pour savoir si le plan le couvre) et jusqu'à cent points de
+  l'itinéraire dont on ouvre le profil ; l'API Adresse le nom de
   commune tapé ; et l'hébergeur la demande de la page. « À propos » le
   détaille dans l'application (issue #168).
 - **Données ouvertes uniquement** : itinéraires © les contributeurs
