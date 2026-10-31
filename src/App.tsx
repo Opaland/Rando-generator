@@ -391,19 +391,14 @@ function App() {
           <h1 className={styles.brandName}>Sentiers</h1>
         </div>
         {/*
-          Deux longueurs pour la même promesse : sur téléphone, la version
-          longue se repliait sur sept lignes et consommait un cinquième de la
-          hauteur d'écran (docs/AUDIT_MOBILE.md, constat M2). Le détail reste
-          dans « À propos », qui l'explique déjà.
+          Sur grand écran seulement. Au téléphone, même raccourcie, la phrase
+          prenait six lignes en gros texte : l'en-tête montait à 190 px sur 640
+          et poussait le zoom sous « Ma position » (#584). Tranché par Cédric
+          le 31/10 : la promesse y vit dans « À propos ».
         */}
         <p className={styles.privacy}>
-          <span className={styles.privacyLong}>
-            Vos traces ne quittent jamais votre navigateur — aucun compte,
-            aucun serveur, aucune télémétrie.
-          </span>
-          <span className={styles.privacyShort}>
-            Vos traces restent sur votre appareil.
-          </span>
+          Vos traces ne quittent jamais votre navigateur — aucun compte, aucun
+          serveur, aucune télémétrie.
         </p>
         {/*
           Une vraie page, servie telle quelle : un lien partagé doit s'ouvrir

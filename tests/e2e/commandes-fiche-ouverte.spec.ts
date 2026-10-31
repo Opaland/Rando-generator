@@ -70,6 +70,15 @@ for (const vue of [
     attendu: { zoomIn: 'ok', zoomOut: 'ok', boussole: 'sans taille', maPosition: 'ok' },
   },
   {
+    // #584 : sous « Ma position » tant que la phrase de l'en-tête montait à
+    // six lignes (« + » 18 %, « − » 56 % de leur surface peinte, 31/10).
+    nom: '360 × 640, gros texte',
+    largeur: 360,
+    hauteur: 640,
+    gros: true,
+    attendu: { zoomIn: 'ok', zoomOut: 'ok', boussole: 'sans taille', maPosition: 'ok' },
+  },
+  {
     nom: '360 × 640',
     largeur: 360,
     hauteur: 640,
@@ -120,3 +129,43 @@ for (const vue of [
     })
   })
 }
+
+test.describe('au téléphone, 360 × 640', () => {
+  test.use({
+    viewport: { width: 360, height: 640 },
+    hasTouch: true,
+    isMobile: true,
+  })
+
+  test('la promesse quitte l’en-tête, et ouvrir la fiche remet la carte au nord', async ({
+    page,
+  }) => {
+    await mockExternalNetwork(page)
+    await mockElevation(page)
+    await page.goto('/')
+    await fermerLeGuide(page)
+    await expect(page.getByTestId('en-tete').getByText(/Vos traces/)).toBeHidden()
+    await expect(page.getByTestId('about-open')).toBeVisible()
+
+    await ouvrirOnglet(page, 'carte')
+    await page.getByTestId('zone-pilat').click()
+    await page.getByTestId('zone-meta').waitFor({ state: 'attached' })
+    await afficherTousLesReseaux(page)
+
+    const cap = () =>
+      page.evaluate(
+        () =>
+          (window as unknown as { __sentiersMap: { getBearing(): number } }).__sentiersMap.getBearing(),
+      )
+    await page.waitForFunction(() => '__sentiersMap' in window)
+    await page.evaluate(() => {
+      ;(
+        window as unknown as { __sentiersMap: { jumpTo(o: { bearing: number }): void } }
+      ).__sentiersMap.jumpTo({ bearing: 45 })
+    })
+    expect(await cap()).toBe(45)
+
+    await ouvrirLaFicheDuGr7(page, true)
+    await expect.poll(cap, { timeout: 10_000 }).toBeCloseTo(0, 3)
+  })
+})

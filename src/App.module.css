@@ -32,10 +32,6 @@
   flex: 1;
 }
 
-.privacyShort {
-  display: none;
-}
-
 .aboutLink {
   /* Trente pixels avant le 24/08. Ce sont les deux seules commandes de
      l'en-tête : les rater renvoie sur la carte, qui prend le geste pour un
@@ -295,12 +291,13 @@
     color: var(--rouge-balisage-lisible);
   }
 
-  .privacyLong {
+  .privacy {
     display: none;
   }
 
-  .privacyShort {
-    display: inline;
+  /* C'est la phrase qui repoussait les liens à droite : la marque prend le relais. */
+  .brand {
+    flex: 1;
   }
 
   .layout {
@@ -586,11 +583,11 @@
     c'est-à-dire un nombre inventé (§2) — la règle de ▶ n'en a pas non plus
     (`App.tsx`, `compact && detailOuvert`).
 
-    Ce que ça coûte, relevé par la relecture adverse du 27/10 : une carte
-    tournée **avant** d'ouvrir la fiche le reste, et le seul retour au nord
-    passe alors par « Incliner la carte » puis « Remettre à plat »
-    (`useMapCamera.ts`) — au clavier, plus rien. Accepté avec la décision ;
-    la boussole revient à la fermeture de la fiche.
+    Ce que ça coûte : peu. Ouvrir la fiche remet déjà la carte au nord, par
+    deux chemins de `useMapCamera.ts` : les `fitBounds` du cadrage et la remise
+    à plat. Le test de `commandes-fiche-ouverte.spec.ts` ne rougit que sans les
+    deux (31/10). Reste une carte tournée fiche déjà ouverte : elle le reste
+    jusqu'à la fermeture, qui rend la boussole.
   */
   :root[data-fiche='ouverte'] .main :global(.maplibregl-ctrl-compass) {
     display: none;
