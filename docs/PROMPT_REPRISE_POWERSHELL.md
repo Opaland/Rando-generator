@@ -4,9 +4,19 @@ Deux parties :
 - la mise en route de la machine, à faire une seule fois ;
 - le prompt à coller dans Claude Code à chaque reprise.
 
-La dernière session (locale, Windows, 30/10) s'est arrêtée sur `main`, une
+La dernière session (locale, Windows, 31/10) s'est arrêtée sur `main`, une
 fois fusionnée la PR qui met ce fichier à jour. Une issue = une branche partie
 de `main` = une PR (`AGENTS.md`).
+
+Bilan du 31/10, en mode autonome à la demande de Cédric :
+- **fusionnées** : #646 (#642, sonde IGN et 25 km annoncés), #647 (#643, la liste
+  replie les accents), #648 (#644, `displayName` partout), #649 et #650 (#584,
+  promesse hors de l'en-tête au téléphone, carte d'itinéraire réduite, objectif
+  et jalon dans la fiche), #651 (#571, `worker-src blob:` retiré), #652 (#571,
+  PERSONAS), #653 (#608, durée d'Overpass) ;
+- **#584 reste ouverte** : à 320 × 480, fiche ouverte, le « − » reste en partie
+  couvert ;
+- **à vérifier sur un iPhone** : la carte, après #651 (Safari non mesuré).
 
 Bilan du 30/10 :
 - **fusionnée** : #641 (#595, un tronçon sans nom ni ref se nomme de ses
@@ -148,21 +158,18 @@ A. Une seule question groupée (AskUserQuestion) pour les décisions du §3
    aucun sprint avant mes réponses ; ce que je laisse « plus tard » reste
    ouvert.
 
-B. Une revue courte du projet : ce qui a changé depuis le 30/10 et les
+B. Une revue courte du projet : ce qui a changé depuis le 31/10 et les
    issues ouvertes. Pas de revue globale : la dernière date du 30/10
-   (docs/REVUE_GLOBALE_30_10.md). Avant de coder une issue ancienne,
+   (docs/REVUE_GLOBALE_30_10.md), mais une courte s'impose après les huit PR
+   du 31/10. Avant de coder une issue ancienne,
    vérifie qu'elle n'est pas déjà corrigée : le 29/10, cinq issues du
    19/10 l'étaient depuis #586 sans avoir été fermées. Regarde aussi ce qui
    est arrivé sur main avant de commencer : le 30/10, #296 a été livrée
    pendant que la session la gardait dans sa liste.
 
 C. Les issues retenues, une par une, chacune sur sa branche et sa PR.
-   Candidats, par ordre de gravité, à confirmer par mes réponses :
-   - #642 (la sonde IGN et les 25 km absents des textes) ;
-   - #643 (la recherche de la liste ne replie pas les accents) ;
-   - #571 : mesure CSP sous Firefox, décidée le 30/10 et non faite ; puis la
-     liste PERSONAS posée sur l'issue ;
-   - ce que mes réponses au §3 auront tranché (#584, #644).
+   Candidats, à confirmer par mes réponses : #584 (le reste à 320 × 480) ;
+   #542 ; #333 ; #504.
 
 D. Pour une question d'écran, l'agent ines ; pour une démonstration ou
    « est-ce que X y arrive ? », l'agent parcours avec la persona nommée ;
@@ -204,23 +211,15 @@ avec le prompt du lendemain.
 
 ## 3. Ce qui attend la décision de Cédric
 
-Tranché le 30/10 : #604, la garde n'est pas étendue (fermée) ; #571, mesurer
-sous Firefox avant de retirer quoi que ce soit de la CSP, Safari restant non
-vérifié.
+Tranché le 31/10 : #584 (phrase, carte, nord) et #644, par Cédric ; #571, retrait
+de `worker-src blob:` décidé seul à sa demande.
 
 Reste ouvert :
 
-- **#584, la suite** — remesurée le 30/10 sous Windows, tableau sur l'issue.
-  Le ⓘ à 320 × 480 est réglé. Restent les recouvrements à 320 × 480 et à
-  360 × 640 en gros texte (zoom sous « Ma position » ou sous la carte
-  d'itinéraire), et le retour au nord fiche ouverte. Inès n'a pas encore été
-  consultée : à faire avant de poser la question.
-- **#644** — le nom d'une sortie de démonstration : `displayName` partout, ou
-  le nom avant la ref, écrit et testé ?
-- **#571, deux restes** : retirer `worker-src blob:` et `img-src blob:` de
-  la CSP (mesurés inutiles sous Chromium seulement — Firefox et Safari à
-  mesurer sur le PC) ; la relecture entière des fiches PERSONAS « non
-  relues depuis » (#447).
+- **`img-src blob:`** — inutile sous Firefox et Chromium, mais repli de MapLibre
+  sans `createImageBitmap` : le retirer si un iPhone le confirme.
+- **Fiches PERSONAS** : huit constats repris le 31/10, la bannière « non relus
+  depuis » reste (#447).
 - **#615, deux réserves** de la relecture (non mesurées) : le focus tombe
   sur `body` après « Compris » (comme après « Quitter ») ; feuille repliée
   au téléphone, l'avis est monté mais caché.
@@ -235,7 +234,24 @@ Reste ouvert :
 - **Preuves humaines** — #173, #528 ; non vérifié sur un vrai téléphone :
   #568, #561, #551.
 
-## 4. Ce que la journée du 30/10 a appris
+## 4. Ce que la journée du 31/10 a appris
+
+- **Un avis peut porter un fait faux, et la décision avec** : « l'objectif recule
+  d'un toucher » était inexact, le bouton n'existait que sur la carte. C'est en
+  codant que ça s'est vu. Relire ce qu'une option retire avant de la coder.
+- **La relecture adverse a encore payé** : jalon perdu au téléphone, bouton
+  imprimé, seconde sonde invisible. Aucun test ne les voyait.
+- **Un test vert sans le correctif cité corrige le commentaire** : le retour au
+  nord a deux chemins. Retirer le seul `easeTo` laissait le test vert, et le
+  commentaire que je venais d'écrire n'en citait qu'un.
+- **Le §6quater a resservi** : après `deploy/csp.conf`, le serveur de
+  prévisualisation gardait l'ancien en-tête. Le tuer avant de relancer.
+- **Un hook avant commit juge l'arbre entier** : une commande qui range puis
+  commite d'un coup est refusée sur l'état d'avant. La couper en deux.
+- **Un `` passé par un heredoc Python devient un retour arrière** : passer le
+  script par un fichier, et laisser le lint le voir.
+
+## 4 (suite). Ce que la journée du 30/10 a appris
 
 - **La liste d'une session vieillit pendant la session** : #296 a été fusionnée
   à 18 h, et `main` a bougé sous #641, dont la CI était verte sur un commit qui
