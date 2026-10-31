@@ -184,5 +184,8 @@ test('ouvrir une fiche envoie à l’IGN une seule tuile témoin, au zoom 12', a
 
   await ouvrirLaFicheDuGr7(page, false)
   await expect.poll(() => sondes.length).toBe(1)
+  // Le poll s'arrête à la première : une seconde, plus tardive, passerait.
+  await page.waitForTimeout(1500)
+  expect(sondes).toHaveLength(1)
   expect(sondes[0]).toMatch(/TILEMATRIX=12&/i)
 })
