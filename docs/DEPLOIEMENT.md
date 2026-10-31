@@ -9,7 +9,7 @@ ce qu'il ne doit pas changer**.
 
 ## 1. Ce qui ne change pas, et qui décide de tout le reste
 
-L'en-tête de chaque écran dit :
+L'en-tête dit sur grand écran, et « À propos » au téléphone :
 
 > « Vos traces ne quittent jamais votre navigateur — aucun compte, aucun
 > serveur, aucune télémétrie. »
