@@ -44,6 +44,7 @@ import {
 } from '../core/gpxExport.ts'
 import { downloadTextFile } from '../lib/download.ts'
 import { BoutonEmporter } from './BoutonEmporter.tsx'
+import { BoutonObjectif } from './BoutonObjectif.tsx'
 import { DeclarerParcouru } from './DeclarerParcouru.tsx'
 import { ElevationChart } from './ElevationChart.tsx'
 import { PoiSection } from './PoiSection.tsx'
@@ -398,6 +399,10 @@ export function ItineraryDetail() {
         >
           Exporter en GPX
         </button>
+        <BoutonObjectif
+          itineraryId={detailItineraryId}
+          testId="itinerary-detail-objectif"
+        />
         {/*
           La feuille d'impression existait depuis le 28/08 et rien ne le
           disait : `grep -i imprim` sur les sources, le README et le PRD ne

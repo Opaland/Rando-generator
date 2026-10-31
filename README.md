@@ -239,6 +239,8 @@ par le CLI Playwright.
     est dessinée sur l'appareil et ne contient aucune coordonnée : des totaux
     et des noms d'itinéraires publics, rien d'autre.
 
+    Une fiche permet aussi de **suivre l'itinéraire comme objectif**.
+
     Une fiche s'**imprime** aussi, par son bouton : sur le papier, la fiche
     seule — sans la carte, sans les panneaux, sans les commandes, et sur fond
     blanc plutôt que sur le beige de l'écran. Comme l'export GPX, l'image du

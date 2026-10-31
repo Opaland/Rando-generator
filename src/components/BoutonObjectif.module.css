@@ -1,0 +1,29 @@
+/*
+ * Épingler un itinéraire comme objectif (issue #13). Discret tant qu'il ne
+ * l'est pas : c'est une action de suivi, pas l'action principale de la fiche.
+ */
+.objectif,
+.objectifActif {
+  min-height: 44px; /* WCAG 2.5.5 : la sonde d'écran le mesure dans la fiche. */
+  padding: var(--espace-3) var(--espace-5);
+  border: 1px solid var(--gris-vert-clair);
+  border-radius: var(--rayon-sm);
+  background: transparent;
+  font: inherit;
+  font-size: var(--texte-secondaire);
+  text-align: left;
+  cursor: pointer;
+}
+
+.objectif {
+  color: var(--encre-douce);
+}
+
+.objectifActif {
+  color: var(--rouge-balisage-lisible);
+  /* Le trait accompagne ce texte-là : il le suit, plutôt que de rester sur le
+     rouge de balisage et de s'en écarter la nuit. */
+  border-color: var(--rouge-balisage-lisible);
+  font-weight: 600;
+}
+

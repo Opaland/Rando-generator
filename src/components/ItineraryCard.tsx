@@ -7,6 +7,7 @@ import {
 } from '../core/milestones.ts'
 import { displayName, formatKm, formatPct } from '../lib/format.ts'
 import { NETWORK_BADGES } from '../lib/networkDisplay.ts'
+import { BoutonObjectif } from './BoutonObjectif.tsx'
 import { ProgressBalise } from './ProgressBalise.tsx'
 import styles from './ItineraryCard.module.css'
 
@@ -21,8 +22,6 @@ export function ItineraryCard() {
   const customMatching = useAppStore((s) => s.customMatching)
   const selectItinerary = useAppStore((s) => s.selectItinerary)
   const openItineraryDetail = useAppStore((s) => s.openItineraryDetail)
-  const objectifs = useAppStore((s) => s.objectifs)
-  const basculerObjectif = useAppStore((s) => s.basculerObjectif)
 
   // La fiche détail (altimétrie, POI, vue 3D) prend le relais : éviter le
   // doublon d'information avec ce résumé flottant.
@@ -41,7 +40,6 @@ export function ItineraryCard() {
   const { total, fait: done } = longueursDeLItineraire(itin, result)
   // Un pourcentage qui monte lentement ne dit rien ; un palier à portée, si.
   const restantJalon = metersToNextMilestone(pct, total)
-  const objectif = objectifs.includes(itin.osmRelationId)
 
   return (
     <aside
@@ -69,40 +67,32 @@ export function ItineraryCard() {
           ×
         </button>
       </header>
-      {itin.ref && itin.name && <p className={styles.sub}>{itin.name}</p>}
-      <p className={styles.pct} data-testid="itinerary-card-pct">
-        {formatPct(pct)}
-      </p>
-      <ProgressBalise
-        pct={pct}
-        network={itin.network}
-        label={`Progression ${displayName(itin)}`}
-      />
-      <p className={styles.detail}>
-        {formatKm(done)} parcourus · {formatKm(Math.max(0, total - done))}{' '}
-        restants
-      </p>
-      <p className={styles.milestone} data-testid="itinerary-card-milestone">
-        {isCompleted(pct, seuilBoucle)
-          ? `Itinéraire bouclé (au moins ${seuilBoucle} % parcourus)`
-          : restantJalon !== null
-            ? `Encore ${formatKm(restantJalon)} pour atteindre ${nextMilestone(pct) ?? 100} %`
-            : ''}
-      </p>
-      {/*
-        Épingler se décide en regardant l'itinéraire, pas en survolant la
-        liste (issue #13) : c'est ici qu'on voit ce qu'il reste, donc ici
-        qu'on décide d'en faire un objectif.
-      */}
-      <button
-        type="button"
-        className={objectif ? styles.objectifActif : styles.objectif}
-        aria-pressed={objectif}
-        data-testid="itinerary-card-objectif"
-        onClick={() => void basculerObjectif(itin.osmRelationId)}
-      >
-        {objectif ? '★ Objectif suivi' : '☆ Suivre comme objectif'}
-      </button>
+      <div className={styles.resume}>
+        {itin.ref && itin.name && <p className={styles.sub}>{itin.name}</p>}
+        <p className={styles.pct} data-testid="itinerary-card-pct">
+          {formatPct(pct)}
+        </p>
+        <ProgressBalise
+          pct={pct}
+          network={itin.network}
+          label={`Progression ${displayName(itin)}`}
+        />
+        <p className={styles.detail}>
+          {formatKm(done)} parcourus · {formatKm(Math.max(0, total - done))}{' '}
+          restants
+        </p>
+        <p className={styles.milestone} data-testid="itinerary-card-milestone">
+          {isCompleted(pct, seuilBoucle)
+            ? `Itinéraire bouclé (au moins ${seuilBoucle} % parcourus)`
+            : restantJalon !== null
+              ? `Encore ${formatKm(restantJalon)} pour atteindre ${nextMilestone(pct) ?? 100} %`
+              : ''}
+        </p>
+        <BoutonObjectif
+          itineraryId={itin.osmRelationId}
+          testId="itinerary-card-objectif"
+        />
+      </div>
       <button
         type="button"
         className={styles.detailLink}

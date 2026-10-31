@@ -16,7 +16,19 @@
 /* Le panneau de contrôle replié garde 52 px en bas de carte : la fiche
    s'arrête au-dessus, sinon sa poignée intercepte le clic sur « Voir le
    détail » — ce que le test tactile a constaté avant moi. */
+/* Sur grand écran, ces lignes sont des enfants de la grille comme les autres.
+   Au téléphone, la carte couvrait zoom et boussole, parfois tout le fond
+   (319 à 371 px, #584). Tranché par Cédric le 31/10 : titre, ✕ et « Voir le
+   détail » ; le reste est dans la fiche, à un toucher. */
+.resume {
+  display: contents;
+}
+
 @media (max-width: 800px) {
+  .resume {
+    display: none;
+  }
+
   .card {
     /* Au-dessus de la feuille repliée. En navigation par onglets, la
        feuille est elle-même remontée : sans quoi la fiche se retrouvait
@@ -44,6 +56,15 @@
    d'onglets : à 800 px pile, la poignée était peinte par-dessus la fiche
    détail, mesuré le 24/08. C'est la même famille de défaut que le constat
    U2 — deux seuils qui décident de la même chose et ne sont pas d'accord. */
+/* À 320 × 480, « Ma position » tombe sur le ✕ (259-303 px, 31/10) : il passe à
+   gauche du titre. 520 px est tranché au jugement (§2) : 480 est touché, 568 ne
+   l'est pas ; la présentation seule en dépend. */
+@media (max-width: 800px) and (max-height: 520px) {
+  .header :global(.btn-icon-close) {
+    order: -1;
+  }
+}
+
 @media (min-width: 801px) {
   .card {
     left: 12px;
@@ -168,35 +189,6 @@
   color: var(--encre-douce);
   font-variant-numeric: tabular-nums;
   min-height: 1.1em;
-}
-
-/*
- * Épingler un itinéraire comme objectif (issue #13). Discret tant qu'il ne
- * l'est pas : c'est une action de suivi, pas l'action principale de la fiche.
- */
-.objectif,
-.objectifActif {
-  min-height: 36px;
-  padding: var(--espace-3) var(--espace-5);
-  border: 1px solid var(--gris-vert-clair);
-  border-radius: var(--rayon-sm);
-  background: transparent;
-  font: inherit;
-  font-size: var(--texte-secondaire);
-  text-align: left;
-  cursor: pointer;
-}
-
-.objectif {
-  color: var(--encre-douce);
-}
-
-.objectifActif {
-  color: var(--rouge-balisage-lisible);
-  /* Le trait accompagne ce texte-là : il le suit, plutôt que de rester sur le
-     rouge de balisage et de s'en écarter la nuit. */
-  border-color: var(--rouge-balisage-lisible);
-  font-weight: 600;
 }
 
 .objectif:hover,

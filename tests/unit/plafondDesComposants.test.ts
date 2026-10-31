@@ -44,6 +44,7 @@ const PLAFONDS: Record<string, number> = {
   // autorise à reprendre ce qu'on vient de rendre. 271 le 31/10 : la liste de
   // ce qui sort doit nommer la sonde IGN et le rayon élargi (#642).
   'About.tsx': 271,
+  'BoutonObjectif.tsx': 45,
   'DonneesEtLicences.tsx': 120,
   'Dashboard.tsx': 295,
   'Enregistreur.tsx': 225,
