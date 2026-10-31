@@ -96,7 +96,7 @@ par le CLI Playwright.
    (certains chemins de Saint-Jacques). Les départements sont chargés **un par
    un** : une requête couvrant toute la région dépasserait le délai d'Overpass
    et le quota de stockage du navigateur. La requête Overpass peut
-   prendre de 30 s à 2 min ; le résultat est mis en cache 30 jours dans le
+   prendre jusqu'à 3 min, le délai qu'on lui accorde ; le résultat est mis en cache 30 jours dans le
    navigateur (bouton « Actualiser les tracés » pour forcer). Pour les zones
    couvrant la Métropole de Lyon, les **55 boucles communales** du jeu open
    data métropolitain (réseau « Boucle », bleu-vert) s'ajoutent

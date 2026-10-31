@@ -9,7 +9,7 @@ import styles from './ZonePicker.module.css'
 
 const STAGE_TEXT: Record<'requesting' | 'retrying' | 'processing', string> = {
   requesting:
-    'Interrogation d’OpenStreetMap… comptez 30 secondes à 2 minutes selon la charge des serveurs.',
+    'Interrogation d’OpenStreetMap… cela peut prendre jusqu’à 3 minutes selon la charge des serveurs.',
   retrying:
     'Premier serveur injoignable, nouvelle tentative sur un second serveur…',
   processing: 'Réponse reçue, traitement des tracés…',
