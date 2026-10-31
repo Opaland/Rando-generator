@@ -27,3 +27,7 @@
   font-weight: 600;
 }
 
+.objectif:hover,
+.objectifActif:hover {
+  background: rgba(30, 43, 35, 0.06);
+}

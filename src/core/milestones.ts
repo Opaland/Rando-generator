@@ -1,3 +1,4 @@
+import { formatKm } from '../lib/format.ts'
 import type { CompletionResult } from './types.ts'
 
 /**
@@ -79,6 +80,15 @@ export function isCompleted(
   seuil: number = DEFAULT_COMPLETION_PCT,
 ): boolean {
   return pct >= seuil
+}
+
+/** Le palier à portée, ou « bouclé » : une phrase, la même sur la carte et la fiche. */
+export function phraseDeJalon(pct: number, total: number, seuil: number): string {
+  if (isCompleted(pct, seuil)) return `Itinéraire bouclé (au moins ${seuil} % parcourus)`
+  const restant = metersToNextMilestone(pct, total)
+  return restant === null
+    ? ''
+    : `Encore ${formatKm(restant)} pour atteindre ${nextMilestone(pct) ?? 100} %`
 }
 
 interface MilestoneCrossing {

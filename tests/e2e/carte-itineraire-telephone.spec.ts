@@ -64,6 +64,8 @@ for (const vue of [
       ]) {
         await expect.poll(() => peint(page, sel), { message: sel }).toBe(true)
       }
+      // Le compte d'abord : `toBeHidden` passe aussi sur un élément absent (#385).
+      await expect(page.getByTestId('itinerary-card-pct')).toHaveCount(1)
       await expect(page.getByTestId('itinerary-card-pct')).toBeHidden()
       await expect(page.getByTestId('itinerary-card-objectif')).toBeHidden()
     })
@@ -93,5 +95,9 @@ test.describe('au téléphone', () => {
     await expect.poll(() => estAlEcran(page, 'itinerary-detail-objectif')).toBe(true)
     await bouton.tap()
     await expect(bouton).toHaveAttribute('aria-pressed', 'true')
+    // Le jalon a quitté la carte : la fiche le reprend.
+    await expect(page.getByTestId('itinerary-detail-milestone')).toContainText('pour atteindre')
+    await page.getByTestId('itinerary-detail-milestone').scrollIntoViewIfNeeded()
+    await expect.poll(() => estAlEcran(page, 'itinerary-detail-milestone')).toBe(true)
   })
 })

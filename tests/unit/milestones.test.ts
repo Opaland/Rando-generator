@@ -11,6 +11,7 @@ import {
   metersToNextMilestone,
   nextMilestone,
   reachedMilestone,
+  phraseDeJalon,
 } from '../../src/core/milestones.ts'
 import type { CompletionResult } from '../../src/core/types.ts'
 import type { AggregateStats } from '../../src/core/matching.ts'
@@ -253,5 +254,15 @@ describe('pourcentageMesurable', () => {
   it('refuse une longueur qui n’en est pas une', () => {
     expect(pourcentageMesurable(stats(-1))).toBe(false)
     expect(pourcentageMesurable(stats(Number.NaN))).toBe(false)
+  })
+})
+
+describe('phraseDeJalon', () => {
+  it('dit ce qu’il reste jusqu’au prochain palier', () => {
+    expect(phraseDeJalon(50, 10_000, 95)).toBe('Encore 2,5 km pour atteindre 75 %')
+  })
+
+  it('dit bouclé dès le seuil choisi, avant tout palier', () => {
+    expect(phraseDeJalon(96, 10_000, 95)).toBe('Itinéraire bouclé (au moins 95 % parcourus)')
   })
 })

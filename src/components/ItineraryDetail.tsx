@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { longueursDeLItineraire } from '../core/longueurAffichee.ts'
+import { phraseDeJalon } from '../core/milestones.ts'
 import { useFocusDeLaFiche } from '../lib/focusDeLaFiche.ts'
 import { useAppStore } from '../store/appStore.ts'
 import { replierLesPois } from '../core/lisibilite.ts'
@@ -87,6 +88,7 @@ export function ItineraryDetail() {
   const itineraries = useAppStore((s) => s.itineraries)
   const customItineraries = useAppStore((s) => s.customItineraries)
   const matching = useAppStore((s) => s.matching)
+  const seuilBoucle = useAppStore((s) => s.completionPct)
   const customMatching = useAppStore((s) => s.customMatching)
   const elevationProfile = useAppStore((s) => s.elevationProfile)
   const elevationError = useAppStore((s) => s.elevationError)
@@ -363,6 +365,9 @@ export function ItineraryDetail() {
         <p className={styles.km}>
           {formatKm(done)} parcourus · {formatKm(Math.max(0, total - done))}{' '}
           restants
+        </p>
+        <p className={styles.km} data-testid="itinerary-detail-milestone">
+          {phraseDeJalon(pct, total, seuilBoucle)}
         </p>
         {/*
           L'effort qualifié (issue #156), avec ce sur quoi il repose — et non

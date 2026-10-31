@@ -191,7 +191,3 @@
   min-height: 1.1em;
 }
 
-.objectif:hover,
-.objectifActif:hover {
-  background: rgba(30, 43, 35, 0.06);
-}

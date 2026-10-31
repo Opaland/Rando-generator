@@ -1,10 +1,6 @@
 import { useAppStore } from '../store/appStore.ts'
 import { longueursDeLItineraire } from '../core/longueurAffichee.ts'
-import {
-  isCompleted,
-  metersToNextMilestone,
-  nextMilestone,
-} from '../core/milestones.ts'
+import { phraseDeJalon } from '../core/milestones.ts'
 import { displayName, formatKm, formatPct } from '../lib/format.ts'
 import { NETWORK_BADGES } from '../lib/networkDisplay.ts'
 import { BoutonObjectif } from './BoutonObjectif.tsx'
@@ -38,8 +34,6 @@ export function ItineraryCard() {
   const pct = result?.pct ?? 0
   // La longueur exacte, comme la liste — pas les échantillons (#564).
   const { total, fait: done } = longueursDeLItineraire(itin, result)
-  // Un pourcentage qui monte lentement ne dit rien ; un palier à portée, si.
-  const restantJalon = metersToNextMilestone(pct, total)
 
   return (
     <aside
@@ -82,12 +76,8 @@ export function ItineraryCard() {
           restants
         </p>
         <p className={styles.milestone} data-testid="itinerary-card-milestone">
-          {isCompleted(pct, seuilBoucle)
-            ? `Itinéraire bouclé (au moins ${seuilBoucle} % parcourus)`
-            : restantJalon !== null
-              ? `Encore ${formatKm(restantJalon)} pour atteindre ${nextMilestone(pct) ?? 100} %`
-              : ''}
-        </p>
+          {phraseDeJalon(pct, total, seuilBoucle)}
+          </p>
         <BoutonObjectif
           itineraryId={itin.osmRelationId}
           testId="itinerary-card-objectif"
