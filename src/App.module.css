@@ -561,8 +561,8 @@
     Replié seulement. Déplié, ses 124 px montaient sur « Ma position » et, à
     360 × 640 en gros texte, sous l'en-tête — trois licences non peintes
     (revue du sprint 2). Déplié, il reste sur la fiche, au-dessus de tout,
-    comme tranché le 20/10. Le coin bas gauche n'est pas relevé : il est
-    vide.
+    comme tranché le 20/10. Le coin bas gauche n'est pas relevé : fiche
+    ouverte, il n'a que « Ma position », posé au-dessus d'elle (#584, 03/11).
   */
   :root[data-fiche='ouverte']
     .main:not(:has(:global(.maplibregl-compact-show)))

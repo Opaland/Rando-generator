@@ -372,7 +372,8 @@
   /* Le haut de la fiche, mesuré du bas du cadre : elle se pose au-dessus de
      la poignée et des onglets, mais sa hauteur les compte déjà (empreinte de
      #80). Ce qui s'écarte d'elle part de ce bord-ci : le crédit relevé, et
-     « Ma position » qui ne descend pas plus bas. Une formule recopiée du
+     « Ma position », posé juste au-dessus dans le coin gauche (#584). Une
+     formule recopiée du
      panneau de tracé, qui, lui, ne les compte pas, posait le bouton 108 px
      trop haut (#609). */
   --haut-de-la-fiche: calc(
