@@ -71,24 +71,34 @@
 }
 
 @media (max-width: 800px) {
-  /* `top: auto` comme pour le tracé (#554) : sans lui, le `top` mesuré
-     s'ajoutait à ce `bottom` et étirait le bouton — 56 px à 800, 21/10.
+  /* Fiche ouverte, dans le coin bas **gauche**, juste au-dessus de la fiche
+     (#584, décision de Cédric du 03/11).
 
-     Au-dessus du crédit, comme fiche fermée : relevé sur la fiche (#577),
-     il occupe le même coin, et `--bande-attribution` le suit puisqu'elle
-     est mesurée. La formule d'avant, recopiée du panneau de tracé,
-     rajoutait poignée et onglets à une hauteur qui les compte déjà : le
-     bouton flottait 66 px au-dessus du crédit au lieu de 12 (#609, mesuré à
-     390 × 844). Ces 108 px n'étaient pas voulus, mais ils tenaient le
-     bouton hors du ⓘ — partir du seul haut de la fiche l'y posait dessus.
-     Le haut de la fiche reste un plancher : crédit déplié, il ne monte
-     pas, et le bouton ne doit pas descendre sur elle. */
+     Le coin droit ne tient pas tout. Mesuré à 320 × 480 : la bande de carte
+     au-dessus de la fiche fait 180 px, et le zoom, ce bouton et le ⓘ du
+     crédit y étaient empilés — le bouton (130-174 px) couvrait le bas du
+     « − » (114-158) sur 28 px. Le coin gauche est vide à ce moment-là : le
+     rappel du guide ne s'affiche que sans itinéraire, donc jamais fiche
+     ouverte, et ▶ s'efface avec elle. Écartée : effacer le bouton sous une
+     hauteur, comme ▶ et la boussole — il aurait fallu un seuil inventé.
+
+     Le crédit restant à droite, le bouton n'a plus à compter sa bande
+     (#609) : le haut de la fiche suffit. `top: auto` comme pour le tracé
+     (#554) : sans lui, le `top` mesuré s'ajoutait à ce `bottom` et étirait
+     le bouton — 56 px à 800, 21/10. `justify-items: start` aligne le message
+     d'erreur et la précision sous le bouton, du même côté que lui.
+
+     Crédit déplié, à 320 px il prend toute la largeur (178-362 px, mesuré
+     le 03/11) et recouvre le bouton, comme il recouvre la fiche : il reste
+     au-dessus de tout, tranché le 20/10, le temps qu'on lise les licences.
+     Écarté : monter le bouton au-dessus de lui — essayé, il se posait sur la
+     légende (de 20 px, 84 en gros texte). */
   :root[data-fiche='ouverte'] .wrapper {
     top: auto;
-    bottom: max(
-      calc(12px + var(--bande-attribution)),
-      calc(12px + var(--haut-de-la-fiche))
-    );
+    right: auto;
+    left: 12px;
+    justify-items: start;
+    bottom: calc(12px + var(--haut-de-la-fiche));
   }
 }
 

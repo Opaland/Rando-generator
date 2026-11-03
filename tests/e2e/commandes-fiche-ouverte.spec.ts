@@ -26,10 +26,13 @@ import {
  * conteneur (259-303 px) alors que la CI la peignait.
  *
  * Tranché par Cédric le 27/10 : fiche ouverte, la boussole s'efface comme
- * ▶, et revient avec la carte. Le « − » à 360 × 640 dépend encore de la
+ * ▶, et revient avec la carte. Le « − » à 360 × 640 dépendait encore de la
  * hauteur de l'en-tête — peint sous Windows, recouvert en CI (151-195 px
- * sous « Ma position ») — : on n'y affirme que ce que les décisions
- * garantissent, « + » peint, ▶ et la boussole effacés.
+ * sous « Ma position »).
+ *
+ * Tranché le 03/11 (#584) : fiche ouverte, « Ma position » passe dans le
+ * coin bas gauche. Le zoom a sa colonne à lui, et le « − » s'affirme
+ * désormais à 360 × 640 comme à 320 × 480.
  */
 /**
  * « ok », ou ce qui est peint à la place : un simple booléen disait
@@ -83,7 +86,16 @@ for (const vue of [
     largeur: 360,
     hauteur: 640,
     gros: false,
-    attendu: { zoomIn: 'ok', boussole: 'sans taille', maPosition: 'ok' },
+    // Le « − » aussi depuis le 03/11 : « Ma position » a quitté sa colonne.
+    attendu: { zoomIn: 'ok', zoomOut: 'ok', boussole: 'sans taille', maPosition: 'ok' },
+  },
+  {
+    // #584, le dernier cas mesuré : 180 px de carte au-dessus de la fiche.
+    nom: '320 × 480',
+    largeur: 320,
+    hauteur: 480,
+    gros: false,
+    attendu: { zoomIn: 'ok', zoomOut: 'ok', boussole: 'sans taille', maPosition: 'ok' },
   },
 ]) {
   test.describe(`fiche ouverte au doigt — ${vue.nom}`, () => {
