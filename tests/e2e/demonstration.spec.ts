@@ -349,3 +349,29 @@ test('sortir de la démonstration par un geste réel le dit, et l’avis se refe
   await page.getByTestId('demo-terminee').getByRole('button', { name: 'Compris' }).click()
   await expect(page.getByTestId('demo-terminee')).toHaveCount(0)
 })
+
+test.describe('au téléphone (#657)', () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true })
+
+  test('« Démonstration terminée » se voit, même quand le geste a fait défiler la feuille', async ({
+    page,
+  }) => {
+    /*
+      Mesuré le 03/11 : la feuille restait à mi-hauteur, mais le geste sur
+      la zone avait défilé son contenu de 283 px. L'avis, posé en tête de
+      feuille, était monté et rogné : `elementFromPoint` à son centre tombait
+      sur la carte. Il est ramené dans le champ comme les autres alertes.
+    */
+    await mockExternalNetwork(page)
+    await mockBoucles(page)
+    await page.goto('/')
+    await page.getByTestId('voir-un-exemple').click()
+    await expect(page.getByTestId('demo-banner')).toHaveCount(1, { timeout: 10_000 })
+
+    await page.getByTestId('zone-pilat').click()
+    await expect(page.getByTestId('demo-terminee')).toHaveCount(1)
+    // Peint, et non seulement présent ; dans un poll, le défilement est animé
+    // (§1bis).
+    await expect.poll(() => estAlEcran(page, 'demo-terminee')).toBe(true)
+  })
+})

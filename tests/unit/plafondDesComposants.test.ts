@@ -76,7 +76,10 @@ const PLAFONDS: Record<string, number> = {
   'ConfirmDeleteButton.tsx': 75,
   'LocateButton.tsx': 65,
   'ProgressBalise.tsx': 60,
-  'DemoBanner.tsx': 55,
+  'DemoBanner.tsx': 50,
+  // L'avis de fin sorti de DemoBanner.tsx (#657) : ramené dans le champ au
+  // téléphone, il portait DemoBanner au-delà de son plafond.
+  'FinDeDemonstration.tsx': 35,
   'DemarrerRapide.tsx': 48,
   'PoigneeTexte.tsx': 40,
 }
