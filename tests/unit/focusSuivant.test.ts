@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from 'vitest'
-import { focusableSuivant } from '../../src/lib/focusSuivant.ts'
+import { fermerEnRendantLeFocus, focusableSuivant } from '../../src/lib/focusSuivant.ts'
 
 /**
  * Issue #658 — « Compris » et « Quitter la démonstration » disparaissent avec
@@ -48,5 +48,95 @@ describe('focusableSuivant', () => {
   it('ne remonte pas avant l’avis', () => {
     const dernier = document.getElementById('apres') as HTMLElement
     expect(focusableSuivant(dernier)).toBeNull()
+  })
+})
+
+/*
+  Relecture adverse du 03/11. En disposition compacte, onglet
+  « Progression », la suite de l'avis est le tableau de bord — que
+  « Quitter » démonte, ses boucles retirées. Un `focus()` sur un nœud
+  détaché ne fait rien, et le focus retombait sur BODY, le défaut même de
+  #658. Et « Quitter » attend la relecture de la base : rendre le focus à
+  la fin ne doit pas le reprendre à qui a déjà bougé.
+*/
+describe('fermerEnRendantLeFocus', () => {
+  const attendre = () => new Promise((r) => setTimeout(r, 0))
+
+  it('repère la suite avant de fermer, et lui rend le focus après', async () => {
+    const avis = document.getElementById('avis') as HTMLElement
+    document.getElementById('dedans')?.focus()
+    fermerEnRendantLeFocus(avis, () => {
+      avis.remove()
+    })
+    await attendre()
+    expect(document.activeElement?.id).toBe('lien')
+  })
+
+  it('prend le suivant encore présent quand la suite a disparu en fermant', async () => {
+    const avis = document.getElementById('avis') as HTMLElement
+    fermerEnRendantLeFocus(avis, () => {
+      avis.remove()
+      document.getElementById('lien')?.remove()
+    })
+    await attendre()
+    // Le bouton hors clavier est sauté ; `masque` est visible pour jsdom.
+    expect(document.activeElement?.id).toBe('masque')
+  })
+
+  it('se rabat sur le conteneur de l’avis quand tout ce qui suivait a disparu', async () => {
+    document.body.innerHTML = `
+      <div id="feuille">
+        <div id="avis"><button>Quitter</button></div>
+        <section id="tableau"><button>tableau</button></section>
+      </div>
+      <div id="ailleurs"><button id="hors">hors</button></div>`
+    const avis = document.getElementById('avis') as HTMLElement
+    const feuille = document.getElementById('feuille') as HTMLElement
+    fermerEnRendantLeFocus(avis, () => {
+      avis.remove()
+      document.getElementById('tableau')?.remove()
+      feuille.insertAdjacentHTML('beforeend', '<button id="reste">reste</button>')
+    })
+    await attendre()
+    expect(document.activeElement?.id).toBe('reste')
+  })
+
+  it('hors du conteneur vidé, passe un suivant détaché pour le suivant encore là', async () => {
+    document.body.innerHTML = `
+      <div id="feuille"><div id="avis"><button>Quitter</button></div></div>
+      <button id="parti">parti</button>
+      <button id="reste">reste</button>`
+    const avis = document.getElementById('avis') as HTMLElement
+    fermerEnRendantLeFocus(avis, () => {
+      avis.remove()
+      document.getElementById('parti')?.remove()
+    })
+    await attendre()
+    expect(document.activeElement?.id).toBe('reste')
+  })
+
+  it('saute un suivant que la fermeture a masqué', async () => {
+    // Une section qui se replie en même temps : présente, mais plus affichée.
+    const avis = document.getElementById('avis') as HTMLElement
+    const lien = document.getElementById('lien') as HTMLElement
+    fermerEnRendantLeFocus(avis, () => {
+      avis.remove()
+      Object.assign(lien, { checkVisibility: () => false })
+    })
+    await attendre()
+    expect(document.activeElement?.id).toBe('masque')
+  })
+
+  it('ne reprend pas le focus à qui l’a déjà déplacé pendant la fermeture', async () => {
+    const avis = document.getElementById('avis') as HTMLElement
+    let finir: () => void = () => undefined
+    fermerEnRendantLeFocus(avis, () => {
+      avis.remove()
+      return new Promise<void>((r) => (finir = r))
+    })
+    document.getElementById('avant')?.focus()
+    finir()
+    await attendre()
+    expect(document.activeElement?.id).toBe('avant')
   })
 })

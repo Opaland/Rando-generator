@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { afficherTousLesReseaux, buildGpx, estAlEcran, mockExternalNetwork } from './helpers.ts'
+import { afficherTousLesReseaux, buildGpx, estAlEcran, mockExternalNetwork, ouvrirOnglet } from './helpers.ts'
 import type { Page } from '@playwright/test'
 
 /**
@@ -386,7 +386,10 @@ async function focusApres(page: Page): Promise<string> {
   return page.evaluate(() => {
     const a = document.activeElement
     if (!a || a === document.body) return 'BODY'
-    return a.getAttribute('data-testid') ?? a.tagName
+    // Le plus proche porteur d'un nom : le `summary` d'une section n'en a
+    // pas, sa section si (relecture du 03/11 : « pas BODY » laissait passer
+    // n'importe quelle cible).
+    return a.closest('[data-testid]')?.getAttribute('data-testid') ?? a.tagName
   })
 }
 
@@ -404,7 +407,7 @@ test('au clavier, « Compris » laisse le focus sur la suite, pas sur BODY (#658
   await compris.focus()
   await page.keyboard.press('Enter')
   await expect(page.getByTestId('demo-terminee')).toHaveCount(0)
-  await expect.poll(() => focusApres(page)).not.toBe('BODY')
+  await expect.poll(() => focusApres(page)).toBe('zone-section')
 })
 
 test('au clavier, « Quitter la démonstration » laisse le focus sur la suite, pas sur BODY (#658)', async ({
@@ -419,5 +422,27 @@ test('au clavier, « Quitter la démonstration » laisse le focus sur la suite, 
   await page.getByTestId('demo-quitter').focus()
   await page.keyboard.press('Enter')
   await expect(page.getByTestId('demo-banner')).toHaveCount(0)
-  await expect.poll(() => focusApres(page)).not.toBe('BODY')
+  await expect.poll(() => focusApres(page)).toBe('zone-section')
+})
+
+test.describe('en disposition compacte (#658)', () => {
+  test.use({ viewport: { width: 390, height: 844 } })
+
+  test('onglet « Progression », « Quitter » ne laisse pas le focus sur BODY', async ({ page }) => {
+    /*
+      Relecture adverse du 03/11 : la suite de l'avis y est le tableau de
+      bord, que « Quitter » démonte avec les boucles. Le focus repéré
+      tombait sur un nœud détaché, et restait sur BODY.
+    */
+    await mockExternalNetwork(page)
+    await mockBoucles(page)
+    await page.goto('/')
+    await page.getByTestId('voir-un-exemple').click()
+    await expect(page.getByTestId('demo-banner')).toHaveCount(1, { timeout: 10_000 })
+    await ouvrirOnglet(page, 'progression')
+    await page.getByTestId('demo-quitter').focus()
+    await page.keyboard.press('Enter')
+    await expect(page.getByTestId('demo-banner')).toHaveCount(0)
+    await expect.poll(() => focusApres(page)).not.toBe('BODY')
+  })
 })
