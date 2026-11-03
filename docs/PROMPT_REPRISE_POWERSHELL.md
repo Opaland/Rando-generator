@@ -4,9 +4,23 @@ Deux parties :
 - la mise en route de la machine, à faire une seule fois ;
 - le prompt à coller dans Claude Code à chaque reprise.
 
-La dernière session (locale, Windows, 31/10) s'est arrêtée sur `main`, une
-fois fusionnée la PR qui met ce fichier à jour. Une issue = une branche partie
-de `main` = une PR (`AGENTS.md`).
+La dernière session (cloud, 03/11) s'est arrêtée sur `main`, une fois
+fusionnée la PR qui met ce fichier à jour. Une issue = une branche partie de
+`main` = une PR (`AGENTS.md`).
+
+Bilan du 03/11, sur trois réponses de Cédric :
+- **fermées** : #333 (livrée le 28/09 par 84010cb, revérifiée), #581 et #582
+  (épopées, enfants fermés). Le commentaire dit que la démonstration de fin
+  de sprint n'a pas eu lieu (§10) ;
+- **#584 close** par #660 : fiche ouverte au téléphone, « Ma position » passe
+  dans le coin bas gauche, décision du jour. À 320 px, crédit déplié, il
+  recouvre le bouton (« au-dessus de tout », 20/10) ; le monter le posait sur
+  la légende ;
+- **#615, les deux réserves mesurées puis corrigées** :
+  - #657 (PR #659) : l'avis de fin se voit au téléphone. La feuille n'était pas
+    repliée mais défilée de 283 px ;
+  - #658 (PR #661) : le focus suit après « Compris » ou « Quitter ». La relecture
+    adverse a trouvé l'onglet « Progression », où la suite était démontée.
 
 Bilan du 31/10, en mode autonome à la demande de Cédric :
 - **fusionnées** : #646 (#642, sonde IGN et 25 km annoncés), #647 (#643, la liste
@@ -171,8 +185,9 @@ B. Une revue courte du projet : ce qui a changé depuis le 31/10 et les
    pendant que la session la gardait dans sa liste.
 
 C. Les issues retenues, une par une, chacune sur sa branche et sa PR.
-   Le 31/10, tout le reste s'est révélé bloqué : données, juridique, téléphone,
-   vraies personnes. Candidat : #584 (le reste à 320 × 480), si je le demande.
+   Le 31/10 puis le 03/11, tout le reste s'est révélé bloqué : données,
+   juridique, téléphone, vraies personnes. Plus aucun candidat de code sans
+   décision : demande-moi ce que je veux ouvrir.
 
 D. Pour une question d'écran, l'agent ines ; pour une démonstration ou
    « est-ce que X y arrive ? », l'agent parcours avec la persona nommée ;
@@ -214,7 +229,8 @@ avec le prompt du lendemain.
 
 ## 3. Ce qui attend la décision de Cédric
 
-Tranché le 31/10 : #584 (phrase, carte, nord) et #644, par Cédric ; #571, retrait
+Tranché le 03/11 : #584 (« Ma position » à gauche), et la fermeture de #333, #581,
+#582. Tranché le 31/10 : #584 (phrase, carte, nord) et #644, par Cédric ; #571, retrait
 de `worker-src blob:` décidé seul à sa demande.
 
 Reste ouvert :
@@ -223,9 +239,6 @@ Reste ouvert :
   sans `createImageBitmap` : le retirer si un iPhone le confirme.
 - **Fiches PERSONAS** : huit constats repris le 31/10, la bannière « non relus
   depuis » reste (#447).
-- **#615, deux réserves** de la relecture (non mesurées) : le focus tombe
-  sur `body` après « Compris » (comme après « Quitter ») ; feuille repliée
-  au téléphone, l'avis est monté mais caché.
 - **#593, une limite écrite** : un corridor à cheval sur deux territoires
   n'est jugé que sur son départ ; la carte elle-même ne dit rien de son
   fond vide.
