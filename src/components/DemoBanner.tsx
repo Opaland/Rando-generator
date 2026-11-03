@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import { fermerEnRendantLeFocus } from '../lib/focusSuivant.ts'
 import { useAppStore } from '../store/appStore.ts'
 import { FinDeDemonstration } from './FinDeDemonstration.tsx'
 import styles from './DemoBanner.module.css'
@@ -15,13 +16,14 @@ export function DemoBanner() {
   const quitterDemonstration = useAppStore((s) => s.quitterDemonstration)
   const finDeDemonstration = useAppStore((s) => s.finDeDemonstration)
   const [sortie, setSortie] = useState(false)
+  const bandeau = useRef<HTMLDivElement>(null)
 
   // Un geste réel l'a éteinte : le dire, plutôt que vider le tableau (#615).
   if (!demonstration && finDeDemonstration) return <FinDeDemonstration />
   if (!demonstration) return null
 
   return (
-    <div className={styles.bandeau} role="status" data-testid="demo-banner">
+    <div ref={bandeau} className={styles.bandeau} role="status" data-testid="demo-banner">
       <p className={styles.texte}>
         <strong>Démonstration.</strong> Ces trois sorties sont fictives, les
         boucles sont réelles. Rien n’est enregistré : importez vos propres
@@ -34,9 +36,9 @@ export function DemoBanner() {
         disabled={sortie}
         onClick={() => {
           setSortie(true)
-          void quitterDemonstration().finally(() => {
-            setSortie(false)
-          })
+          fermerEnRendantLeFocus(bandeau.current, () =>
+            quitterDemonstration().finally(() => { setSortie(false) }),
+          )
         }}
       >
         Quitter la démonstration

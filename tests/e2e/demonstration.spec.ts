@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { afficherTousLesReseaux, buildGpx, estAlEcran, mockExternalNetwork } from './helpers.ts'
+import { afficherTousLesReseaux, buildGpx, estAlEcran, mockExternalNetwork, ouvrirOnglet } from './helpers.ts'
 import type { Page } from '@playwright/test'
 
 /**
@@ -373,5 +373,76 @@ test.describe('au téléphone (#657)', () => {
     // Peint, et non seulement présent ; dans un poll, le défilement est animé
     // (§1bis).
     await expect.poll(() => estAlEcran(page, 'demo-terminee')).toBe(true)
+  })
+})
+
+/*
+  #658 — le bouton disparaît avec l'avis qui le porte, et le focus
+  retombait sur `BODY` : au clavier, on repartait du haut de la page
+  (WCAG 2.4.3). Mesuré le 03/11 : `BODY` après Entrée sur « Compris ».
+  Il va maintenant à ce qui suit l'avis — la section « Zone ».
+*/
+async function focusApres(page: Page): Promise<string> {
+  return page.evaluate(() => {
+    const a = document.activeElement
+    if (!a || a === document.body) return 'BODY'
+    // Le plus proche porteur d'un nom : le `summary` d'une section n'en a
+    // pas, sa section si (relecture du 03/11 : « pas BODY » laissait passer
+    // n'importe quelle cible).
+    return a.closest('[data-testid]')?.getAttribute('data-testid') ?? a.tagName
+  })
+}
+
+test('au clavier, « Compris » laisse le focus sur la suite, pas sur BODY (#658)', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await mockExternalNetwork(page)
+  await mockBoucles(page)
+  await page.goto('/')
+  await page.getByTestId('voir-un-exemple').click()
+  await expect(page.getByTestId('demo-banner')).toBeVisible({ timeout: 10_000 })
+  await page.getByTestId('zone-pilat').click()
+  const compris = page.getByTestId('demo-terminee').getByRole('button', { name: 'Compris' })
+  await compris.focus()
+  await page.keyboard.press('Enter')
+  await expect(page.getByTestId('demo-terminee')).toHaveCount(0)
+  await expect.poll(() => focusApres(page)).toBe('zone-section')
+})
+
+test('au clavier, « Quitter la démonstration » laisse le focus sur la suite, pas sur BODY (#658)', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await mockExternalNetwork(page)
+  await mockBoucles(page)
+  await page.goto('/')
+  await page.getByTestId('voir-un-exemple').click()
+  await expect(page.getByTestId('demo-banner')).toBeVisible({ timeout: 10_000 })
+  await page.getByTestId('demo-quitter').focus()
+  await page.keyboard.press('Enter')
+  await expect(page.getByTestId('demo-banner')).toHaveCount(0)
+  await expect.poll(() => focusApres(page)).toBe('zone-section')
+})
+
+test.describe('en disposition compacte (#658)', () => {
+  test.use({ viewport: { width: 390, height: 844 } })
+
+  test('onglet « Progression », « Quitter » ne laisse pas le focus sur BODY', async ({ page }) => {
+    /*
+      Relecture adverse du 03/11 : la suite de l'avis y est le tableau de
+      bord, que « Quitter » démonte avec les boucles. Le focus repéré
+      tombait sur un nœud détaché, et restait sur BODY.
+    */
+    await mockExternalNetwork(page)
+    await mockBoucles(page)
+    await page.goto('/')
+    await page.getByTestId('voir-un-exemple').click()
+    await expect(page.getByTestId('demo-banner')).toHaveCount(1, { timeout: 10_000 })
+    await ouvrirOnglet(page, 'progression')
+    await page.getByTestId('demo-quitter').focus()
+    await page.keyboard.press('Enter')
+    await expect(page.getByTestId('demo-banner')).toHaveCount(0)
+    await expect.poll(() => focusApres(page)).not.toBe('BODY')
   })
 })
