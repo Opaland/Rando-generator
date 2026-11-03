@@ -38,3 +38,21 @@ export function focusableSuivant(element: HTMLElement): HTMLElement | null {
   }
   return null
 }
+
+/**
+ * Ferme ce que porte `element`, et rend le focus à ce qui le suit.
+ *
+ * La suite se repère avant `fermer`, puisqu'après, `element` a quitté le
+ * document ; le focus lui est rendu quand `fermer` a fini, promesse
+ * comprise. Les deux boutons de la démonstration passent par ici plutôt que
+ * de recopier l'ordre des deux temps (§4).
+ */
+export function fermerEnRendantLeFocus(
+  element: HTMLElement | null,
+  fermer: () => unknown,
+): void {
+  const suite = element ? focusableSuivant(element) : null
+  void Promise.resolve(fermer()).finally(() => {
+    suite?.focus()
+  })
+}

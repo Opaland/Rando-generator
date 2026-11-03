@@ -1,3 +1,4 @@
+import { fermerEnRendantLeFocus } from '../lib/focusSuivant.ts'
 import { useDefilerVersAlerte } from '../lib/useDefilerVersAlerte.ts'
 import { useAppStore } from '../store/appStore.ts'
 import styles from './DemoBanner.module.css'
@@ -18,7 +19,13 @@ export function FinDeDemonstration() {
   return (
     <div ref={avis} className={styles.bandeau} role="status" data-testid="demo-terminee">
       <p className={styles.texte}>Démonstration terminée : les sorties fictives sont retirées.</p>
-      <button type="button" className={styles.quitter} onClick={oublierFin}>
+      <button
+        type="button"
+        className={styles.quitter}
+        onClick={() => {
+          fermerEnRendantLeFocus(avis.current, oublierFin)
+        }}
+      >
         Compris
       </button>
     </div>

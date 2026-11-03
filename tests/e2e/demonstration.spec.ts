@@ -375,3 +375,49 @@ test.describe('au téléphone (#657)', () => {
     await expect.poll(() => estAlEcran(page, 'demo-terminee')).toBe(true)
   })
 })
+
+/*
+  #658 — le bouton disparaît avec l'avis qui le porte, et le focus
+  retombait sur `BODY` : au clavier, on repartait du haut de la page
+  (WCAG 2.4.3). Mesuré le 03/11 : `BODY` après Entrée sur « Compris ».
+  Il va maintenant à ce qui suit l'avis — la section « Zone ».
+*/
+async function focusApres(page: Page): Promise<string> {
+  return page.evaluate(() => {
+    const a = document.activeElement
+    if (!a || a === document.body) return 'BODY'
+    return a.getAttribute('data-testid') ?? a.tagName
+  })
+}
+
+test('au clavier, « Compris » laisse le focus sur la suite, pas sur BODY (#658)', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await mockExternalNetwork(page)
+  await mockBoucles(page)
+  await page.goto('/')
+  await page.getByTestId('voir-un-exemple').click()
+  await expect(page.getByTestId('demo-banner')).toBeVisible({ timeout: 10_000 })
+  await page.getByTestId('zone-pilat').click()
+  const compris = page.getByTestId('demo-terminee').getByRole('button', { name: 'Compris' })
+  await compris.focus()
+  await page.keyboard.press('Enter')
+  await expect(page.getByTestId('demo-terminee')).toHaveCount(0)
+  await expect.poll(() => focusApres(page)).not.toBe('BODY')
+})
+
+test('au clavier, « Quitter la démonstration » laisse le focus sur la suite, pas sur BODY (#658)', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await mockExternalNetwork(page)
+  await mockBoucles(page)
+  await page.goto('/')
+  await page.getByTestId('voir-un-exemple').click()
+  await expect(page.getByTestId('demo-banner')).toBeVisible({ timeout: 10_000 })
+  await page.getByTestId('demo-quitter').focus()
+  await page.keyboard.press('Enter')
+  await expect(page.getByTestId('demo-banner')).toHaveCount(0)
+  await expect.poll(() => focusApres(page)).not.toBe('BODY')
+})
