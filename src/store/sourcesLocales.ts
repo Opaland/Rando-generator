@@ -6,7 +6,7 @@ import type { Itinerary } from '../core/types.ts'
  * Les jeux d'itinéraires open data embarqués avec le site, et les zones
  * qu'ils couvrent (issue #87 : « une source = une couche = son attribution »
  * — aujourd'hui les boucles de la Métropole de Lyon et le GR Nord de la
- * Province Nord). Les PDIPR de l'Isère et de l'Ain, montrés sans être
+ * Province Nord). Les PDIPR de l'Isère, de l'Ain et du Rhône, montrés sans être
  * comptés, passent par `store/reseauDeFond.ts` et ne prennent que `memoriserJson`.
  *
  * Sorti de `trancheZone.ts` en écrivant le second : le fichier tenait sous

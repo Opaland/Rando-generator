@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import jeuIsere from '../../public/data/pdipr-isere.json?raw'
 import jeuAin from '../../public/data/pdipr-ain.json?raw'
+import jeuRhone from '../../public/data/pdipr-rhone.json?raw'
 import { jeuPdiprPour, parseReseauPdipr } from '../../src/core/pdipr.ts'
 import { parseBouclesGeoJSON } from '../../src/core/boucles.ts'
 import { parseGrNordGeoJSON } from '../../src/core/grNord.ts'
@@ -50,7 +51,7 @@ describe('chargerReseauDeFond', () => {
   it('ne télécharge rien pour une zone qu’aucun PDIPR ne couvre', async () => {
     const appel = fetchQuiRend(UN_TRONCON)
     const { chargerReseauDeFond, useReseauDeFond } = await moduleFrais()
-    await chargerReseauDeFond('rhone')
+    await chargerReseauDeFond('loire')
     await chargerReseauDeFond(null)
     expect(useReseauDeFond.getState().reseau.features).toEqual([])
     expect(appel).not.toHaveBeenCalled()
@@ -201,5 +202,40 @@ describe('le jeu embarqué de l’Ain', () => {
 
   it('dit d’où il vient', () => {
     expect(brut.source).toMatch(/Département de l'Ain.*Licence Ouverte 2\.0/)
+  })
+})
+
+describe('le jeu embarqué du Rhône', () => {
+  /*
+    Reçu du Département par courriel le 06/11, en Lambert-93 (#87) :
+    12 623 lignes le 09/11. « Des milliers » dit que le jeu est arrivé
+    entier sans épingler un chiffre que la prochaine livraison changera ;
+    l'emprise dit qu'il a été reprojeté — une coordonnée restée en mètres
+    Lambert serait écartée, et le compte tomberait à zéro.
+  */
+  const brut = JSON.parse(jeuRhone) as {
+    source?: string
+    features: { geometry: { coordinates: unknown[] } }[]
+  }
+  const lire = () => {
+    const jeu = jeuPdiprPour('rhone')
+    expect(jeu, 'la zone Rhône ne désigne plus de jeu PDIPR').not.toBeNull()
+    return parseReseauPdipr(brut, jeu!.emprise)
+  }
+
+  it('se lit en lignes, par milliers', () => {
+    expect(lire().features.length).toBeGreaterThan(10_000)
+  })
+
+  it('n’embarque aucune ligne que la lecture écarterait', () => {
+    const lignesLivrees = brut.features.reduce(
+      (total, f) => total + f.geometry.coordinates.length,
+      0,
+    )
+    expect(lire().features).toHaveLength(lignesLivrees)
+  })
+
+  it('dit d’où il vient', () => {
+    expect(brut.source).toMatch(/Département du Rhône.*Licence Ouverte 2\.0/)
   })
 })

@@ -18,6 +18,7 @@ import {
   attributionHtml,
   DEPARTEMENT_AIN,
   DEPARTEMENT_ISERE,
+  DEPARTEMENT_RHONE,
   IGN,
   METROPOLE,
   OSM,
@@ -58,6 +59,7 @@ export const ATTRIBUTION = attributionHtml(
   PROVINCE_NORD,
   DEPARTEMENT_ISERE,
   DEPARTEMENT_AIN,
+  DEPARTEMENT_RHONE,
 )
 export const ATTRIBUTION_OSM = attributionHtml(
   OSM_FOND_ET_TRACES,
@@ -65,6 +67,7 @@ export const ATTRIBUTION_OSM = attributionHtml(
   PROVINCE_NORD,
   DEPARTEMENT_ISERE,
   DEPARTEMENT_AIN,
+  DEPARTEMENT_RHONE,
 )
 
 /**

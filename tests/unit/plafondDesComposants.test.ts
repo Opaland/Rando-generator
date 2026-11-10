@@ -45,7 +45,14 @@ const PLAFONDS: Record<string, number> = {
   // ce qui sort doit nommer la sonde IGN et le rayon élargi (#642).
   'About.tsx': 271,
   'BoutonObjectif.tsx': 45,
-  'DonneesEtLicences.tsx': 120,
+  // 95 le 09/11 (91 après la sortie des PDIPR) : redescendu, comme About.tsx.
+  'DonneesEtLicences.tsx': 95,
+  // Les PDIPR départementaux, sortis de DonneesEtLicences.tsx le 09/11
+  // quand le Rhône l'a porté à 134 lignes : 59 pour trois départements,
+  // environ sept de plus par département. 100 laisse passer cinq ou six
+  // départements ; au-delà, c'est le signal d'en faire une liste de données
+  // plutôt qu'une phrase écrite par département. Tranché au jugement (§2).
+  'ReseauxDepartementaux.tsx': 100,
   'Dashboard.tsx': 295,
   'Enregistreur.tsx': 225,
   // #541 : la source déclarée d'un import, visible dans la liste plutôt que

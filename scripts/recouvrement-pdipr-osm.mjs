@@ -26,10 +26,10 @@
 
   Réseau : l'export du Département et Overpass. Rien n'est écrit.
 */
-import { SOURCES_PDIPR, zoneDemandee } from "./sources-pdipr.mjs";
+import { SOURCES_PDIPR, exportBrut, zoneDemandee } from "./sources-pdipr.mjs";
 
 const ZONE = zoneDemandee(process.argv[2], "ain");
-const { url, nom } = SOURCES_PDIPR[ZONE];
+const { nom } = SOURCES_PDIPR[ZONE];
 const DISTANCE_M = 30;
 const CASE_M = 200;
 const MIROIRS = [
@@ -123,9 +123,7 @@ async function overpass(requete) {
   throw new Error("aucun miroir Overpass n'a répondu");
 }
 
-const reponse = await fetch(url);
-if (!reponse.ok) throw new Error(`${url} → HTTP ${reponse.status}`);
-const objets = (await reponse.json()).features.filter((f) => lignesDe(f).length > 0);
+const objets = (await exportBrut(ZONE, process.argv[3])).features.filter((f) => lignesDe(f).length > 0);
 const premier = lignesDe(objets[0])[0][0];
 const projeter = projeteur(premier[1]);
 
