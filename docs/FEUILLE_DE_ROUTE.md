@@ -194,7 +194,9 @@ Revérifié le 18/10 contre GitHub : **#160 est close** (#259, le lien
     réserve de mentionner la source et la date de sa dernière mise à
     jour »), et la republication dans Sentiers est à lui de juger, comme
     pour #88. Téléchargement par « panier » Prodige ; WFS pour la Savoie ;
-  - **Rhône** — l'API GeoJSON de datARA répond `403 Accès interdit` (#20) ;
+  - **Rhône** — **livré le 10/11** (#664), en réseau de fond : l'API de
+    datARA répondait `403 Accès interdit` (#20), le Département a envoyé
+    le jeu par courriel (shapefile Lambert-93, Licence Ouverte 2.0) ;
 - **#88 — l'API Geotrek du Parc du Pilat**, ~200 circuits balisés.
   **Bloquée, pas juste en attente** : l'issue interdit d'intégrer quoi que
   ce soit avant d'avoir écrit au Parc pour la licence et vérifié les

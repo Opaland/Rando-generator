@@ -3,6 +3,9 @@
 
     npm run pdipr            (l'Isère)
     npm run pdipr -- ain     (l'Ain, depuis le 21/10, #574)
+    npm run pdipr -- rhone chemin/PDIPR_GRAPHE_CHEMIN.shp
+                             (le Rhône, depuis le 09/11 : reçu par courriel,
+                             sans adresse publique — voir `sources-pdipr.mjs`)
 
   L'Ain suit les mêmes deux réglages que l'Isère ci-dessous, et la règle de
   diffusion de son jeu (`retenir`, `core/pdipr.ts`) : seules les boucles que
@@ -31,11 +34,10 @@
 */
 import { writeFileSync } from "node:fs";
 import { jeuPdiprPour, parseReseauPdipr } from "../src/core/pdipr.ts";
-import { SOURCES_PDIPR, zoneDemandee } from "./sources-pdipr.mjs";
+import { SOURCES_PDIPR, exportBrut, zoneDemandee } from "./sources-pdipr.mjs";
 
 const ZONE = zoneDemandee(process.argv[2], "isere");
 const SOURCES = SOURCES_PDIPR;
-const SOURCE = SOURCES[ZONE].url;
 const JEU = jeuPdiprPour(ZONE);
 const CIBLE = `public/${JEU.fichier}`;
 const TOLERANCE_M = 5;
@@ -79,9 +81,7 @@ function simplifier(points, toleranceM) {
 
 const arrondi = (v) => Number(v.toFixed(DECIMALES));
 
-const reponse = await fetch(SOURCE);
-if (!reponse.ok) throw new Error(`${SOURCE} → HTTP ${reponse.status}`);
-const brut = await reponse.json();
+const brut = await exportBrut(ZONE, process.argv[3]);
 
 /*
   Une seule entité MultiLineString plutôt qu'une par tronçon : l'enveloppe

@@ -57,7 +57,10 @@ describe('les crédits composés rendent ce qui était écrit à la main', () =>
         " de l'Isère</a> (Licence Ouverte 2.0)" +
         ' · Réseau balisé © <a' +
         ' href="https://www.data.gouv.fr/datasets/pdipr-itineraire">Département' +
-        " de l'Ain</a> (Licence Ouverte 2.0)",
+        " de l'Ain</a> (Licence Ouverte 2.0)" +
+        ' · Réseau balisé © <a' +
+        ' href="https://catalogue.open-datara.fr/geonetwork/srv/api/records/e18f588f-1eca-4131-86ea-92985b2d8475">Département' +
+        ' du Rhône</a> (Licence Ouverte 2.0)',
     )
   })
 
@@ -75,7 +78,10 @@ describe('les crédits composés rendent ce qui était écrit à la main', () =>
         " de l'Isère</a> (Licence Ouverte 2.0)" +
         ' · Réseau balisé © <a' +
         ' href="https://www.data.gouv.fr/datasets/pdipr-itineraire">Département' +
-        " de l'Ain</a> (Licence Ouverte 2.0)",
+        " de l'Ain</a> (Licence Ouverte 2.0)" +
+        ' · Réseau balisé © <a' +
+        ' href="https://catalogue.open-datara.fr/geonetwork/srv/api/records/e18f588f-1eca-4131-86ea-92985b2d8475">Département' +
+        ' du Rhône</a> (Licence Ouverte 2.0)',
     )
   })
 

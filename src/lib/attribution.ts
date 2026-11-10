@@ -160,6 +160,20 @@ export const DEPARTEMENT_AIN: Credit = {
   lien: 'https://www.data.gouv.fr/datasets/pdipr-itineraire',
 }
 
+/**
+ * Le PDIPR du Rhône (#87, 09/11), envoyé par le Département par courriel :
+ * des tronçons, comme l'Isère, peints en fond sans compter. Le lien mène à
+ * la fiche du jeu sur datARA, le catalogue régional où le Département l'a
+ * déclaré — c'est l'export de cette fiche qui rendait 403 le 22/10 (#20).
+ * Licence Ouverte 2.0 confirmée par Cédric le 09/11.
+ */
+export const DEPARTEMENT_RHONE: Credit = {
+  quoi: 'Réseau balisé',
+  qui: 'Département du Rhône',
+  licence: 'Licence Ouverte 2.0',
+  lien: 'https://catalogue.open-datara.fr/geonetwork/srv/api/records/e18f588f-1eca-4131-86ea-92985b2d8475',
+}
+
 /** Le fond **et** les itinéraires, quand le miroir OSM remplace l'IGN. */
 export const OSM_FOND_ET_TRACES: Credit = {
   ...OSM,

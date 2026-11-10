@@ -268,8 +268,18 @@ describe('jeuPdiprPour', () => {
     expect(jeuPdiprPour('ain')?.fichier).toBe('data/pdipr-ain.json')
   })
 
+  /*
+    Le Rhône, le 09/11 : reçu du Département par courriel (datARA rendait
+    403), Licence Ouverte 2.0 confirmée par Cédric. Sur la zone « Rhône +
+    Métropole de Lyon » : 179 des 12 608 objets du shapefile seulement sont dans la
+    Métropole, qui a déjà ses boucles.
+  */
+  it('désigne le jeu du Rhône pour la zone Rhône + Métropole', () => {
+    expect(jeuPdiprPour('rhone')?.fichier).toBe('data/pdipr-rhone.json')
+  })
+
   it('ne désigne rien pour une zone qu’aucun PDIPR ne couvre', () => {
-    expect(jeuPdiprPour('rhone')).toBeNull()
+    expect(jeuPdiprPour('loire')).toBeNull()
     expect(jeuPdiprPour(null)).toBeNull()
     // Une clé héritée d'Object.prototype n'est pas une zone.
     expect(jeuPdiprPour('toString')).toBeNull()

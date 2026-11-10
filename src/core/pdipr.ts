@@ -58,6 +58,17 @@ const EMPRISE_ISERE: Emprise = { ouest: 4.7, est: 6.4, sud: 44.65, nord: 45.93 }
 const EMPRISE_AIN: Emprise = { ouest: 4.66, est: 6.23, sud: 45.58, nord: 46.56 }
 
 /**
+ * L'emprise du Rhône, Métropole de Lyon comprise, à environ 5 km près.
+ *
+ * Mesurée le 09/11 sur le jeu reçu du Département (shapefile Lambert-93,
+ * reprojeté par `core/lambert93.ts`) : les 12 608 objets du
+ * shapefile (12 623 lignes, certains en plusieurs parties) s'étendent de
+ * 4,246 à 5,154° E et de 45,541 à 46,306° N, tous valides. Garde, pas filtre,
+ * comme pour l'Ain.
+ */
+const EMPRISE_RHONE: Emprise = { ouest: 4.18, est: 5.22, sud: 45.49, nord: 46.36 }
+
+/**
  * Ce que le producteur dit d'un objet, quand il le dit : les propriétés
  * brutes de l'export, que seul le script de préparation voit.
  */
@@ -79,7 +90,7 @@ interface JeuPdipr {
 /**
  * L'Isère depuis le 18/10 ; l'Ain depuis le 21/10, quand data.gouv.fr a de
  * nouveau répondu (il coupait les connexions le 18 — on n'embarque pas un
- * jeu qu'on n'a pas lu).
+ * jeu qu'on n'a pas lu) ; le Rhône depuis le 09/11.
  *
  * L'Ain publie des **boucles nommées**, pas des tronçons, et elles
  * pourraient devenir des itinéraires comme celles de la Métropole. Elles
@@ -98,6 +109,13 @@ const JEUX_PAR_ZONE: Readonly<Record<string, JeuPdipr>> = {
     emprise: EMPRISE_AIN,
     retenir: (proprietes) => proprietes?.['g_diffusion'] === 'OUI',
   },
+  /*
+    Le Rhône depuis le 09/11, reçu par courriel (`scripts/sources-pdipr.mjs`).
+    Des tronçons, comme l'Isère, classés « Réseau touristique » ou
+    « Réserve » : les deux sont montrés (décision de Cédric du 09/11), sans
+    règle `retenir`.
+  */
+  rhone: { fichier: 'data/pdipr-rhone.json', emprise: EMPRISE_RHONE },
 }
 
 export function jeuPdiprPour(zoneKey: string | null): JeuPdipr | null {

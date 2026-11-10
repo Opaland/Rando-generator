@@ -203,7 +203,7 @@ distinct — `network: 'PERSO'` reste le réseau de tout import, le routage du
 matching et l'export GPX s'appuyant déjà sur cette étiquette pour un sens
 différent de « source institutionnelle ». Deux e2e (`tests/e2e/attribution-
 import.spec.ts`) couvrent le cas positif et l'absence de mention inventée.
-Reste ouvert : les PDIPR hors Isère (#20, #87).
+Reste ouvert : les PDIPR hors Isère, Ain et Rhône (#87).
 
 ## Ce que la seconde passe a trouvé
 
