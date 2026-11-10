@@ -174,6 +174,20 @@ export const DEPARTEMENT_RHONE: Credit = {
   lien: 'https://catalogue.open-datara.fr/geonetwork/srv/api/records/e18f588f-1eca-4131-86ea-92985b2d8475',
 }
 
+/**
+ * Le PDIPR du Puy-de-Dôme (#87, 10/11), publié par le CRAIG pour le
+ * Département : des itinéraires nommés, peints en fond sans compter, comme
+ * l'Ain. La fiche de métadonnées impose la mention « CD63-2026 » : elle est
+ * dans le nom, pour paraître partout où le crédit paraît. « Licence Ouverte »
+ * sans numéro sur la fiche, qui renvoie au texte Etalab de 2011 : la 1.0.
+ */
+export const DEPARTEMENT_PUY_DE_DOME: Credit = {
+  quoi: 'Réseau balisé',
+  qui: 'Département du Puy-de-Dôme (CD63-2026)',
+  licence: 'Licence Ouverte 1.0',
+  lien: 'https://www.data.gouv.fr/datasets/plan-departemental-des-itineraires-de-promenades-et-de-randonnees-pdipr-departement-du-puy-de-dome-2026',
+}
+
 /** Le fond **et** les itinéraires, quand le miroir OSM remplace l'IGN. */
 export const OSM_FOND_ET_TRACES: Credit = {
   ...OSM,

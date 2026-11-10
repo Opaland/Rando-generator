@@ -30,8 +30,10 @@ parcouru 34 % du GR 7, 61 % des sentiers du Pilat ».
   Ouverte 2.0, jeu « GR Province Nord ») ; réseau balisé de l'Isère ©
   Département de l'Isère (Licence Ouverte 2.0, PDIPR) et boucles de l'Ain ©
   Département de l'Ain (Licence Ouverte 2.0, PDIPR itinéraire) et réseau
-  balisé du Rhône © Département du Rhône (Licence Ouverte 2.0, PDIPR), dessinés en
-  fond sans être comptés ; fond de carte Plan IGN v2 (licence
+  balisé du Rhône © Département du Rhône (Licence Ouverte 2.0, PDIPR) et
+  itinéraires du Puy-de-Dôme © Département du Puy-de-Dôme, CD63-2026
+  (Licence Ouverte 1.0, PDIPR, publié par le CRAIG), dessinés en fond sans
+  être comptés ; fond de carte Plan IGN v2 (licence
   ouverte Etalab 2.0) avec repli automatique sur les tuiles OSM.
 - **Utilisable hors réseau** : service worker sans dépendance (ni Workbox ni
   greffon PWA), précache généré au build, tuiles déjà vues conservées.
@@ -89,7 +91,10 @@ par le CLI Playwright.
    d'entre elles sont déjà dans OpenStreetMap, et les compter demande une
    règle de dédoublonnage qui n'est pas encore tranchée (#574). Dans le
    **Rhône**, le réseau balisé du Département (PDIPR, réseau touristique et
-   réserve) s'ajoute de même, en tronçons sans nom. Ou
+   réserve) s'ajoute de même, en tronçons sans nom. Dans le **Puy-de-Dôme**,
+   les 442 itinéraires du Département s'y ajoutent comme les boucles de
+   l'Ain, dessinés sans leur nom et pas comptés (317 sont déjà couverts à
+   ≥ 80 % par OpenStreetMap, mesuré le 10/11). Ou
    encore
    un ref d'itinéraire (ex. « GR 20 »), avec quelques **grands itinéraires**
    proposés en un clic (GR 65 Saint-Jacques, GR 70 Stevenson, GR 5 Alpes…),
@@ -473,7 +478,7 @@ src/
 │  ├─ poi.ts       # POI le long d'un tracé (Overpass, bbox découpées)
 │  ├─ boucles.ts   # boucles communales open data (Métropole de Lyon, LO 2.0)
 │  ├─ grNord.ts    # GR Nord open data (Province Nord, Nouvelle-Calédonie, LO 2.0)
-│  ├─ pdipr.ts     # réseau de fond PDIPR (Isère, Ain, Rhône, LO 2.0) : montrés, jamais comptés
+│  ├─ pdipr.ts     # réseau de fond PDIPR (Isère, Ain, Rhône, Puy-de-Dôme, LO) : montrés, jamais comptés
 │  ├─ routing.ts   # graphe des sentiers, accroche d'un clic, Dijkstra
 │  ├─ history.ts   # sorties par mois, totaux, cumuls
 │  ├─ discovery.ts # durées et dénivelés publiés, forme du tracé, filtres

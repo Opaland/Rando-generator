@@ -60,7 +60,10 @@ describe('les crédits composés rendent ce qui était écrit à la main', () =>
         " de l'Ain</a> (Licence Ouverte 2.0)" +
         ' · Réseau balisé © <a' +
         ' href="https://catalogue.open-datara.fr/geonetwork/srv/api/records/e18f588f-1eca-4131-86ea-92985b2d8475">Département' +
-        ' du Rhône</a> (Licence Ouverte 2.0)',
+        ' du Rhône</a> (Licence Ouverte 2.0)' +
+        ' · Réseau balisé © <a' +
+        ' href="https://www.data.gouv.fr/datasets/plan-departemental-des-itineraires-de-promenades-et-de-randonnees-pdipr-departement-du-puy-de-dome-2026">Département' +
+        ' du Puy-de-Dôme (CD63-2026)</a> (Licence Ouverte 1.0)',
     )
   })
 
@@ -81,7 +84,10 @@ describe('les crédits composés rendent ce qui était écrit à la main', () =>
         " de l'Ain</a> (Licence Ouverte 2.0)" +
         ' · Réseau balisé © <a' +
         ' href="https://catalogue.open-datara.fr/geonetwork/srv/api/records/e18f588f-1eca-4131-86ea-92985b2d8475">Département' +
-        ' du Rhône</a> (Licence Ouverte 2.0)',
+        ' du Rhône</a> (Licence Ouverte 2.0)' +
+        ' · Réseau balisé © <a' +
+        ' href="https://www.data.gouv.fr/datasets/plan-departemental-des-itineraires-de-promenades-et-de-randonnees-pdipr-departement-du-puy-de-dome-2026">Département' +
+        ' du Puy-de-Dôme (CD63-2026)</a> (Licence Ouverte 1.0)',
     )
   })
 

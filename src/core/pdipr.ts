@@ -69,6 +69,19 @@ const EMPRISE_AIN: Emprise = { ouest: 4.66, est: 6.23, sud: 45.58, nord: 46.56 }
 const EMPRISE_RHONE: Emprise = { ouest: 4.18, est: 5.22, sud: 45.49, nord: 46.36 }
 
 /**
+ * L'emprise du Puy-de-Dôme, à environ 5 km près.
+ *
+ * Mesurée le 10/11 sur l'export WFS du CRAIG (EPSG:4326, reprojeté par le
+ * serveur ; recoupé à 5 mm près par `core/lambert93.ts` sur le GeoPackage
+ * Lambert-93 du même jeu) : les 442 itinéraires (745 parties) s'étendent de
+ * 2,414 à 3,997° E et de 45,155 à 46,237° N, tous valides. Le sud passe
+ * l'emprise de la zone (45,287° N, `core/emprisesDeZone.donnees.ts`) : des
+ * itinéraires du Département sortent du département. Garde, pas filtre,
+ * comme pour l'Ain et le Rhône.
+ */
+const EMPRISE_PUY_DE_DOME: Emprise = { ouest: 2.35, est: 4.06, sud: 45.11, nord: 46.28 }
+
+/**
  * Ce que le producteur dit d'un objet, quand il le dit : les propriétés
  * brutes de l'export, que seul le script de préparation voit.
  */
@@ -90,7 +103,8 @@ interface JeuPdipr {
 /**
  * L'Isère depuis le 18/10 ; l'Ain depuis le 21/10, quand data.gouv.fr a de
  * nouveau répondu (il coupait les connexions le 18 — on n'embarque pas un
- * jeu qu'on n'a pas lu) ; le Rhône depuis le 09/11.
+ * jeu qu'on n'a pas lu) ; le Rhône depuis le 09/11 ; le Puy-de-Dôme depuis le
+ * 10/11.
  *
  * L'Ain publie des **boucles nommées**, pas des tronçons, et elles
  * pourraient devenir des itinéraires comme celles de la Métropole. Elles
@@ -116,6 +130,14 @@ const JEUX_PAR_ZONE: Readonly<Record<string, JeuPdipr>> = {
     règle `retenir`.
   */
   rhone: { fichier: 'data/pdipr-rhone.json', emprise: EMPRISE_RHONE },
+  /*
+    Le Puy-de-Dôme depuis le 10/11, par le WFS du CRAIG
+    (`scripts/sources-pdipr.mjs`). Des itinéraires entiers et nommés, comme
+    l'Ain (le nom ne survit pas à la préparation), tous `INSCRIT_PD = Oui` : aucun champ de diffusion, donc pas de
+    règle `retenir`. Les sept boucles VTT et la boucle équestre sont
+    montrées avec le reste — c'est le PDIPR tel que le Département le publie.
+  */
+  'puy-de-dome': { fichier: 'data/pdipr-puy-de-dome.json', emprise: EMPRISE_PUY_DE_DOME },
 }
 
 export function jeuPdiprPour(zoneKey: string | null): JeuPdipr | null {

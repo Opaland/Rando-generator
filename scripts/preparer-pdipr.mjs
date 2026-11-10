@@ -6,6 +6,8 @@
     npm run pdipr -- rhone chemin/PDIPR_GRAPHE_CHEMIN.shp
                              (le Rhône, depuis le 09/11 : reçu par courriel,
                              sans adresse publique — voir `sources-pdipr.mjs`)
+    npm run pdipr -- puy-de-dome
+                             (le Puy-de-Dôme, depuis le 10/11 : WFS du CRAIG)
 
   L'Ain suit les mêmes deux réglages que l'Isère ci-dessous, et la règle de
   diffusion de son jeu (`retenir`, `core/pdipr.ts`) : seules les boucles que

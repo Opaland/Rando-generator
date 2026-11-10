@@ -72,3 +72,37 @@ ne s'efface pas (CLAUDE.md §4bis).
   du fichier contre lignes) → la relecture adverse n'est pas facultative ;
   ajouter `docs/FEUILLE_DE_ROUTE.md` aux surfaces de texte ; nommer
   toujours **ce qu'on compte** (objets, lignes, km) à côté du nombre.
+- 2026-11-10 — Loire, Drôme, Ardèche — les trois premiers de la file
+  n'avaient aucun jeu lisible (datARA en 502, portail de la Drôme coupé,
+  licence `notspecified` sur data.gouv.fr) → « Ce qui n'est pas un échec »
+  s'applique **dans le même passage** : une issue groupée, puis le suivant
+  de la file, sans attendre le lendemain.
+- 2026-11-10 — Puy-de-Dôme — le jeu existait en GeoPackage Lambert-93, que
+  le dépôt ne sait pas lire, **et** en WFS public du CRAIG
+  (`ids.craig.fr/wxs/public/wfs`), qui rend du GeoJSON WGS84 → avant
+  d'écrire un lecteur, lire le `GetCapabilities` du CRAIG : un WFS
+  `OUTPUTFORMAT=application/json&SRSNAME=EPSG:4326` passe par le chemin
+  `url` d'`exportBrut` sans une ligne de code. La même page a montré une
+  couche de l'Allier (`public:DEPT03_2024_PDIPR`).
+- 2026-11-10 — Puy-de-Dôme — la licence ne se lit pas sur data.gouv.fr
+  seulement : la fiche moissonnée du CRAIG (`…/records/<id>/formatters/xml`,
+  `useConstraints`/`otherConstraints`) portait aussi une **mention
+  obligatoire** (« CD63-2026 ») que data.gouv.fr ne montre pas → lire la
+  fiche d'origine, et mettre la mention dans le `qui` du crédit pour
+  qu'elle paraisse partout où il paraît.
+- 2026-11-10 — tous — data.gouv.fr coupe une connexion sur trois depuis le
+  conteneur (`Connection reset by peer`) → toujours une boucle de reprises
+  autour de `curl`, et vérifier que le JSON se lit avant de conclure
+  « rien trouvé ».
+- 2026-11-10 — Puy-de-Dôme — un crédit de plus dans `ATTRIBUTION` a fait
+  recouvrir « Ma position » par le crédit déplié, à 360 × 640 en gros texte
+  (`tests/e2e/credit-peint.spec.ts`), et le raccourcir à la seule mention
+  obligatoire ne suffisait pas : la chaîne était déjà à sa limite avec trois
+  PDIPR (#668) → chaque département allonge une chaîne **globale** ; avant
+  d'en ajouter un, `npx playwright test tests/e2e/credit-peint.spec.ts`
+  (après build) — et corriger #668 avant tout nouveau département.
+- 2026-11-10 — Puy-de-Dôme — j'ai écrit « itinéraires nommés » et « ils
+  portent un nom » : vrai à la source, faux dans l'application, où
+  `preparer-pdipr.mjs` ne garde que la géométrie (relecture adverse) → dire
+  ce que **l'application** montre, pas ce que la source contient ; et ne
+  pas écrire « Sancy » ou « Cantal » sans l'avoir mesuré.

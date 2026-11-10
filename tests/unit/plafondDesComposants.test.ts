@@ -49,8 +49,9 @@ const PLAFONDS: Record<string, number> = {
   'DonneesEtLicences.tsx': 95,
   // Les PDIPR départementaux, sortis de DonneesEtLicences.tsx le 09/11
   // quand le Rhône l'a porté à 134 lignes : 59 pour trois départements,
-  // environ sept de plus par département. 100 laisse passer cinq ou six
-  // départements ; au-delà, c'est le signal d'en faire une liste de données
+  // environ sept de plus par département. 70 le 10/11 avec le Puy-de-Dôme
+  // (onze de plus, import sur plusieurs lignes compris) : 100 en laisse
+  // passer trois ou quatre ; au-delà, c'est le signal d'en faire une liste de données
   // plutôt qu'une phrase écrite par département. Tranché au jugement (§2).
   'ReseauxDepartementaux.tsx': 100,
   'Dashboard.tsx': 295,
