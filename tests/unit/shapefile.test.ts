@@ -105,6 +105,26 @@ describe('lignesDuShapefile', () => {
     ])
   })
 
+  /*
+    Relecture adverse du 10/11 : une longueur d'enregistrement négative
+    ramenait la lecture sur elle-même, et la préparation ne rendait jamais
+    la main ; un fichier tronqué levait un RangeError qui ne disait rien.
+  */
+  it('dit qu’un fichier est corrompu au lieu de boucler ou de lever au hasard', () => {
+    const bon = shapefile([
+      [
+        [
+          [1, 2],
+          [3, 4],
+        ],
+      ],
+    ])
+    const negatif = new DataView(bon.slice(0))
+    negatif.setInt32(104, -4, false)
+    expect(() => lignesDuShapefile(negatif.buffer)).toThrow(/corrompu/)
+    expect(() => lignesDuShapefile(bon.slice(0, bon.byteLength - 8))).toThrow(/corrompu/)
+  })
+
   it('refuse ce qui n’est pas un shapefile de polylignes', () => {
     expect(() => lignesDuShapefile(shapefile([], 1))).toThrow(/polylignes/)
     expect(() => lignesDuShapefile(new ArrayBuffer(100))).toThrow(/shapefile/)

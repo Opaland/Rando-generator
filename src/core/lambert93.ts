@@ -19,7 +19,7 @@ const XS = 700000
 const YS = 12655612.049876
 const LAMBDA0 = (3 * Math.PI) / 180
 
-/** Itérer jusqu'à ce que la latitude ne bouge plus de ~1 mm (NTG_71 : 1e-11 rad). */
+/** Itérer jusqu'à ce que la latitude ne bouge plus (NTG_71 : 1e-11 rad, moins d'un dixième de millimètre). */
 const PRECISION = 1e-11
 const ITERATIONS_MAX = 50
 

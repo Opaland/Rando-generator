@@ -13,6 +13,10 @@ const CODE_FICHIER = 9994
 const POLYLIGNE = 3
 const NULLE = 0
 
+function corrompu(octet: number): Error {
+  return new Error(`shapefile corrompu : enregistrement illisible à l’octet ${String(octet)}`)
+}
+
 export function lignesDuShapefile(octets: ArrayBuffer): [number, number][][] {
   const v = new DataView(octets)
   if (v.byteLength < 100 || v.getInt32(0, false) !== CODE_FICHIER) {
@@ -28,11 +32,18 @@ export function lignesDuShapefile(octets: ArrayBuffer): [number, number][][] {
     // La longueur est en mots de 16 bits, en-tête de 8 octets non compris.
     const longueur = v.getInt32(o + 4, false) * 2
     const c = o + 8
+    // Une longueur négative ramènerait la lecture sur elle-même : la
+    // préparation ne rendrait jamais la main (relecture adverse du 10/11).
+    if (longueur < 4 || c + longueur > v.byteLength) throw corrompu(o)
     o = c + longueur
     if (v.getInt32(c, true) === NULLE) continue
+    if (longueur < 44) throw corrompu(c - 8)
     const nbParties = v.getInt32(c + 36, true)
     const nbPoints = v.getInt32(c + 40, true)
     const premierPoint = c + 44 + 4 * nbParties
+    if (nbParties < 0 || nbPoints < 0 || premierPoint + 16 * nbPoints > o) {
+      throw corrompu(c - 8)
+    }
     for (let p = 0; p < nbParties; p++) {
       const debut = v.getInt32(c + 44 + 4 * p, true)
       const fin = p + 1 < nbParties ? v.getInt32(c + 48 + 4 * p, true) : nbPoints

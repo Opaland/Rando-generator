@@ -271,7 +271,7 @@ describe('jeuPdiprPour', () => {
   /*
     Le Rhône, le 09/11 : reçu du Département par courriel (datARA rendait
     403), Licence Ouverte 2.0 confirmée par Cédric. Sur la zone « Rhône +
-    Métropole de Lyon » : 179 de ses 12 608 tronçons seulement sont dans la
+    Métropole de Lyon » : 179 des 12 608 objets du shapefile seulement sont dans la
     Métropole, qui a déjà ses boucles.
   */
   it('désigne le jeu du Rhône pour la zone Rhône + Métropole', () => {

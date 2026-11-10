@@ -61,7 +61,8 @@ const EMPRISE_AIN: Emprise = { ouest: 4.66, est: 6.23, sud: 45.58, nord: 46.56 }
  * L'emprise du Rhône, Métropole de Lyon comprise, à environ 5 km près.
  *
  * Mesurée le 09/11 sur le jeu reçu du Département (shapefile Lambert-93,
- * reprojeté par `core/lambert93.ts`) : les 12 608 tronçons s'étendent de
+ * reprojeté par `core/lambert93.ts`) : les 12 608 objets du
+ * shapefile (12 623 lignes, certains en plusieurs parties) s'étendent de
  * 4,246 à 5,154° E et de 45,541 à 46,306° N, tous valides. Garde, pas filtre,
  * comme pour l'Ain.
  */
