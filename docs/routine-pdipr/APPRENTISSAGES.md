@@ -106,3 +106,20 @@ ne s'efface pas (CLAUDE.md §4bis).
   `preparer-pdipr.mjs` ne garde que la géométrie (relecture adverse) → dire
   ce que **l'application** montre, pas ce que la source contient ; et ne
   pas écrire « Sancy » ou « Cantal » sans l'avoir mesuré.
+- 2026-11-11 — Puy-de-Dôme — compter l'échec : la CI rouge de la veille
+  était le défaut déjà compté au passage du 10/11 (« un défaut non corrigé
+  en fin de passage ») → une même cause ne se compte qu'une fois ; le
+  compteur monte quand **la tentative du jour** finit rouge.
+- 2026-11-11 — Puy-de-Dôme — raccourcir le crédit de la carte (#668) a
+  fait tomber un **autre** test du même fichier, « reste replié quand la
+  feuille bouge » : sa prémisse (« la règle l'a replié », 390 × 844) ne
+  tenait que pour un crédit long ; avec un crédit court, elle n'était plus
+  vraie qu'à un instant de transition. Une sonde l'a montré, et une
+  injection de l'ancienne attribution l'a confirmé → quand un test casse
+  après un changement de **taille** d'un élément, vérifier sa prémisse
+  avant d'y chercher un défaut, puis refaire le §1 sur le test déplacé.
+- 2026-11-11 — Puy-de-Dôme — MapLibre ne laisse pas changer
+  l'`attribution` d'une source : on retire la couche, on recrée la source,
+  on repose la couche **au même rang** (`creditDuReseauDeFond.ts`) ; le
+  rang se garde par un e2e (`reseau-de-fond.spec.ts`), qui rougit sans le
+  `beforeId`.

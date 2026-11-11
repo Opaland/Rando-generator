@@ -306,6 +306,21 @@ describe('jeuPdiprPour', () => {
     expect(reseau.features).toHaveLength(4)
   })
 
+  /*
+    #668, le 11/11 : le crédit d'un PDIPR est porté par son jeu, et non plus
+    par une chaîne d'attribution fixe — une seule liste de zones (§4ter).
+    Chaque jeu nomme son Département, et le Puy-de-Dôme sa mention
+    obligatoire.
+  */
+  it.each([
+    ['isere', "Département de l'Isère"],
+    ['ain', "Département de l'Ain"],
+    ['rhone', 'Département du Rhône'],
+    ['puy-de-dome', 'Département du Puy-de-Dôme (CD63-2026)'],
+  ])('crédite le Département avec le jeu de « %s »', (zone, qui) => {
+    expect(jeuPdiprPour(zone)?.credit.qui).toBe(qui)
+  })
+
   it('ne désigne rien pour une zone qu’aucun PDIPR ne couvre', () => {
     expect(jeuPdiprPour('loire')).toBeNull()
     expect(jeuPdiprPour(null)).toBeNull()

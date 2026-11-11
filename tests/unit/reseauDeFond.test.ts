@@ -69,6 +69,29 @@ describe('chargerReseauDeFond', () => {
     expect(String(appel.mock.calls[0])).toContain('data/pdipr-isere.json')
   })
 
+  /*
+    #668 : le crédit du Département suit le réseau **reçu**, comme la
+    légende — pas la zone qui pourrait en avoir un. Hors ligne, rien n'est
+    peint et rien n'est crédité.
+  */
+  it('publie le crédit du Département avec son réseau, et l’efface en changeant de zone', async () => {
+    fetchQuiRend(UN_TRONCON)
+    const { chargerReseauDeFond, useReseauDeFond } = await moduleFrais()
+    await chargerReseauDeFond('isere')
+    expect(useReseauDeFond.getState().attribution).toContain("Département de l'Isère")
+    const loire = chargerReseauDeFond('loire')
+    expect(useReseauDeFond.getState().attribution).toBeNull()
+    await loire
+    expect(useReseauDeFond.getState().attribution).toBeNull()
+  })
+
+  it('ne crédite rien quand le réseau n’a pas pu venir', async () => {
+    fetchQuiRend(null, false)
+    const { chargerReseauDeFond, useReseauDeFond } = await moduleFrais()
+    await chargerReseauDeFond('isere')
+    expect(useReseauDeFond.getState().attribution).toBeNull()
+  })
+
   it('efface l’Isère dès qu’on change de zone', async () => {
     fetchQuiRend(UN_TRONCON)
     const { chargerReseauDeFond, useReseauDeFond } = await moduleFrais()

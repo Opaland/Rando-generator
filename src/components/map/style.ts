@@ -16,10 +16,6 @@ import {
 } from '../../lib/couleursPartagees.ts'
 import {
   attributionHtml,
-  DEPARTEMENT_AIN,
-  DEPARTEMENT_ISERE,
-  DEPARTEMENT_PUY_DE_DOME,
-  DEPARTEMENT_RHONE,
   IGN,
   METROPOLE,
   OSM,
@@ -52,25 +48,22 @@ export const OSM_TILES = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
   celles qui étaient écrites ici — `tests/unit/attribution.test.ts` les épingle
   au caractère près — et les morceaux vivent désormais dans un seul fichier,
   d'où la feuille d'impression les tire aussi.
+
+  Sans les PDIPR depuis le 11/11 (#668) : quatre départements crédités ici
+  en permanence faisaient recouvrir « Ma position » par le crédit déplié, au
+  téléphone en gros texte. Le crédit d'un PDIPR est posé sur la source
+  `pdipr` quand son réseau est peint (`useMapSources.ts`).
 */
 export const ATTRIBUTION = attributionHtml(
   IGN,
   OSM,
   METROPOLE,
   PROVINCE_NORD,
-  DEPARTEMENT_ISERE,
-  DEPARTEMENT_AIN,
-  DEPARTEMENT_RHONE,
-  DEPARTEMENT_PUY_DE_DOME,
 )
 export const ATTRIBUTION_OSM = attributionHtml(
   OSM_FOND_ET_TRACES,
   METROPOLE,
   PROVINCE_NORD,
-  DEPARTEMENT_ISERE,
-  DEPARTEMENT_AIN,
-  DEPARTEMENT_RHONE,
-  DEPARTEMENT_PUY_DE_DOME,
 )
 
 /**

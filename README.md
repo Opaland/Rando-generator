@@ -33,7 +33,8 @@ parcouru 34 % du GR 7, 61 % des sentiers du Pilat ».
   balisé du Rhône © Département du Rhône (Licence Ouverte 2.0, PDIPR) et
   itinéraires du Puy-de-Dôme © Département du Puy-de-Dôme, CD63-2026
   (Licence Ouverte 1.0, PDIPR, publié par le CRAIG), dessinés en fond sans
-  être comptés ; fond de carte Plan IGN v2 (licence
+  être comptés — le crédit de la carte nomme le Département de la zone
+  chargée, et lui seul (#668) ; fond de carte Plan IGN v2 (licence
   ouverte Etalab 2.0) avec repli automatique sur les tuiles OSM.
 - **Utilisable hors réseau** : service worker sans dépendance (ni Workbox ni
   greffon PWA), précache généré au build, tuiles déjà vues conservées.

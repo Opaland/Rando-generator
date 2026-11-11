@@ -55,6 +55,50 @@ test('l’Isère montre son réseau balisé, la Loire non', async ({ page }) => 
 })
 
 /*
+  #668, le 11/11 : le crédit d'un Département suit son réseau. Écrits en dur
+  dans l'attribution de la carte, les quatre PDIPR faisaient recouvrir
+  « Ma position » par le crédit déplié au téléphone en gros texte
+  (`credit-peint.spec.ts`). On lit le texte du crédit lui-même, à 1 280 px
+  où il est déplié, et le rang de la couche : la source est recréée pour
+  changer son crédit, et la couche doit revenir **sous** les tracés.
+*/
+const creditDeLaCarte = (page: import('@playwright/test').Page) =>
+  page.evaluate(
+    () => document.querySelector('.maplibregl-ctrl-attrib-inner')?.textContent ?? '',
+  )
+const rangDuReseau = (page: import('@playwright/test').Page) =>
+  page.evaluate(() => {
+    const map = (window as { __sentiersMap?: { getStyle(): { layers: { id: string }[] } } })
+      .__sentiersMap
+    return map?.getStyle().layers.findIndex((c) => c.id === 'pdipr-reseau') ?? -1
+  })
+
+test('le crédit nomme le Département de la zone peinte, et lui seul', async ({ page }) => {
+  await mockExternalNetwork(page)
+  await mockTilesOk(page)
+  await page.goto('/')
+  test.skip(!(await hasMap(page)), 'WebGL indisponible dans ce navigateur headless')
+  await fermerLeGuide(page)
+
+  await page.getByTestId('zone-isere').click()
+  await expect.poll(() => tronconsPeints(page), { timeout: 15_000 }).toBeGreaterThan(10_000)
+  await expect.poll(() => creditDeLaCarte(page), { timeout: 5_000 }).toContain(
+    "Département de l'Isère",
+  )
+  expect(await creditDeLaCarte(page)).not.toContain('Département de l’Ain')
+  expect(await creditDeLaCarte(page)).not.toContain("Département de l'Ain")
+  // Juste au-dessus du fond de carte, comme `style.ts` le pose.
+  expect(await rangDuReseau(page)).toBe(1)
+
+  await page.getByTestId('zone-loire').click()
+  await expect.poll(() => tronconsPeints(page), { timeout: 15_000 }).toBe(0)
+  await expect.poll(() => creditDeLaCarte(page), { timeout: 5_000 }).not.toContain(
+    'Département',
+  )
+  expect(await rangDuReseau(page)).toBe(1)
+})
+
+/*
   L'Ain, le 21/10 (#574) : 483 boucles nommées du Département, montrées en
   fond comme l'Isère et pas comptées — le dédoublonnage avec OpenStreetMap
   attend la décision de Cédric. Le jeu embarqué porte 531 lignes : « des

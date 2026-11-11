@@ -1,6 +1,13 @@
 import type { Feature, FeatureCollection, LineString } from 'geojson'
 import { isWgs84Coordinate } from './geo.ts'
 import type { LonLat } from './types.ts'
+import {
+  DEPARTEMENT_AIN,
+  DEPARTEMENT_ISERE,
+  DEPARTEMENT_PUY_DE_DOME,
+  DEPARTEMENT_RHONE,
+  type Credit,
+} from '../lib/attribution.ts'
 
 /**
  * Les PDIPR ouverts des départements, comme **réseau de fond** (issue #87).
@@ -87,10 +94,17 @@ const EMPRISE_PUY_DE_DOME: Emprise = { ouest: 2.35, est: 4.06, sud: 45.11, nord:
  */
 type Proprietes = Readonly<Record<string, unknown>> | null | undefined
 
-/** Un jeu PDIPR embarqué : son fichier, relatif à la base du site, et son emprise. */
+/** Un jeu PDIPR embarqué : son fichier, relatif à la base du site, son emprise, son crédit. */
 interface JeuPdipr {
   readonly fichier: string
   readonly emprise: Emprise
+  /**
+   * Ce que la carte doit au Département quand ce jeu est peint, et alors
+   * seulement (#668). Porté par le jeu plutôt que par une seconde liste
+   * indexée par zone : deux listes des mêmes zones finissent par diverger
+   * (CLAUDE.md §4ter).
+   */
+  readonly credit: Credit
   /**
    * Ce que le producteur demande d'écarter, lu sur les propriétés de
    * l'export. Appliqué **à la préparation seulement** : le fichier embarqué
@@ -117,10 +131,11 @@ interface JeuPdipr {
  * reprises : 480 sur 483, les trois autres n'en disent rien.
  */
 const JEUX_PAR_ZONE: Readonly<Record<string, JeuPdipr>> = {
-  isere: { fichier: 'data/pdipr-isere.json', emprise: EMPRISE_ISERE },
+  isere: { fichier: 'data/pdipr-isere.json', emprise: EMPRISE_ISERE, credit: DEPARTEMENT_ISERE },
   ain: {
     fichier: 'data/pdipr-ain.json',
     emprise: EMPRISE_AIN,
+    credit: DEPARTEMENT_AIN,
     retenir: (proprietes) => proprietes?.['g_diffusion'] === 'OUI',
   },
   /*
@@ -129,7 +144,7 @@ const JEUX_PAR_ZONE: Readonly<Record<string, JeuPdipr>> = {
     « Réserve » : les deux sont montrés (décision de Cédric du 09/11), sans
     règle `retenir`.
   */
-  rhone: { fichier: 'data/pdipr-rhone.json', emprise: EMPRISE_RHONE },
+  rhone: { fichier: 'data/pdipr-rhone.json', emprise: EMPRISE_RHONE, credit: DEPARTEMENT_RHONE },
   /*
     Le Puy-de-Dôme depuis le 10/11, par le WFS du CRAIG
     (`scripts/sources-pdipr.mjs`). Des itinéraires entiers et nommés, comme
@@ -137,7 +152,11 @@ const JEUX_PAR_ZONE: Readonly<Record<string, JeuPdipr>> = {
     règle `retenir`. Les sept boucles VTT et la boucle équestre sont
     montrées avec le reste — c'est le PDIPR tel que le Département le publie.
   */
-  'puy-de-dome': { fichier: 'data/pdipr-puy-de-dome.json', emprise: EMPRISE_PUY_DE_DOME },
+  'puy-de-dome': {
+    fichier: 'data/pdipr-puy-de-dome.json',
+    emprise: EMPRISE_PUY_DE_DOME,
+    credit: DEPARTEMENT_PUY_DE_DOME,
+  },
 }
 
 export function jeuPdiprPour(zoneKey: string | null): JeuPdipr | null {

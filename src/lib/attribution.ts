@@ -33,7 +33,7 @@ import { sourcesDe } from '../core/attributionDuTrace.ts'
 import type { Itinerary } from '../core/types.ts'
 
 /** Un crédit : à qui, pour quoi, sous quelle licence, et où lire celle-ci. */
-interface Credit {
+export interface Credit {
   /** Ce qu'on doit à cette source, tel qu'il apparaît dans la phrase. */
   readonly quoi: string
   /**

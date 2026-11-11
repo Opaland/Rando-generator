@@ -51,19 +51,7 @@ describe('les crédits composés rendent ce qui était écrit à la main', () =>
         ' href="https://data.grandlyon.com/">Métropole de Lyon</a> (Licence' +
         ' Ouverte 2.0) · GR Nord © <a' +
         ' href="https://data.gouv.nc/explore/dataset/gr-province-nord/">Province' +
-        ' Nord</a> (Licence Ouverte 2.0)' +
-        ' · Réseau balisé © <a' +
-        ' href="https://opendata.isere.fr/explore/dataset/plan-departemental-des-itineraires-de-promenades-et-de-randonnees-departement-de/">Département' +
-        " de l'Isère</a> (Licence Ouverte 2.0)" +
-        ' · Réseau balisé © <a' +
-        ' href="https://www.data.gouv.fr/datasets/pdipr-itineraire">Département' +
-        " de l'Ain</a> (Licence Ouverte 2.0)" +
-        ' · Réseau balisé © <a' +
-        ' href="https://catalogue.open-datara.fr/geonetwork/srv/api/records/e18f588f-1eca-4131-86ea-92985b2d8475">Département' +
-        ' du Rhône</a> (Licence Ouverte 2.0)' +
-        ' · Réseau balisé © <a' +
-        ' href="https://www.data.gouv.fr/datasets/plan-departemental-des-itineraires-de-promenades-et-de-randonnees-pdipr-departement-du-puy-de-dome-2026">Département' +
-        ' du Puy-de-Dôme (CD63-2026)</a> (Licence Ouverte 1.0)',
+        ' Nord</a> (Licence Ouverte 2.0)',
     )
   })
 
@@ -75,20 +63,20 @@ describe('les crédits composés rendent ce qui était écrit à la main', () =>
         ' href="https://data.grandlyon.com/">Métropole de Lyon</a> (Licence' +
         ' Ouverte 2.0) · GR Nord © <a' +
         ' href="https://data.gouv.nc/explore/dataset/gr-province-nord/">Province' +
-        ' Nord</a> (Licence Ouverte 2.0)' +
-        ' · Réseau balisé © <a' +
-        ' href="https://opendata.isere.fr/explore/dataset/plan-departemental-des-itineraires-de-promenades-et-de-randonnees-departement-de/">Département' +
-        " de l'Isère</a> (Licence Ouverte 2.0)" +
-        ' · Réseau balisé © <a' +
-        ' href="https://www.data.gouv.fr/datasets/pdipr-itineraire">Département' +
-        " de l'Ain</a> (Licence Ouverte 2.0)" +
-        ' · Réseau balisé © <a' +
-        ' href="https://catalogue.open-datara.fr/geonetwork/srv/api/records/e18f588f-1eca-4131-86ea-92985b2d8475">Département' +
-        ' du Rhône</a> (Licence Ouverte 2.0)' +
-        ' · Réseau balisé © <a' +
-        ' href="https://www.data.gouv.fr/datasets/plan-departemental-des-itineraires-de-promenades-et-de-randonnees-pdipr-departement-du-puy-de-dome-2026">Département' +
-        ' du Puy-de-Dôme (CD63-2026)</a> (Licence Ouverte 1.0)',
+        ' Nord</a> (Licence Ouverte 2.0)',
     )
+  })
+
+  /*
+    Les PDIPR n'y sont plus depuis le 11/11 (#668) : chaque département
+    allongeait une chaîne fixe, peinte quelle que soit la zone, et au
+    quatrième le crédit déplié recouvrait « Ma position » à 360 × 640 en
+    gros texte. Le crédit d'un PDIPR suit désormais son jeu
+    (`JeuPdipr.credit`) et la source `pdipr` de la carte.
+  */
+  it('ne nomme aucun département : leurs crédits suivent la zone chargée', () => {
+    expect(ATTRIBUTION).not.toContain('Département')
+    expect(ATTRIBUTION_OSM).not.toContain('Département')
   })
 
   it('celle de la carte de partage, qui ne crédite qu’OpenStreetMap', () => {

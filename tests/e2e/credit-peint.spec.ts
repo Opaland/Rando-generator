@@ -147,8 +147,15 @@ for (const largeur of [1024, 1280]) {
   au « ⓘ », le crédit se rouvrait tout seul au mouvement suivant de la
   feuille, contre ce que le commentaire du code promettait.
 */
+/*
+  360 × 640 et non plus 390 × 844 depuis le 11/11 (#668) : sans les PDIPR,
+  le crédit déplié ne fait plus que 104 px, et à 390 × 844 il tient à côté
+  des commandes, feuille à mi-course — la règle ne le replie plus, et la
+  prémisse de ce test (« la règle l'a replié ») n'était plus vraie qu'à un
+  instant de transition. Mesuré avec une sonde, pas supposé.
+*/
 test.describe('crédit replié par l’utilisateur — téléphone, gros texte', () => {
-  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true })
+  test.use({ viewport: { width: 360, height: 640 }, hasTouch: true })
 
   test('reste replié quand la feuille bouge', async ({ page }) => {
     await mockExternalNetwork(page)
