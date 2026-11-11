@@ -8,8 +8,9 @@ import type { GeoJSONSource, Map as MaplibreMap } from 'maplibre-gl'
  * ## Pourquoi recréer la source
  *
  * Le contrôle d'attribution de MapLibre relit l'`attribution` de chaque
- * source utilisée à chaque `styledata` : c'est le seul endroit où un crédit
- * peut suivre la zone sans réécrire celui du fond de carte. Mais une source
+ * source utilisée à chaque `styledata` : porté par la source `pdipr`, un
+ * crédit suit la zone sans réécrire celui du fond de carte (dont l'API
+ * publique ne permet pas non plus de changer l'attribution). Mais une source
  * GeoJSON ne laisse pas changer son attribution après sa création — d'où la
  * couche retirée, la source recréée, et la couche reposée **au même rang**,
  * sous les tracés (voir `pdipr-reseau` dans `style.ts`).

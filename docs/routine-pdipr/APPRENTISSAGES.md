@@ -123,3 +123,10 @@ ne s'efface pas (CLAUDE.md §4bis).
   on repose la couche **au même rang** (`creditDuReseauDeFond.ts`) ; le
   rang se garde par un e2e (`reseau-de-fond.spec.ts`), qui rougit sans le
   `beforeId`.
+- 2026-11-11 — Puy-de-Dôme — le crédit raccourci (#668) tenait déplié au
+  téléphone, juste au-dessus de la feuille, et le cadrage de zone posait le
+  sud du Pilat dessous (`cadrage-de-zone.spec.ts`, rouge en CI et en local)
+  → une surface de taille variable posée sur la carte se réserve **par la
+  même règle** que la feuille (`margeBasseRecouverte`, `lib/mapPadding.ts`) ;
+  et changer la taille d'un élément de la carte demande la suite e2e
+  complète, pas seulement le fichier du test qu'on visait.

@@ -104,6 +104,53 @@ test('le crédit nomme le Département de la zone peinte, et lui seul', async ({
   attend la décision de Cédric. Le jeu embarqué porte 531 lignes : « des
   centaines » suffit à dire qu'il est arrivé entier.
 */
+/*
+  Le repli IGN → OSM avec un PDIPR chargé (relecture adverse du 11/11) :
+  `setStyle` recrée la source `pdipr` **sans** crédit, et c'est l'effet
+  rejoué sur `styleEpoch` qui doit la reposer avec le sien — réseau, crédit
+  et rang. Avant #668, le repli ne touchait que les données.
+*/
+test('le repli sur le fond OSM garde le réseau, son crédit et son rang', async ({ page }) => {
+  await mockExternalNetwork(page)
+  await mockTilesOk(page)
+  await page.goto('/')
+  test.skip(!(await hasMap(page)), 'WebGL indisponible dans ce navigateur headless')
+  await fermerLeGuide(page)
+
+  await page.getByTestId('zone-isere').click()
+  await expect.poll(() => tronconsPeints(page), { timeout: 15_000 }).toBeGreaterThan(10_000)
+  await expect.poll(() => creditDeLaCarte(page), { timeout: 5_000 }).toContain(
+    "Département de l'Isère",
+  )
+
+  await page.unroute('https://data.geopf.fr/**')
+  await page.route('https://data.geopf.fr/**', (route) => route.abort())
+  const fondOsm = () =>
+    page.evaluate(() => {
+      const map = (
+        window as unknown as {
+          __sentiersMap?: {
+            getStyle(): { sources: Record<string, { tiles?: string[] }> }
+            zoomTo(z: number): void
+            getZoom(): number
+          }
+        }
+      ).__sentiersMap
+      if (!map) return false
+      if (map.getStyle().sources['basemap'].tiles?.[0]?.includes('openstreetmap')) return true
+      map.zoomTo(map.getZoom() + 0.7)
+      return false
+    })
+  await expect.poll(fondOsm, { timeout: 20_000 }).toBe(true)
+
+  await expect.poll(() => creditDeLaCarte(page), { timeout: 10_000 }).toContain(
+    "Département de l'Isère",
+  )
+  expect(await creditDeLaCarte(page)).toContain('OpenStreetMap')
+  expect(await tronconsPeints(page)).toBeGreaterThan(10_000)
+  expect(await rangDuReseau(page)).toBe(1)
+})
+
 test('l’Ain montre son réseau balisé, et la légende le nomme', async ({ page }) => {
   await mockExternalNetwork(page)
   await mockTilesOk(page)
