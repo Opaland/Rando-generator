@@ -58,3 +58,18 @@ export function margeBassePanneau(
   // Seulement la part du panneau qui mord sur la carte : il peut la dépasser.
   return Math.max(0, cadre.bottom - Math.max(panneau.top, cadre.top))
 }
+
+/**
+ * La marge basse que réservent plusieurs surfaces posées sur la carte : la
+ * plus haute l'emporte. Chacune suit la règle de `margeBassePanneau` — un
+ * crédit replié en « ⓘ », étroit, ne réserve donc rien.
+ *
+ * Née le 11/11 (#668) : le crédit déplié tient désormais au téléphone,
+ * au-dessus de la feuille, et le sud d'une zone cadrée tombait dessous.
+ */
+export function margeBasseRecouverte(
+  cadre: Rect,
+  surfaces: readonly (Rect | null | undefined)[],
+): number {
+  return Math.max(0, ...surfaces.map((s) => margeBassePanneau(cadre, s)))
+}

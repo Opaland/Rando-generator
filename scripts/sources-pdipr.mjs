@@ -37,6 +37,23 @@ export const SOURCES_PDIPR = {
     source: "Département du Rhône — PDIPR, Licence Ouverte 2.0",
     nom: "Rhône",
   },
+  /*
+    Le Puy-de-Dôme, le 10/11 : le CRAIG (Centre régional Auvergne-Rhône-Alpes
+    de l'information géographique) publie le jeu du Département en WFS
+    public, reprojeté en WGS84 par le serveur — pas de lecteur à écrire pour
+    le GeoPackage Lambert-93 du même jeu. « Licence Ouverte / Open Licence »
+    et mention obligatoire « CD63-2026 », lues le 10/11 sur la fiche de
+    métadonnées du CRAIG (FR-226300010-PDIPR-2016) ; elle renvoie au texte
+    Etalab de 2011, la version 1.0, et data.gouv.fr la moissonne en `fr-lo`.
+  */
+  "puy-de-dome": {
+    url:
+      "https://ids.craig.fr/wxs/public/wfs?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature" +
+      "&TYPENAMES=public:CD63_2026_ITINERAIRES_PDIPR_DEPT63" +
+      "&OUTPUTFORMAT=application/json&SRSNAME=EPSG:4326",
+    source: "Département du Puy-de-Dôme (CD63-2026) — PDIPR, Licence Ouverte 1.0",
+    nom: "Puy-de-Dôme",
+  },
 };
 
 /**

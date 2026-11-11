@@ -278,6 +278,49 @@ describe('jeuPdiprPour', () => {
     expect(jeuPdiprPour('rhone')?.fichier).toBe('data/pdipr-rhone.json')
   })
 
+  /*
+    Le Puy-de-Dôme, le 10/11 : 442 itinéraires (boucles à la journée et
+    itinérants), WFS du CRAIG, Licence Ouverte. Le jeu dépasse au sud
+    l'emprise de la zone (45,155° N contre 45,287° N).
+  */
+  it('désigne le jeu du Puy-de-Dôme pour la zone Puy-de-Dôme', () => {
+    expect(jeuPdiprPour('puy-de-dome')?.fichier).toBe('data/pdipr-puy-de-dome.json')
+  })
+
+  it('garde dans l’emprise du Puy-de-Dôme les quatre points extrêmes du jeu', () => {
+    const jeu = jeuPdiprPour('puy-de-dome')
+    expect(jeu).not.toBeNull()
+    // Relevés le 10/11 sur le fichier embarqué : le plus au sud, au nord, à
+    // l'ouest, à l'est — chacun sur sa propre ligne, pour qu'un seul écarté
+    // se voie au compte.
+    const extremes = [
+      [2.92945, 45.15496],
+      [3.15259, 46.23742],
+      [2.41428, 45.81655],
+      [3.99677, 45.45647],
+    ]
+    const reseau = parseReseauPdipr(
+      { features: extremes.map((p) => ligne([p, [3.2, 45.8]])) },
+      jeu!.emprise,
+    )
+    expect(reseau.features).toHaveLength(4)
+  })
+
+  /*
+    #668, le 11/11 : le crédit d'un PDIPR est porté par son jeu, et non plus
+    par une chaîne d'attribution fixe — une seule liste de zones (§4ter).
+    Chaque jeu nomme son Département, et le Puy-de-Dôme sa mention
+    obligatoire.
+  */
+  it.each([
+    ['isere', "Département de l'Isère"],
+    ['ain', "Département de l'Ain"],
+    ['rhone', 'Département du Rhône'],
+    ['puy-de-dome', 'Département du Puy-de-Dôme (CD63-2026)'],
+  ])('crédite le Département avec le jeu de « %s »', (zone, qui) => {
+    expect(jeuPdiprPour(zone)?.credit.qui).toBe(qui)
+  })
+
   it('ne désigne rien pour une zone qu’aucun PDIPR ne couvre', () => {
     expect(jeuPdiprPour('loire')).toBeNull()
     expect(jeuPdiprPour(null)).toBeNull()

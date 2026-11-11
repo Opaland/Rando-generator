@@ -1,4 +1,9 @@
-import { DEPARTEMENT_AIN, DEPARTEMENT_ISERE, DEPARTEMENT_RHONE } from '../lib/attribution.ts'
+import {
+  DEPARTEMENT_AIN,
+  DEPARTEMENT_ISERE,
+  DEPARTEMENT_PUY_DE_DOME,
+  DEPARTEMENT_RHONE,
+} from '../lib/attribution.ts'
 
 /**
  * Les PDIPR départementaux dans « Données et licences » (#87) : un par
@@ -53,6 +58,12 @@ export function ReseauxDepartementaux() {
         <Producteur credit={DEPARTEMENT_RHONE} />) est dessiné en fond comme
         celui de l’Isère&nbsp;: des tronçons sans nom, qui ne comptent dans
         aucun pourcentage.
+      </li>
+      <li>
+        Dans le Puy-de-Dôme, les <strong>itinéraires du Département</strong> ({PLAN},{' '}
+        <Producteur credit={DEPARTEMENT_PUY_DE_DOME} />) sont dessinés en fond
+        comme les boucles de l’Ain, sans leur nom&nbsp;: la plupart existent
+        déjà dans OpenStreetMap, et ils ne comptent dans aucun pourcentage.
       </li>
     </>
   )

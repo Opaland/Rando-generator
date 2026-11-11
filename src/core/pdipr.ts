@@ -1,6 +1,13 @@
 import type { Feature, FeatureCollection, LineString } from 'geojson'
 import { isWgs84Coordinate } from './geo.ts'
 import type { LonLat } from './types.ts'
+import {
+  DEPARTEMENT_AIN,
+  DEPARTEMENT_ISERE,
+  DEPARTEMENT_PUY_DE_DOME,
+  DEPARTEMENT_RHONE,
+  type Credit,
+} from '../lib/attribution.ts'
 
 /**
  * Les PDIPR ouverts des départements, comme **réseau de fond** (issue #87).
@@ -69,15 +76,35 @@ const EMPRISE_AIN: Emprise = { ouest: 4.66, est: 6.23, sud: 45.58, nord: 46.56 }
 const EMPRISE_RHONE: Emprise = { ouest: 4.18, est: 5.22, sud: 45.49, nord: 46.36 }
 
 /**
+ * L'emprise du Puy-de-Dôme, à environ 5 km près.
+ *
+ * Mesurée le 10/11 sur l'export WFS du CRAIG (EPSG:4326, reprojeté par le
+ * serveur ; recoupé à 5 mm près par `core/lambert93.ts` sur le GeoPackage
+ * Lambert-93 du même jeu) : les 442 itinéraires (745 parties) s'étendent de
+ * 2,414 à 3,997° E et de 45,155 à 46,237° N, tous valides. Le sud passe
+ * l'emprise de la zone (45,287° N, `core/emprisesDeZone.donnees.ts`) : des
+ * itinéraires du Département sortent du département. Garde, pas filtre,
+ * comme pour l'Ain et le Rhône.
+ */
+const EMPRISE_PUY_DE_DOME: Emprise = { ouest: 2.35, est: 4.06, sud: 45.11, nord: 46.28 }
+
+/**
  * Ce que le producteur dit d'un objet, quand il le dit : les propriétés
  * brutes de l'export, que seul le script de préparation voit.
  */
 type Proprietes = Readonly<Record<string, unknown>> | null | undefined
 
-/** Un jeu PDIPR embarqué : son fichier, relatif à la base du site, et son emprise. */
+/** Un jeu PDIPR embarqué : son fichier, relatif à la base du site, son emprise, son crédit. */
 interface JeuPdipr {
   readonly fichier: string
   readonly emprise: Emprise
+  /**
+   * Ce que la carte doit au Département quand ce jeu est peint, et alors
+   * seulement (#668). Porté par le jeu plutôt que par une seconde liste
+   * indexée par zone : deux listes des mêmes zones finissent par diverger
+   * (CLAUDE.md §4ter).
+   */
+  readonly credit: Credit
   /**
    * Ce que le producteur demande d'écarter, lu sur les propriétés de
    * l'export. Appliqué **à la préparation seulement** : le fichier embarqué
@@ -90,7 +117,8 @@ interface JeuPdipr {
 /**
  * L'Isère depuis le 18/10 ; l'Ain depuis le 21/10, quand data.gouv.fr a de
  * nouveau répondu (il coupait les connexions le 18 — on n'embarque pas un
- * jeu qu'on n'a pas lu) ; le Rhône depuis le 09/11.
+ * jeu qu'on n'a pas lu) ; le Rhône depuis le 09/11 ; le Puy-de-Dôme depuis le
+ * 10/11.
  *
  * L'Ain publie des **boucles nommées**, pas des tronçons, et elles
  * pourraient devenir des itinéraires comme celles de la Métropole. Elles
@@ -103,10 +131,11 @@ interface JeuPdipr {
  * reprises : 480 sur 483, les trois autres n'en disent rien.
  */
 const JEUX_PAR_ZONE: Readonly<Record<string, JeuPdipr>> = {
-  isere: { fichier: 'data/pdipr-isere.json', emprise: EMPRISE_ISERE },
+  isere: { fichier: 'data/pdipr-isere.json', emprise: EMPRISE_ISERE, credit: DEPARTEMENT_ISERE },
   ain: {
     fichier: 'data/pdipr-ain.json',
     emprise: EMPRISE_AIN,
+    credit: DEPARTEMENT_AIN,
     retenir: (proprietes) => proprietes?.['g_diffusion'] === 'OUI',
   },
   /*
@@ -115,7 +144,19 @@ const JEUX_PAR_ZONE: Readonly<Record<string, JeuPdipr>> = {
     « Réserve » : les deux sont montrés (décision de Cédric du 09/11), sans
     règle `retenir`.
   */
-  rhone: { fichier: 'data/pdipr-rhone.json', emprise: EMPRISE_RHONE },
+  rhone: { fichier: 'data/pdipr-rhone.json', emprise: EMPRISE_RHONE, credit: DEPARTEMENT_RHONE },
+  /*
+    Le Puy-de-Dôme depuis le 10/11, par le WFS du CRAIG
+    (`scripts/sources-pdipr.mjs`). Des itinéraires entiers et nommés, comme
+    l'Ain (le nom ne survit pas à la préparation), tous `INSCRIT_PD = Oui` : aucun champ de diffusion, donc pas de
+    règle `retenir`. Les sept boucles VTT et la boucle équestre sont
+    montrées avec le reste — c'est le PDIPR tel que le Département le publie.
+  */
+  'puy-de-dome': {
+    fichier: 'data/pdipr-puy-de-dome.json',
+    emprise: EMPRISE_PUY_DE_DOME,
+    credit: DEPARTEMENT_PUY_DE_DOME,
+  },
 }
 
 export function jeuPdiprPour(zoneKey: string | null): JeuPdipr | null {

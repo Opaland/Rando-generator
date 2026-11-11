@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { FeatureCollection, LineString } from 'geojson'
 import { jeuPdiprPour, parseReseauPdipr, reseauVide } from '../core/pdipr.ts'
+import { attributionHtml } from '../lib/attribution.ts'
 import { memoriserJson } from './sourcesLocales.ts'
 
 /**
@@ -13,7 +14,8 @@ import { memoriserJson } from './sourcesLocales.ts'
  * savoir que la zone **pourrait** avoir un PDIPR, elle le nommerait hors
  * ligne, quand le fichier n'a pas pu venir — une légende qui ment, le défaut
  * exact du constat U6. Les deux lisent donc le même état : le réseau
- * effectivement reçu.
+ * effectivement reçu. Le crédit du Département le suit pour la même raison
+ * (#668) : la carte ne crédite que ce qu'elle peint.
  *
  * Hors d'`appStore.ts` pour la même raison que `reseauxVisibles.ts` : rien
  * ici ne se persiste ni ne se sauvegarde, et l'issue #155 refuse que le
@@ -21,10 +23,13 @@ import { memoriserJson } from './sourcesLocales.ts'
  */
 interface EtatReseauDeFond {
   reseau: FeatureCollection<LineString>
+  /** L'attribution HTML du Département dont le réseau est peint, ou rien. */
+  attribution: string | null
 }
 
 export const useReseauDeFond = create<EtatReseauDeFond>(() => ({
   reseau: reseauVide(),
+  attribution: null,
 }))
 
 /** Un accès mémorisé par fichier, créé à la première demande. */
@@ -56,9 +61,14 @@ let zoneDemandee: string | null = null
 export async function chargerReseauDeFond(zoneKey: string | null): Promise<void> {
   // Changer de zone efface tout de suite l'ancien réseau : l'Isère ne doit
   // pas rester peinte sous la Loire le temps d'un téléchargement.
-  if (zoneDemandee !== zoneKey) useReseauDeFond.setState({ reseau: reseauVide() })
+  if (zoneDemandee !== zoneKey) {
+    useReseauDeFond.setState({ reseau: reseauVide(), attribution: null })
+  }
   zoneDemandee = zoneKey
   const reseau = await telecharger(zoneKey)
   if (zoneDemandee !== zoneKey) return
-  useReseauDeFond.setState({ reseau })
+  const jeu = jeuPdiprPour(zoneKey)
+  const attribution =
+    jeu !== null && reseau.features.length > 0 ? attributionHtml(jeu.credit) : null
+  useReseauDeFond.setState({ reseau, attribution })
 }

@@ -3,7 +3,7 @@ import { LngLatBounds, type Map as MaplibreMap } from 'maplibre-gl'
 import { itineraryCoords } from '../../core/mapdata.ts'
 import { bearingDegrees } from '../../core/geo.ts'
 import { empriseACadrer } from '../../core/emprisesDeZone.ts'
-import { margeBassePanneau } from '../../lib/mapPadding.ts'
+import { margeBassePanneau, margeBasseRecouverte } from '../../lib/mapPadding.ts'
 import { useAppStore } from '../../store/appStore.ts'
 import type { LonLat } from '../../core/types.ts'
 
@@ -44,13 +44,19 @@ export function useMapCamera(
     // Au téléphone, la zone se choisit dans la feuille, qui reste ouverte sur
     // le bas de la carte : sans marge, le sud de la zone tombait dessous
     // (démonstration du sprint 1, au nom de Paul). Même règle que la fiche.
+    // Et le crédit, quand il est déplié au-dessus de la feuille : rien ne
+    // se pose dessus, le sud de la zone non plus (#668).
     const panneau = document
       .querySelector('[data-testid="sidebar"]')
       ?.getBoundingClientRect()
-    const recouvre = margeBassePanneau(
-      map.getContainer().getBoundingClientRect(),
+    const credit = map
+      .getContainer()
+      .querySelector('.maplibregl-ctrl-attrib')
+      ?.getBoundingClientRect()
+    const recouvre = margeBasseRecouverte(map.getContainer().getBoundingClientRect(), [
       panneau,
-    )
+      credit,
+    ])
     const options = {
       padding: { top: 48, left: 48, right: 48, bottom: 48 + recouvre },
       duration: 400,

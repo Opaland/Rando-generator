@@ -14,6 +14,7 @@ import {
   chargerReseauDeFond,
   useReseauDeFond,
 } from '../../store/reseauDeFond.ts'
+import { poserLeReseauDeFond } from './creditDuReseauDeFond.ts'
 
 /**
  * Pousse les données de l'application dans les sources GeoJSON de la carte.
@@ -112,6 +113,7 @@ export function useMapSources(
   const detailItineraryId = useAppStore((s) => s.detailItineraryId)
   const zoneKey = useAppStore((s) => s.zoneKey)
   const reseauDeFond = useReseauDeFond((s) => s.reseau)
+  const creditDuFond = useReseauDeFond((s) => s.attribution)
   /*
     Les réseaux repliés ne sont pas dessinés (#322).
 
@@ -315,12 +317,12 @@ export function useMapSources(
     const map = mapRef.current
     if (!map || !ready) return
     const apply = () => {
-      void map.getSource<GeoJSONSource>('pdipr')?.setData(reseauDeFond)
+      poserLeReseauDeFond(map, reseauDeFond, creditDuFond)
       // Témoin pour les e2e, comme `__sentiersTrailStats` : un fond ne se
       // lit pas au pixel sans WebGL.
       ;(window as { __sentiersReseauDeFond?: number }).__sentiersReseauDeFond =
         reseauDeFond.features.length
     }
     return appliquerQuandPret(map, SOURCES_FOND, apply)
-  }, [mapRef, reseauDeFond, ready, styleEpoch])
+  }, [mapRef, reseauDeFond, creditDuFond, ready, styleEpoch])
 }
