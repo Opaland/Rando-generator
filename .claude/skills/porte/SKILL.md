@@ -5,6 +5,13 @@ description: Lance la porte complète avant commit sur Sentiers — lint, listes
 
 # La porte complète
 
+**En une commande** (#667) : `npm run porte` — les étapes de
+`.github/workflows/ci.yml`, dans leur ordre, puis `monkey`, chacune dans
+son propre processus, arrêt à la première rouge, `PW_CHROMIUM_PATH` posé
+dans le conteneur cloud. `npm run porte -- --rapide` s'arrête avant le
+build ; `-- --liste` montre les étapes sans rien lancer. Le bloc ci-dessous
+dit ce qu'elle lance, et pourquoi dans cet ordre.
+
 Le hook `PreToolUse` ne couvre que ce qui tient en une minute (lint, listes
 jumelles, typecheck, tests unitaires). Cette procédure lance le reste.
 
