@@ -34,6 +34,17 @@ describe('verdictDe', () => {
     })
   })
 
+  /*
+    Relecture adverse de #669 : Overpass surchargé répond 200, sans données,
+    avec un `remark` (`estUnEchecDeserveur`, core/overpass.ts). C'était rouge,
+    et ouvrait une issue « format changé » pour une simple surcharge.
+  */
+  it('ignore une réponse 200 que la source dit elle-même avortée', () => {
+    expect(
+      verdictDe({ statut: 200, passager: 'remark sans données', problemes: ['aucun itinéraire'] }),
+    ).toEqual({ etat: 'ignoree', motif: 'remark sans données' })
+  })
+
   it('rend vert une réponse 200 sans problème', () => {
     expect(verdictDe({ statut: 200, problemes: [] })).toEqual({ etat: 'verte', motif: '' })
   })
@@ -82,6 +93,13 @@ describe('rapport', () => {
     Le rapport devient le corps d'une issue : un champ nommé « @quelqu'un »
     par un producteur y notifierait un compte GitHub au hasard.
   */
+  it('échappe l’antislash avant la barre : « a\\|b » ne doit pas rouvrir une colonne', () => {
+    const texte = rapport([{ nom: 'S', etat: 'rouge', motif: '', mesure: 'a\\|b' }], 'j')
+    const ligne = texte.split('\n').find((l) => l.startsWith('| S |')) ?? ''
+    // Quatre cellules : cinq barres non échappées, pas six.
+    expect(ligne.replace(/\\./g, '').split('|').length - 1).toBe(5)
+  })
+
   it('ne laisse aucune mention GitHub passer d’une source au rapport', () => {
     const texte = rapport([{ nom: 'S', etat: 'rouge', motif: '', mesure: 'champs : @octocat' }], 'j')
     expect(texte).not.toMatch(/@octocat/)

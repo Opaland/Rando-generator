@@ -11,6 +11,11 @@
 #   - elle se referme au premier passage où **toutes** ont répondu : une
 #     source ignorée n'a rien prouvé.
 #
+# Conséquence assumée de la première règle : une source **durablement** en
+# 5xx ou hors délai reste ignorée à chaque passage, sans issue — rien n'est
+# mémorisé d'un passage à l'autre. Le rapport la nomme, et l'état est
+# « incomplet » : c'est à le lire qu'on la voit.
+#
 # Lancé à la main. La cadence, et le fait de le planifier ou non, sont à
 # Cédric (#669) : un `schedule:` se pose ici le jour où il le décide.
 #

@@ -27,7 +27,12 @@
   l'application ou un script emploie : il n'y a rien à interroger.
 */
 import { writeFileSync, appendFileSync } from "node:fs";
-import { OVERPASS_MIRRORS, buildAroundQuery, parseOverpassResponse } from "../src/core/overpass.ts";
+import {
+  OVERPASS_MIRRORS,
+  buildAroundQuery,
+  estUnEchecDeserveur,
+  parseOverpassResponse,
+} from "../src/core/overpass.ts";
 import { buildElevationLineUrl, parseElevationResponse } from "../src/core/elevation.ts";
 import { buildGeocodeUrl, parseGeocodeResponse } from "../src/core/geocode.ts";
 import { jeuPdiprPour, parseReseauPdipr } from "../src/core/pdipr.ts";
@@ -98,11 +103,18 @@ const SOURCES = [
       }),
     verifier: verifierJson((donnees) => {
       if (!Array.isArray(donnees?.elements)) return { problemes: ["pas de tableau `elements`"], mesure: "" };
+      // Surchargé, Overpass répond 200 sans données avec un `remark` : la règle
+      // de l'application, qui y voit un miroir en échec et passe au suivant.
+      if (estUnEchecDeserveur(donnees)) {
+        return { problemes: [], passager: "réponse avortée (remark, aucune donnée)", mesure: "" };
+      }
       const itineraires = parseOverpassResponse(donnees, new Date().toISOString());
       const traces = itineraires.filter((i) => i.ways.some((w) => w.coords.length >= 2));
       return {
         problemes: traces.length === 0 ? ["aucun itinéraire tracé autour du Pilat"] : [],
-        mesure: `${String(donnees.elements.length)} éléments, ${String(traces.length)} itinéraires tracés`,
+        mesure:
+          `${String(donnees.elements.length)} éléments, ${String(traces.length)} itinéraires tracés` +
+          (donnees.remark === undefined ? "" : " ; résultat partiel (remark)"),
       };
     }),
   })),
@@ -157,13 +169,18 @@ const SOURCES = [
         // Le filtre est celui de la préparation : règle de diffusion et
         // emprise. Zéro ligne retenue, c'est le scénario de #669 — un champ
         // renommé, une reprojection changée — qui passait en silence.
+        //
+        // Seul zéro est rouge. Une part retenue qui s'effondre sans tomber à
+        // zéro (un code de diffusion qui dérive) reste verte : la fixer
+        // demanderait un seuil, que rien ne permet de poser (CLAUDE.md §2).
+        // Les deux comptes sont dans le rapport, pour qu'une personne la voie.
         const retenues = parseReseauPdipr(brut, jeu.emprise, jeu.retenir).features.length;
         const champs = champsDe(entites[0]);
         return {
           problemes: retenues === 0 ? [`aucune ligne retenue sur ${String(entites.length)} entités`] : [],
           mesure:
             `${String(entites.length)} entités, ${String(retenues)} lignes retenues ; ` +
-            `champs : ${champs.length > 0 ? champs.join(", ") : "aucun"}`,
+            `champs de la 1re entité : ${champs.length > 0 ? champs.join(", ") : "aucun"}`,
         };
       }),
     })),
@@ -181,8 +198,8 @@ async function controler(source) {
     return { nom: source.nom, ...verdictDe({ statut: reponse.status }), mesure: "" };
   }
   try {
-    const { problemes, mesure } = await source.verifier(reponse);
-    return { nom: source.nom, ...verdictDe({ statut: reponse.status, problemes }), mesure };
+    const { problemes, passager, mesure } = await source.verifier(reponse);
+    return { nom: source.nom, ...verdictDe({ statut: reponse.status, problemes, passager }), mesure };
   } catch (erreur) {
     // Un corps coupé en cours de lecture : la source n'a pas fini de parler.
     return { nom: source.nom, ...verdictDe({ erreur: erreur.cause?.code ?? erreur.name }), mesure: "" };

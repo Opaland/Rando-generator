@@ -653,8 +653,10 @@ fait faute d'un corpus réel pour poser un seuil sans l'inventer.
     au premier passage où toutes ont répondu (#669).
 
   Les deux premières sont sautées par défaut et le disent dans chaque
-  rapport. Quand un miroir ne rend rien, les trois le sautent **en nommant
-  l'hôte et la raison** : on ne conclut pas d'une absence de mesure.
+  rapport ; quand un miroir ne rend rien, elles le sautent **en nommant
+  l'hôte et la raison**. La troisième classe « ignorée », avec son motif,
+  une source injoignable ou surchargée : on ne conclut pas d'une absence de
+  mesure.
 - **Tests unitaires du store** (`tests/unit/appStore.test.ts`) : cache de zone,
   forçage, repli sur un cache périmé, séquencement de deux chargements
   concurrents, dédoublonnage à l'import, bornage de la tolérance. Une fabrique

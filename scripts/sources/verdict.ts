@@ -18,6 +18,11 @@ export interface Reponse {
   statut?: number
   /** Ce que la vérification de forme a trouvé : des noms et des comptes. */
   problemes?: string[]
+  /**
+   * Une réponse 200 que la source dit elle-même avortée — Overpass surchargé
+   * rend `elements: []` et un `remark`, pas un 503 (`estUnEchecDeserveur`).
+   */
+  passager?: string
 }
 
 export interface Resultat {
@@ -27,7 +32,7 @@ export interface Resultat {
   mesure: string
 }
 
-export function verdictDe({ erreur, statut, problemes = [] }: Reponse): { etat: Etat; motif: string } {
+export function verdictDe({ erreur, statut, problemes = [], passager }: Reponse): { etat: Etat; motif: string } {
   if (erreur !== undefined) return { etat: "ignoree", motif: `injoignable (${erreur})` };
   if (statut === undefined || PASSAGERS.has(statut)) {
     return { etat: "ignoree", motif: `HTTP ${String(statut)}` };
@@ -37,6 +42,7 @@ export function verdictDe({ erreur, statut, problemes = [] }: Reponse): { etat: 
     403 le 22/10 (#20), qu'on n'a apprise que par hasard.
   */
   if (statut < 200 || statut >= 300) return { etat: "rouge", motif: `HTTP ${String(statut)}` };
+  if (passager !== undefined) return { etat: "ignoree", motif: passager };
   if (problemes.length > 0) return { etat: "rouge", motif: problemes.join(" ; ") };
   return { etat: "verte", motif: "" };
 }
@@ -61,8 +67,12 @@ const LIBELLES: Record<Etat, string> = { verte: "verte", ignoree: "ignorée", ro
  */
 const cellule = (texte: string): string =>
   texte
-    .replaceAll('@', '@\u200b')
-    .replaceAll("|", "\\|").replaceAll("\n", " ");
+    // L'antislash d'abord : sinon « a\|b » devient « a\\|b », un antislash
+    // échappé suivi d'une vraie barre, et le tableau gagne une colonne.
+    .replaceAll("\\", "\\\\")
+    .replaceAll("|", "\\|")
+    .replaceAll("@", "@\u200b")
+    .replaceAll(/[\r\n]/g, " ");
 
 /**
  * Le rapport : des noms de sources, de champs, et des comptes — jamais un
