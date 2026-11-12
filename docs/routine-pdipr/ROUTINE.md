@@ -6,7 +6,8 @@ passer au suivant que sur une CI verte. Ce fichier est la procédure ; l'état
 est dans `ETAT.md`, les leçons dans `APPRENTISSAGES.md`, à côté.
 
 CLAUDE.md et AGENTS.md s'appliquent en entier : une issue = une PR depuis
-`main`, porte complète, §1 sur chaque test, TDD sur `src/core`, français.
+`main`, porte complète (`npm run porte`), §1 sur chaque test, TDD sur
+`src/core`, français.
 
 ## 0. Avant tout
 

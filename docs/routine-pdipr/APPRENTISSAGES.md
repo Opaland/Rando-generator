@@ -130,3 +130,7 @@ ne s'efface pas (CLAUDE.md §4bis).
   même règle** que la feuille (`margeBasseRecouverte`, `lib/mapPadding.ts`) ;
   et changer la taille d'un élément de la carte demande la suite e2e
   complète, pas seulement le fichier du test qu'on visait.
+- 2026-11-12 — tous — la porte se réécrivait dans un script de brouillon à
+  chaque session (et chaque soir pour la routine) → `npm run porte` existe
+  (#667), lit ses étapes dans `ci.yml` et s'arrête à la première rouge :
+  ne plus en réécrire. `--rapide` avant un commit de docs.
