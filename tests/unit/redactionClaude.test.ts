@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   CONSIGNE_BILAN,
+  CONSIGNE_QUESTIONS,
   CONSIGNE_SORTIE,
   MODELE_CLAUDE,
   coutEnDollars,
@@ -25,7 +26,7 @@ describe('la demande', () => {
   it('pose les mêmes règles des nombres au récit d’une sortie', () => {
     // Une règle, un seul endroit (§4) : si l'une des consignes perdait
     // l'interdit, l'autre ne le dirait pas à sa place.
-    for (const consigne of [CONSIGNE_BILAN, CONSIGNE_SORTIE]) {
+    for (const consigne of [CONSIGNE_BILAN, CONSIGNE_SORTIE, CONSIGNE_QUESTIONS]) {
       expect(consigne).toMatch(/aucun nombre/i)
       expect(consigne).toMatch(/lettres/i)
       // Une zone n'est sûre qu'à ~100 m près (lieuxDeTrace) : pas de « dans ».
@@ -34,6 +35,10 @@ describe('la demande', () => {
     expect(CONSIGNE_SORTIE).toMatch(/sortie/i)
     // Une liste vide ne veut pas dire « aucun » (relecture du 12/11).
     expect(CONSIGNE_SORTIE).toContain('autresItinerairesNonNommes')
+    // Les questions : seulement ce que les outils ont rendu, et l'aveu
+    // quand ils ne permettent pas de répondre.
+    expect(CONSIGNE_QUESTIONS).toMatch(/outils/)
+    expect(CONSIGNE_QUESTIONS).toMatch(/ne permettent pas/)
     expect(CONSIGNE_SORTIE).not.toBe(CONSIGNE_BILAN)
   })
 

@@ -66,6 +66,10 @@ export function CeQuiSort() {
         <li>
           <strong>Claude</strong> (api.anthropic.com), seulement si vous avez
           collé votre propre clé d’API dans Réglages et demandé un texte.
+          Pour une <strong>question</strong> sur vos sorties, il reçoit la
+          question telle que vous l’écrivez, puis seulement les totaux qu’il
+          demande (sorties, kilomètres, dénivelé par année, mois ou zone ;
+          avancement des itinéraires publics), montrés avec la réponse.
           Pour le récit d’une sortie, il reçoit sa{' '}
           <strong>longueur, son dénivelé, son mois</strong>, les zones
           prédéfinies traversées et les itinéraires balisés publics qu’elle a

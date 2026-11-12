@@ -171,3 +171,116 @@ test('le récit d’une sortie part sans nom de fichier ni jour, et s’affiche'
   expect(corps).not.toMatch(/45\.4\d|4\.5\d{2}/)
   expect(corps).not.toMatch(/2026-06|14 juin/)
 })
+
+/*
+  Troisième usage (#673) : une question. Claude ne voit pas les sorties ; il
+  appelle un outil, que l'application exécute ici, et seul le résultat — des
+  totaux — repart. L'API simulée joue les deux tours : un appel d'outil,
+  puis une réponse qui reprend les nombres reçus.
+*/
+test('une question : Claude appelle un outil, seuls des totaux repartent', async ({ page }) => {
+  const corps: string[] = []
+  await page.route('https://api.anthropic.com/**', async (route) => {
+    const cors = {
+      'access-control-allow-origin': '*',
+      'access-control-allow-headers': '*',
+      'access-control-allow-methods': 'POST, OPTIONS',
+    }
+    if (route.request().method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: cors })
+      return
+    }
+    const recu = route.request().postData() ?? ''
+    corps.push(recu)
+    const premier = corps.length === 1
+    const resultat = premier
+      ? null
+      : (JSON.parse(
+          (JSON.parse(recu) as { messages: { content: { content?: string }[] | string }[] }).messages
+            .flatMap((m) => (Array.isArray(m.content) ? m.content : []))
+            .find((b) => b.content !== undefined)?.content ?? '{}',
+        ) as { sorties: number; km: number })
+    await route.fulfill({
+      status: 200,
+      headers: { ...cors, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        id: 'msg_q',
+        type: 'message',
+        role: 'assistant',
+        model: 'claude-opus-5-5',
+        content: premier
+          ? [{ type: 'tool_use', id: 'toolu_1', name: 'totaux', input: { annee: 2026, mois: 6 } }]
+          : [
+              {
+                type: 'text',
+                text: `En juin 2026, ${String(resultat?.sorties)} sorties pour ${String(resultat?.km).replace('.', ',')} km.`,
+              },
+            ],
+        stop_reason: premier ? 'tool_use' : 'end_turn',
+        stop_sequence: null,
+        usage: { input_tokens: 900, output_tokens: 80 },
+      }),
+    })
+  })
+  await importerTroisSorties(page)
+  await poserLaCle(page, false)
+  await page.getByTestId('questions-champ').fill('Combien de sorties en juin 2026 ?')
+  await page.getByTestId('questions-demander').click()
+  await expect(page.getByTestId('questions-reponse')).toContainText('En juin 2026, 2 sorties pour')
+
+  expect(corps).toHaveLength(2)
+  // Le second tour porte le résultat calculé ici ; aucun des deux ne porte
+  // de trace, de nom de fichier ni de jour.
+  expect(corps[1]).toMatch(/tool_result/)
+  expect(corps[1]).toMatch(/\\"sorties\\":2/)
+  for (const c of corps) {
+    expect(c).not.toMatch(/chez-mamie|\.gpx/)
+    expect(c).not.toMatch(/45\.4\d|4\.5\d{2}/)
+    expect(c).not.toMatch(/2026-06-\d\d/)
+  }
+  await page.getByTestId('questions-envoye').click()
+  await expect(page.getByTestId('questions-faits')).toContainText('Combien de sorties en juin 2026')
+})
+
+/*
+  Relecture adverse du 12/11 : une réponse coupée par la limite de longueur
+  passait la vérification et s'affichait comme complète.
+*/
+test('une réponse coupée n’est pas affichée, et l’écran le dit', async ({ page }) => {
+  await page.route('https://api.anthropic.com/**', async (route) => {
+    const cors = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*' }
+    if (route.request().method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: cors })
+      return
+    }
+    await route.fulfill({
+      status: 200,
+      headers: { ...cors, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        ...reponse('En 2026, vous êtes sorti 3 fois pour'),
+        stop_reason: 'max_tokens',
+      }),
+    })
+  })
+  await importerTroisSorties(page)
+  await poserLaCle(page, false)
+  await page.getByTestId('bilan-demander').click()
+  await expect(page.getByTestId('bilan-erreur')).toContainText('coupée')
+  await expect(page.getByTestId('bilan-texte')).toHaveCount(0)
+})
+
+test('une réponse à une question devient caduque quand les sorties changent', async ({ page }) => {
+  await simulerClaude(page, () => 'Voici votre réponse, sans nombre.')
+  await importerTroisSorties(page)
+  await poserLaCle(page, false)
+  await page.getByTestId('questions-champ').fill('Où ai-je marché ?')
+  await page.getByTestId('questions-demander').click()
+  await expect(page.getByTestId('questions-reponse')).toBeVisible()
+  await page.getByTestId('gpx-input').setInputFiles({
+    name: 'une-de-plus.gpx',
+    mimeType: 'application/gpx+xml',
+    buffer: Buffer.from(buildGpx(400, '2026-07-01T08:00:00Z'), 'utf-8'),
+  })
+  await expect(page.getByTestId('questions-caduque')).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByTestId('questions-reponse')).toHaveCount(0)
+})

@@ -20,7 +20,8 @@ export function ReglageClaude() {
       <legend className={styles.titre}>Claude (facultatif)</legend>
       <p className={styles.aide}>
         Avec votre propre clé d’API Anthropic, Claude peut écrire le bilan
-        de votre saison ou raconter une sortie. Ne partent que des totaux et
+        de votre saison, raconter une sortie ou répondre à une question sur
+        vos sorties. Ne partent que votre question, des totaux et
         des noms publics — kilomètres, dénivelé, zones prédéfinies traversées,
         itinéraires balisés —, jamais une trace, une position
         ni le nom de vos fichiers, et seulement quand vous le demandez. Le
