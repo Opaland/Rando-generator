@@ -1,3 +1,5 @@
+import { DEFAULT_TOLERANCE_METERS } from './types.ts'
+
 /**
  * Trois choix nommés à la place d'un curseur en mètres (issue #174).
  *
@@ -74,4 +76,26 @@ export function metresDuNiveau(niveau: NiveauTolerance): number {
  */
 export function niveauDesMetres(metres: number): NiveauTolerance | null {
   return NIVEAUX_TOLERANCE.find((n) => n.metres === metres)?.id ?? null
+}
+
+/**
+ * Les bornes du réglage : le cran le plus serré et le plus souple. Aucun
+ * nombre neuf — 25 et 100 m, que `appStore.ts` écrivait en dur
+ * (`MIN_TOLERANCE`, `MAX_TOLERANCE`) à côté des crans qui les disaient déjà.
+ */
+export const TOLERANCE_MIN = Math.min(...NIVEAUX_TOLERANCE.map((n) => n.metres))
+export const TOLERANCE_MAX = Math.max(...NIVEAUX_TOLERANCE.map((n) => n.metres))
+
+/**
+ * La tolérance relue de la base au démarrage (#670).
+ *
+ * Elle était reprise telle quelle dès qu'elle était un nombre : `NaN`,
+ * `-5` ou `1e308` écrits par une version future ou une base abîmée
+ * devenaient la tolérance du calcul de complétion, hors de la plage que
+ * le réglage permet. Un nombre non fini rend le défaut ; un nombre hors
+ * plage est ramené à la borne. `setTolerance` passe aussi par elle, à l'écriture.
+ */
+export function lireTolerance(brut: unknown): number {
+  if (typeof brut !== 'number' || !Number.isFinite(brut)) return DEFAULT_TOLERANCE_METERS
+  return Math.min(TOLERANCE_MAX, Math.max(TOLERANCE_MIN, brut))
 }

@@ -158,7 +158,9 @@ function readNumber(
 ): number | null {
   const type = baseType & 0x1f
   const brut = readRaw(view, offset, type, littleEndian)
-  if (brut === null || Number.isNaN(brut)) return null
+  // Un champ déclaré flottant peut porter NaN ou l'infini : ce n'est pas
+  // une mesure (fuzz, #670).
+  if (brut === null || !Number.isFinite(brut)) return null
   return brut === INVALID_VALUES[type] ? null : brut
 }
 
@@ -323,8 +325,14 @@ export function parseFit(buffer: ArrayBuffer): ParsedFit {
           } else if (field.number === FIELD_ENHANCED_ALTITUDE) {
             altitude = altitudeFrom(valeur)
           } else if (field.number === FIELD_TIMESTAMP) {
-            horodatage = (valeur + FIT_EPOCH_SECONDS) * 1_000
-            date ??= new Date(horodatage).toISOString()
+            // Un horodatage déclaré `float64` peut valoir 1e308 : hors de ce
+            // qu'une date sait dire, `toISOString` levait un `RangeError`
+            // non nommé (fuzz, #670). Un instant illisible n'en est pas un.
+            const instant = (valeur + FIT_EPOCH_SECONDS) * 1_000
+            if (Number.isFinite(new Date(instant).getTime())) {
+              horodatage = instant
+              date ??= new Date(instant).toISOString()
+            }
           } else if (field.number === FIELD_GPS_ACCURACY) {
             precision = valeur === UINT8_ABSENT ? null : valeur
           }

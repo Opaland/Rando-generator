@@ -112,12 +112,12 @@ describe('une trace dans la cellule voisine, à l’est ou au nord', () => {
   range les deux extrémités d'un segment coupé (`addToCells(…{ a, b: a })`).
   Un test l'a tenté — des points tous les 1 100 m, chaque segment coupé — et
   il était rouge **avec** le bon code : un point seul ne crédite jamais rien.
-  Il couvre 2 × la tolérance, 200 m au plus (`MAX_TOLERANCE`, 100 m), quand
+  Il couvre 2 × la tolérance, 200 m au plus (`TOLERANCE_MAX`, 100 m), quand
   un passage demande trois échantillons espacés de `STEP_METERS` (100 m),
   soit 200 m pile — atteint seulement si les deux distances extrêmes
   tombent exactement sur la tolérance, ce que l'arrondi de la géodésie
   défait. Une extrémité qui n'est pas seule appartient aussi au segment
   voisin, non coupé. Le mutant est donc équivalent dans la plage de
-  réglages de l'application ; il ne le serait plus si `MAX_TOLERANCE`
+  réglages de l'application ; il ne le serait plus si `TOLERANCE_MAX`
   montait au-dessus de 100 m.
 */

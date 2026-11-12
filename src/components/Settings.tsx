@@ -5,7 +5,8 @@ import {
   niveauDesMetres,
   type NiveauTolerance,
 } from '../core/tolerance.ts'
-import { MIN_TOLERANCE, MAX_TOLERANCE, useAppStore } from '../store/appStore.ts'
+import { useAppStore } from '../store/appStore.ts'
+import { TOLERANCE_MAX, TOLERANCE_MIN } from '../core/tolerance.ts'
 import {
   creerReglageDiffere,
   type ReglageDiffere,
@@ -119,8 +120,8 @@ export function Settings() {
         <div className={styles.row}>
           <input
             type="range"
-            min={MIN_TOLERANCE}
-            max={MAX_TOLERANCE}
+            min={TOLERANCE_MIN}
+            max={TOLERANCE_MAX}
             step={5}
             value={shown}
             data-testid="tolerance-slider"
