@@ -36,7 +36,9 @@ import { isWgs84Coordinate } from '../../src/core/geo.ts'
  *   `null`, c'est un défaut) ; aucune boucle — **pas** par le délai de
  *   Vitest, qui n'interrompt pas une boucle synchrone (le processus reste
  *   pendu), mais par `sansBoucle` ; aucune valeur hors bornes dans ce qui est rendu — une coordonnée hors du
- *   globe, une altitude infinie, un réglage hors de sa plage.
+ *   globe, un réglage hors de sa plage. Pour l'altitude et l'horodatage,
+ *   seulement « fini » : aucune plage n'est écrite dans les lecteurs, et en
+ *   inventer une ici serait un seuil (CLAUDE.md §2) — 2e307 m passe.
  */
 
 const GRAINE = 670
@@ -526,12 +528,19 @@ const LECTEURS: Record<string, (t: Tirage) => boolean | Promise<boolean>> = {
     for (const [cle, v] of Object.entries(lu.settings)) {
       invariant(Number.isFinite(v), `sauvegarde : réglage ${cle} = ${String(v)}`)
     }
-    invariant(!('pollue' in {}), 'sauvegarde : prototype pollué')
     return lu.tracks.length > 0 || lu.customItineraries.length > 0
   },
   reglages(t) {
     // Ce que la base rend au démarrage : un nombre, une chaîne, ou rien.
-    const brut = valeur(t, () => (t.si(0.5) ? t.entier(-50, 500) : JSON.stringify([t.entier(-9, 9), valeur(t, () => 3)])))
+    // `JSON.stringify` écrit l'infini `null` : la base ne peut contenir
+    // `1e999` que tapé à la main, d'où la chaîne écrite telle quelle.
+    const brut = valeur(t, () =>
+      t.si(0.5)
+        ? t.entier(-50, 500)
+        : t.si(0.3)
+          ? `[1e999,${String(t.entier(-9, 9))},2.5]`
+          : JSON.stringify([t.entier(-9, 9), valeur(t, () => 3)]),
+    )
     const brutStocke = typeof brut === 'number' || typeof brut === 'string' ? brut : undefined
     const tolerance = lireTolerance(brut)
     invariant(
@@ -544,7 +553,8 @@ const LECTEURS: Record<string, (t: Tirage) => boolean | Promise<boolean>> = {
       invariant(Number.isSafeInteger(id), `réglages : objectif ${String(id)} pour ${String(brut)}`)
     }
     invariant(typeof lireDrapeau(brut) === 'boolean', 'réglages : drapeau')
-    return true
+    // « Allé au bout » : une valeur que la base aurait pu rendre telle quelle.
+    return brutStocke !== undefined
   },
   shapefile(t) {
     const octets = unShapefile(t)

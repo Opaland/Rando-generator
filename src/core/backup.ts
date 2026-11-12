@@ -294,7 +294,9 @@ export async function lireArchiveBackup(
   const reglages = champs(brut['settings'])
   const nombre = (cle: string): number | undefined => {
     const valeur = reglages?.[cle]
-    // `1e999` se relit en JSON comme l'infini (fuzz, #670).
+    // `1e999` se relit en JSON comme l'infini (fuzz, #670). Garde de
+    // lecture seulement : `importerSauvegarde` ne reprend pas ces réglages
+    // aujourd'hui (#559), et la plage n'est pas vérifiée ici.
     return typeof valeur === 'number' && Number.isFinite(valeur) ? valeur : undefined
   }
   const tracks = brut['tracks']
