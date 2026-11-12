@@ -8,6 +8,7 @@ import {
   ouvrirOnglet,
   ouvrirLaFicheDuGr7 as ouvrirLaFicheParLesOnglets,
 } from './helpers.ts'
+import bouclesFixture from '../fixtures/boucles/metropole.json' with { type: 'json' }
 
 /**
  * Issues #553, #555 et #556 — le crédit de la carte recouvert.
@@ -263,6 +264,19 @@ for (const vue of [
     gros: true,
     zone: 'puy-de-dome',
   },
+  /*
+    Depuis le 12/11 (#676), la Métropole n'est créditée qu'avec ses boucles
+    peintes, et le crédit le plus long n'est plus celui du Puy-de-Dôme :
+    mesuré déplié à 360 × 640 en gros texte, 124 px au Rhône avec ses
+    boucles et son PDIPR, 104 au Puy-de-Dôme.
+  */
+  {
+    nom: '360 × 640, gros texte, Rhône avec boucles et PDIPR',
+    largeur: 360,
+    hauteur: 640,
+    gros: true,
+    zone: 'rhone',
+  },
 ]) {
   test.describe(`crédit déplié, fiche ouverte — ${vue.nom}, au doigt`, () => {
     test.use({
@@ -276,6 +290,11 @@ for (const vue of [
     }) => {
       await mockExternalNetwork(page)
       await mockElevation(page)
+      if (vue.zone === 'rhone') {
+        await page.route('**/data/boucles-metropole-lyon.json', (route) =>
+          route.fulfill({ json: bouclesFixture }),
+        )
+      }
       await page.goto('/')
       await fermerLeGuide(page)
       if (vue.gros) await activerLeGrosTexte(page, true)
@@ -290,7 +309,19 @@ for (const vue of [
           })
           .toContain('CD63-2026')
       }
+      if (vue.zone === 'rhone') {
+        await expect
+          .poll(() => page.locator('.maplibregl-ctrl-attrib-inner').textContent(), {
+            timeout: 15_000,
+          })
+          .toContain('Département du Rhône')
+      }
       await afficherTousLesReseaux(page)
+      if (vue.zone === 'rhone') {
+        // Sans ses boucles peintes, ce cas mesurerait un crédit plus court
+        // que celui qu'il annonce.
+        await expect(page.locator('.maplibregl-ctrl-attrib-inner')).toContainText('Métropole de Lyon')
+      }
       await ouvrirLaFicheParLesOnglets(page, true)
       await page.locator('.maplibregl-ctrl-attrib-button').click()
 

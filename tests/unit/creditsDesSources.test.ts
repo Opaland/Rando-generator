@@ -4,13 +4,16 @@ import {
   attributionTexte,
   creditsDesSources,
   creditsImprimes,
+  creditDesTracesPeints,
   IGN,
   IGN_RELIEF,
   MARQUES_FFRANDONNEE,
   METROPOLE,
   OSM,
   OSM_FOND_ET_TRACES,
+  PROVINCE_NORD,
 } from '../../src/lib/attribution.ts'
+import { PROVINCE_NORD_ATTRIBUTION } from '../../src/core/grNord.ts'
 import {
   ATTRIBUTION,
   ATTRIBUTION_OSM,
@@ -47,11 +50,7 @@ describe('les crédits composés rendent ce qui était écrit à la main', () =>
       'Fond © <a href="https://www.ign.fr/">IGN</a> (Plan IGN, licence' +
         ' ouverte Etalab 2.0) · Itinéraires © les contributeurs <a' +
         ' href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' +
-        ' (ODbL) · Boucles locales © <a' +
-        ' href="https://data.grandlyon.com/">Métropole de Lyon</a> (Licence' +
-        ' Ouverte 2.0) · GR Nord © <a' +
-        ' href="https://data.gouv.nc/explore/dataset/gr-province-nord/">Province' +
-        ' Nord</a> (Licence Ouverte 2.0)',
+        ' (ODbL)',
     )
   })
 
@@ -59,11 +58,7 @@ describe('les crédits composés rendent ce qui était écrit à la main', () =>
     expect(ATTRIBUTION_OSM).toBe(
       'Fond et itinéraires © les contributeurs <a' +
         ' href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' +
-        ' (ODbL) · Boucles locales © <a' +
-        ' href="https://data.grandlyon.com/">Métropole de Lyon</a> (Licence' +
-        ' Ouverte 2.0) · GR Nord © <a' +
-        ' href="https://data.gouv.nc/explore/dataset/gr-province-nord/">Province' +
-        ' Nord</a> (Licence Ouverte 2.0)',
+        ' (ODbL)',
     )
   })
 
@@ -77,6 +72,15 @@ describe('les crédits composés rendent ce qui était écrit à la main', () =>
   it('ne nomme aucun département : leurs crédits suivent la zone chargée', () => {
     expect(ATTRIBUTION).not.toContain('Département')
     expect(ATTRIBUTION_OSM).not.toContain('Département')
+  })
+
+  // #676 : la Métropole et la Province Nord suivent leurs tracés peints
+  // (`creditDesTracesPeints`), comme les PDIPR suivent leur réseau.
+  it('ne nomme ni la Métropole ni la Province Nord en permanence', () => {
+    for (const fixe of [ATTRIBUTION, ATTRIBUTION_OSM]) {
+      expect(fixe).not.toContain('Métropole')
+      expect(fixe).not.toContain('Province Nord')
+    }
   })
 
   it('celle de la carte de partage, qui ne crédite qu’OpenStreetMap', () => {
@@ -306,5 +310,49 @@ describe('creditsImprimes', () => {
     const texte = attributionTexte(...creditsImprimes(null, [gr, boucle]))
     expect(texte).toContain('OpenStreetMap')
     expect(texte).toContain('Métropole de Lyon')
+  })
+})
+
+/*
+  #676 — le crédit de la Métropole et de la Province Nord, porté par la
+  source `trails` seulement quand leurs tracés y sont peints. Constaté le
+  11/11 : écrits en dur, ils étaient crédités au Puy-de-Dôme comme dans la
+  Loire, et dès l'accueil, sans rien de peint.
+*/
+describe('creditDesTracesPeints', () => {
+  const gr = makeItinerary(1, [{ osmWayId: 1, coords: straightLine(4.5, 45.4, 1000, 100) }])
+  const boucle = makeItinerary(3, [{ osmWayId: 3, coords: straightLine(4.7, 45.4, 1000, 100) }], {
+    network: 'LOCAL',
+  })
+  const grNord = makeItinerary(4, [{ osmWayId: 4, coords: straightLine(164.5, -20.6, 1000, 100) }], {
+    attribution: PROVINCE_NORD_ATTRIBUTION,
+  })
+
+  it('rien de peint, ou seulement de l’OSM : rien à ajouter au fond', () => {
+    // OpenStreetMap est déjà dans `ATTRIBUTION` : le redire doublerait la ligne.
+    expect(creditDesTracesPeints([])).toBeNull()
+    expect(creditDesTracesPeints([gr])).toBeNull()
+  })
+
+  it('une boucle de la Métropole peinte : la Métropole, au caractère près', () => {
+    expect(creditDesTracesPeints([gr, boucle])).toBe(attributionHtml(METROPOLE))
+  })
+
+  it('le GR Nord peint : la Province Nord', () => {
+    expect(creditDesTracesPeints([grNord])).toBe(attributionHtml(PROVINCE_NORD))
+  })
+
+  it('les deux, une fois chacun, dans l’ordre où ils arrivent', () => {
+    expect(creditDesTracesPeints([boucle, grNord, boucle])).toBe(attributionHtml(METROPOLE, PROVINCE_NORD))
+  })
+
+  it('n’écrit jamais dans le HTML du crédit une source déclarée par un fichier', () => {
+    // Le contrôle de MapLibre pose ce texte en `innerHTML`, et `enHtml`
+    // n'échappe rien : un auteur importé y serait du HTML actif.
+    const piege = makeItinerary(-5, [{ osmWayId: 5, coords: straightLine(4.8, 45.4, 1000, 100) }], {
+      network: 'PERSO',
+      attribution: { author: '<img src=x onerror=alert(1)>', license: 'https://x' },
+    })
+    expect(creditDesTracesPeints([piege])).toBeNull()
   })
 })
