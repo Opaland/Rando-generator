@@ -125,6 +125,32 @@ describe('lignesDuShapefile', () => {
     expect(() => lignesDuShapefile(bon.slice(0, bon.byteLength - 8))).toThrow(/corrompu/)
   })
 
+  /*
+    Relecture adverse de #670 : rien ne gardait le rejet d'une partie qui
+    finit avant de commencer — elle ne lisait pas hors du fichier, elle
+    rendait une ligne vide en silence. Le rejet est un choix, écrit dans
+    `shapefile.ts` ; ce test le tient.
+  */
+  it('dit corrompue une partie qui finit avant de commencer', () => {
+    const deuxParties = shapefile([
+      [
+        [
+          [1, 2],
+          [3, 4],
+        ],
+        [
+          [5, 6],
+          [7, 8],
+        ],
+      ],
+    ])
+    const v = new DataView(deuxParties)
+    // Contenu de l'enregistrement à 108 ; indices de parties à +44 et +48.
+    v.setInt32(152, 2, true) // la première partie commence à 2…
+    v.setInt32(156, 1, true) // … et finit à 1
+    expect(() => lignesDuShapefile(deuxParties)).toThrow(/corrompu/)
+  })
+
   it('refuse ce qui n’est pas un shapefile de polylignes', () => {
     expect(() => lignesDuShapefile(shapefile([], 1))).toThrow(/polylignes/)
     expect(() => lignesDuShapefile(new ArrayBuffer(100))).toThrow(/shapefile/)

@@ -37,6 +37,7 @@ import { creerVeilleGeo } from './veilleGeo.ts'
 import { GEO_OPTIONS, geolocationErrorMessage } from '../core/geolocation.ts'
 import type { Itinerary, Track, UserPosition } from '../core/types.ts'
 import { DEFAULT_TOLERANCE_METERS, STEP_METERS } from '../core/types.ts'
+import { lireTolerance } from '../core/tolerance.ts'
 import {
   openSentiersDb,
   DbError,
@@ -126,8 +127,6 @@ function fusionner<T extends { id: string } | { osmRelationId: number }>(
   return [...base, ...memoire.filter((element) => !connus.has(cle(element)))]
 }
 
-export const MIN_TOLERANCE = 25
-export const MAX_TOLERANCE = 100
 
 /** Étape affichée pendant zoneLoading, pour un retour visuel non figé. */
 type ZoneLoadStage = 'requesting' | 'retrying' | 'processing' | null
@@ -701,7 +700,7 @@ export const useAppStore = create<AppState>()((set, get) => {
         // seconde était annulé sans un mot (revue du sprint 6).
         toleranceMeters: repriseAuDemarrage(
           'toleranceMeters',
-          typeof tolerance === 'number' ? tolerance : DEFAULT_TOLERANCE_METERS,
+          lireTolerance(tolerance), // bornée comme à l'écriture (#670)
           etat.toleranceMeters,
         ),
         completionPct: repriseAuDemarrage(
@@ -846,7 +845,7 @@ export const useAppStore = create<AppState>()((set, get) => {
     },
 
     async setTolerance(value) {
-      const clamped = Math.min(MAX_TOLERANCE, Math.max(MIN_TOLERANCE, value))
+      const clamped = lireTolerance(value)
       await enregistrerReglage('toleranceMeters', clamped, () => {
         set({ toleranceMeters: clamped })
       })

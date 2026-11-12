@@ -12,10 +12,9 @@ import {
 } from 'vitest'
 import {
   useAppStore,
-  MIN_TOLERANCE,
-  MAX_TOLERANCE,
   oublierReglagesTouches,
 } from '../../src/store/appStore.ts'
+import { TOLERANCE_MAX, TOLERANCE_MIN } from '../../src/core/tolerance.ts'
 import pilat from '../fixtures/overpass/pilat.json' with { type: 'json' }
 import { buildZip, gzip } from '../fixtures/zip.ts'
 import { buildBackup, serialiserBackup } from '../../src/core/backup.ts'
@@ -138,7 +137,7 @@ describe('init', () => {
     await useAppStore.getState().setPanneauReplie(true)
     await useAppStore.getState().setGrosTexte(true)
     await useAppStore.getState().setModeAffichage('simple')
-    await useAppStore.getState().setTolerance(MAX_TOLERANCE)
+    await useAppStore.getState().setTolerance(TOLERANCE_MAX)
     await useAppStore.getState().setCompletionPct(100)
     await useAppStore.getState().basculerObjectif(42)
 
@@ -159,7 +158,7 @@ describe('init', () => {
       etat.setPanneauReplie(false),
       etat.setGrosTexte(false),
       etat.setModeAffichage('complet'),
-      etat.setTolerance(MIN_TOLERANCE),
+      etat.setTolerance(TOLERANCE_MIN),
       // 90 et non 80 : le seuil est ramené à l'un des trois choix proposés.
       etat.setCompletionPct(90),
       etat.basculerObjectif(7),
@@ -172,7 +171,7 @@ describe('init', () => {
     expect(apres.panneauReplie).toBe(false)
     expect(apres.grosTexte).toBe(false)
     expect(apres.modeAffichage).toBe('complet')
-    expect(apres.toleranceMeters).toBe(MIN_TOLERANCE)
+    expect(apres.toleranceMeters).toBe(TOLERANCE_MIN)
     expect(apres.completionPct).toBe(90)
     expect(apres.objectifs).toEqual([7])
   })
@@ -1179,9 +1178,9 @@ describe('setTolerance', () => {
   it('borne la valeur au lieu de la refuser', async () => {
     await useAppStore.getState().init()
     await useAppStore.getState().setTolerance(5)
-    expect(useAppStore.getState().toleranceMeters).toBe(MIN_TOLERANCE)
+    expect(useAppStore.getState().toleranceMeters).toBe(TOLERANCE_MIN)
     await useAppStore.getState().setTolerance(500)
-    expect(useAppStore.getState().toleranceMeters).toBe(MAX_TOLERANCE)
+    expect(useAppStore.getState().toleranceMeters).toBe(TOLERANCE_MAX)
   })
 
   it('recalcule la progression avec la nouvelle tolérance', async () => {
@@ -1197,9 +1196,9 @@ describe('setTolerance', () => {
         ]),
       ),
     ])
-    await useAppStore.getState().setTolerance(MAX_TOLERANCE)
+    await useAppStore.getState().setTolerance(TOLERANCE_MAX)
     const large = useAppStore.getState().matching?.global.pct ?? 0
-    await useAppStore.getState().setTolerance(MIN_TOLERANCE)
+    await useAppStore.getState().setTolerance(TOLERANCE_MIN)
     const serre = useAppStore.getState().matching?.global.pct ?? 0
     expect(large).toBeGreaterThan(0)
     expect(serre).toBeLessThan(large)
@@ -1256,25 +1255,25 @@ describe('annonces et bilans, cycle de vie', () => {
     await useAppStore.getState().init()
     await useAppStore.getState().loadZone('pilat')
     // Tolérance serrée : la trace ne crédite rien.
-    await useAppStore.getState().setTolerance(MIN_TOLERANCE)
+    await useAppStore.getState().setTolerance(TOLERANCE_MIN)
     await useAppStore
       .getState()
       .importGpxFiles([fichierGpx('gr7.gpx', ligne(40, 45.4 + 15 / 111_195))])
     expect(useAppStore.getState().celebration).toBeNull()
 
     // On desserre : le GR 7 franchit ses jalons d'un coup.
-    await useAppStore.getState().setTolerance(MAX_TOLERANCE)
+    await useAppStore.getState().setTolerance(TOLERANCE_MAX)
     expect(useAppStore.getState().celebration).not.toBeNull()
 
     // Un calcul suivant sans nouveau franchissement ne l'efface pas : le
     // jalon reste atteint, et un recalcul de fond — démarrage, arrivée des
     // boucles locales — la faisait disparaître dans la seconde.
-    await useAppStore.getState().setTolerance(MAX_TOLERANCE - 5)
+    await useAppStore.getState().setTolerance(TOLERANCE_MAX - 5)
     expect(useAppStore.getState().celebration).not.toBeNull()
 
     // Elle tombe en revanche dès qu'elle cesse d'être vraie : à tolérance
     // serrée, l'itinéraire repasse sous son jalon.
-    await useAppStore.getState().setTolerance(MIN_TOLERANCE)
+    await useAppStore.getState().setTolerance(TOLERANCE_MIN)
     expect(useAppStore.getState().celebration).toBeNull()
   })
 
@@ -1794,6 +1793,26 @@ describe('un réglage est durable dès que la main est rendue (#203)', () => {
     expect(useAppStore.getState().completionPct).toBe(90)
     // Et repris pour de bon : la session suivante n'a plus besoin de la base.
     expect(localStorage.getItem(clef('modeAffichage'))).toBe('"simple"')
+  })
+
+  /*
+    #670 : la tolérance relue au démarrage était reprise telle quelle dès
+    qu'elle était un nombre. `1e999` se relit en JSON comme l'infini, et
+    -31 passait : la complétion se calculait hors de la plage du réglage.
+  */
+  it('borne la tolérance relue au démarrage, comme à l’écriture', async () => {
+    for (const [ecrit, attendu] of [
+      ['-31', 25],
+      ['1e999', 50],
+      ['400', 100],
+      ['37', 37],
+    ] as const) {
+      localStorage.setItem(clef('toleranceMeters'), ecrit)
+      useAppStore.setState({ ...etatInitial }, true)
+      oublierReglagesTouches()
+      await useAppStore.getState().init()
+      expect(useAppStore.getState().toleranceMeters, `écrit ${ecrit}`).toBe(attendu)
+    }
   })
 
   /**

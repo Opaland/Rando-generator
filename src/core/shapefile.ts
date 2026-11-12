@@ -47,6 +47,13 @@ export function lignesDuShapefile(octets: ArrayBuffer): [number, number][][] {
     for (let p = 0; p < nbParties; p++) {
       const debut = v.getInt32(c + 44 + 4 * p, true)
       const fin = p + 1 < nbParties ? v.getInt32(c + 48 + 4 * p, true) : nbPoints
+      // Un indice de partie hors de [0, nbPoints] lisait hors de
+      // l'enregistrement — jusqu'au `RangeError` de `DataView` (fuzz, #670).
+      // Une partie qui finit avant de commencer ne lisait rien, elle : elle
+      // rendait une ligne vide. Rejetée quand même, par choix — aucun
+      // shapefile sain n'en contient, et taire la corruption d'une partie
+      // laisserait importer les autres comme si de rien n'était.
+      if (debut < 0 || fin < debut || fin > nbPoints) throw corrompu(c - 8)
       const ligne: [number, number][] = []
       for (let i = debut; i < fin; i++) {
         const q = premierPoint + 16 * i
