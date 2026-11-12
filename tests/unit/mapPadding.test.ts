@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { margeBassePanneau, type Rect } from '../../src/lib/mapPadding.ts'
+import { margeBassePanneau, margeBasseRecouverte, type Rect } from '../../src/lib/mapPadding.ts'
 
 const cadre: Rect = { top: 0, bottom: 800, left: 0, right: 400, width: 400 }
 
@@ -49,6 +49,30 @@ describe('margeBassePanneau', () => {
     const large: Rect = { top: 0, bottom: 1000, left: 0, right: 1000, width: 1000 }
     const panneau = rect({ top: 700, bottom: 1000, left: 100, right: 900 })
     expect(margeBassePanneau(large, panneau)).toBe(0)
+  })
+})
+
+/*
+  #668, le 11/11 : sans les PDIPR, le crédit de la carte tient déplié au
+  téléphone, juste au-dessus de la feuille — et le cadrage de zone, qui ne
+  réservait que la feuille, posait le sud du Pilat dessous (mesuré : crédit
+  de 345 à 429 px, sud de la zone à 384 px, `cadrage-de-zone.spec.ts`).
+*/
+describe('margeBasseRecouverte', () => {
+  const feuille = rect({ top: 440, bottom: 800, left: 0, right: 400 })
+
+  it('réserve jusqu’au plus haut de ce qui barre le bas de la carte', () => {
+    const credit = rect({ top: 345, bottom: 429, left: 10, right: 390 })
+    expect(margeBasseRecouverte(cadre, [feuille, credit])).toBe(455)
+  })
+
+  it('ne réserve rien de plus pour un crédit replié en « ⓘ »', () => {
+    const replie = rect({ top: 405, bottom: 429, left: 366, right: 390 })
+    expect(margeBasseRecouverte(cadre, [feuille, replie])).toBe(360)
+  })
+
+  it('rend zéro sans rien', () => {
+    expect(margeBasseRecouverte(cadre, [null, undefined])).toBe(0)
   })
 })
 

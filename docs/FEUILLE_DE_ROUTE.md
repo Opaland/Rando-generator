@@ -197,6 +197,11 @@ Revérifié le 18/10 contre GitHub : **#160 est close** (#259, le lien
   - **Rhône** — **livré le 10/11** (#664), en réseau de fond : l'API de
     datARA répondait `403 Accès interdit` (#20), le Département a envoyé
     le jeu par courriel (shapefile Lambert-93, Licence Ouverte 2.0) ;
+  - **Puy-de-Dôme** — **livré le 10/11** par la routine quotidienne
+    (`docs/routine-pdipr/`), en réseau de fond : 442 itinéraires (nommés à
+    la source, dessinés sans leur nom ; 317 déjà dans OSM à ≥ 80 %), WFS public du CRAIG, Licence Ouverte 1.0, mention « CD63-2026 » ;
+  - les autres départements de la file avancent un par jour : leur état
+    est dans `docs/routine-pdipr/ETAT.md`, pas ici ;
 - **#88 — l'API Geotrek du Parc du Pilat**, ~200 circuits balisés.
   **Bloquée, pas juste en attente** : l'issue interdit d'intégrer quoi que
   ce soit avant d'avoir écrit au Parc pour la licence et vérifié les

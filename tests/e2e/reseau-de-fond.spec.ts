@@ -55,11 +55,102 @@ test('l’Isère montre son réseau balisé, la Loire non', async ({ page }) => 
 })
 
 /*
+  #668, le 11/11 : le crédit d'un Département suit son réseau. Écrits en dur
+  dans l'attribution de la carte, les quatre PDIPR faisaient recouvrir
+  « Ma position » par le crédit déplié au téléphone en gros texte
+  (`credit-peint.spec.ts`). On lit le texte du crédit lui-même, à 1 280 px
+  où il est déplié, et le rang de la couche : la source est recréée pour
+  changer son crédit, et la couche doit revenir **sous** les tracés.
+*/
+const creditDeLaCarte = (page: import('@playwright/test').Page) =>
+  page.evaluate(
+    () => document.querySelector('.maplibregl-ctrl-attrib-inner')?.textContent ?? '',
+  )
+const rangDuReseau = (page: import('@playwright/test').Page) =>
+  page.evaluate(() => {
+    const map = (window as { __sentiersMap?: { getStyle(): { layers: { id: string }[] } } })
+      .__sentiersMap
+    return map?.getStyle().layers.findIndex((c) => c.id === 'pdipr-reseau') ?? -1
+  })
+
+test('le crédit nomme le Département de la zone peinte, et lui seul', async ({ page }) => {
+  await mockExternalNetwork(page)
+  await mockTilesOk(page)
+  await page.goto('/')
+  test.skip(!(await hasMap(page)), 'WebGL indisponible dans ce navigateur headless')
+  await fermerLeGuide(page)
+
+  await page.getByTestId('zone-isere').click()
+  await expect.poll(() => tronconsPeints(page), { timeout: 15_000 }).toBeGreaterThan(10_000)
+  await expect.poll(() => creditDeLaCarte(page), { timeout: 5_000 }).toContain(
+    "Département de l'Isère",
+  )
+  expect(await creditDeLaCarte(page)).not.toContain('Département de l’Ain')
+  expect(await creditDeLaCarte(page)).not.toContain("Département de l'Ain")
+  // Juste au-dessus du fond de carte, comme `style.ts` le pose.
+  expect(await rangDuReseau(page)).toBe(1)
+
+  await page.getByTestId('zone-loire').click()
+  await expect.poll(() => tronconsPeints(page), { timeout: 15_000 }).toBe(0)
+  await expect.poll(() => creditDeLaCarte(page), { timeout: 5_000 }).not.toContain(
+    'Département',
+  )
+  expect(await rangDuReseau(page)).toBe(1)
+})
+
+/*
   L'Ain, le 21/10 (#574) : 483 boucles nommées du Département, montrées en
   fond comme l'Isère et pas comptées — le dédoublonnage avec OpenStreetMap
   attend la décision de Cédric. Le jeu embarqué porte 531 lignes : « des
   centaines » suffit à dire qu'il est arrivé entier.
 */
+/*
+  Le repli IGN → OSM avec un PDIPR chargé (relecture adverse du 11/11) :
+  `setStyle` recrée la source `pdipr` **sans** crédit, et c'est l'effet
+  rejoué sur `styleEpoch` qui doit la reposer avec le sien — réseau, crédit
+  et rang. Avant #668, le repli ne touchait que les données.
+*/
+test('le repli sur le fond OSM garde le réseau, son crédit et son rang', async ({ page }) => {
+  await mockExternalNetwork(page)
+  await mockTilesOk(page)
+  await page.goto('/')
+  test.skip(!(await hasMap(page)), 'WebGL indisponible dans ce navigateur headless')
+  await fermerLeGuide(page)
+
+  await page.getByTestId('zone-isere').click()
+  await expect.poll(() => tronconsPeints(page), { timeout: 15_000 }).toBeGreaterThan(10_000)
+  await expect.poll(() => creditDeLaCarte(page), { timeout: 5_000 }).toContain(
+    "Département de l'Isère",
+  )
+
+  await page.unroute('https://data.geopf.fr/**')
+  await page.route('https://data.geopf.fr/**', (route) => route.abort())
+  const fondOsm = () =>
+    page.evaluate(() => {
+      const map = (
+        window as unknown as {
+          __sentiersMap?: {
+            getStyle(): { sources: Record<string, { tiles?: string[] }> }
+            zoomTo(z: number): void
+            getZoom(): number
+          }
+        }
+      ).__sentiersMap
+      if (!map) return false
+      if (map.getStyle().sources['basemap'].tiles?.[0]?.includes('openstreetmap')) return true
+      map.zoomTo(map.getZoom() + 0.7)
+      return false
+    })
+  await expect.poll(fondOsm, { timeout: 20_000 }).toBe(true)
+
+  await expect.poll(() => creditDeLaCarte(page), { timeout: 10_000 }).toContain(
+    "Département de l'Isère",
+  )
+  expect(await creditDeLaCarte(page)).toContain('OpenStreetMap')
+  expect(await tronconsPeints(page)).toBeGreaterThan(10_000)
+  expect(await rangDuReseau(page)).toBe(1)
+})
+
 test('l’Ain montre son réseau balisé, et la légende le nomme', async ({ page }) => {
   await mockExternalNetwork(page)
   await mockTilesOk(page)

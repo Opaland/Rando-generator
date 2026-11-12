@@ -147,8 +147,15 @@ for (const largeur of [1024, 1280]) {
   au « ⓘ », le crédit se rouvrait tout seul au mouvement suivant de la
   feuille, contre ce que le commentaire du code promettait.
 */
+/*
+  360 × 640 et non plus 390 × 844 depuis le 11/11 (#668) : sans les PDIPR,
+  le crédit déplié ne fait plus que 104 px, et à 390 × 844 il tient à côté
+  des commandes, feuille à mi-course — la règle ne le replie plus, et la
+  prémisse de ce test (« la règle l'a replié ») n'était plus vraie qu'à un
+  instant de transition. Mesuré avec une sonde, pas supposé.
+*/
 test.describe('crédit replié par l’utilisateur — téléphone, gros texte', () => {
-  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true })
+  test.use({ viewport: { width: 360, height: 640 }, hasTouch: true })
 
   test('reste replié quand la feuille bouge', async ({ page }) => {
     await mockExternalNetwork(page)
@@ -239,9 +246,23 @@ test.describe('fiche ouverte, téléphone au doigt', () => {
   peintes. Déplié, il reste là où il était : sur la fiche, au-dessus de
   tout, comme tranché le 20/10.
 */
+/*
+  Et avec un PDIPR chargé, depuis le 11/11 (#668) : son crédit ne s'ajoute
+  qu'à la zone qui le peint, et le Puy-de-Dôme porte le plus long (mention
+  obligatoire comprise). Sans ce cas, ces sondes ne mesuraient plus que le
+  crédit le plus court — celui de #668, au quatrième département, n'aurait
+  plus été vu (relecture adverse du 11/11).
+*/
 for (const vue of [
-  { nom: '390 × 844', largeur: 390, hauteur: 844, gros: false },
-  { nom: '360 × 640, gros texte', largeur: 360, hauteur: 640, gros: true },
+  { nom: '390 × 844', largeur: 390, hauteur: 844, gros: false, zone: 'pilat' },
+  { nom: '360 × 640, gros texte', largeur: 360, hauteur: 640, gros: true, zone: 'pilat' },
+  {
+    nom: '360 × 640, gros texte, PDIPR du Puy-de-Dôme',
+    largeur: 360,
+    hauteur: 640,
+    gros: true,
+    zone: 'puy-de-dome',
+  },
 ]) {
   test.describe(`crédit déplié, fiche ouverte — ${vue.nom}, au doigt`, () => {
     test.use({
@@ -259,8 +280,16 @@ for (const vue of [
       await fermerLeGuide(page)
       if (vue.gros) await activerLeGrosTexte(page, true)
       await ouvrirOnglet(page, 'carte')
-      await page.getByTestId('zone-pilat').click()
+      await page.getByTestId(`zone-${vue.zone}`).click()
       await page.getByTestId('zone-meta').waitFor({ state: 'attached' })
+      if (vue.zone === 'puy-de-dome') {
+        // Le crédit du Département n'arrive qu'avec son réseau.
+        await expect
+          .poll(() => page.locator('.maplibregl-ctrl-attrib-inner').textContent(), {
+            timeout: 15_000,
+          })
+          .toContain('CD63-2026')
+      }
       await afficherTousLesReseaux(page)
       await ouvrirLaFicheParLesOnglets(page, true)
       await page.locator('.maplibregl-ctrl-attrib-button').click()

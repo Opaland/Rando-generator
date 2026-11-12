@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import jeuIsere from '../../public/data/pdipr-isere.json?raw'
 import jeuAin from '../../public/data/pdipr-ain.json?raw'
 import jeuRhone from '../../public/data/pdipr-rhone.json?raw'
+import jeuPuyDeDome from '../../public/data/pdipr-puy-de-dome.json?raw'
 import { jeuPdiprPour, parseReseauPdipr } from '../../src/core/pdipr.ts'
 import { parseBouclesGeoJSON } from '../../src/core/boucles.ts'
 import { parseGrNordGeoJSON } from '../../src/core/grNord.ts'
@@ -66,6 +67,29 @@ describe('chargerReseauDeFond', () => {
     await chargerReseauDeFond('isere')
     expect(appel).toHaveBeenCalledTimes(1)
     expect(String(appel.mock.calls[0])).toContain('data/pdipr-isere.json')
+  })
+
+  /*
+    #668 : le crédit du Département suit le réseau **reçu**, comme la
+    légende — pas la zone qui pourrait en avoir un. Hors ligne, rien n'est
+    peint et rien n'est crédité.
+  */
+  it('publie le crédit du Département avec son réseau, et l’efface en changeant de zone', async () => {
+    fetchQuiRend(UN_TRONCON)
+    const { chargerReseauDeFond, useReseauDeFond } = await moduleFrais()
+    await chargerReseauDeFond('isere')
+    expect(useReseauDeFond.getState().attribution).toContain("Département de l'Isère")
+    const loire = chargerReseauDeFond('loire')
+    expect(useReseauDeFond.getState().attribution).toBeNull()
+    await loire
+    expect(useReseauDeFond.getState().attribution).toBeNull()
+  })
+
+  it('ne crédite rien quand le réseau n’a pas pu venir', async () => {
+    fetchQuiRend(null, false)
+    const { chargerReseauDeFond, useReseauDeFond } = await moduleFrais()
+    await chargerReseauDeFond('isere')
+    expect(useReseauDeFond.getState().attribution).toBeNull()
   })
 
   it('efface l’Isère dès qu’on change de zone', async () => {
@@ -237,5 +261,40 @@ describe('le jeu embarqué du Rhône', () => {
 
   it('dit d’où il vient', () => {
     expect(brut.source).toMatch(/Département du Rhône.*Licence Ouverte 2\.0/)
+  })
+})
+
+describe('le jeu embarqué du Puy-de-Dôme', () => {
+  /*
+    Le WFS du CRAIG, le 10/11 (#87) : 442 itinéraires, 745 lignes (un
+    itinéraire peut avoir plusieurs parties). « Des centaines » dit que le
+    jeu est arrivé entier sans épingler le compte de la prochaine
+    extraction ; l'emprise dit qu'il est en degrés — un export resté en
+    Lambert-93 serait écarté en entier.
+  */
+  const brut = JSON.parse(jeuPuyDeDome) as {
+    source?: string
+    features: { geometry: { coordinates: unknown[] } }[]
+  }
+  const lire = () => {
+    const jeu = jeuPdiprPour('puy-de-dome')
+    expect(jeu, 'la zone Puy-de-Dôme ne désigne plus de jeu PDIPR').not.toBeNull()
+    return parseReseauPdipr(brut, jeu!.emprise)
+  }
+
+  it('se lit en lignes, par centaines', () => {
+    expect(lire().features.length).toBeGreaterThan(600)
+  })
+
+  it('n’embarque aucune ligne que la lecture écarterait', () => {
+    const lignesLivrees = brut.features.reduce(
+      (total, f) => total + f.geometry.coordinates.length,
+      0,
+    )
+    expect(lire().features).toHaveLength(lignesLivrees)
+  })
+
+  it('dit d’où il vient, mention obligatoire comprise', () => {
+    expect(brut.source).toMatch(/Département du Puy-de-Dôme \(CD63-2026\).*Licence Ouverte 1\.0/)
   })
 })
