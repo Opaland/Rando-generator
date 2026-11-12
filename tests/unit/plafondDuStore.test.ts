@@ -146,6 +146,9 @@ const PLAFONDS: Record<string, number> = {
   'trancheFiche.ts': 260,
   'lecture.ts': 220,
   'veilleGeo.ts': 130,
+  // La clé d'API Anthropic de chacun (#673) : 74 lignes le 11/11, dont la
+  // moitié dit où elle est gardée et pourquoi. Une clé, deux gestes.
+  'cleClaude.ts': 90,
   // 41 lignes dont 28 de commentaire : c'est une règle de quatre lignes et
   // le récit de ses trois copies fausses (#437). Le plafond laisse la place
   // d'une deuxième garde du même genre, pas d'une tranche.

@@ -1,0 +1,55 @@
+/* Réglage de Claude (#673) : les jetons de Settings.module.css, rien de neuf. */
+.bloc {
+  display: grid;
+  gap: var(--espace-4);
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.titre {
+  font-weight: 600;
+  padding: 0;
+}
+
+.aide {
+  margin: 0;
+  font-size: var(--texte-secondaire);
+  color: var(--encre-douce);
+}
+
+.formulaire {
+  display: grid;
+  gap: var(--espace-4);
+}
+
+.champ {
+  display: grid;
+  gap: var(--espace-2);
+}
+
+.champ input {
+  min-width: 0;
+}
+
+.case {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--espace-4);
+  font-size: var(--texte-secondaire);
+}
+
+/* Dans une ligne flexible, la case rétrécit devant un long texte : 13 px de
+   large au téléphone, sous les 24 px de WCAG 2.5.8 (mesuré par
+   tests/e2e/mobile.spec.ts le 11/11). Elle garde la taille que lui donne
+   src/index.css. */
+.case input {
+  flex-shrink: 0;
+}
+
+.ligne {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espace-4);
+}

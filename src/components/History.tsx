@@ -8,6 +8,7 @@ import {
   reperesHistogramme,
 } from '../core/history.ts'
 import { formatDenivele, formatKm } from '../lib/format.ts'
+import { BilanDeSaison } from './BilanDeSaison.tsx'
 import styles from './History.module.css'
 
 /** Un an de recul : au-delà, les barres deviennent illisibles. */
@@ -129,6 +130,7 @@ export function History() {
           absente{stats.undatedCount > 1 ? 's' : ''} du graphique.
         </p>
       )}
+      <BilanDeSaison />
     </details>
   )
 }

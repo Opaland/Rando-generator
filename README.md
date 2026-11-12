@@ -23,6 +23,16 @@ parcouru 34 % du GR 7, 61 % des sentiers du Pilat ».
   l'itinéraire dont on ouvre le profil ; l'API Adresse le nom de
   commune tapé ; et l'hébergeur la demande de la page. « À propos » le
   détaille dans l'application (issue #168).
+- **Claude, avec votre clé, si vous le voulez** (issue #673) : collez votre
+  propre clé d'API Anthropic dans Réglages, et Claude écrit le bilan de votre
+  saison dans « Mes sorties ». Ne partent que les totaux de l'année
+  (sorties, kilomètres, dénivelé, mois, noms des zones prédéfinies
+  traversées : départements, Parc du Pilat…), montrés
+  avant l'envoi ; jamais une trace, une position ni le nom d'un fichier. Le
+  code calcule chaque nombre, Claude n'écrit que le texte, et un texte qui
+  porterait un nombre absent de vos sorties n'est pas affiché. La clé reste
+  en mémoire pour l'onglet, ou sur l'appareil si vous le demandez ; elle
+  n'entre dans aucune sauvegarde.
 - **Données ouvertes uniquement** : itinéraires © les contributeurs
   OpenStreetMap (ODbL) via l'API Overpass ; boucles locales de la Métropole
   de Lyon © Métropole de Lyon (Licence Ouverte 2.0, jeu « Boucles communales

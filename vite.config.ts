@@ -21,6 +21,15 @@ import { viderLaSortie } from './src/lib/viderLaSortie.ts'
  * Rhône hors ligne. Ce commentaire disait « volontairement exclues » sans
  * l'exception (#571).
  */
+/**
+ * Le SDK d'Anthropic (#673) : ~80 Ko compressés, utiles seulement à qui a
+ * collé sa clé et demande un texte — ce qui suppose le réseau. Le précacher
+ * le ferait télécharger en arrière-plan par **chaque** visiteur ; il est
+ * donc chargé à la demande, en ligne, et laissé hors du précache.
+ */
+const CHUNK_CLAUDE = 'sdk-claude'
+const HORS_PRECACHE = (nom: string): boolean => nom.startsWith(`${CHUNK_CLAUDE}-`)
+
 function precacheServiceWorker(): Plugin {
   return {
     name: 'sentiers-precache-sw',
@@ -49,7 +58,7 @@ function precacheServiceWorker(): Plugin {
         // Les contours des zones (#296) : la recherche de l'historique par
         // lieu doit marcher hors ligne comme le reste de l'historique.
         './data/contours-de-zone.json',
-        ...assets.map((nom) => `./assets/${nom}`),
+        ...assets.filter((nom) => !HORS_PRECACHE(nom)).map((nom) => `./assets/${nom}`),
       ]
       /*
         L'empreinte de la construction (issue #370).
@@ -250,6 +259,14 @@ export default defineConfig({
     // maplibre-gl pèse ~900 kB minifié à lui seul : seuil relevé en
     // connaissance de cause plutôt qu'un warning permanent.
     chunkSizeWarningLimit: 1200,
+    rollupOptions: {
+      output: {
+        // Le SDK d'Anthropic (#673) sous un nom fixe : le précache l'écarte
+        // par ce nom (`HORS_PRECACHE`), et non par un nom deviné.
+        manualChunks: (id) =>
+          id.includes('/node_modules/@anthropic-ai/sdk/') ? CHUNK_CLAUDE : undefined,
+      },
+    },
   },
   test: {
     include: ['tests/unit/**/*.test.ts'],

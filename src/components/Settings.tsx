@@ -10,6 +10,7 @@ import {
   creerReglageDiffere,
   type ReglageDiffere,
 } from '../lib/reglageDiffere.ts'
+import { ReglageClaude } from './ReglageClaude.tsx'
 import styles from './Settings.module.css'
 
 /** Réglage de la tolérance de matching (25–100 m) avec recalcul. */
@@ -162,6 +163,7 @@ export function Settings() {
           où le mot « bouclé » apparaît.
         </p>
       </fieldset>
+      <ReglageClaude />
     </details>
   )
 }

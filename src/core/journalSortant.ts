@@ -24,6 +24,11 @@ type Destination =
   | 'fond-de-carte'
   | 'altimetrie'
   | 'recherche-commune'
+  /**
+   * L'API d'Anthropic, quand l'utilisateur demande un texte à Claude avec sa
+   * propre clé (#673) : jamais sans un geste, jamais de trace.
+   */
+  | 'claude'
   /** Les fichiers de l'application elle-même : pas un tiers. */
   | 'site'
   | 'inconnue'
@@ -56,6 +61,7 @@ const CONNUS: {
   { hote: /(^|\.)tile\.openstreetmap\.org$/, destination: 'fond-de-carte', contacte: 'tile.openstreetmap.org' },
   { hote: /(^|\.)api-adresse\.data\.gouv\.fr$/, destination: 'recherche-commune', contacte: 'api-adresse.data.gouv.fr' },
   { hote: /(^|\.)data\.grandlyon\.com$/, destination: 'sentiers' },
+  { hote: /^api\.anthropic\.com$/, destination: 'claude', contacte: 'api.anthropic.com' },
 ]
 
 /**
@@ -227,6 +233,8 @@ export function libelleDestination(destination: Destination): string {
       return 'Altimétrie'
     case 'recherche-commune':
       return 'Recherche de commune'
+    case 'claude':
+      return 'Claude (Anthropic), à votre demande'
     case 'site':
       return 'Fichiers de l’application'
     case 'inconnue':
