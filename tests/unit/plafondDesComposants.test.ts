@@ -71,8 +71,14 @@ const PLAFONDS: Record<string, number> = {
   // le 11/11 ; 90 laisse la place d'une phrase d'aide, pas d'un second
   // usage — le récit de sortie et les questions auront leur composant.
   'ReglageClaude.tsx': 90,
-  // Le bilan de saison (#673) : 148 lignes le 11/11, cinq états à montrer.
-  'BilanDeSaison.tsx': 160,
+  // Le bilan de saison (#673) : 148 lignes le 11/11, puis 61 le 12/11 quand
+  // la demande et ses gardes sont parties dans RedactionClaude.tsx.
+  'BilanDeSaison.tsx': 75,
+  // Demander un texte à Claude, commun au bilan et au récit (#673) : 131
+  // lignes le 12/11, cinq états et les gardes qui ne doivent vivre qu'ici.
+  'RedactionClaude.tsx': 150,
+  // Le récit d'une sortie (#673) : 39 lignes, les faits et l'appel.
+  'RecitDeSortie.tsx': 55,
   'RouteDrawer.tsx': 170,
   'Backup.tsx': 165,
   'Objectifs.tsx': 160,

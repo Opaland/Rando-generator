@@ -23,6 +23,7 @@ import {
 } from '../core/gpxExport.ts'
 import { downloadTextFile } from '../lib/download.ts'
 import { useContoursDeZone } from '../lib/useContoursDeZone.ts'
+import { RecitDeSortie } from './RecitDeSortie.tsx'
 import styles from './TrackManager.module.css'
 import { dateAffichee } from '../core/valeurLue.ts'
 
@@ -554,6 +555,9 @@ function ItemTrace({
                 ))}
               </ul>
             </>
+          )}
+          {!outingDetail.loading && (
+            <RecitDeSortie track={track} highlights={outingDetail.highlights} />
           )}
         </div>
       )}

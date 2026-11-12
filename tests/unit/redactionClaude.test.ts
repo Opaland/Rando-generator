@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   CONSIGNE_BILAN,
+  CONSIGNE_SORTIE,
   MODELE_CLAUDE,
   coutEnDollars,
   messageDesFaits,
@@ -19,6 +20,21 @@ describe('la demande', () => {
   it('interdit tout nombre absent des faits, y compris en lettres', () => {
     expect(CONSIGNE_BILAN).toMatch(/aucun nombre/i)
     expect(CONSIGNE_BILAN).toMatch(/lettres/i)
+  })
+
+  it('pose les mêmes règles des nombres au récit d’une sortie', () => {
+    // Une règle, un seul endroit (§4) : si l'une des consignes perdait
+    // l'interdit, l'autre ne le dirait pas à sa place.
+    for (const consigne of [CONSIGNE_BILAN, CONSIGNE_SORTIE]) {
+      expect(consigne).toMatch(/aucun nombre/i)
+      expect(consigne).toMatch(/lettres/i)
+      // Une zone n'est sûre qu'à ~100 m près (lieuxDeTrace) : pas de « dans ».
+      expect(consigne).toMatch(/centaine de mètres/)
+    }
+    expect(CONSIGNE_SORTIE).toMatch(/sortie/i)
+    // Une liste vide ne veut pas dire « aucun » (relecture du 12/11).
+    expect(CONSIGNE_SORTIE).toContain('autresItinerairesNonNommes')
+    expect(CONSIGNE_SORTIE).not.toBe(CONSIGNE_BILAN)
   })
 
   it('envoie les faits en JSON, et rien d’autre', () => {

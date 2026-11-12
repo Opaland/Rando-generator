@@ -18,10 +18,17 @@ import type { LonLat } from './types.ts'
  * - les emprises de #578 : des boîtes, qui se chevauchent — une trace
  *   « dans la boîte de l'Isère » peut être en Savoie.
  *
- * Ce module ne sert qu'à **chercher**, jamais à afficher un lieu : une
- * trace qui longe une limite à moins de ~100 m peut tomber du mauvais
- * côté. Retrouvée par un mot de trop, elle ne coûte rien ; étiquetée d'un
- * lieu faux, elle serait un chiffre présenté comme une mesure (§2).
+ * Ce module sert à **chercher**, jamais à étiqueter une sortie d'un lieu
+ * à l'écran : une trace qui longe une limite à moins de ~100 m peut tomber
+ * du mauvais côté. Retrouvée par un mot de trop, elle ne coûte rien ;
+ * étiquetée d'un lieu faux, elle serait un chiffre présenté comme une
+ * mesure (§2).
+ *
+ * Depuis #673 (12/11), ses noms entrent aussi dans les faits envoyés à
+ * Claude, montrés avant l'envoi. Ce commentaire disait « ne sert qu'à
+ * chercher » ; la relecture adverse l'a trouvé devenu faux (§4bis). La même
+ * imprécision y vaut donc, et la consigne (`core/redactionClaude.ts`)
+ * interdit au modèle d'en tirer un départ, une arrivée ou un « dans ».
  */
 
 /** Ce que rend `scripts/contours-de-zone.mjs`, indexé par sélecteur de `ZONES`. */
