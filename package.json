@@ -24,6 +24,7 @@
     "monkey": "cross-env MONKEY=1 playwright test tests/e2e/monkey.spec.ts --workers=2",
     "og-image": "node scripts/og-image.mjs",
     "pdipr": "node scripts/preparer-pdipr.mjs",
+    "sources": "node scripts/sources-reelles.mjs",
     "recouvrement": "node scripts/recouvrement-pdipr-osm.mjs",
     "mutation": "stryker run",
     "survivants": "node scripts/survivants.mjs",

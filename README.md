@@ -637,18 +637,24 @@ fait faute d'un corpus réel pour poser un seuil sans l'inventer.
   enregistrée, et Playwright intercepte tout le trafic externe. C'est ce qui
   la rend lisible — un rouge y veut dire « le code est cassé », jamais
   « Overpass est surchargé ».
-- **Hors de la porte, deux commandes interrogent les vrais serveurs**, parce
+- **Hors de la porte, trois commandes interrogent les vrais serveurs**, parce
   qu'une suite entièrement sur fixtures ne dit rien de ce que rendent Overpass
   et l'IGN aujourd'hui :
   - `npm run reel` lance l'application dans un navigateur contre les vrais
     services, sans un seul mock (`tests/e2e/reel.spec.ts`) ;
   - `npm run mesures-osm` pose des questions chiffrées à Overpass, pour
     trancher une issue plutôt que pour garder un comportement
-    (`tests/unit/mesuresReseau.test.ts`).
+    (`tests/unit/mesuresReseau.test.ts`) ;
+  - `npm run sources` passe une petite requête par source publique — les deux
+    miroirs Overpass, le fond et l'altimétrie IGN, l'API Adresse, chaque PDIPR
+    qui a une adresse dans `scripts/sources-pdipr.mjs` — par **le lecteur de
+    l'application**, et dit laquelle a changé de forme. Le flux « Sources
+    publiques », lancé à la main, en fait une issue qui se referme d'elle-même
+    au premier passage où toutes ont répondu (#669).
 
-  Les deux sont sautées par défaut et le disent dans chaque rapport. Quand un
-  miroir ne rend rien, elles se sautent **en nommant l'hôte et la raison** :
-  on ne conclut pas d'une absence de mesure.
+  Les deux premières sont sautées par défaut et le disent dans chaque
+  rapport. Quand un miroir ne rend rien, les trois le sautent **en nommant
+  l'hôte et la raison** : on ne conclut pas d'une absence de mesure.
 - **Tests unitaires du store** (`tests/unit/appStore.test.ts`) : cache de zone,
   forçage, repli sur un cache périmé, séquencement de deux chargements
   concurrents, dédoublonnage à l'import, bornage de la tolérance. Une fabrique

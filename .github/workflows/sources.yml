@@ -1,0 +1,86 @@
+# Les sources publiques, interrogées pour de vrai (issue #669).
+#
+# La CI (`ci.yml`) tourne sans réseau, et c'est voulu. Ce flux-ci est à part,
+# hors de la porte : il appelle Overpass, l'IGN, l'API Adresse et les PDIPR
+# départementaux, et dit lesquels ont changé de forme
+# (`scripts/sources-reelles.mjs`).
+#
+#   - une source injoignable ou surchargée est ignorée ;
+#   - une source refusée ou d'une autre forme rend le contrôle rouge, et
+#     **une** issue s'ouvre — commentée, pas doublée, tant que ça dure ;
+#   - elle se referme au premier passage où **toutes** ont répondu : une
+#     source ignorée n'a rien prouvé.
+#
+# Lancé à la main. La cadence, et le fait de le planifier ou non, sont à
+# Cédric (#669) : un `schedule:` se pose ici le jour où il le décide.
+#
+# Sur une PR qui touche au contrôle, il tourne aussi — c'est la seule façon
+# de l'éprouver sur les vraies sources avant de le fusionner — mais n'ouvre
+# ni ne ferme aucune issue.
+
+name: Sources publiques
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'scripts/sources-reelles.mjs'
+      - 'scripts/sources/**'
+      - 'scripts/sources-pdipr.mjs'
+      - '.github/workflows/sources.yml'
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: sources-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  sources:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Installer
+        run: npm ci
+
+      - name: Interroger les sources
+        id: controle
+        run: npm run sources -- --rapport rapport.md
+
+      - name: Ouvrir, commenter ou fermer l'issue
+        if: always() && github.event_name != 'pull_request' && steps.controle.outputs.etat != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ETAT: ${{ steps.controle.outputs.etat }}
+          EXECUTION: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          titre="[Sources] Une source publique a changé de forme"
+          numero=$(gh issue list --state open --search "in:title $titre" --json number,title \
+            --jq "map(select(.title == \"$titre\")) | .[0].number // empty")
+          case "$ETAT" in
+            rouge)
+              { echo "Le contrôle des sources publiques est rouge : $EXECUTION"; echo; cat rapport.md; } > corps.md
+              if [ -n "$numero" ]; then
+                gh issue comment "$numero" --body-file corps.md
+              else
+                gh issue create --title "$titre" --body-file corps.md
+              fi
+              ;;
+            vert)
+              if [ -n "$numero" ]; then
+                { echo "Toutes les sources ont répondu dans la forme attendue : $EXECUTION"; echo; cat rapport.md; } > corps.md
+                gh issue comment "$numero" --body-file corps.md
+                gh issue close "$numero" --reason completed
+              fi
+              ;;
+            *)
+              echo "Contrôle incomplet (une source ignorée) : l'issue éventuelle reste en l'état."
+              ;;
+          esac

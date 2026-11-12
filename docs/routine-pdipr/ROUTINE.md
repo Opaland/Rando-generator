@@ -42,7 +42,9 @@ CLAUDE.md et AGENTS.md s'appliquent en entier : une issue = une PR depuis
 4. **Intégrer comme le Rhône** (#664, le modèle le plus récent : `git log
    -- public/data/pdipr-rhone.json`) :
    - la source dans `scripts/sources-pdipr.mjs` (une adresse, ou un
-     shapefile lu par `exportBrut`) ;
+     shapefile lu par `exportBrut`). Une adresse y suffit pour que
+     `npm run sources` la contrôle avec les autres sources publiques (#669) :
+     rien à ajouter ailleurs ;
    - l'emprise et le jeu dans `src/core/pdipr.ts`, **tests d'abord**
      (`tests/unit/pdipr.test.ts`) ;
    - le fichier produit par `npm run pdipr`, à côté de
