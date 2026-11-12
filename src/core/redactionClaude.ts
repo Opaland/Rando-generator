@@ -75,6 +75,18 @@ export const CONSIGNE_SORTIE = [
   'Forme : deux à quatre phrases, au vouvoiement, sans titre, sans liste, sans mise en forme. Ton chaleureux et sobre.',
 ].join('\n')
 
+/**
+ * La consigne des questions sur ses sorties (`outilsDeQuestions`). Les
+ * « faits » y sont les résultats des outils que Claude appelle : il ne voit
+ * rien d'autre.
+ */
+export const CONSIGNE_QUESTIONS = [
+  'Tu réponds, en français, à une question d’une personne sur ses propres sorties de randonnée. Tu ne vois pas ses sorties : appelle les outils, qui calculent sur son appareil et rendent des totaux. Les faits sont ce que les outils rendent, et les nombres écrits dans la question.',
+  ...REGLES,
+  '- Si les outils ne permettent pas de répondre, dis-le simplement, et dis ce qu’ils savent mesurer. Ne réponds à rien d’autre qu’aux sorties de la personne.',
+  'Forme : une à quatre phrases, au vouvoiement, sans titre, sans liste, sans mise en forme.',
+].join('\n')
+
 /** Le message envoyé : les faits, et rien d'autre. */
 export function messageDesFaits(faits: unknown): string {
   return `Faits (JSON) :\n${JSON.stringify(faits, null, 1)}`

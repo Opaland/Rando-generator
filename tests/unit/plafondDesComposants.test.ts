@@ -79,6 +79,10 @@ const PLAFONDS: Record<string, number> = {
   'RedactionClaude.tsx': 150,
   // Le récit d'une sortie (#673) : 39 lignes, les faits et l'appel.
   'RecitDeSortie.tsx': 55,
+  // Les questions sur ses sorties (#673) : 135 lignes le 12/11 — le champ,
+  // la boucle d'outils déléguée à lib/claude.ts, cinq états — puis 162 après
+  // la relecture adverse : la réponse caduque, et l'écran qui le dit.
+  'QuestionsClaude.tsx': 175,
   'RouteDrawer.tsx': 170,
   'Backup.tsx': 165,
   'Objectifs.tsx': 160,

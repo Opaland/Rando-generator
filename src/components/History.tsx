@@ -9,6 +9,7 @@ import {
 } from '../core/history.ts'
 import { formatDenivele, formatKm } from '../lib/format.ts'
 import { BilanDeSaison } from './BilanDeSaison.tsx'
+import { QuestionsClaude } from './QuestionsClaude.tsx'
 import styles from './History.module.css'
 
 /** Un an de recul : au-delà, les barres deviennent illisibles. */
@@ -131,6 +132,7 @@ export function History() {
         </p>
       )}
       <BilanDeSaison />
+      <QuestionsClaude />
     </details>
   )
 }
