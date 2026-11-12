@@ -65,8 +65,13 @@ export function CeQuiSort() {
         </li>
         <li>
           <strong>Claude</strong> (api.anthropic.com), seulement si vous avez
-          collé votre propre clé d’API dans Réglages et demandé un
-          bilan&nbsp;: il reçoit les <strong>totaux de l’année</strong> —
+          collé votre propre clé d’API dans Réglages et demandé un texte.
+          Pour le récit d’une sortie, il reçoit sa{' '}
+          <strong>longueur, son dénivelé, son mois</strong>, les zones
+          prédéfinies traversées et les itinéraires balisés publics qu’elle a
+          fait avancer — jamais ceux
+          que vous avez créés ou importés. Pour un bilan, il reçoit les{' '}
+          <strong>totaux de l’année</strong> —
           sorties, kilomètres, dénivelé, mois, noms des zones prédéfinies
           que vos sorties traversent (départements, Parc du Pilat…) —,
           montrés avant l’envoi. Jamais une trace, une position, une date

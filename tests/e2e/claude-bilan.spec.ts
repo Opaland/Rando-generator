@@ -141,3 +141,33 @@ test('gardée sur demande seulement, et oubliée d’un geste', async ({ page })
   await expect(page.getByTestId('claude-cle')).toBeVisible()
   expect(await page.evaluate(() => localStorage.getItem('sentiers.claude.cle'))).toBeNull()
 })
+
+/*
+  Deuxième usage (#673) : le récit d'une sortie, depuis sa fiche. Même
+  gardes — elles vivent dans RedactionClaude.tsx, une seule fois —, d'autres
+  faits : longueur, dénivelé, mois, itinéraires publics avancés.
+*/
+test('le récit d’une sortie part sans nom de fichier ni jour, et s’affiche', async ({ page }) => {
+  const recues = await simulerClaude(page, (corps) => {
+    const faits = JSON.parse(
+      (JSON.parse(corps) as { messages: { content: string }[] }).messages[0].content.replace(
+        /^[^{]*/,
+        '',
+      ),
+    ) as { mois: string; km: number }
+    return `En ${faits.mois}, une sortie de ${String(faits.km).replace('.', ',')} km.`
+  })
+  await importerTroisSorties(page)
+  await poserLaCle(page, false)
+  await page.getByTestId('track-toggle-chez-mamie-1.gpx').click()
+  await expect(page.getByTestId('recit-demander')).toBeVisible({ timeout: 15_000 })
+  await page.getByTestId('recit-demander').click()
+  await expect(page.getByTestId('recit-texte')).toContainText('En juin 2026, une sortie de')
+
+  expect(recues).toHaveLength(1)
+  const corps = recues[0].postData() ?? ''
+  expect(corps).toMatch(/récit d’une sortie/)
+  expect(corps).not.toMatch(/chez-mamie|\.gpx/)
+  expect(corps).not.toMatch(/45\.4\d|4\.5\d{2}/)
+  expect(corps).not.toMatch(/2026-06|14 juin/)
+})

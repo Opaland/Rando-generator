@@ -25,7 +25,10 @@ parcouru 34 % du GR 7, 61 % des sentiers du Pilat ».
   détaille dans l'application (issue #168).
 - **Claude, avec votre clé, si vous le voulez** (issue #673) : collez votre
   propre clé d'API Anthropic dans Réglages, et Claude écrit le bilan de votre
-  saison dans « Mes sorties ». Ne partent que les totaux de l'année
+  saison dans « Mes sorties », ou raconte une sortie depuis sa fiche. Pour
+  un récit, ne partent que sa longueur, son dénivelé, son mois, les
+  zones prédéfinies traversées et les itinéraires balisés publics qu'elle a
+  fait avancer ; pour un bilan, que les totaux de l'année
   (sorties, kilomètres, dénivelé, mois, noms des zones prédéfinies
   traversées : départements, Parc du Pilat…), montrés
   avant l'envoi ; jamais une trace, une position ni le nom d'un fichier. Le

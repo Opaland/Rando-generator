@@ -17,8 +17,12 @@ import { instantDe } from './valeurLue.ts'
  */
 export const MIN_OUTING_METERS = 300
 
-/** Au-delà, la fiche d'une trace devient une liste. */
-const DEFAULT_LIMIT = 5
+/**
+ * Au-delà, la fiche d'une trace devient une liste. Exportée pour le récit
+ * d'une sortie (#673), qui doit savoir qu'une liste pleine peut en taire
+ * d'autres.
+ */
+export const MAX_ITINERAIRES_DE_SORTIE = 5
 
 export interface OutingHighlight {
   itineraryId: number
@@ -37,7 +41,7 @@ export function outingHighlights(
   itineraries: Itinerary[],
   options: OutingOptions = {},
 ): OutingHighlight[] {
-  const limit = options.limit ?? DEFAULT_LIMIT
+  const limit = options.limit ?? MAX_ITINERAIRES_DE_SORTIE
   const minMeters = options.minMeters ?? MIN_OUTING_METERS
   const nameById = new Map(
     itineraries.map((i) => [i.osmRelationId, displayName(i)]),

@@ -46,23 +46,38 @@ export function coutEnDollars(modele: string, usage: Usage): number | null {
 }
 
 /**
- * La consigne d'un bilan de saison. Elle ne suffit pas à garantir les
- * nombres : `verdictDuTexte` les revérifie. Elle sert à ce que le texte
- * passe la vérification du premier coup.
+ * Les règles des nombres, **une fois** pour toutes les consignes (§4).
+ *
+ * Elles ne suffisent pas à garantir les nombres : `verdictDuTexte` les
+ * revérifie. Elles servent à ce que le texte passe du premier coup.
  */
+const REGLES = [
+  'Règles absolues :',
+  '- N’écris aucun nombre qui ne figure pas tel quel dans les faits (arrondi permis), ni en chiffres ni en lettres : pas de différence, de moyenne, de rang ni de pourcentage que tu calculerais toi-même.',
+  '- Écris les nombres en chiffres, et les pourcentages avec le symbole %, seulement là où les faits en donnent un.',
+  '- N’invente ni lieu, ni sentier, ni météo, ni ressenti : seuls les zones et les itinéraires nommés dans les faits existent.',
+  '- Un champ à null signifie que la mesure manque : ne la mentionne pas.',
+  '- Les zones sont celles que les traces approchent, à une centaine de mètres près : écris « du côté de » ou « autour de », jamais « dans », et n’en tire ni départ ni arrivée.',
+]
+
+/** La consigne d'un bilan de saison (`faitsDeSaison`). */
 export const CONSIGNE_BILAN = [
   'Tu écris, en français, le bilan de la saison de randonnée d’une personne, à partir des faits fournis en JSON.',
-  'Règles absolues :',
-  '- N’écris aucun nombre qui ne figure pas tel quel dans les faits (arrondi permis), ni en chiffres ni en lettres : pas de différence, de moyenne ni de pourcentage que tu calculerais toi-même.',
-  '- Écris les nombres en chiffres, et les pourcentages avec le symbole %.',
-  '- N’invente ni lieu, ni sentier, ni météo, ni ressenti : seules les zones nommées dans les faits existent.',
-  '- Un champ à null signifie que la mesure manque : ne la mentionne pas.',
+  ...REGLES,
   'Forme : trois à cinq phrases, au vouvoiement, sans titre, sans liste, sans mise en forme. Ton chaleureux et sobre.',
+].join('\n')
+
+/** La consigne du récit d'une sortie (`faitsDeSortie`). */
+export const CONSIGNE_SORTIE = [
+  'Tu écris, en français, le court récit d’une sortie de randonnée, à partir des faits fournis en JSON : sa longueur, son dénivelé, et ce qu’elle a fait avancer sur les itinéraires balisés.',
+  ...REGLES,
+  '- Si autresItinerairesNonNommes est vrai, la sortie a aussi avancé des itinéraires que les faits ne nomment pas : n’écris jamais qu’elle n’en a avancé aucun, et ne les devine pas.',
+  'Forme : deux à quatre phrases, au vouvoiement, sans titre, sans liste, sans mise en forme. Ton chaleureux et sobre.',
 ].join('\n')
 
 /** Le message envoyé : les faits, et rien d'autre. */
 export function messageDesFaits(faits: unknown): string {
-  return `Faits de la saison (JSON) :\n${JSON.stringify(faits, null, 1)}`
+  return `Faits (JSON) :\n${JSON.stringify(faits, null, 1)}`
 }
 
 type Verdict =
