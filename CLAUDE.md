@@ -211,7 +211,7 @@ commande ou un test derrière, soit la phrase change.
 
 Un item par PR. TDD sur `src/core`. Commits en français.
 
-**La porte complète avant de committer** — `/porte` la lance :
+**La porte complète avant de committer** — `npm run porte` la lance, dans l'ordre de la CI dont elle lit les étapes (#667) ; la skill `/porte` dit pourquoi cet ordre :
 `lint`, `listes`, `textes`, `chemins`, `typecheck`, `coverage`, `ports`,
 `build`, `e2e`, `monkey`.
 
