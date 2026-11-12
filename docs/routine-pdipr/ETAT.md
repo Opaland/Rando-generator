@@ -17,14 +17,14 @@ tant que Cédric n'a pas répondu sur l'issue.
 | 2 | `drome` | bloqué | 0 | | #666 | 10/11 : jeu sur data.gouv.fr sans licence, portail `infogeo.ladrome.fr` injoignable |
 | 3 | `ardeche` | bloqué | 0 | | #666 | 10/11 : rien sur data.gouv.fr ; datARA injoignable (502) |
 | — | `puy-de-dome` | livré | 1 | #672 | #87, #668, #674, #675, #676 | 11/11, WFS du CRAIG, 442 itinéraires, LO 1.0, mention « CD63-2026 » |
-| 5 | `haute-loire` | à faire | 0 | | | prochain passage |
-| 6 | `cantal` | à faire | 0 | | | |
-| 7 | `allier` | à faire | 0 | | | piste du 10/11 : couche WFS `public:DEPT03_2024_PDIPR` au CRAIG (licence à lire) |
-| 8 | `vosges` | à faire | 0 | | | |
-| 9 | `haut-rhin` | à faire | 0 | | | |
-| 10 | `bas-rhin` | à faire | 0 | | | |
-| 11 | `moselle` | à faire | 0 | | | |
-| 12 | `haute-saone` | à faire | 0 | | | |
+| 5 | `haute-loire` | bloqué | 0 | | #682 | 12/11 : rien d'ouvert ; portail Geotrek du Département sans licence |
+| 6 | `cantal` | bloqué | 0 | | #682 | 12/11 : rien au CRAIG ni sur data.gouv.fr |
+| — | `allier` | attend Cédric | — | | #683 | 12/11 : jeu 2024 « pas d'usage commercial » (CRAIG) ; copie 2020 en LO 2.0 posée par Madada |
+| 8 | `vosges` | bloqué | 0 | | #682 | 12/11 : aucun PDIPR départemental ouvert (data.gouv.fr, DataGrandEst) |
+| 9 | `haut-rhin` | bloqué | 0 | | #682 | 12/11 : aucun PDIPR départemental ouvert (data.gouv.fr, DataGrandEst) |
+| 10 | `bas-rhin` | bloqué | 0 | | #682 | 12/11 : aucun PDIPR départemental ouvert (data.gouv.fr, DataGrandEst) |
+| 11 | `moselle` | bloqué | 0 | | #682 | 12/11 : aucun PDIPR départemental ouvert (data.gouv.fr, DataGrandEst) |
+| 12 | `haute-saone` | bloqué | 0 | | #682 | 12/11 : aucun PDIPR départemental ouvert (data.gouv.fr, DataGrandEst) |
 | — | `savoie` | attend Cédric | — | | | condition non nommée (FEUILLE_DE_ROUTE, 18/10) |
 | — | `haute-savoie` | attend Cédric | — | | | idem |
 
@@ -36,3 +36,6 @@ Une ligne par passage : `AAAA-MM-JJ — zone — tentative n — résultat — P
 - 2026-11-10 — loire, drome, ardeche — pas de jeu embarquable, pas un échec — bloqués, #666.
 - 2026-11-10 — puy-de-dome — tentative 1 — échec : e2e `credit-peint` rouge, le crédit déplié recouvre « Ma position » (#668) ; PR brouillon, `parcours` reporté au passage suivant — #87, #668.
 - 2026-11-11 — puy-de-dome — tentative 2 — verte : #668 corrigé (le crédit d'un PDIPR suit la zone peinte, le cadrage réserve le crédit déplié) ; porte complète, relecture adverse, `parcours` (Jeanine, Bernard) ; trois issues pour Cédric (#674, #675, #676) — #672 fusionnée.
+- 2026-11-12 — haute-loire, cantal, vosges, haut-rhin, bas-rhin, moselle, haute-saone — pas de jeu ouvert, pas un échec — bloqués, #682.
+- 2026-11-12 — allier — licence non nommée (« pas d'usage commercial ») — attend Cédric, #683.
+- 2026-11-12 — **file épuisée** : plus aucune zone `à faire` ni `en cours`. La routine s'arrête là jusqu'à une décision de Cédric (#666, #682, #683, Savoie et Haute-Savoie) ou une zone ajoutée à la file.
