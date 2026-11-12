@@ -34,6 +34,7 @@
     "mesures-osm": "cross-env RESEAU=1 NODE_USE_ENV_PROXY=1 vitest run tests/unit/mesuresReseau.test.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.8.0",
     "idb": "^8.0.3",
     "maplibre-gl": "^6.4.1",
     "react": "^18.3.1",

@@ -43,8 +43,11 @@ le navigateur :
 ```
 connect-src 'self' https://data.geopf.fr https://tile.openstreetmap.org
             https://overpass-api.de https://overpass.kumi.systems
-            https://api-adresse.data.gouv.fr
+            https://api-adresse.data.gouv.fr https://api.anthropic.com
 ```
+
+`api.anthropic.com` ne sert qu'à Claude, avec la clé que l'utilisateur colle
+lui-même dans Réglages (#673) : sans clé, aucune requête n'y part.
 
 Une requête vers un autre hôte est **refusée avant de partir**. Si une
 dépendance ajoutait demain un appel de télémétrie, il échouerait — sans que

@@ -28,5 +28,10 @@
   "include": ["src", "tests/unit", "tests/fixtures"],
   // Les deux seuls fichiers de ces dossiers qui touchent au disque : ils
   // vivent dans tsconfig.node.json, qui a les types de Node (#612).
-  "exclude": ["src/lib/viderLaSortie.ts", "tests/unit/viderLaSortie.test.ts"]
+  "exclude": [
+    "src/lib/viderLaSortie.ts",
+    "tests/unit/viderLaSortie.test.ts",
+    "src/lib/horsPrecache.ts",
+    "tests/unit/horsPrecache.test.ts"
+  ]
 }

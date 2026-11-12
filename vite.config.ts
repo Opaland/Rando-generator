@@ -7,6 +7,7 @@ import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import { poserLaPolitique } from './src/lib/baliseDePolitique.ts'
 import { viderLaSortie } from './src/lib/viderLaSortie.ts'
+import { atteintsStatiquement, estLeSdkClaude } from './src/lib/horsPrecache.ts'
 
 /**
  * Inscrit la liste des fichiers construits dans public/sw.js, dont les noms
@@ -21,6 +22,33 @@ import { viderLaSortie } from './src/lib/viderLaSortie.ts'
  * Rhône hors ligne. Ce commentaire disait « volontairement exclues » sans
  * l'exception (#571).
  */
+/**
+ * Les blocs du SDK d'Anthropic, à laisser hors du précache (#673), et la
+ * garde qui refuse la construction si la page les importe statiquement :
+ * hors connexion, elle ne démarrerait plus (mesuré par la CI le 12/11).
+ * Le pourquoi complet est dans `src/lib/horsPrecache.ts`.
+ */
+async function blocsHorsPrecache(dist: string, assets: readonly string[]): Promise<Set<string>> {
+  const contenus = new Map<string, string>()
+  for (const nom of assets.filter((n) => n.endsWith('.js'))) {
+    contenus.set(nom, await readFile(path.join(dist, 'assets', nom), 'utf-8'))
+  }
+  const ecartes = new Set(
+    [...contenus].filter(([, contenu]) => estLeSdkClaude(contenu)).map(([nom]) => nom),
+  )
+  const page = await readFile(path.join(dist, 'index.html'), 'utf-8')
+  const entrees = [...page.matchAll(/\.\/assets\/([\w.-]+\.js)/g)].map((m) => m[1])
+  const atteints = atteintsStatiquement(entrees, (nom) => contenus.get(nom) ?? null)
+  const fautifs = [...ecartes].filter((nom) => atteints.has(nom))
+  if (fautifs.length > 0) {
+    throw new Error(
+      `Le SDK d'Anthropic (${fautifs.join(', ')}) est importé statiquement par la page : ` +
+        'hors précache, l’application ne démarrerait plus hors connexion (#673).',
+    )
+  }
+  return ecartes
+}
+
 function precacheServiceWorker(): Plugin {
   return {
     name: 'sentiers-precache-sw',
@@ -29,6 +57,7 @@ function precacheServiceWorker(): Plugin {
       const dist = path.resolve('dist')
       const swPath = path.join(dist, 'sw.js')
       const assets = await readdir(path.join(dist, 'assets')).catch(() => [])
+      const ecartes = await blocsHorsPrecache(dist, assets)
       const fichiers = [
         './',
         './index.html',
@@ -49,7 +78,7 @@ function precacheServiceWorker(): Plugin {
         // Les contours des zones (#296) : la recherche de l'historique par
         // lieu doit marcher hors ligne comme le reste de l'historique.
         './data/contours-de-zone.json',
-        ...assets.map((nom) => `./assets/${nom}`),
+        ...assets.filter((nom) => !ecartes.has(nom)).map((nom) => `./assets/${nom}`),
       ]
       /*
         L'empreinte de la construction (issue #370).

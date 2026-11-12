@@ -42,8 +42,13 @@ const PLAFONDS: Record<string, number> = {
   // PDIPR de l'Isère (#87) portait About.tsx à 342 lignes. Redescendu de 325
   // à 270 (253 après) : un plafond qu'on ne redescend pas après un découpage
   // autorise à reprendre ce qu'on vient de rendre. 271 le 31/10 : la liste de
-  // ce qui sort doit nommer la sonde IGN et le rayon élargi (#642).
-  'About.tsx': 271,
+  // ce qui sort doit nommer la sonde IGN et le rayon élargi (#642). 210 le
+  // 11/11 (206 après) : « Ce qui sort » part dans CeQuiSort.tsx quand Claude
+  // (#673) s'y ajoute.
+  'About.tsx': 210,
+  // La liste nominative des tiers, sortie d'About.tsx le 11/11 : 88 lignes.
+  // Une entrée par tiers, et chacun coûte une dizaine de lignes.
+  'CeQuiSort.tsx': 110,
   'BoutonObjectif.tsx': 45,
   // 95 le 09/11 (91 après la sortie des PDIPR) : redescendu, comme About.tsx.
   'DonneesEtLicences.tsx': 95,
@@ -62,6 +67,12 @@ const PLAFONDS: Record<string, number> = {
   'BoutonEmporter.tsx': 180,
   'MapView.tsx': 175,
   'Settings.tsx': 175,
+  // Claude, la clé de chacun (#673) : un formulaire et deux états. 75 lignes
+  // le 11/11 ; 90 laisse la place d'une phrase d'aide, pas d'un second
+  // usage — le récit de sortie et les questions auront leur composant.
+  'ReglageClaude.tsx': 90,
+  // Le bilan de saison (#673) : 148 lignes le 11/11, cinq états à montrer.
+  'BilanDeSaison.tsx': 160,
   'RouteDrawer.tsx': 170,
   'Backup.tsx': 165,
   'Objectifs.tsx': 160,

@@ -214,6 +214,17 @@ describe('libelleDestination', () => {
     expect(libelleDestination('fond-de-carte')).toMatch(/fond de carte/i)
     expect(libelleDestination('altimetrie')).toMatch(/altim/i)
     expect(libelleDestination('recherche-commune')).toMatch(/commune/i)
+    expect(libelleDestination('claude')).toMatch(/claude/i)
+  })
+})
+
+describe('Claude, à la demande (#673)', () => {
+  it('classe l’API d’Anthropic sous son nom, et pas en « inconnue »', () => {
+    expect(classerSortie('https://api.anthropic.com/v1/messages').destination).toBe('claude')
+  })
+
+  it('ne prend pas un hôte qui imite celui d’Anthropic', () => {
+    expect(classerSortie('https://api.anthropic.com.attacker.com/v1').destination).toBe('inconnue')
   })
 })
 
