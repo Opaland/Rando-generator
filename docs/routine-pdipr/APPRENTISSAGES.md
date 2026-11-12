@@ -134,3 +134,15 @@ ne s'efface pas (CLAUDE.md §4bis).
   chaque session (et chaque soir pour la routine) → `npm run porte` existe
   (#667), lit ses étapes dans `ci.yml` et s'arrête à la première rouge :
   ne plus en réécrire. `--rapide` avant un commit de docs.
+- 2026-11-12 — Allier — la couche était publique en WFS au CRAIG, et la
+  fiche disait « Ne pas utiliser à des fins commerciales » → une couche
+  **servie** n'est pas une couche **ouverte** : lire `useLimitation` et
+  `otherConstraints` de la fiche avant de compter un département comme
+  intégrable ; une copie dont la licence est posée par un tiers (Madada,
+  après une demande CADA) ne vaut pas licence du producteur — à Cédric.
+- 2026-11-12 — tous — la file s'épuisait sur des départements qui ne
+  publient rien : un recoupement par la liste des couches PDIPR ouvertes
+  (latrace.com, « la carte des 24 départements ») aurait dit dès le 09/11
+  que sept des douze n'avaient pas de jeu → avant d'allonger la file,
+  recouper chaque candidat avec une liste de ce genre, et noter la date de
+  la liste.
