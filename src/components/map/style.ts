@@ -17,10 +17,8 @@ import {
 import {
   attributionHtml,
   IGN,
-  METROPOLE,
   OSM,
   OSM_FOND_ET_TRACES,
-  PROVINCE_NORD,
 } from '../../lib/attribution.ts'
 import { ORDRE_DES_RESEAUX } from '../../core/reseaux.ts'
 import type { Itinerary, PointOfInterest } from '../../core/types.ts'
@@ -44,28 +42,23 @@ export const IGN_TILES =
 export const OSM_TILES = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
 
 /*
-  Composées, plus recopiées (issue #386). Les chaînes rendues sont exactement
-  celles qui étaient écrites ici — `tests/unit/creditsDesSources.test.ts` les épingle
-  au caractère près — et les morceaux vivent désormais dans un seul fichier,
-  d'où la feuille d'impression les tire aussi.
+  Composées, plus recopiées (issue #386) : les morceaux vivent dans un seul
+  fichier, d'où la feuille d'impression les tire aussi, et
+  `tests/unit/creditsDesSources.test.ts` épingle les chaînes rendues au
+  caractère près — toute retouche s'y voit, délibérée.
 
   Sans les PDIPR depuis le 11/11 (#668) : quatre départements crédités ici
   en permanence faisaient recouvrir « Ma position » par le crédit déplié, au
   téléphone en gros texte. Le crédit d'un PDIPR est posé sur la source
   `pdipr` quand son réseau est reçu et non vide (`store/reseauDeFond.ts`,
-  `creditDuReseauDeFond.ts`).
+  `sourceCreditee.ts`).
+
+  Ni la Métropole de Lyon ni la Province Nord depuis le 12/11 (#676), pour
+  la même raison : leur crédit est posé sur la source `trails` quand une de
+  leurs boucles y est peinte (`creditDesTracesPeints`).
 */
-export const ATTRIBUTION = attributionHtml(
-  IGN,
-  OSM,
-  METROPOLE,
-  PROVINCE_NORD,
-)
-export const ATTRIBUTION_OSM = attributionHtml(
-  OSM_FOND_ET_TRACES,
-  METROPOLE,
-  PROVINCE_NORD,
-)
+export const ATTRIBUTION = attributionHtml(IGN, OSM)
+export const ATTRIBUTION_OSM = attributionHtml(OSM_FOND_ET_TRACES)
 
 /**
  * La couleur d'un tracé, par réseau — **dérivée**, jamais énumérée (#412).

@@ -239,6 +239,15 @@ function nomComplet(credit: Credit): string {
 }
 
 /**
+ * Les producteurs dont Sentiers embarque les tracés avec le site, hors
+ * OpenStreetMap. Une seule liste pour `creditsDesSources` (la fiche, le GPX,
+ * la feuille) et `creditDesTracesPeints` (la carte) : écrite deux fois, une
+ * troisième source ajoutée à l'une aurait manqué à l'autre (§4ter, relecture
+ * adverse du 12/11).
+ */
+const EMBARQUES: readonly Credit[] = [METROPOLE, PROVINCE_NORD]
+
+/**
  * Les crédits dus par un ensemble de provenances (issue #388).
  *
  * ## Pourquoi des provenances et non des réseaux
@@ -268,7 +277,7 @@ export function creditsDesSources(
   sources: readonly GpxAttribution[],
 ): Credit[] {
   const connus = new Map<string, Credit>(
-    [OSM, METROPOLE, PROVINCE_NORD].map((credit) => [nomComplet(credit), credit]),
+    [OSM, ...EMBARQUES].map((credit) => [nomComplet(credit), credit]),
   )
   const credits: Credit[] = []
   for (const source of sources) {
@@ -303,4 +312,28 @@ export function creditsImprimes(
     return attribution ? sourcesDe(attribution) : []
   })
   return [...creditsDesSources(sources), IGN_RELIEF]
+}
+
+/**
+ * Le crédit que la source `trails` de la carte doit porter (#676) : celui
+ * des producteurs dont un tracé est peint, hors OpenStreetMap — déjà dans
+ * le crédit du fond (`ATTRIBUTION`), le redire doublerait la ligne.
+ *
+ * Ils étaient écrits en dur dans ce crédit fixe, donc nommés au Puy-de-Dôme
+ * et dès l'accueil, sans rien de peint : la règle de #668 pour les PDIPR,
+ * appliquée aux deux sources embarquées.
+ *
+ * **Seules les provenances connues** passent. Le contrôle de MapLibre pose
+ * ce texte en `innerHTML`, et `enHtml` n'échappe rien : l'auteur déclaré par
+ * un fichier importé y deviendrait du HTML actif. Son crédit reste là où il
+ * est du texte — la fiche, le GPX, la feuille imprimée.
+ */
+export function creditDesTracesPeints(peints: readonly Itinerary[]): string | null {
+  const embarques = new Set(EMBARQUES.map(nomComplet))
+  const sources = peints.flatMap((itineraire) => {
+    const attribution = attributionDe(itineraire)
+    return attribution ? sourcesDe(attribution) : []
+  })
+  const credits = creditsDesSources(sources.filter((source) => embarques.has(source.author)))
+  return credits.length === 0 ? null : attributionHtml(...credits)
 }
