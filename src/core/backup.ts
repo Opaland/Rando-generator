@@ -294,7 +294,8 @@ export async function lireArchiveBackup(
   const reglages = champs(brut['settings'])
   const nombre = (cle: string): number | undefined => {
     const valeur = reglages?.[cle]
-    return typeof valeur === 'number' ? valeur : undefined
+    // `1e999` se relit en JSON comme l'infini (fuzz, #670).
+    return typeof valeur === 'number' && Number.isFinite(valeur) ? valeur : undefined
   }
   const tracks = brut['tracks']
   const persos = brut['customItineraries']

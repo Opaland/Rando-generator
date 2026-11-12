@@ -144,10 +144,16 @@ export function parseGeoJsonTrails(data: unknown): GeoJsonTrail[] {
             })()
 
   const trails: GeoJsonTrail[] = []
-  for (const feature of features) {
-    const lines = lignesDe(feature.geometry)
+  for (const feature of features as unknown[]) {
+    // Un `null` dans la liste des features levait un `TypeError`, affiché
+    // « lecture impossible » sans dire pourquoi (fuzz, #670) : une entrée
+    // qui n'est pas un objet ne trace rien, on l'écarte comme une ligne
+    // d'un seul point.
+    if (typeof feature !== 'object' || feature === null) continue
+    const { geometry, properties } = feature as Feature
+    const lines = lignesDe(geometry)
     if (lines.length === 0) continue
-    trails.push({ name: nomDe(feature.properties), lines })
+    trails.push({ name: nomDe(properties), lines })
   }
   return trails
 }

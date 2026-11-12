@@ -47,6 +47,10 @@ export function lignesDuShapefile(octets: ArrayBuffer): [number, number][][] {
     for (let p = 0; p < nbParties; p++) {
       const debut = v.getInt32(c + 44 + 4 * p, true)
       const fin = p + 1 < nbParties ? v.getInt32(c + 48 + 4 * p, true) : nbPoints
+      // Un indice de partie hors de [0, nbPoints], ou une partie qui finit
+      // avant de commencer, lisait hors de l'enregistrement — jusqu'au
+      // `RangeError` de `DataView` (fuzz, #670).
+      if (debut < 0 || fin < debut || fin > nbPoints) throw corrompu(c - 8)
       const ligne: [number, number][] = []
       for (let i = debut; i < fin; i++) {
         const q = premierPoint + 16 * i

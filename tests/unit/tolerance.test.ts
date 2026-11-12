@@ -3,8 +3,9 @@ import {
   NIVEAUX_TOLERANCE,
   metresDuNiveau,
   niveauDesMetres,
+  TOLERANCE_MAX,
+  TOLERANCE_MIN,
 } from '../../src/core/tolerance.ts'
-import { MIN_TOLERANCE, MAX_TOLERANCE } from '../../src/store/appStore.ts'
 
 /**
  * Issue #174 — « Précision de suivi GPS en mètres » était un curseur que
@@ -17,8 +18,8 @@ import { MIN_TOLERANCE, MAX_TOLERANCE } from '../../src/store/appStore.ts'
  */
 describe('niveaux de tolérance', () => {
   it('n’invente aucune valeur : les trois crans sont ceux déjà en place', () => {
-    expect(metresDuNiveau('precis')).toBe(MIN_TOLERANCE)
-    expect(metresDuNiveau('souple')).toBe(MAX_TOLERANCE)
+    expect(metresDuNiveau('precis')).toBe(TOLERANCE_MIN)
+    expect(metresDuNiveau('souple')).toBe(TOLERANCE_MAX)
     // Le défaut historique du produit, ni arrondi ni déplacé.
     expect(metresDuNiveau('normal')).toBe(50)
   })
@@ -42,9 +43,9 @@ describe('niveaux de tolérance', () => {
   })
 
   it('retrouve le niveau depuis une valeur en mètres', () => {
-    expect(niveauDesMetres(MIN_TOLERANCE)).toBe('precis')
+    expect(niveauDesMetres(TOLERANCE_MIN)).toBe('precis')
     expect(niveauDesMetres(50)).toBe('normal')
-    expect(niveauDesMetres(MAX_TOLERANCE)).toBe('souple')
+    expect(niveauDesMetres(TOLERANCE_MAX)).toBe('souple')
   })
 
   it('ne déguise pas une valeur intermédiaire en cran nommé', () => {

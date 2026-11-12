@@ -118,7 +118,7 @@ describe('les totaux', () => {
     `gagnants.size === 0`, `candidats.size === 0`, `candidats !== null` —
     chaque retour anticipé mène au même `false` par la suite de la boucle.
   - `voisin.wayId === wayId` : deux échantillons d'un même chemin sont à
-    100 m, au-delà de toute confirmation (40 m à `MAX_TOLERANCE`).
+    100 m, au-delà de toute confirmation (40 m à `TOLERANCE_MAX`).
   - `cx − dx` / `cy − dy` et `distance <= best` : boucles symétriques, et un
     minimum reste un minimum.
   - `rayonCellules` sans sa garde `largeurCellule > 0` : `Math.min(cotes, …)`

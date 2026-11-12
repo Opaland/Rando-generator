@@ -38,7 +38,9 @@ export function lireObjectifs(brut: number | string | undefined): number[] {
   if (typeof brut !== 'string') return []
   try {
     const lu: unknown = JSON.parse(brut)
-    return Array.isArray(lu) ? lu.filter((id) => typeof id === 'number') : []
+    // Un identifiant est un entier : `1e999` relu de JSON vaut l'infini, et
+    // `2 ** 53` n'en désigne plus un seul (fuzz, #670).
+    return Array.isArray(lu) ? lu.filter((id): id is number => Number.isSafeInteger(id)) : []
   } catch {
     return []
   }
