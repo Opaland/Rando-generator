@@ -146,3 +146,41 @@ test('une boucle locale ne met rien sur le dos d’OpenStreetMap', async ({
   await expect(page.getByTestId('lien-osm')).toHaveCount(0)
   await expect(page.getByTestId('detail-osm-updated')).toHaveCount(0)
 })
+
+/*
+  #676 — le crédit de la Métropole suit ses boucles peintes, comme celui
+  d'un PDIPR suit son réseau (#668). Écrit en dur jusqu'au 12/11, il était
+  affiché dès l'accueil, au Puy-de-Dôme comme dans la Loire.
+
+  Le texte du contrôle de MapLibre, et non sa visibilité : la question est
+  « la carte crédite-t-elle la Métropole ? », que le crédit soit déplié ou
+  replié derrière son ⓘ.
+*/
+test('le crédit nomme la Métropole seulement quand ses boucles sont peintes', async ({ page }) => {
+  await mockExternalNetwork(page)
+  await page.route('**/data/boucles-metropole-lyon.json', (route) =>
+    route.fulfill({ json: bouclesFixture }),
+  )
+  await page.goto('/')
+  const credit = page.locator('.maplibregl-ctrl-attrib-inner')
+  await expect(credit).toContainText('OpenStreetMap')
+  await expect(credit).not.toContainText('Métropole de Lyon')
+
+  await page.getByTestId('zone-rhone').click()
+  await expect(page.getByTestId('zone-meta')).toContainText('6 itinéraires', {
+    timeout: 15_000,
+  })
+  await afficherTousLesReseaux(page)
+  await expect(credit).toContainText('Métropole de Lyon')
+  // Le crédit est un lien vers la source, pas un texte nu.
+  await expect(credit.getByRole('link', { name: 'Métropole de Lyon' })).toHaveAttribute(
+    'href',
+    'https://data.grandlyon.com/',
+  )
+
+  await page.getByRole('checkbox', { name: 'Boucle' }).uncheck()
+  await expect(credit).not.toContainText('Métropole de Lyon')
+  await expect(credit).toContainText('OpenStreetMap')
+  await page.getByRole('checkbox', { name: 'Boucle' }).check()
+  await expect(credit).toContainText('Métropole de Lyon')
+})

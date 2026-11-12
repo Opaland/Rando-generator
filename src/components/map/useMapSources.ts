@@ -14,7 +14,8 @@ import {
   chargerReseauDeFond,
   useReseauDeFond,
 } from '../../store/reseauDeFond.ts'
-import { poserLeReseauDeFond } from './creditDuReseauDeFond.ts'
+import { poserUneSourceCreditee } from './sourceCreditee.ts'
+import { creditDesTracesPeints } from '../../lib/attribution.ts'
 
 /**
  * Pousse les données de l'application dans les sources GeoJSON de la carte.
@@ -149,7 +150,14 @@ export function useMapSources(
       )
       base.features.push(...custom.base.features)
       done.features.push(...custom.done.features)
-      void map.getSource<GeoJSONSource>('trails')?.setData(base)
+      // Le crédit suit ce qui est peint (#676) : une boucle de la Métropole
+      // repliée par son filtre ne crédite plus la Métropole.
+      poserUneSourceCreditee(
+        map,
+        'trails',
+        base,
+        creditDesTracesPeints([...montres, ...customItineraries]),
+      )
       void map.getSource<GeoJSONSource>('trails-done')?.setData(done)
       // Le déclaratif (issue #158) : sa propre source, et rien de commun avec
       // les échantillons du matching.
@@ -317,7 +325,7 @@ export function useMapSources(
     const map = mapRef.current
     if (!map || !ready) return
     const apply = () => {
-      poserLeReseauDeFond(map, reseauDeFond, creditDuFond)
+      poserUneSourceCreditee(map, 'pdipr', reseauDeFond, creditDuFond)
       // Témoin pour les e2e, comme `__sentiersTrailStats` : un fond ne se
       // lit pas au pixel sans WebGL.
       ;(window as { __sentiersReseauDeFond?: number }).__sentiersReseauDeFond =

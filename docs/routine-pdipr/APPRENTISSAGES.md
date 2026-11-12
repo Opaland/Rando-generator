@@ -120,7 +120,7 @@ ne s'efface pas (CLAUDE.md §4bis).
   avant d'y chercher un défaut, puis refaire le §1 sur le test déplacé.
 - 2026-11-11 — Puy-de-Dôme — MapLibre ne laisse pas changer
   l'`attribution` d'une source : on retire la couche, on recrée la source,
-  on repose la couche **au même rang** (`creditDuReseauDeFond.ts`) ; le
+  on repose la couche **au même rang** (`sourceCreditee.ts`) ; le
   rang se garde par un e2e (`reseau-de-fond.spec.ts`), qui rougit sans le
   `beforeId`.
 - 2026-11-11 — Puy-de-Dôme — le crédit raccourci (#668) tenait déplié au
