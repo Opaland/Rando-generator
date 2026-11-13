@@ -344,8 +344,12 @@ function isOverpassResponse(data: unknown): data is OverpassResponse {
  * - `remark` **avec des données** : un résultat partiel. On le garde — mieux
  *   vaut une zone incomplète que pas de zone — et le motif reste attaché à
  *   la réponse pour que l'appelant puisse le dire.
+ *
+ * Exportée pour `scripts/sources-reelles.mjs` (#669), qui doit classer une
+ * telle réponse comme l'application : un miroir en échec, pas un format
+ * changé.
  */
-function estUnEchecDeserveur(data: OverpassResponse): boolean {
+export function estUnEchecDeserveur(data: OverpassResponse): boolean {
   return data.remark !== undefined && data.elements.length === 0
 }
 
