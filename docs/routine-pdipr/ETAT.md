@@ -39,3 +39,4 @@ Une ligne par passage : `AAAA-MM-JJ — zone — tentative n — résultat — P
 - 2026-11-12 — haute-loire, cantal, vosges, haut-rhin, bas-rhin, moselle, haute-saone — pas de jeu ouvert, pas un échec — bloqués, #682.
 - 2026-11-12 — allier — licence non nommée (« pas d'usage commercial ») — attend Cédric, #683.
 - 2026-11-12 — **file épuisée** : plus aucune zone `à faire` ni `en cours`. La routine s'arrête là jusqu'à une décision de Cédric (#666, #682, #683, Savoie et Haute-Savoie) ou une zone ajoutée à la file.
+- 2026-11-13 — file vide — aucune réponse sur #682, #683 ; catalogue régional revérifié : aucune fiche PDIPR pour la Loire, l'Ardèche, la Drôme (#666, commenté) — rien à faire, arrêt.
