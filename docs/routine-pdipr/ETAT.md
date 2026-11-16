@@ -40,3 +40,4 @@ Une ligne par passage : `AAAA-MM-JJ — zone — tentative n — résultat — P
 - 2026-11-12 — allier — licence non nommée (« pas d'usage commercial ») — attend Cédric, #683.
 - 2026-11-12 — **file épuisée** : plus aucune zone `à faire` ni `en cours`. La routine s'arrête là jusqu'à une décision de Cédric (#666, #682, #683, Savoie et Haute-Savoie) ou une zone ajoutée à la file.
 - 2026-11-13 — file vide — aucune réponse sur #682, #683 ; catalogue régional revérifié : aucune fiche PDIPR pour la Loire, l'Ardèche, la Drôme (#666, commenté) — rien à faire, arrêt.
+- 2026-11-16 — file vide — passages du 14 et du 15/11 non traités le soir même, rattrapés ensemble ; aucun changement sur `main` ni réponse sur #666, #682, #683 — rien à faire, arrêt.
