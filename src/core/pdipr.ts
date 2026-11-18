@@ -149,8 +149,9 @@ const JEUX_PAR_ZONE: Readonly<Record<string, JeuPdipr>> = {
     Le Puy-de-Dôme depuis le 10/11, par le WFS du CRAIG
     (`scripts/sources-pdipr.mjs`). Des itinéraires entiers et nommés, comme
     l'Ain (le nom ne survit pas à la préparation), tous `INSCRIT_PD = Oui` : aucun champ de diffusion, donc pas de
-    règle `retenir`. Les sept boucles VTT et la boucle équestre sont
-    montrées avec le reste — c'est le PDIPR tel que le Département le publie.
+    règle `retenir`. Les sept boucles VTT et la boucle équestre
+    (`TYPE_ITI`) sont montrées avec le reste : c'est le PDIPR tel que le
+    Département le publie, et Cédric a confirmé le 18/11 qu'on les garde.
   */
   'puy-de-dome': {
     fichier: 'data/pdipr-puy-de-dome.json',
