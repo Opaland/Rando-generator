@@ -16,7 +16,7 @@ tant que Cédric n'a pas répondu sur l'issue.
 | 1 | `loire` | bloqué | 0 | | #666 | 10/11 : rien sur data.gouv.fr ni au wiki OSM ; datARA injoignable (502) |
 | 2 | `drome` | bloqué | 0 | | #666 | 10/11 : jeu sur data.gouv.fr sans licence, portail `infogeo.ladrome.fr` injoignable |
 | 3 | `ardeche` | bloqué | 0 | | #666 | 10/11 : rien sur data.gouv.fr ; datARA injoignable (502) |
-| — | `puy-de-dome` | livré | 1 | #672 | #87, #668, #674, #675, #676 | 11/11, WFS du CRAIG, 442 itinéraires, LO 1.0, mention « CD63-2026 » |
+| — | `puy-de-dome` | livré | 1 | #672 | #87, #668, #674, #675, #676 | 11/11, WFS du CRAIG, 442 itinéraires, LO 1.0, mention « CD63-2026 » ; VTT et équestre gardés (Cédric, 18/11) |
 | 5 | `haute-loire` | bloqué | 0 | | #682 | 12/11 : rien d'ouvert ; portail Geotrek du Département sans licence |
 | 6 | `cantal` | bloqué | 0 | | #682 | 12/11 : rien au CRAIG ni sur data.gouv.fr |
 | — | `allier` | attend Cédric | — | | #683 | 12/11 : jeu 2024 « pas d'usage commercial » (CRAIG) ; copie 2020 en LO 2.0 posée par Madada |
@@ -41,3 +41,4 @@ Une ligne par passage : `AAAA-MM-JJ — zone — tentative n — résultat — P
 - 2026-11-12 — **file épuisée** : plus aucune zone `à faire` ni `en cours`. La routine s'arrête là jusqu'à une décision de Cédric (#666, #682, #683, Savoie et Haute-Savoie) ou une zone ajoutée à la file.
 - 2026-11-13 — file vide — aucune réponse sur #682, #683 ; catalogue régional revérifié : aucune fiche PDIPR pour la Loire, l'Ardèche, la Drôme (#666, commenté) — rien à faire, arrêt.
 - 2026-11-16 — file vide — passages du 14 et du 15/11 non traités le soir même, rattrapés ensemble ; aucun changement sur `main` ni réponse sur #666, #682, #683 — rien à faire, arrêt.
+- 2026-11-18 — puy-de-dome — Cédric garde les 7 boucles VTT et la boucle équestre (question ouverte depuis #672) ; passage du 17/11 rattrapé : file vide, rien d'autre.
