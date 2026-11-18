@@ -649,8 +649,8 @@ fait faute d'un corpus réel pour poser un seuil sans l'inventer.
     miroirs Overpass, le fond et l'altimétrie IGN, l'API Adresse, chaque PDIPR
     qui a une adresse dans `scripts/sources-pdipr.mjs` — par **le lecteur de
     l'application**, et dit laquelle a changé de forme. Le flux « Sources
-    publiques », lancé à la main, en fait une issue qui se referme d'elle-même
-    au premier passage où toutes ont répondu (#669).
+    publiques », chaque lundi et à la demande, en fait une issue qui se
+    referme d'elle-même au premier passage où toutes ont répondu (#669).
 
   Les deux premières sont sautées par défaut et le disent dans chaque
   rapport ; quand un miroir ne rend rien, elles le sautent **en nommant

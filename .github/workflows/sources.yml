@@ -16,8 +16,11 @@
 # mémorisé d'un passage à l'autre. Le rapport la nomme, et l'état est
 # « incomplet » : c'est à le lire qu'on la voit.
 #
-# Lancé à la main. La cadence, et le fait de le planifier ou non, sont à
-# Cédric (#669) : un `schedule:` se pose ici le jour où il le décide.
+# Chaque lundi, et à la main quand on veut (onglet Actions). Cadence
+# décidée par Cédric le 18/11 (#669). 04:23 UTC : la nuit, Overpass est
+# moins chargé — un miroir surchargé est ignoré, et un passage « incomplet »
+# ne referme pas l'issue — et une minute autre que :00, parce que GitHub
+# retarde les déclenchements à l'heure pile, où tout le monde se presse.
 #
 # Sur une PR qui touche au contrôle, il tourne aussi — c'est la seule façon
 # de l'éprouver sur les vraies sources avant de le fusionner — mais n'ouvre
@@ -26,6 +29,8 @@
 name: Sources publiques
 
 on:
+  schedule:
+    - cron: '23 4 * * 1'
   workflow_dispatch:
   pull_request:
     paths:
