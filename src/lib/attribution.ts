@@ -180,6 +180,9 @@ export const DEPARTEMENT_RHONE: Credit = {
  * l'Ain. La fiche de métadonnées impose la mention « CD63-2026 » : elle est
  * dans le nom, pour paraître partout où le crédit paraît. « Licence Ouverte »
  * sans numéro sur la fiche, qui renvoie au texte Etalab de 2011 : la 1.0.
+ * Cette version demande aussi la date de dernière mise à jour ; la licence
+ * admet d'y satisfaire par un lien vers l'information, et c'est ce que fait
+ * le lien data.gouv.fr ci-dessous (Cédric, 19/11).
  */
 export const DEPARTEMENT_PUY_DE_DOME: Credit = {
   quoi: 'Réseau balisé',

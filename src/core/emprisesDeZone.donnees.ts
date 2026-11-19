@@ -1,4 +1,4 @@
-// Fichier généré par scripts/emprises-de-zone.mjs le 2026-10-22 — ne pas
+// Fichier généré par scripts/emprises-de-zone.mjs le 2026-11-19 — ne pas
 // éditer à la main. Boîtes englobantes des limites OSM de chaque zone
 // prédéfinie — hors celles que le script laisse sans emprise, et dit pourquoi —
 // en [ouest, sud, est, nord], arrondies à 1e-4 degré (~10 m).
@@ -45,4 +45,6 @@ export const EMPRISES_DE_ZONE: Readonly<Record<string, Emprise>> = {
   'moselle': [5.8918, 48.5266, 7.6388, 49.5149],
   // relation 7423
   'haute-saone': [5.367, 47.2526, 6.8255, 48.0241],
+  // relation 51856
+  'meurthe-et-moselle': [5.4261, 48.3489, 7.1232, 49.5633],
 }

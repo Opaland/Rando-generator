@@ -25,6 +25,7 @@ tant que Cédric n'a pas répondu sur l'issue.
 | 10 | `bas-rhin` | bloqué | 0 | | #682 | 12/11 : aucun PDIPR départemental ouvert (data.gouv.fr, DataGrandEst) |
 | 11 | `moselle` | bloqué | 0 | | #682 | 12/11 : aucun PDIPR départemental ouvert (data.gouv.fr, DataGrandEst) |
 | 12 | `haute-saone` | bloqué | 0 | | #682 | 12/11 : aucun PDIPR départemental ouvert (data.gouv.fr, DataGrandEst) |
+| 13 | `meurthe-et-moselle` | à faire | 0 | | #682 | 19/11 : zone ajoutée (décision de Cédric) ; PDIPR en Licence Ouverte (`fr-lo`) sur data.gouv.fr et DataGrandEst |
 | — | `savoie` | attend Cédric | — | | | condition non nommée (FEUILLE_DE_ROUTE, 18/10) |
 | — | `haute-savoie` | attend Cédric | — | | | idem |
 
@@ -42,3 +43,4 @@ Une ligne par passage : `AAAA-MM-JJ — zone — tentative n — résultat — P
 - 2026-11-13 — file vide — aucune réponse sur #682, #683 ; catalogue régional revérifié : aucune fiche PDIPR pour la Loire, l'Ardèche, la Drôme (#666, commenté) — rien à faire, arrêt.
 - 2026-11-16 — file vide — passages du 14 et du 15/11 non traités le soir même, rattrapés ensemble ; aucun changement sur `main` ni réponse sur #666, #682, #683 — rien à faire, arrêt.
 - 2026-11-18 — puy-de-dome — Cédric garde les 7 boucles VTT et la boucle équestre (question ouverte depuis #672) ; passage du 17/11 rattrapé : file vide, rien d'autre.
+- 2026-11-19 — Cédric valide les propositions des 12-18/11 : le lien data.gouv.fr suffit pour la date de mise à jour de la LO 1.0 (Puy-de-Dôme) ; la Meurthe-et-Moselle devient une zone et entre dans la file ; la routine continue.
