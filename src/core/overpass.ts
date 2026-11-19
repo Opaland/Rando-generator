@@ -62,7 +62,9 @@ const AURA_DEPARTEMENTS: { id: string; label: string; name: string }[] = [
 /**
  * Le massif vosgien (#286), demandé par Cédric le 24/08.
  *
- * Il déborde cinq départements sur trois régions : le découper autrement
+ * Il déborde cinq départements sur trois régions — la sixième zone du
+ * groupe, la Meurthe-et-Moselle, n'en porte que le sud-est et vient pour
+ * son PDIPR (19/11, ci-dessous). Le découper autrement
  * qu'administrativement supposerait une limite de massif qu'OSM ne porte pas
  * sous une forme stable. On charge donc département par département, comme
  * pour Auvergne-Rhône-Alpes, et pour la même raison : une requête couvrant
@@ -78,6 +80,13 @@ const VOSGES_DEPARTEMENTS: { id: string; label: string; name: string }[] = [
   { id: 'bas-rhin', label: 'Bas-Rhin', name: 'Bas-Rhin' },
   { id: 'moselle', label: 'Moselle', name: 'Moselle' },
   { id: 'haute-saone', label: 'Haute-Saône', name: 'Haute-Saône' },
+  /*
+    Ajoutée le 19/11 pour son PDIPR, que le Département publie en Licence
+    Ouverte (#682) — seul des départements voisins du massif à le faire —,
+    sur décision de Cédric. Le massif n'en couvre que le sud-est (Donon,
+    Badonviller) : la zone est le département entier, comme les autres.
+  */
+  { id: 'meurthe-et-moselle', label: 'Meurthe-et-Moselle', name: 'Meurthe-et-Moselle' },
 ]
 
 /**

@@ -68,6 +68,21 @@ describe('buildZoneQuery', () => {
     expect(buildZoneQuery('haute-savoie')).toContain('"name"="Haute-Savoie"')
   })
 
+  /*
+    La Meurthe-et-Moselle, le 19/11 : ajoutée pour son PDIPR, publié en
+    Licence Ouverte (#682, décision de Cédric), dans le groupe du massif
+    vosgien dont elle porte le sud-est. Sa limite OSM est la relation
+    51856, `admin_level=6`, mesurée sur Nominatim avant d'écrire ce test.
+  */
+  it('propose la Meurthe-et-Moselle avec le massif vosgien, par sa limite départementale', () => {
+    const zone = ZONES.find((z) => z.id === 'meurthe-et-moselle')
+    expect(zone?.group).toBe('vosges')
+    expect(zone?.label).toBe('Meurthe-et-Moselle')
+    const q = buildZoneQuery('meurthe-et-moselle')
+    expect(q).toContain('"name"="Meurthe-et-Moselle"')
+    expect(q).toContain('"admin_level"="6"')
+  })
+
   it('les identifiants de zone sont uniques', () => {
     const ids = ZONES.map((z) => z.id)
     expect(new Set(ids).size).toBe(ids.length)

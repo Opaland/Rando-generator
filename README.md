@@ -95,7 +95,8 @@ par le CLI Playwright.
 
 1. **Charger une zone** : Rhône + Métropole de Lyon, Loire, PNR du Pilat, les
    trois, **n'importe quel département d'Auvergne-Rhône-Alpes**, le massif
-   vosgien département par département, ou la **Nouvelle-Calédonie**
+   vosgien département par département (Meurthe-et-Moselle comprise, pour
+   son plan départemental de randonnée ouvert), ou la **Nouvelle-Calédonie**
    (GR® NC1 et itinéraires locaux depuis OSM, plus les cinq étapes du **GR
    Nord** © Province Nord ajoutées automatiquement ; sans profil
    altimétrique, le MNT de l'IGN ne la couvre pas — la fiche le dit). En
