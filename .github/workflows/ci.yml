@@ -64,15 +64,29 @@ jobs:
         #
         # 180 s est tranché au jugé (§2, un délai de CI, pas un calcul) :
         # l'étape entière prend 28 s quand le miroir répond, soit plus de
-        # six fois de marge. `timeout` tue le groupe de processus, apt
-        # compris (vérifié dans le conteneur), et `dpkg --configure -a`
-        # reprend une installation coupée en cours de route.
+        # six fois de marge.
+        #
+        # Ce que `timeout` ne tue **pas** (#690, mesuré sur le runner le
+        # 18/11) : Playwright installe les dépendances par `sudo apt-get`,
+        # que `sudo` lance hors du groupe de processus de `timeout`. Coupé,
+        # l'essai 1 laissait son `apt-get` vivant, qui tenait le verrou de
+        # dpkg : les essais 2 et 3 échouaient en une seconde chacun. Le
+        # commentaire d'avant disait l'inverse, vérifié dans un conteneur
+        # et pas sur le runner. Entre deux essais, on arrête donc ce qui
+        # reste d'apt et de dpkg, on attend qu'ils soient partis, puis
+        # `dpkg --configure -a` reprend une installation coupée.
         run: |
           for essai in 1 2 3; do
             if timeout 180 npx playwright install --with-deps chromium; then
               exit 0
             fi
             echo "::warning::Installation de Chromium : essai ${essai} sur 3 échoué ou coupé à 180 s (#587)"
+            sudo pkill -TERM -x 'apt-get|apt|dpkg' || true
+            for seconde in $(seq 1 30); do
+              pgrep -x 'apt-get|apt|dpkg' > /dev/null || break
+              sleep 1
+            done
+            sudo pkill -KILL -x 'apt-get|apt|dpkg' || true
             sudo dpkg --configure -a || true
           done
           exit 1
