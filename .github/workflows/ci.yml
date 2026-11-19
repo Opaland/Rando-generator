@@ -77,7 +77,8 @@ jobs:
         # `dpkg --configure -a` reprend une installation coupée.
         run: |
           for essai in 1 2 3; do
-            if timeout 180 npx playwright install --with-deps chromium; then
+            limite=180; [ "$essai" = 1 ] && limite=5  # SONDE #690, à retirer
+            if timeout "$limite" npx playwright install --with-deps chromium; then
               exit 0
             fi
             echo "::warning::Installation de Chromium : essai ${essai} sur 3 échoué ou coupé à 180 s (#587)"
