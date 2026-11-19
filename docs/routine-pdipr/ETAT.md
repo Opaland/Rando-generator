@@ -25,9 +25,9 @@ tant que Cédric n'a pas répondu sur l'issue.
 | 10 | `bas-rhin` | bloqué | 0 | | #682 | 12/11 : aucun PDIPR départemental ouvert (data.gouv.fr, DataGrandEst) |
 | 11 | `moselle` | bloqué | 0 | | #682 | 12/11 : aucun PDIPR départemental ouvert (data.gouv.fr, DataGrandEst) |
 | 12 | `haute-saone` | bloqué | 0 | | #682 | 12/11 : aucun PDIPR départemental ouvert (data.gouv.fr, DataGrandEst) |
-| 13 | `meurthe-et-moselle` | à faire | 0 | | #682 | 19/11 : zone ajoutée (décision de Cédric) ; PDIPR en Licence Ouverte (`fr-lo`) sur data.gouv.fr et DataGrandEst |
-| — | `savoie` | attend Cédric | — | | | condition non nommée (FEUILLE_DE_ROUTE, 18/10) |
-| — | `haute-savoie` | attend Cédric | — | | | idem |
+| 13 | `meurthe-et-moselle` | bloqué | 0 | | #682, #694 | 19/11 : zone ajoutée (#693) ; LO 1.0 nommée par le producteur ; serveur `webcarto.infogeo54.fr` refuse les robots (403 « ogo ») : attend le shapefile téléchargé à la main |
+| — | `savoie` | attend Cédric | — | | | condition non nommée (FEUILLE_DE_ROUTE, 18/10) ; 19/11 : le Département publie « PDIPR73 » sur data.gouv.fr en LO 1.0 (`fr-lo`) — question posée à Cédric |
+| — | `haute-savoie` | attend Cédric | — | | | idem ; 19/11 : le Conseil départemental publie le jeu 2023 sur data.gouv.fr en LO 2.0 — question posée à Cédric |
 
 ## Journal
 
@@ -44,3 +44,4 @@ Une ligne par passage : `AAAA-MM-JJ — zone — tentative n — résultat — P
 - 2026-11-16 — file vide — passages du 14 et du 15/11 non traités le soir même, rattrapés ensemble ; aucun changement sur `main` ni réponse sur #666, #682, #683 — rien à faire, arrêt.
 - 2026-11-18 — puy-de-dome — Cédric garde les 7 boucles VTT et la boucle équestre (question ouverte depuis #672) ; passage du 17/11 rattrapé : file vide, rien d'autre.
 - 2026-11-19 — Cédric valide les propositions des 12-18/11 : le lien data.gouv.fr suffit pour la date de mise à jour de la LO 1.0 (Puy-de-Dôme) ; la Meurthe-et-Moselle devient une zone et entre dans la file ; la routine continue.
+- 2026-11-19 — meurthe-et-moselle — zone ajoutée (#693), licence nommée, téléchargement refusé aux robots — pas un échec — bloqué, #694. Savoie et Haute-Savoie : licence nommée par le producteur trouvée sur data.gouv.fr, question posée à Cédric.

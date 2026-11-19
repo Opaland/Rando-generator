@@ -151,3 +151,14 @@ ne s'efface pas (CLAUDE.md §4bis).
   qui tournait : son résultat a été jeté et la porte relancée (CLAUDE.md
   §6quater) → pendant une porte, tout travail sur une autre branche se
   fait dans un clone séparé du scratchpad, jamais dans l'arbre principal.
+- 2026-11-19 — Savoie, Haute-Savoie — classées « condition non nommée »
+  le 18/10 d'après leurs fiches datARA, alors que les deux Départements
+  publient **eux-mêmes** le jeu sur data.gouv.fr sous une Licence Ouverte
+  nommée (1.0 et 2.0) → pour une licence, lire toutes les fiches que le
+  **producteur** publie (data.gouv.fr, catalogue régional, portail), pas
+  une seule ; et noter laquelle a été lue.
+- 2026-11-19 — Meurthe-et-Moselle — un serveur peut refuser les robots
+  par un pare-feu applicatif (`x-ogo-blocked`), distinct d'un refus du
+  proxy → lire les en-têtes de la réponse (`curl -D-`) avant de conclure
+  « injoignable » ; dans ce cas, le chemin « fichier reçu » d'`exportBrut`
+  existe déjà.
