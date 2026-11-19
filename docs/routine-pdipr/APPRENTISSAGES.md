@@ -146,3 +146,8 @@ ne s'efface pas (CLAUDE.md §4bis).
   que sept des douze n'avaient pas de jeu → avant d'allonger la file,
   recouper chaque candidat avec une liste de ce genre, et noter la date de
   la liste.
+- 2026-11-19 — Meurthe-et-Moselle — un `git checkout` vers une autre
+  branche, pour pousser une sonde de CI, a changé l'arbre sous une porte
+  qui tournait : son résultat a été jeté et la porte relancée (CLAUDE.md
+  §6quater) → pendant une porte, tout travail sur une autre branche se
+  fait dans un clone séparé du scratchpad, jamais dans l'arbre principal.
