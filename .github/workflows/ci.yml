@@ -77,12 +77,16 @@ jobs:
         # `dpkg --configure -a` reprend une installation coupée.
         run: |
           for essai in 1 2 3; do
-            limite=180; [ "$essai" = 1 ] && limite=5  # SONDE #690, à retirer
-            if timeout "$limite" npx playwright install --with-deps chromium; then
+            if timeout 180 npx playwright install --with-deps chromium; then
               exit 0
             fi
             echo "::warning::Installation de Chromium : essai ${essai} sur 3 échoué ou coupé à 180 s (#587)"
-            true  # SONDE §1 #690 : correctif retiré, à remettre
+            sudo pkill -TERM -x 'apt-get|apt|dpkg' || true
+            for seconde in $(seq 1 30); do
+              pgrep -x 'apt-get|apt|dpkg' > /dev/null || break
+              sleep 1
+            done
+            sudo pkill -KILL -x 'apt-get|apt|dpkg' || true
             sudo dpkg --configure -a || true
           done
           exit 1
