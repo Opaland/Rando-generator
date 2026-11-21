@@ -46,3 +46,4 @@ Une ligne par passage : `AAAA-MM-JJ — zone — tentative n — résultat — P
 - 2026-11-19 — Cédric valide les propositions des 12-18/11 : le lien data.gouv.fr suffit pour la date de mise à jour de la LO 1.0 (Puy-de-Dôme) ; la Meurthe-et-Moselle devient une zone et entre dans la file ; la routine continue.
 - 2026-11-19 — meurthe-et-moselle — zone ajoutée (#693), licence nommée, téléchargement refusé aux robots — pas un échec — bloqué, #694. Savoie et Haute-Savoie : licence nommée par le producteur trouvée sur data.gouv.fr, question posée à Cédric.
 - 2026-11-20 — file sans zone à faire — attend Cédric : Savoie et Haute-Savoie (licence nommée trouvée le 19/11), fichier de la Meurthe-et-Moselle (#694) ; rien sur Drive ni sur les issues — arrêt.
+- 2026-11-21 — file sans zone à faire — toujours en attente de Cédric (Savoie, Haute-Savoie ; fichier de la Meurthe-et-Moselle, #694) — arrêt.
