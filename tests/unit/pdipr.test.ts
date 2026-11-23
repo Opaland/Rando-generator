@@ -321,6 +321,37 @@ describe('jeuPdiprPour', () => {
     expect(jeuPdiprPour(zone)?.credit.qui).toBe(qui)
   })
 
+  /*
+    La Haute-Savoie, le 23/11 : le Conseil départemental publie lui-même
+    son PDIPR 2023 sur data.gouv.fr, en Licence Ouverte 2.0 — remise dans
+    la file par Cédric après la « condition non nommée » du 18/10, lue sur
+    datARA. 14 515 tronçons (14 617 lignes), shapefile Lambert-93.
+  */
+  it('désigne le jeu de la Haute-Savoie pour la zone Haute-Savoie', () => {
+    expect(jeuPdiprPour('haute-savoie')?.fichier).toBe('data/pdipr-haute-savoie.json')
+    expect(jeuPdiprPour('haute-savoie')?.credit.qui).toBe('Département de la Haute-Savoie')
+  })
+
+  it('garde dans l’emprise de la Haute-Savoie les quatre points extrêmes du jeu', () => {
+    const jeu = jeuPdiprPour('haute-savoie')
+    expect(jeu).not.toBeNull()
+    // Relevés le 23/11 sur le shapefile reprojeté, avant simplification
+    // (le fichier embarqué arrondit le nord à 46,40798) : le plus au sud, au nord,
+    // à l'ouest, à l'est — chacun sur sa ligne, pour qu'un seul écarté se
+    // voie au compte.
+    const extremes = [
+      [6.27242, 45.67712],
+      [6.71858, 46.408],
+      [5.80568, 46.02225],
+      [6.9865, 45.99692],
+    ]
+    const reseau = parseReseauPdipr(
+      { features: extremes.map((p) => ligne([p, [6.4, 46.0]])) },
+      jeu!.emprise,
+    )
+    expect(reseau.features).toHaveLength(4)
+  })
+
   it('ne désigne rien pour une zone qu’aucun PDIPR ne couvre', () => {
     expect(jeuPdiprPour('loire')).toBeNull()
     expect(jeuPdiprPour(null)).toBeNull()

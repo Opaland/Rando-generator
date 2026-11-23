@@ -48,7 +48,9 @@ parcouru 34 % du GR 7, 61 % des sentiers du Pilat ».
   Département de l'Ain (Licence Ouverte 2.0, PDIPR itinéraire) et réseau
   balisé du Rhône © Département du Rhône (Licence Ouverte 2.0, PDIPR) et
   itinéraires du Puy-de-Dôme © Département du Puy-de-Dôme, CD63-2026
-  (Licence Ouverte 1.0, PDIPR, publié par le CRAIG), dessinés en fond sans
+  (Licence Ouverte 1.0, PDIPR, publié par le CRAIG) et réseau balisé de la
+  Haute-Savoie © Département de la Haute-Savoie (Licence Ouverte 2.0, PDIPR
+  2023), dessinés en fond sans
   être comptés — le crédit de la carte nomme le Département de la zone
   chargée, et lui seul (#668) ; fond de carte Plan IGN v2 (licence
   ouverte Etalab 2.0) avec repli automatique sur les tuiles OSM.
@@ -112,7 +114,9 @@ par le CLI Playwright.
    réserve) s'ajoute de même, en tronçons sans nom. Dans le **Puy-de-Dôme**,
    les 442 itinéraires du Département s'y ajoutent comme les boucles de
    l'Ain, dessinés sans leur nom et pas comptés (317 sont déjà couverts à
-   ≥ 80 % par OpenStreetMap, mesuré le 10/11). Ou
+   ≥ 80 % par OpenStreetMap, mesuré le 10/11). En **Haute-Savoie**, le
+   réseau balisé du Département s'ajoute de même, en tronçons dessinés sans
+   le nom de leur itinéraire. Ou
    encore
    un ref d'itinéraire (ex. « GR 20 »), avec quelques **grands itinéraires**
    proposés en un clic (GR 65 Saint-Jacques, GR 70 Stevenson, GR 5 Alpes…),
@@ -496,7 +500,7 @@ src/
 │  ├─ poi.ts       # POI le long d'un tracé (Overpass, bbox découpées)
 │  ├─ boucles.ts   # boucles communales open data (Métropole de Lyon, LO 2.0)
 │  ├─ grNord.ts    # GR Nord open data (Province Nord, Nouvelle-Calédonie, LO 2.0)
-│  ├─ pdipr.ts     # réseau de fond PDIPR (Isère, Ain, Rhône, Puy-de-Dôme, LO) : montrés, jamais comptés
+│  ├─ pdipr.ts     # réseau de fond PDIPR (Isère, Ain, Rhône, Puy-de-Dôme, Haute-Savoie, LO) : montrés, jamais comptés
 │  ├─ routing.ts   # graphe des sentiers, accroche d'un clic, Dijkstra
 │  ├─ history.ts   # sorties par mois, totaux, cumuls
 │  ├─ discovery.ts # durées et dénivelés publiés, forme du tracé, filtres

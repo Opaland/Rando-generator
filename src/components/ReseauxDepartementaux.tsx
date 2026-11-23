@@ -1,5 +1,6 @@
 import {
   DEPARTEMENT_AIN,
+  DEPARTEMENT_HAUTE_SAVOIE,
   DEPARTEMENT_ISERE,
   DEPARTEMENT_PUY_DE_DOME,
   DEPARTEMENT_RHONE,
@@ -64,6 +65,12 @@ export function ReseauxDepartementaux() {
         <Producteur credit={DEPARTEMENT_PUY_DE_DOME} />) sont dessinés en fond
         comme les boucles de l’Ain, sans leur nom&nbsp;: la plupart existent
         déjà dans OpenStreetMap, et ils ne comptent dans aucun pourcentage.
+      </li>
+      <li>
+        En Haute-Savoie, le <strong>réseau balisé du Département</strong> ({PLAN},{' '}
+        <Producteur credit={DEPARTEMENT_HAUTE_SAVOIE} />) est dessiné en fond
+        comme celui de l’Isère&nbsp;: des tronçons sans nom, qui ne comptent
+        dans aucun pourcentage.
       </li>
     </>
   )

@@ -54,6 +54,18 @@ export const SOURCES_PDIPR = {
     source: "Département du Puy-de-Dôme (CD63-2026) — PDIPR, Licence Ouverte 1.0",
     nom: "Puy-de-Dôme",
   },
+  /*
+    La Haute-Savoie, le 23/11 : le Conseil départemental publie son PDIPR
+    2023 sur data.gouv.fr, en Licence Ouverte 2.0, dans un zip de
+    shapefiles Lambert-93 (« randonne-pedestre-haute-savoie.zip »). Le zip
+    n'est pas une adresse que `exportBrut` sait lire : on le télécharge, on
+    l'ouvre, et le `.shp` se donne sur la ligne de commande, comme le Rhône.
+  */
+  "haute-savoie": {
+    shapefile: "Lambert-93",
+    source: "Département de la Haute-Savoie — PDIPR 2023, Licence Ouverte 2.0",
+    nom: "Haute-Savoie",
+  },
 };
 
 /**

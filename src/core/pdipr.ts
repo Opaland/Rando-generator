@@ -3,6 +3,7 @@ import { isWgs84Coordinate } from './geo.ts'
 import type { LonLat } from './types.ts'
 import {
   DEPARTEMENT_AIN,
+  DEPARTEMENT_HAUTE_SAVOIE,
   DEPARTEMENT_ISERE,
   DEPARTEMENT_PUY_DE_DOME,
   DEPARTEMENT_RHONE,
@@ -89,6 +90,17 @@ const EMPRISE_RHONE: Emprise = { ouest: 4.18, est: 5.22, sud: 45.49, nord: 46.36
 const EMPRISE_PUY_DE_DOME: Emprise = { ouest: 2.35, est: 4.06, sud: 45.11, nord: 46.28 }
 
 /**
+ * L'emprise de la Haute-Savoie, à environ 5 km près.
+ *
+ * Mesurée le 23/11 sur le shapefile du Département (Lambert-93, reprojeté
+ * par `core/lambert93.ts` et recoupé point pour point par le KML du même
+ * jeu, écart nul au mètre) : les 14 515 tronçons (14 617 lignes)
+ * s'étendent de 5,806 à 6,986° E et de 45,677 à 46,408° N, tous valides.
+ * Garde, pas filtre.
+ */
+const EMPRISE_HAUTE_SAVOIE: Emprise = { ouest: 5.74, est: 7.05, sud: 45.63, nord: 46.46 }
+
+/**
  * Ce que le producteur dit d'un objet, quand il le dit : les propriétés
  * brutes de l'export, que seul le script de préparation voit.
  */
@@ -118,7 +130,7 @@ interface JeuPdipr {
  * L'Isère depuis le 18/10 ; l'Ain depuis le 21/10, quand data.gouv.fr a de
  * nouveau répondu (il coupait les connexions le 18 — on n'embarque pas un
  * jeu qu'on n'a pas lu) ; le Rhône depuis le 09/11 ; le Puy-de-Dôme depuis le
- * 10/11.
+ * 10/11 ; la Haute-Savoie depuis le 23/11.
  *
  * L'Ain publie des **boucles nommées**, pas des tronçons, et elles
  * pourraient devenir des itinéraires comme celles de la Métropole. Elles
@@ -157,6 +169,23 @@ const JEUX_PAR_ZONE: Readonly<Record<string, JeuPdipr>> = {
     fichier: 'data/pdipr-puy-de-dome.json',
     emprise: EMPRISE_PUY_DE_DOME,
     credit: DEPARTEMENT_PUY_DE_DOME,
+  },
+  /*
+    La Haute-Savoie depuis le 23/11 : un shapefile de data.gouv.fr
+    (`scripts/sources-pdipr.mjs`). Des tronçons, comme le Rhône, mais
+    chacun nommé par les itinéraires qu'il porte (`itineraire`, séparés par
+    « | », 1 793 valeurs : « GR96 », « GRP TPMB »…) — les noms ne survivent
+    pas à la préparation. Aucun champ de diffusion : `label` dit le balisage
+    (GR, GRP, « Sans label »…). Tout est montré, sans règle `retenir`, y
+    compris 79 tronçons dont **tous** les itinéraires se disent « Projet … »
+    (74) ou « … Hors PDIPR » (5) ; 66 autres en portent un aussi, à côté d'un
+    itinéraire inscrit. Mesuré le 23/11, question posée à Cédric (§2 :
+    écarter change ce qui est peint).
+  */
+  'haute-savoie': {
+    fichier: 'data/pdipr-haute-savoie.json',
+    emprise: EMPRISE_HAUTE_SAVOIE,
+    credit: DEPARTEMENT_HAUTE_SAVOIE,
   },
 }
 

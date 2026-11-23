@@ -162,3 +162,8 @@ ne s'efface pas (CLAUDE.md §4bis).
   proxy → lire les en-têtes de la réponse (`curl -D-`) avant de conclure
   « injoignable » ; dans ce cas, le chemin « fichier reçu » d'`exportBrut`
   existe déjà.
+- 2026-11-23 — Haute-Savoie — le zip du Département contenait, à côté du
+  shapefile Lambert-93, un **KML** du même jeu, déjà en WGS84 → c'est la
+  seconde conversion indépendante qu'exige le recoupement de projection :
+  même nombre de points (446 444) et écart nul au mètre sur 41 points. Le
+  chercher dans chaque archive avant d'écrire un calcul à part.
