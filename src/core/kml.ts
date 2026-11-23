@@ -9,26 +9,41 @@
  * garde que la géométrie (`scripts/preparer-pdipr.mjs`).
  *
  * Ne sert qu'à la préparation, sous Node, où il n'y a pas de `DOMParser` :
- * on cherche les `<coordinates>` de chaque `<LineString>`. Un `<Point>` ou
- * le `<LinearRing>` d'un polygone ont aussi des `<coordinates>`, mais hors
- * de toute `<LineString>` : ils ne sont pas lus.
+ * on cherche les `<coordinates>` de chaque `<LineString>`, avec ou sans
+ * préfixe d'espace de noms (`<kml:LineString>`), après avoir retiré les
+ * commentaires XML. Un `<Point>` ou le `<LinearRing>` d'un polygone ont
+ * aussi des `<coordinates>`, mais hors de toute `<LineString>` : ils ne sont
+ * pas lus. Ce qui ne se lit pas lève une erreur plutôt que de rendre moins
+ * de lignes : un fichier vide écraserait le jeu embarqué sans rien dire.
  */
-const LIGNE = /<LineString\b[^>]*>([\s\S]*?)<\/LineString>/g
-const COORDONNEES = /<coordinates>([\s\S]*?)<\/coordinates>/
+const PREFIXE = String.raw`(?:[\w.-]+:)?`
+const LIGNE = new RegExp(String.raw`<${PREFIXE}LineString\b[^>]*>([\s\S]*?)</${PREFIXE}LineString>`, 'g')
+const COORDONNEES = new RegExp(String.raw`<${PREFIXE}coordinates\b[^>]*>([\s\S]*?)</${PREFIXE}coordinates>`)
+const COMMENTAIRE = /<!--[\s\S]*?-->/g
+const CDATA = /<!\[CDATA\[([\s\S]*?)\]\]>/g
+/** Un nombre décimal, signe et exposant permis — ni hexadécimal, ni vide, que `Number` accepterait. */
+const DECIMAL = /^[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?$/
+
+function nombre(valeur: string | undefined): number {
+  return valeur !== undefined && DECIMAL.test(valeur) ? Number(valeur) : NaN
+}
 
 export function lignesDuKml(texte: string): [number, number][][] {
-  if (!/<kml\b/.test(texte)) throw new Error('ce fichier n’est pas un KML')
+  const sansCommentaires = texte.replace(COMMENTAIRE, '')
+  if (!new RegExp(String.raw`<${PREFIXE}kml\b`).test(sansCommentaires)) {
+    throw new Error('ce fichier n’est pas un KML')
+  }
   const lignes: [number, number][][] = []
-  for (const [, contenu] of texte.matchAll(LIGNE)) {
-    const brut = COORDONNEES.exec(contenu ?? '')?.[1] ?? ''
-    const points = brut
+  for (const [, contenu] of sansCommentaires.matchAll(LIGNE)) {
+    const coordonnees = COORDONNEES.exec(contenu ?? '')
+    if (!coordonnees) throw new Error('KML illisible : une LineString sans <coordinates>')
+    const points = (coordonnees[1] ?? '')
+      .replace(CDATA, '$1')
       .trim()
       .split(/\s+/)
       .filter((tuple) => tuple !== '')
       .map((tuple): [number, number] => {
-        // `Number('')` vaut 0 : un tuple « 3, » poserait un point sur
-        // l'équateur. Une valeur vide est refusée comme une illisible.
-        const [lon, lat] = tuple.split(',').map((v) => (v === '' ? NaN : Number(v)))
+        const [lon, lat] = tuple.split(',').map(nombre)
         if (lon === undefined || lat === undefined || !Number.isFinite(lon) || !Number.isFinite(lat)) {
           throw new Error(`KML illisible : coordonnée « ${tuple} »`)
         }

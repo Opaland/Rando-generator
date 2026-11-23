@@ -206,7 +206,7 @@ const JEUX_PAR_ZONE: Readonly<Record<string, JeuPdipr>> = {
     sur 15 d'entre eux : ils sont montrés avec le reste, sans règle
     `retenir` — c'est le fichier que le Département diffuse (« diffpub »),
     et écarter change ce qui est peint (§2) : question posée à Cédric le
-    23/11.
+    23/11 (#702).
   */
   savoie: {
     fichier: 'data/pdipr-savoie.json',

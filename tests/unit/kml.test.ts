@@ -121,4 +121,57 @@ describe('lignesDuKml', () => {
     const texte = kml(placemark('<LineString><coordinates>1,2 3,</coordinates></LineString>'))
     expect(() => lignesDuKml(texte)).toThrow('KML illisible : coordonnée « 3, »')
   })
+
+  it('lit un KML dont les balises portent un préfixe d’espace de noms', () => {
+    const texte =
+      '<kml:kml xmlns:kml="http://www.opengis.net/kml/2.2"><kml:Placemark>' +
+      '<kml:LineString><kml:coordinates>1,2 3,4</kml:coordinates></kml:LineString>' +
+      '</kml:Placemark></kml:kml>'
+    expect(lignesDuKml(texte)).toEqual([
+      [
+        [1, 2],
+        [3, 4],
+      ],
+    ])
+  })
+
+  it('lit des coordonnées dont la balise porte un attribut, ou enveloppées de CDATA', () => {
+    const texte = kml(
+      placemark('<LineString><coordinates id="a">1,2 3,4</coordinates></LineString>') +
+        placemark('<LineString><coordinates><![CDATA[5,6 7,8]]></coordinates></LineString>'),
+    )
+    expect(lignesDuKml(texte)).toEqual([
+      [
+        [1, 2],
+        [3, 4],
+      ],
+      [
+        [5, 6],
+        [7, 8],
+      ],
+    ])
+  })
+
+  it('ne lit pas une ligne mise en commentaire', () => {
+    const texte = kml(
+      '<!-- <LineString><coordinates>9,9 8,8</coordinates></LineString> -->' +
+        placemark('<LineString><coordinates>1,2 3,4</coordinates></LineString>'),
+    )
+    expect(lignesDuKml(texte)).toEqual([
+      [
+        [1, 2],
+        [3, 4],
+      ],
+    ])
+  })
+
+  it('refuse une coordonnée en hexadécimal, que `Number` lirait 16', () => {
+    const texte = kml(placemark('<LineString><coordinates>0x10,2 3,4</coordinates></LineString>'))
+    expect(() => lignesDuKml(texte)).toThrow('KML illisible : coordonnée « 0x10,2 »')
+  })
+
+  it('refuse un fichier dont les lignes existent mais ne se lisent pas, plutôt que de rendre zéro ligne', () => {
+    const texte = kml(placemark('<LineString><geometrie>1,2 3,4</geometrie></LineString>'))
+    expect(() => lignesDuKml(texte)).toThrow('KML illisible : une LineString sans <coordinates>')
+  })
 })

@@ -123,6 +123,15 @@ for (const { geometry } of lus.features) {
   lignesSimplifiees.push(simple);
 }
 
+/*
+  Zéro ligne, c'est un export qui a changé de forme (un champ renommé, une
+  reprojection changée, #669) : écrire le fichier remplacerait le réseau
+  embarqué par un réseau vide, sans rien dire. On s'arrête avant.
+*/
+if (lignesSimplifiees.length === 0) {
+  throw new Error(`${ZONE} : aucune ligne retenue sur ${brutes} — ${CIBLE} n'est pas réécrit`);
+}
+
 const sortie = {
   type: "FeatureCollection",
   source: SOURCES[ZONE].source,

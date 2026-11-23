@@ -177,3 +177,10 @@ ne s'efface pas (CLAUDE.md §4bis).
 - 2026-11-23 — Savoie — `Number('')` vaut 0 : un tuple « 3, » aurait posé
   un point sur l'équateur sans erreur → un lecteur de coordonnées en texte
   refuse une valeur vide, et un test le voit rouge sans la garde.
+- 2026-11-23 — Savoie — la relecture adverse a trouvé six façons dont un
+  KML **valide** se lisait de travers ou en silence (préfixe `kml:`,
+  attribut sur `<coordinates>`, ligne en commentaire, CDATA, hexadécimal
+  que `Number` accepte, et zéro ligne rendue sans erreur — qui aurait
+  écrasé le jeu embarqué) → un lecteur neuf écrit pour **un** fichier se
+  relit contre le format, pas contre ce fichier ; et `preparer-pdipr.mjs`
+  refuse désormais d'écrire un réseau vide, pour toutes les zones.
