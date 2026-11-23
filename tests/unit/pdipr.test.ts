@@ -352,6 +352,34 @@ describe('jeuPdiprPour', () => {
     expect(reseau.features).toHaveLength(4)
   })
 
+  /*
+    La Savoie, le 23/11 : le Département publie « PDIPR73 » sur data.gouv.fr
+    en Licence Ouverte 1.0 (`fr-lo`), en KML seulement. 1 196 objets, dont
+    65 sans géométrie, et 4 289 lignes.
+  */
+  it('désigne le jeu de la Savoie pour la zone Savoie', () => {
+    expect(jeuPdiprPour('savoie')?.fichier).toBe('data/pdipr-savoie.json')
+    expect(jeuPdiprPour('savoie')?.credit.qui).toBe('Département de la Savoie')
+  })
+
+  it('garde dans l’emprise de la Savoie les quatre points extrêmes du jeu', () => {
+    const jeu = jeuPdiprPour('savoie')
+    expect(jeu).not.toBeNull()
+    // Relevés le 23/11 sur le KML, avant simplification : le plus au sud,
+    // au nord, à l'ouest, à l'est — chacun sur sa ligne.
+    const extremes = [
+      [6.47237, 45.05209],
+      [5.82995, 45.93887],
+      [5.62226, 45.6104],
+      [7.14968, 45.40443],
+    ]
+    const reseau = parseReseauPdipr(
+      { features: extremes.map((p) => ligne([p, [6.4, 45.5]])) },
+      jeu!.emprise,
+    )
+    expect(reseau.features).toHaveLength(4)
+  })
+
   it('ne désigne rien pour une zone qu’aucun PDIPR ne couvre', () => {
     expect(jeuPdiprPour('loire')).toBeNull()
     expect(jeuPdiprPour(null)).toBeNull()

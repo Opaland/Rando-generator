@@ -11,6 +11,8 @@
     npm run pdipr -- haute-savoie chemin/Randonnée-Hte-Savoie-PDIPR74-2023.shp
                              (la Haute-Savoie, depuis le 23/11 : le .shp du zip
                              publié sur data.gouv.fr)
+    npm run pdipr -- savoie  (la Savoie, depuis le 23/11 : le KML publié sur
+                             data.gouv.fr, lu par `core/kml.ts`)
 
   L'Ain suit les mêmes deux réglages que l'Isère ci-dessous, et la règle de
   diffusion de son jeu (`retenir`, `core/pdipr.ts`) : seules les boucles que
@@ -119,6 +121,15 @@ for (const { geometry } of lus.features) {
   if (simple.length < 2) continue;
   points += simple.length;
   lignesSimplifiees.push(simple);
+}
+
+/*
+  Zéro ligne, c'est un export qui a changé de forme (un champ renommé, une
+  reprojection changée, #669) : écrire le fichier remplacerait le réseau
+  embarqué par un réseau vide, sans rien dire. On s'arrête avant.
+*/
+if (lignesSimplifiees.length === 0) {
+  throw new Error(`${ZONE} : aucune ligne retenue sur ${brutes} — ${CIBLE} n'est pas réécrit`);
 }
 
 const sortie = {

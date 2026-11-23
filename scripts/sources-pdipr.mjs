@@ -66,7 +66,48 @@ export const SOURCES_PDIPR = {
     source: "Département de la Haute-Savoie — PDIPR 2023, Licence Ouverte 2.0",
     nom: "Haute-Savoie",
   },
+  /*
+    La Savoie, le 23/11 : le Département publie « PDIPR73 » sur data.gouv.fr
+    (mis à jour le 26/01/2022), en Licence Ouverte (`fr-lo`, la version 1.0),
+    et seulement en KML — du WGS84, que `core/kml.ts` lit sans reprojeter.
+    Le fichier s'appelle « diffpub » : c'est la diffusion publique du jeu.
+  */
+  savoie: {
+    url:
+      "https://static.data.gouv.fr/resources/" +
+      "pdipr73-plan-departemental-des-itineraires-de-promenade-et-de-randonnee/" +
+      "20220126-100902/pdipr-042020-diffpub.kml",
+    format: "kml",
+    source: "Département de la Savoie — PDIPR73, Licence Ouverte 1.0",
+    nom: "Savoie",
+  },
 };
+
+/** Des lignes WGS84 en FeatureCollection, sans propriétés : ce qu'un shapefile ou un KML devient. */
+function collectionDeLignes(lignes) {
+  return {
+    type: "FeatureCollection",
+    features: lignes.map((coordinates) => ({
+      type: "Feature",
+      properties: {},
+      geometry: { type: "LineString", coordinates },
+    })),
+  };
+}
+
+/**
+ * La réponse d'une adresse PDIPR, lue selon son format : du GeoJSON par
+ * défaut, du KML quand la source le dit. Partagée avec le contrôle des
+ * sources publiques (`sources-reelles.mjs`), pour qu'il lise ce que la
+ * préparation lit (CLAUDE.md §4ter).
+ */
+export async function lireReponse(zone, texte) {
+  if (SOURCES_PDIPR[zone].format === "kml") {
+    const { lignesDuKml } = await import("../src/core/kml.ts");
+    return collectionDeLignes(lignesDuKml(texte));
+  }
+  return JSON.parse(texte);
+}
 
 /**
  * L'export brut d'une zone, en FeatureCollection WGS84 : téléchargé quand le
@@ -79,7 +120,7 @@ export async function exportBrut(zone, chemin) {
   if (url) {
     const reponse = await fetch(url);
     if (!reponse.ok) throw new Error(`${url} → HTTP ${reponse.status}`);
-    return reponse.json();
+    return lireReponse(zone, await reponse.text());
   }
   if (!chemin) {
     throw new Error(
@@ -93,17 +134,7 @@ export async function exportBrut(zone, chemin) {
   const lignes = lignesDuShapefile(
     octets.buffer.slice(octets.byteOffset, octets.byteOffset + octets.byteLength),
   );
-  return {
-    type: "FeatureCollection",
-    features: lignes.map((ligne) => ({
-      type: "Feature",
-      properties: {},
-      geometry: {
-        type: "LineString",
-        coordinates: ligne.map(([x, y]) => lambert93VersWgs84(x, y)),
-      },
-    })),
-  };
+  return collectionDeLignes(lignes.map((ligne) => ligne.map(([x, y]) => lambert93VersWgs84(x, y))));
 }
 
 /** La zone demandée sur la ligne de commande, ou une erreur qui dit les connues. */

@@ -242,8 +242,9 @@ Reste ouvert :
 - **#593, une limite écrite** : un corridor à cheval sur deux territoires
   n'est jugé que sur son départ ; la carte elle-même ne dit rien de son
   fond vide.
-- **Rhône (#20, #87)** — datARA 403 le 22/10 ; **Savoie / Haute-Savoie** :
-  décision juridique.
+- **Rhône (#20, #87)** — datARA 403 le 22/10 (livré le 10/11) ; **Savoie /
+  Haute-Savoie** : livrées le 23/11, sous la Licence Ouverte que chaque
+  Département pose lui-même sur data.gouv.fr.
 - **Clé d'API** collée le 22/10 dans la conversation : à révoquer.
 - **`fs.rmSync` sous un chemin accentué** (#612) : le signaler à Node, ou
   vérifier une version plus récente ?

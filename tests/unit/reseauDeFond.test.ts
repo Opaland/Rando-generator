@@ -4,6 +4,7 @@ import jeuAin from '../../public/data/pdipr-ain.json?raw'
 import jeuRhone from '../../public/data/pdipr-rhone.json?raw'
 import jeuPuyDeDome from '../../public/data/pdipr-puy-de-dome.json?raw'
 import jeuHauteSavoie from '../../public/data/pdipr-haute-savoie.json?raw'
+import jeuSavoie from '../../public/data/pdipr-savoie.json?raw'
 import { jeuPdiprPour, parseReseauPdipr } from '../../src/core/pdipr.ts'
 import { parseBouclesGeoJSON } from '../../src/core/boucles.ts'
 import { parseGrNordGeoJSON } from '../../src/core/grNord.ts'
@@ -331,5 +332,39 @@ describe('le jeu embarqué de la Haute-Savoie', () => {
 
   it('dit d’où il vient', () => {
     expect(brut.source).toMatch(/Département de la Haute-Savoie.*Licence Ouverte 2\.0/)
+  })
+})
+
+describe('le jeu embarqué de la Savoie', () => {
+  /*
+    Le KML du Département (data.gouv.fr, LO 1.0, 26/01/2022), le 23/11 :
+    4 289 lignes. KML est en WGS84 : rien n'est reprojeté, et l'emprise dit
+    seulement qu'aucun point n'a été lu de travers (une latitude prise pour
+    une longitude tomberait hors de la Savoie).
+  */
+  const brut = JSON.parse(jeuSavoie) as {
+    source?: string
+    features: { geometry: { coordinates: unknown[] } }[]
+  }
+  const lire = () => {
+    const jeu = jeuPdiprPour('savoie')
+    expect(jeu, 'la zone Savoie ne désigne plus de jeu PDIPR').not.toBeNull()
+    return parseReseauPdipr(brut, jeu!.emprise)
+  }
+
+  it('se lit en lignes, par milliers', () => {
+    expect(lire().features.length).toBeGreaterThan(4_000)
+  })
+
+  it('n’embarque aucune ligne que la lecture écarterait', () => {
+    const lignesLivrees = brut.features.reduce(
+      (total, f) => total + f.geometry.coordinates.length,
+      0,
+    )
+    expect(lire().features).toHaveLength(lignesLivrees)
+  })
+
+  it('dit d’où il vient', () => {
+    expect(brut.source).toMatch(/Département de la Savoie.*Licence Ouverte 1\.0/)
   })
 })
