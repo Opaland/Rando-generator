@@ -11,6 +11,8 @@
     npm run pdipr -- haute-savoie chemin/Randonnée-Hte-Savoie-PDIPR74-2023.shp
                              (la Haute-Savoie, depuis le 23/11 : le .shp du zip
                              publié sur data.gouv.fr)
+    npm run pdipr -- savoie  (la Savoie, depuis le 23/11 : le KML publié sur
+                             data.gouv.fr, lu par `core/kml.ts`)
 
   L'Ain suit les mêmes deux réglages que l'Isère ci-dessous, et la règle de
   diffusion de son jeu (`retenir`, `core/pdipr.ts`) : seules les boucles que

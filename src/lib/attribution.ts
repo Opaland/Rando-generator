@@ -205,6 +205,20 @@ export const DEPARTEMENT_HAUTE_SAVOIE: Credit = {
   lien: 'https://www.data.gouv.fr/datasets/itineraires-pdipr-sentiers-de-randonnee-de-la-haute-savoie-2023-2',
 }
 
+/**
+ * Le PDIPR de la Savoie (#87, 23/11), « PDIPR73 », publié par le
+ * Département lui-même sur data.gouv.fr sous la Licence Ouverte (`fr-lo`,
+ * la version 1.0 d'Etalab) : des lignes sans nom, peintes en fond sans
+ * compter. Comme pour la Haute-Savoie, la « condition non nommée » du 18/10
+ * venait de la fiche datARA ; remise dans la file par Cédric le 23/11.
+ */
+export const DEPARTEMENT_SAVOIE: Credit = {
+  quoi: 'Réseau balisé',
+  qui: 'Département de la Savoie',
+  licence: 'Licence Ouverte 1.0',
+  lien: 'https://www.data.gouv.fr/datasets/pdipr73-plan-departemental-des-itineraires-de-promenade-et-de-randonnee',
+}
+
 /** Le fond **et** les itinéraires, quand le miroir OSM remplace l'IGN. */
 export const OSM_FOND_ET_TRACES: Credit = {
   ...OSM,

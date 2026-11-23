@@ -167,3 +167,13 @@ ne s'efface pas (CLAUDE.md §4bis).
   seconde conversion indépendante qu'exige le recoupement de projection :
   même nombre de points (446 444) et écart nul au mètre sur 41 points. Le
   chercher dans chaque archive avant d'écrire un calcul à part.
+- 2026-11-23 — Savoie — le Département ne publie son jeu qu'en **KML**,
+  que le dépôt ne savait pas lire → `src/core/kml.ts` (`lignesDuKml`) et
+  `format: "kml"` dans `SOURCES_PDIPR` : le chemin `url` d'`exportBrut` le
+  lit, et `npm run sources` aussi, par la même `lireReponse`. KML est
+  toujours en WGS84 : le recoupement n'est pas une projection mais une
+  **seconde lecture** (ElementTree en Python), qui doit rendre les mêmes
+  lignes et points (4 289 et 665 116).
+- 2026-11-23 — Savoie — `Number('')` vaut 0 : un tuple « 3, » aurait posé
+  un point sur l'équateur sans erreur → un lecteur de coordonnées en texte
+  refuse une valeur vide, et un test le voit rouge sans la garde.

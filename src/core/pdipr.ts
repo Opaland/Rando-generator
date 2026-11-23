@@ -7,6 +7,7 @@ import {
   DEPARTEMENT_ISERE,
   DEPARTEMENT_PUY_DE_DOME,
   DEPARTEMENT_RHONE,
+  DEPARTEMENT_SAVOIE,
   type Credit,
 } from '../lib/attribution.ts'
 
@@ -101,6 +102,17 @@ const EMPRISE_PUY_DE_DOME: Emprise = { ouest: 2.35, est: 4.06, sud: 45.11, nord:
 const EMPRISE_HAUTE_SAVOIE: Emprise = { ouest: 5.74, est: 7.05, sud: 45.63, nord: 46.46 }
 
 /**
+ * L'emprise de la Savoie, à environ 5 km près.
+ *
+ * Mesurée le 23/11 sur le KML du Département (WGS84, rien à reprojeter ;
+ * compté une seconde fois par une lecture XML indépendante de
+ * `core/kml.ts`, mêmes 4 289 lignes et 665 116 points) : les lignes
+ * s'étendent de 5,622 à 7,150° E et de 45,052 à 45,939° N, toutes valides.
+ * Garde, pas filtre.
+ */
+const EMPRISE_SAVOIE: Emprise = { ouest: 5.55, est: 7.22, sud: 45.0, nord: 45.99 }
+
+/**
  * Ce que le producteur dit d'un objet, quand il le dit : les propriétés
  * brutes de l'export, que seul le script de préparation voit.
  */
@@ -130,7 +142,7 @@ interface JeuPdipr {
  * L'Isère depuis le 18/10 ; l'Ain depuis le 21/10, quand data.gouv.fr a de
  * nouveau répondu (il coupait les connexions le 18 — on n'embarque pas un
  * jeu qu'on n'a pas lu) ; le Rhône depuis le 09/11 ; le Puy-de-Dôme depuis le
- * 10/11 ; la Haute-Savoie depuis le 23/11.
+ * 10/11 ; la Haute-Savoie et la Savoie depuis le 23/11.
  *
  * L'Ain publie des **boucles nommées**, pas des tronçons, et elles
  * pourraient devenir des itinéraires comme celles de la Métropole. Elles
@@ -186,6 +198,20 @@ const JEUX_PAR_ZONE: Readonly<Record<string, JeuPdipr>> = {
     fichier: 'data/pdipr-haute-savoie.json',
     emprise: EMPRISE_HAUTE_SAVOIE,
     credit: DEPARTEMENT_HAUTE_SAVOIE,
+  },
+  /*
+    La Savoie depuis le 23/11 : le KML « PDIPR73 » de data.gouv.fr
+    (`scripts/sources-pdipr.mjs`). 1 196 objets, tous `Type = PDIPR`, dont
+    65 sans géométrie ; aucun champ de diffusion. `Entretenu` vaut « non »
+    sur 15 d'entre eux : ils sont montrés avec le reste, sans règle
+    `retenir` — c'est le fichier que le Département diffuse (« diffpub »),
+    et écarter change ce qui est peint (§2) : question posée à Cédric le
+    23/11.
+  */
+  savoie: {
+    fichier: 'data/pdipr-savoie.json',
+    emprise: EMPRISE_SAVOIE,
+    credit: DEPARTEMENT_SAVOIE,
   },
 }
 

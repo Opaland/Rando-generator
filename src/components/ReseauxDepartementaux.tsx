@@ -4,6 +4,7 @@ import {
   DEPARTEMENT_ISERE,
   DEPARTEMENT_PUY_DE_DOME,
   DEPARTEMENT_RHONE,
+  DEPARTEMENT_SAVOIE,
 } from '../lib/attribution.ts'
 
 /**
@@ -71,6 +72,11 @@ export function ReseauxDepartementaux() {
         <Producteur credit={DEPARTEMENT_HAUTE_SAVOIE} />) est dessiné en fond
         comme celui de l’Isère&nbsp;: des tronçons sans nom, qui ne comptent
         dans aucun pourcentage.
+      </li>
+      <li>
+        En Savoie, le <strong>réseau balisé du Département</strong> ({PLAN},{' '}
+        <Producteur credit={DEPARTEMENT_SAVOIE} />) est dessiné en fond de la
+        même façon, sans nom et sans compter dans aucun pourcentage.
       </li>
     </>
   )

@@ -37,7 +37,7 @@ import { buildElevationLineUrl, parseElevationResponse } from "../src/core/eleva
 import { buildGeocodeUrl, parseGeocodeResponse } from "../src/core/geocode.ts";
 import { jeuPdiprPour, parseReseauPdipr } from "../src/core/pdipr.ts";
 import { IGN_TILES } from "../src/components/map/style.ts";
-import { SOURCES_PDIPR } from "./sources-pdipr.mjs";
+import { SOURCES_PDIPR, lireReponse } from "./sources-pdipr.mjs";
 import { verdictDe, etatGlobal, rapport } from "./sources/verdict.ts";
 
 /** Le Crêt de la Perdrix, dans le Pilat : la zone de départ de l'application. */
@@ -73,15 +73,19 @@ function champsDe(feature) {
   return props && typeof props === "object" ? Object.keys(props).sort() : [];
 }
 
-function verifierJson(lire) {
+/**
+ * Lit la réponse par `analyser` (du JSON par défaut ; un PDIPR passe par
+ * `lireReponse`, qui sait aussi le KML), puis la donne au lecteur.
+ */
+function verifierJson(lire, analyser = JSON.parse, format = "JSON") {
   return async (reponse) => {
     const texte = await reponse.text();
     let donnees;
     try {
-      donnees = JSON.parse(texte);
+      donnees = await analyser(texte);
     } catch {
       const type = reponse.headers.get("content-type") ?? "sans type";
-      return { problemes: [`réponse illisible en JSON (${type}, ${String(texte.length)} caractères)`], mesure: "" };
+      return { problemes: [`réponse illisible en ${format} (${type}, ${String(texte.length)} caractères)`], mesure: "" };
     }
     try {
       return lire(donnees);
@@ -182,7 +186,7 @@ const SOURCES = [
             `${String(entites.length)} entités, ${String(retenues)} lignes retenues ; ` +
             `champs de la 1re entité : ${champs.length > 0 ? champs.join(", ") : "aucun"}`,
         };
-      }),
+      }, (texte) => lireReponse(zone, texte), source.format === "kml" ? "KML" : "JSON"),
     })),
 ];
 

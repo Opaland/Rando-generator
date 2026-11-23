@@ -26,7 +26,7 @@ tant que Cédric n'a pas répondu sur l'issue.
 | 11 | `moselle` | bloqué | 0 | | #682 | 12/11 : aucun PDIPR départemental ouvert (data.gouv.fr, DataGrandEst) |
 | 12 | `haute-saone` | bloqué | 0 | | #682 | 12/11 : aucun PDIPR départemental ouvert (data.gouv.fr, DataGrandEst) |
 | 13 | `meurthe-et-moselle` | bloqué | 0 | | #682, #694 | 19/11 : zone ajoutée (#693) ; LO 1.0 nommée par le producteur ; serveur `webcarto.infogeo54.fr` refuse les robots (403 « ogo ») : attend le shapefile téléchargé à la main |
-| 14 | `savoie` | à faire | 0 | | #87 | 23/11 : remise dans la file par Cédric ; « PDIPR73 » publié par le Département sur data.gouv.fr en LO 1.0 (`fr-lo`) |
+| 14 | `savoie` | en cours | 0 | | #87 | 23/11 : remise dans la file par Cédric ; « PDIPR73 » publié par le Département sur data.gouv.fr en LO 1.0 (`fr-lo`), en KML seulement : lecteur `core/kml.ts` ; 4 289 lignes |
 | — | `haute-savoie` | livré | 0 | #699 | #87, #700, #701 | 23/11, shapefile 2023 du Département (data.gouv.fr), LO 2.0, 14 617 lignes ; 7 897 déjà dans OSM à ≥ 80 % |
 
 ## Journal
