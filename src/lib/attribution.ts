@@ -191,6 +191,20 @@ export const DEPARTEMENT_PUY_DE_DOME: Credit = {
   lien: 'https://www.data.gouv.fr/datasets/plan-departemental-des-itineraires-de-promenades-et-de-randonnees-pdipr-departement-du-puy-de-dome-2026',
 }
 
+/**
+ * Le PDIPR de la Haute-Savoie (#87, 23/11), publié par le Conseil
+ * départemental lui-même sur data.gouv.fr en Licence Ouverte 2.0 : des
+ * tronçons, comme l'Isère et le Rhône, peints en fond sans compter. La
+ * « condition non nommée » du 18/10 venait de sa fiche datARA ; remise dans
+ * la file par Cédric le 23/11.
+ */
+export const DEPARTEMENT_HAUTE_SAVOIE: Credit = {
+  quoi: 'Réseau balisé',
+  qui: 'Département de la Haute-Savoie',
+  licence: 'Licence Ouverte 2.0',
+  lien: 'https://www.data.gouv.fr/datasets/itineraires-pdipr-sentiers-de-randonnee-de-la-haute-savoie-2023-2',
+}
+
 /** Le fond **et** les itinéraires, quand le miroir OSM remplace l'IGN. */
 export const OSM_FOND_ET_TRACES: Credit = {
   ...OSM,

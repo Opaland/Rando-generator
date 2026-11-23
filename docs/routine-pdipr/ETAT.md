@@ -26,8 +26,8 @@ tant que Cédric n'a pas répondu sur l'issue.
 | 11 | `moselle` | bloqué | 0 | | #682 | 12/11 : aucun PDIPR départemental ouvert (data.gouv.fr, DataGrandEst) |
 | 12 | `haute-saone` | bloqué | 0 | | #682 | 12/11 : aucun PDIPR départemental ouvert (data.gouv.fr, DataGrandEst) |
 | 13 | `meurthe-et-moselle` | bloqué | 0 | | #682, #694 | 19/11 : zone ajoutée (#693) ; LO 1.0 nommée par le producteur ; serveur `webcarto.infogeo54.fr` refuse les robots (403 « ogo ») : attend le shapefile téléchargé à la main |
-| — | `savoie` | attend Cédric | — | | | condition non nommée (FEUILLE_DE_ROUTE, 18/10) ; 19/11 : le Département publie « PDIPR73 » sur data.gouv.fr en LO 1.0 (`fr-lo`) — question posée à Cédric |
-| — | `haute-savoie` | attend Cédric | — | | | idem ; 19/11 : le Conseil départemental publie le jeu 2023 sur data.gouv.fr en LO 2.0 — question posée à Cédric |
+| 14 | `savoie` | à faire | 0 | | #87 | 23/11 : remise dans la file par Cédric ; « PDIPR73 » publié par le Département sur data.gouv.fr en LO 1.0 (`fr-lo`) |
+| — | `haute-savoie` | en cours | 0 | | #87 | 23/11 : remise dans la file par Cédric ; shapefile 2023 du Département sur data.gouv.fr, LO 2.0 ; 14 617 lignes |
 
 ## Journal
 
@@ -48,3 +48,4 @@ Une ligne par passage : `AAAA-MM-JJ — zone — tentative n — résultat — P
 - 2026-11-20 — file sans zone à faire — attend Cédric : Savoie et Haute-Savoie (licence nommée trouvée le 19/11), fichier de la Meurthe-et-Moselle (#694) ; rien sur Drive ni sur les issues — arrêt.
 - 2026-11-21 — file sans zone à faire — toujours en attente de Cédric (Savoie, Haute-Savoie ; fichier de la Meurthe-et-Moselle, #694) — arrêt.
 - 2026-11-22 — file sans zone à faire — toujours en attente de Cédric (Savoie, Haute-Savoie ; fichier de la Meurthe-et-Moselle, #694) — arrêt.
+- 2026-11-23 — haute-savoie — tentative 1 — Cédric remet la Savoie et la Haute-Savoie dans la file (« reprends les routines ») ; intégration du shapefile 2023, projection recoupée par le KML du Département.

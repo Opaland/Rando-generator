@@ -3,6 +3,7 @@ import jeuIsere from '../../public/data/pdipr-isere.json?raw'
 import jeuAin from '../../public/data/pdipr-ain.json?raw'
 import jeuRhone from '../../public/data/pdipr-rhone.json?raw'
 import jeuPuyDeDome from '../../public/data/pdipr-puy-de-dome.json?raw'
+import jeuHauteSavoie from '../../public/data/pdipr-haute-savoie.json?raw'
 import { jeuPdiprPour, parseReseauPdipr } from '../../src/core/pdipr.ts'
 import { parseBouclesGeoJSON } from '../../src/core/boucles.ts'
 import { parseGrNordGeoJSON } from '../../src/core/grNord.ts'
@@ -296,5 +297,39 @@ describe('le jeu embarqué du Puy-de-Dôme', () => {
 
   it('dit d’où il vient, mention obligatoire comprise', () => {
     expect(brut.source).toMatch(/Département du Puy-de-Dôme \(CD63-2026\).*Licence Ouverte 1\.0/)
+  })
+})
+
+describe('le jeu embarqué de la Haute-Savoie', () => {
+  /*
+    Le shapefile 2023 du Conseil départemental (data.gouv.fr, LO 2.0), le
+    23/11 : 14 617 lignes. « Des milliers » dit que le jeu est arrivé
+    entier ; l'emprise dit qu'il a été reprojeté — une coordonnée restée en
+    mètres Lambert serait écartée, et le compte tomberait à zéro.
+  */
+  const brut = JSON.parse(jeuHauteSavoie) as {
+    source?: string
+    features: { geometry: { coordinates: unknown[] } }[]
+  }
+  const lire = () => {
+    const jeu = jeuPdiprPour('haute-savoie')
+    expect(jeu, 'la zone Haute-Savoie ne désigne plus de jeu PDIPR').not.toBeNull()
+    return parseReseauPdipr(brut, jeu!.emprise)
+  }
+
+  it('se lit en lignes, par milliers', () => {
+    expect(lire().features.length).toBeGreaterThan(10_000)
+  })
+
+  it('n’embarque aucune ligne que la lecture écarterait', () => {
+    const lignesLivrees = brut.features.reduce(
+      (total, f) => total + f.geometry.coordinates.length,
+      0,
+    )
+    expect(lire().features).toHaveLength(lignesLivrees)
+  })
+
+  it('dit d’où il vient', () => {
+    expect(brut.source).toMatch(/Département de la Haute-Savoie.*Licence Ouverte 2\.0/)
   })
 })

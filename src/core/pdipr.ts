@@ -3,6 +3,7 @@ import { isWgs84Coordinate } from './geo.ts'
 import type { LonLat } from './types.ts'
 import {
   DEPARTEMENT_AIN,
+  DEPARTEMENT_HAUTE_SAVOIE,
   DEPARTEMENT_ISERE,
   DEPARTEMENT_PUY_DE_DOME,
   DEPARTEMENT_RHONE,
@@ -89,6 +90,17 @@ const EMPRISE_RHONE: Emprise = { ouest: 4.18, est: 5.22, sud: 45.49, nord: 46.36
 const EMPRISE_PUY_DE_DOME: Emprise = { ouest: 2.35, est: 4.06, sud: 45.11, nord: 46.28 }
 
 /**
+ * L'emprise de la Haute-Savoie, à environ 5 km près.
+ *
+ * Mesurée le 23/11 sur le shapefile du Département (Lambert-93, reprojeté
+ * par `core/lambert93.ts` et recoupé point pour point par le KML du même
+ * jeu, écart nul au mètre) : les 14 515 tronçons (14 617 lignes)
+ * s'étendent de 5,806 à 6,986° E et de 45,677 à 46,408° N, tous valides.
+ * Garde, pas filtre.
+ */
+const EMPRISE_HAUTE_SAVOIE: Emprise = { ouest: 5.74, est: 7.05, sud: 45.63, nord: 46.46 }
+
+/**
  * Ce que le producteur dit d'un objet, quand il le dit : les propriétés
  * brutes de l'export, que seul le script de préparation voit.
  */
@@ -153,6 +165,17 @@ const JEUX_PAR_ZONE: Readonly<Record<string, JeuPdipr>> = {
     (`TYPE_ITI`) sont montrées avec le reste : c'est le PDIPR tel que le
     Département le publie, et Cédric a confirmé le 18/11 qu'on les garde.
   */
+  /*
+    La Haute-Savoie depuis le 23/11 : un shapefile de data.gouv.fr
+    (`scripts/sources-pdipr.mjs`). Des tronçons, comme le Rhône ; le champ
+    `label` (GR, GRP, « Sans label »…) décrit le balisage, pas la diffusion :
+    tout est montré, sans règle `retenir`.
+  */
+  'haute-savoie': {
+    fichier: 'data/pdipr-haute-savoie.json',
+    emprise: EMPRISE_HAUTE_SAVOIE,
+    credit: DEPARTEMENT_HAUTE_SAVOIE,
+  },
   'puy-de-dome': {
     fichier: 'data/pdipr-puy-de-dome.json',
     emprise: EMPRISE_PUY_DE_DOME,

@@ -8,6 +8,9 @@
                              sans adresse publique — voir `sources-pdipr.mjs`)
     npm run pdipr -- puy-de-dome
                              (le Puy-de-Dôme, depuis le 10/11 : WFS du CRAIG)
+    npm run pdipr -- haute-savoie chemin/Randonnée-Hte-Savoie-PDIPR74-2023.shp
+                             (la Haute-Savoie, depuis le 23/11 : le .shp du zip
+                             publié sur data.gouv.fr)
 
   L'Ain suit les mêmes deux réglages que l'Isère ci-dessous, et la règle de
   diffusion de son jeu (`retenir`, `core/pdipr.ts`) : seules les boucles que

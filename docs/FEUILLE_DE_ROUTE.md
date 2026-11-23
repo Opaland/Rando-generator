@@ -193,7 +193,11 @@ Revérifié le 18/10 contre GitHub : **#160 est close** (#259, le lien
     leur condition n'est pas une licence nommée (« utilisation libre sous
     réserve de mentionner la source et la date de sa dernière mise à
     jour »), et la republication dans Sentiers est à lui de juger, comme
-    pour #88. Téléchargement par « panier » Prodige ; WFS pour la Savoie ;
+    pour #88. Téléchargement par « panier » Prodige ; WFS pour la Savoie.
+    **Revu le 19/11** : les deux Départements publient eux-mêmes leur jeu
+    sur data.gouv.fr sous Licence Ouverte nommée (1.0 pour la Savoie, 2.0
+    pour la Haute-Savoie) ; remis dans la file par Cédric le 23/11 —
+    **Haute-Savoie livrée le 23/11**, la Savoie suit (`ETAT.md`) ;
   - **Rhône** — **livré le 10/11** (#664), en réseau de fond : l'API de
     datARA répondait `403 Accès interdit` (#20), le Département a envoyé
     le jeu par courriel (shapefile Lambert-93, Licence Ouverte 2.0) ;
