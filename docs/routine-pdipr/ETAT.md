@@ -27,7 +27,7 @@ tant que Cédric n'a pas répondu sur l'issue.
 | 12 | `haute-saone` | bloqué | 0 | | #682 | 12/11 : aucun PDIPR départemental ouvert (data.gouv.fr, DataGrandEst) |
 | 13 | `meurthe-et-moselle` | bloqué | 0 | | #682, #694 | 19/11 : zone ajoutée (#693) ; LO 1.0 nommée par le producteur ; serveur `webcarto.infogeo54.fr` refuse les robots (403 « ogo ») : attend le shapefile téléchargé à la main |
 | 14 | `savoie` | à faire | 0 | | #87 | 23/11 : remise dans la file par Cédric ; « PDIPR73 » publié par le Département sur data.gouv.fr en LO 1.0 (`fr-lo`) |
-| — | `haute-savoie` | en cours | 0 | | #87 | 23/11 : remise dans la file par Cédric ; shapefile 2023 du Département sur data.gouv.fr, LO 2.0 ; 14 617 lignes |
+| — | `haute-savoie` | livré | 0 | #699 | #87, #700, #701 | 23/11, shapefile 2023 du Département (data.gouv.fr), LO 2.0, 14 617 lignes ; 7 897 déjà dans OSM à ≥ 80 % |
 
 ## Journal
 
@@ -48,4 +48,4 @@ Une ligne par passage : `AAAA-MM-JJ — zone — tentative n — résultat — P
 - 2026-11-20 — file sans zone à faire — attend Cédric : Savoie et Haute-Savoie (licence nommée trouvée le 19/11), fichier de la Meurthe-et-Moselle (#694) ; rien sur Drive ni sur les issues — arrêt.
 - 2026-11-21 — file sans zone à faire — toujours en attente de Cédric (Savoie, Haute-Savoie ; fichier de la Meurthe-et-Moselle, #694) — arrêt.
 - 2026-11-22 — file sans zone à faire — toujours en attente de Cédric (Savoie, Haute-Savoie ; fichier de la Meurthe-et-Moselle, #694) — arrêt.
-- 2026-11-23 — haute-savoie — tentative 1 — Cédric remet la Savoie et la Haute-Savoie dans la file (« reprends les routines ») ; intégration du shapefile 2023, projection recoupée par le KML du Département.
+- 2026-11-23 — haute-savoie — tentative 1 — verte : shapefile 2023 intégré, projection recoupée par le KML du Département ; porte, relecture adverse, `parcours` (Jeanine, Bernard) ; issues #700 (réseau de fond suspendu à Overpass), #701 (légende) et complément de #674 — #699 fusionnée. Cédric remet la Savoie et la Haute-Savoie dans la file (« reprends les routines »).
