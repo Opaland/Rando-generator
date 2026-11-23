@@ -189,7 +189,8 @@ Revérifié le 18/10 contre GitHub : **#160 est close** (#259, le lien
     comptées. Les compter attend une règle de dédoublonnage avec OSM,
     81 boucles y étant déjà (mesure sur #574) — à trancher par Cédric ;
   - **Savoie** (PDIPR73) et **Haute-Savoie** (PDIPR 2023), trouvés sur
-    datARA le 18/10 — **bloqués sur une décision juridique de Cédric** :
+    datARA le 18/10 — d'abord **bloqués sur une décision juridique de
+    Cédric**, levée le 23/11 (voir plus bas) :
     leur condition n'est pas une licence nommée (« utilisation libre sous
     réserve de mentionner la source et la date de sa dernière mise à
     jour »), et la republication dans Sentiers est à lui de juger, comme

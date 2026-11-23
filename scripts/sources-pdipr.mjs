@@ -46,6 +46,14 @@ export const SOURCES_PDIPR = {
     métadonnées du CRAIG (FR-226300010-PDIPR-2016) ; elle renvoie au texte
     Etalab de 2011, la version 1.0, et data.gouv.fr la moissonne en `fr-lo`.
   */
+  "puy-de-dome": {
+    url:
+      "https://ids.craig.fr/wxs/public/wfs?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature" +
+      "&TYPENAMES=public:CD63_2026_ITINERAIRES_PDIPR_DEPT63" +
+      "&OUTPUTFORMAT=application/json&SRSNAME=EPSG:4326",
+    source: "Département du Puy-de-Dôme (CD63-2026) — PDIPR, Licence Ouverte 1.0",
+    nom: "Puy-de-Dôme",
+  },
   /*
     La Haute-Savoie, le 23/11 : le Conseil départemental publie son PDIPR
     2023 sur data.gouv.fr, en Licence Ouverte 2.0, dans un zip de
@@ -57,14 +65,6 @@ export const SOURCES_PDIPR = {
     shapefile: "Lambert-93",
     source: "Département de la Haute-Savoie — PDIPR 2023, Licence Ouverte 2.0",
     nom: "Haute-Savoie",
-  },
-  "puy-de-dome": {
-    url:
-      "https://ids.craig.fr/wxs/public/wfs?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature" +
-      "&TYPENAMES=public:CD63_2026_ITINERAIRES_PDIPR_DEPT63" +
-      "&OUTPUTFORMAT=application/json&SRSNAME=EPSG:4326",
-    source: "Département du Puy-de-Dôme (CD63-2026) — PDIPR, Licence Ouverte 1.0",
-    nom: "Puy-de-Dôme",
   },
 };
 

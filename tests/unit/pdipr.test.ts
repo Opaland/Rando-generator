@@ -335,7 +335,8 @@ describe('jeuPdiprPour', () => {
   it('garde dans l’emprise de la Haute-Savoie les quatre points extrêmes du jeu', () => {
     const jeu = jeuPdiprPour('haute-savoie')
     expect(jeu).not.toBeNull()
-    // Relevés le 23/11 sur le shapefile reprojeté : le plus au sud, au nord,
+    // Relevés le 23/11 sur le shapefile reprojeté, avant simplification
+    // (le fichier embarqué arrondit le nord à 46,40798) : le plus au sud, au nord,
     // à l'ouest, à l'est — chacun sur sa ligne, pour qu'un seul écarté se
     // voie au compte.
     const extremes = [

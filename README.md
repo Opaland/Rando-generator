@@ -115,7 +115,8 @@ par le CLI Playwright.
    les 442 itinéraires du Département s'y ajoutent comme les boucles de
    l'Ain, dessinés sans leur nom et pas comptés (317 sont déjà couverts à
    ≥ 80 % par OpenStreetMap, mesuré le 10/11). En **Haute-Savoie**, le
-   réseau balisé du Département s'ajoute de même, en tronçons sans nom. Ou
+   réseau balisé du Département s'ajoute de même, en tronçons dessinés sans
+   le nom de leur itinéraire. Ou
    encore
    un ref d'itinéraire (ex. « GR 20 »), avec quelques **grands itinéraires**
    proposés en un clic (GR 65 Saint-Jacques, GR 70 Stevenson, GR 5 Alpes…),

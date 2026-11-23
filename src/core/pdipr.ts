@@ -130,7 +130,7 @@ interface JeuPdipr {
  * L'Isère depuis le 18/10 ; l'Ain depuis le 21/10, quand data.gouv.fr a de
  * nouveau répondu (il coupait les connexions le 18 — on n'embarque pas un
  * jeu qu'on n'a pas lu) ; le Rhône depuis le 09/11 ; le Puy-de-Dôme depuis le
- * 10/11.
+ * 10/11 ; la Haute-Savoie depuis le 23/11.
  *
  * L'Ain publie des **boucles nommées**, pas des tronçons, et elles
  * pourraient devenir des itinéraires comme celles de la Métropole. Elles
@@ -165,21 +165,27 @@ const JEUX_PAR_ZONE: Readonly<Record<string, JeuPdipr>> = {
     (`TYPE_ITI`) sont montrées avec le reste : c'est le PDIPR tel que le
     Département le publie, et Cédric a confirmé le 18/11 qu'on les garde.
   */
+  'puy-de-dome': {
+    fichier: 'data/pdipr-puy-de-dome.json',
+    emprise: EMPRISE_PUY_DE_DOME,
+    credit: DEPARTEMENT_PUY_DE_DOME,
+  },
   /*
     La Haute-Savoie depuis le 23/11 : un shapefile de data.gouv.fr
-    (`scripts/sources-pdipr.mjs`). Des tronçons, comme le Rhône ; le champ
-    `label` (GR, GRP, « Sans label »…) décrit le balisage, pas la diffusion :
-    tout est montré, sans règle `retenir`.
+    (`scripts/sources-pdipr.mjs`). Des tronçons, comme le Rhône, mais
+    chacun nommé par les itinéraires qu'il porte (`itineraire`, séparés par
+    « | », 1 793 valeurs : « GR96 », « GRP TPMB »…) — les noms ne survivent
+    pas à la préparation. Aucun champ de diffusion : `label` dit le balisage
+    (GR, GRP, « Sans label »…). Tout est montré, sans règle `retenir`, y
+    compris 79 tronçons dont **tous** les itinéraires se disent « Projet … »
+    (74) ou « … Hors PDIPR » (5) ; 66 autres en portent un aussi, à côté d'un
+    itinéraire inscrit. Mesuré le 23/11, question posée à Cédric (§2 :
+    écarter change ce qui est peint).
   */
   'haute-savoie': {
     fichier: 'data/pdipr-haute-savoie.json',
     emprise: EMPRISE_HAUTE_SAVOIE,
     credit: DEPARTEMENT_HAUTE_SAVOIE,
-  },
-  'puy-de-dome': {
-    fichier: 'data/pdipr-puy-de-dome.json',
-    emprise: EMPRISE_PUY_DE_DOME,
-    credit: DEPARTEMENT_PUY_DE_DOME,
   },
 }
 
