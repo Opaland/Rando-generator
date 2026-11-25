@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { margeBassePanneau, margeBasseRecouverte, type Rect } from '../../src/lib/mapPadding.ts'
+import {
+  margeBasseCadrable,
+  margeBassePanneau,
+  margeBasseRecouverte,
+  type Rect,
+} from '../../src/lib/mapPadding.ts'
 
 const cadre: Rect = { top: 0, bottom: 800, left: 0, right: 400, width: 400 }
 
@@ -73,6 +78,33 @@ describe('margeBasseRecouverte', () => {
 
   it('rend zéro sans rien', () => {
     expect(margeBasseRecouverte(cadre, [null, undefined])).toBe(0)
+  })
+})
+
+/*
+  #704, mesuré le 23/11 (Jeanine, 390 × 844, au doigt) : feuille pleine, la
+  carte va de 60 à 844 px et la feuille commence à 84 px. Réserver ses 760 px
+  sous les 48 px de bord laissait une hauteur négative à cadrer ; MapLibre
+  refusait (« Map cannot fit within canvas »), et la caméra restait où elle
+  était — la zone choisie n'était nulle part, même feuille repliée.
+*/
+describe('margeBasseCadrable', () => {
+  const carte: Rect = { top: 60, bottom: 844, left: 0, right: 390, width: 390 }
+
+  it('garde une marge que la carte peut céder', () => {
+    // Feuille à mi-hauteur : 380 px réservés, il reste de quoi cadrer.
+    expect(margeBasseCadrable(carte, 48, 380)).toBe(380)
+  })
+
+  it('ne réserve rien quand la marge ne laisse plus rien à cadrer', () => {
+    // Feuille pleine : 48 + 760 + 48 = 856 px pour une carte de 784.
+    expect(margeBasseCadrable(carte, 48, 760)).toBe(0)
+  })
+
+  it('ne réserve rien au point exact où il ne reste rien', () => {
+    // 48 + 688 + 48 = 784 : une hauteur nulle à cadrer ne se cadre pas.
+    expect(margeBasseCadrable(carte, 48, 688)).toBe(0)
+    expect(margeBasseCadrable(carte, 48, 687)).toBe(687)
   })
 })
 

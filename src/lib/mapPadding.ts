@@ -73,3 +73,34 @@ export function margeBasseRecouverte(
 ): number {
   return Math.max(0, ...surfaces.map((s) => margeBassePanneau(cadre, s)))
 }
+
+/**
+ * La marge basse qu'un cadrage peut réellement réserver, ou zéro.
+ *
+ * #704, mesuré le 23/11 au doigt, à 390 × 844 : feuille pleine, la carte va
+ * de 60 à 844 px et la feuille commence à 84 px. Réserver ses 760 px sous les
+ * deux bords de 48 px laissait une hauteur négative à cadrer : MapLibre
+ * refuse alors de bouger (« Map cannot fit within canvas… », lu dans son
+ * `cameraForBounds` : il abandonne dès que la hauteur restante est négative),
+ * et la caméra restait sur la zone d'avant — même une fois la feuille
+ * repliée, puisque rien ne recadre à ce moment-là.
+ *
+ * Une marge que la carte ne peut pas céder n'est donc pas réservée : la zone
+ * se cadre sur la carte entière, et elle est à l'écran dès que la feuille
+ * descend. La limite n'est pas un seuil choisi : c'est celle où il ne reste
+ * plus rien à cadrer — zéro compris, où l'échelle s'annule et le zoom part à
+ * moins l'infini.
+ *
+ * Ce que la règle ne fait pas, et qu'il faut savoir (relecture adverse) :
+ * elle est **discontinue**. Un reste positif mais minuscule — quelques
+ * pixels — est honoré tel quel, comme avant ce correctif, et cadre la zone
+ * à un zoom très bas. Le borner par un reste minimal changerait ce qui est
+ * cadré : ce serait un seuil à décider, pas à inventer (CLAUDE.md §2). Le
+ * cas mesuré (#704) n'en a pas besoin. Savoir si la feuille devrait se
+ * replier d'elle-même après le choix d'une zone est une autre question, de
+ * présentation.
+ */
+export function margeBasseCadrable(cadre: Rect, bord: number, recouvre: number): number {
+  const reste = cadre.bottom - cadre.top - 2 * bord - recouvre
+  return reste > 0 ? recouvre : 0
+}
