@@ -3,9 +3,20 @@ import { LngLatBounds, type Map as MaplibreMap } from 'maplibre-gl'
 import { itineraryCoords } from '../../core/mapdata.ts'
 import { bearingDegrees } from '../../core/geo.ts'
 import { empriseACadrer } from '../../core/emprisesDeZone.ts'
-import { margeBassePanneau, margeBasseRecouverte } from '../../lib/mapPadding.ts'
+import {
+  margeBasseCadrable,
+  margeBassePanneau,
+  margeBasseRecouverte,
+} from '../../lib/mapPadding.ts'
 import { useAppStore } from '../../store/appStore.ts'
 import type { LonLat } from '../../core/types.ts'
+
+/**
+ * Le bord laissé autour d'une zone ou d'un itinéraire cadré. Nommé parce que
+ * `margeBasseCadrable` doit connaître celui que reçoit `fitBounds` : deux
+ * nombres écrits à part finiraient par diverger (CLAUDE.md §4).
+ */
+const BORD_DE_CADRAGE = 48
 
 /**
  * Tout ce qui déplace la caméra : cadrage de la zone, zoom sur la sélection,
@@ -53,12 +64,17 @@ export function useMapCamera(
       .getContainer()
       .querySelector('.maplibregl-ctrl-attrib')
       ?.getBoundingClientRect()
-    const recouvre = margeBasseRecouverte(map.getContainer().getBoundingClientRect(), [
-      panneau,
-      credit,
-    ])
+    const cadreDeZone = map.getContainer().getBoundingClientRect()
+    // Feuille pleine, la marge dépassait la carte et MapLibre refusait de
+    // cadrer : la zone choisie n'était nulle part à l'écran (#704).
+    const recouvre = margeBasseCadrable(
+      cadreDeZone,
+      BORD_DE_CADRAGE,
+      margeBasseRecouverte(cadreDeZone, [panneau, credit]),
+    )
+    const b = BORD_DE_CADRAGE
     const options = {
-      padding: { top: 48, left: 48, right: 48, bottom: 48 + recouvre },
+      padding: { top: b, left: b, right: b, bottom: b + recouvre },
       duration: 400,
     }
     // Une zone qui n'a rien rendu se cadre aussi : son emprise ne dépend pas
@@ -132,13 +148,17 @@ export function useMapCamera(
     // Ce que la fiche recouvre réellement du bas de la carte : la règle vit
     // dans lib/mapPadding, où elle est vérifiée sur les deux dispositions —
     // et où une piste écartée est écrite, pour qu'on ne la reprenne pas.
-    const recouvre = margeBassePanneau(cadre, panneau)
+    const recouvre = margeBasseCadrable(
+      cadre,
+      BORD_DE_CADRAGE,
+      margeBassePanneau(cadre, panneau),
+    )
     map.fitBounds(bounds, {
       padding: {
-        top: 48,
-        left: 48,
-        right: 48,
-        bottom: 48 + recouvre,
+        top: BORD_DE_CADRAGE,
+        left: BORD_DE_CADRAGE,
+        right: BORD_DE_CADRAGE,
+        bottom: BORD_DE_CADRAGE + recouvre,
       },
       duration: 500,
       maxZoom: 15,
