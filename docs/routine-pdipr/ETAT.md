@@ -26,7 +26,7 @@ tant que Cédric n'a pas répondu sur l'issue.
 | 11 | `moselle` | bloqué | 0 | | #682 | 12/11 : aucun PDIPR départemental ouvert (data.gouv.fr, DataGrandEst) |
 | 12 | `haute-saone` | bloqué | 0 | | #682 | 12/11 : aucun PDIPR départemental ouvert (data.gouv.fr, DataGrandEst) |
 | 13 | `meurthe-et-moselle` | bloqué | 0 | | #682, #694 | 19/11 : zone ajoutée (#693) ; LO 1.0 nommée par le producteur ; serveur `webcarto.infogeo54.fr` refuse les robots (403 « ogo ») : attend le shapefile téléchargé à la main |
-| — | `savoie` | livré | 0 | #703 | #87, #702, #704 | 23/11 : remise dans la file par Cédric ; « PDIPR73 » publié par le Département sur data.gouv.fr en LO 1.0 (`fr-lo`), en KML seulement : lecteur `core/kml.ts` ; 4 289 lignes |
+| — | `savoie` | livré | 0 | #703 | #87, #702, #704 (corrigée, #706) | 23/11 : remise dans la file par Cédric ; « PDIPR73 » publié par le Département sur data.gouv.fr en LO 1.0 (`fr-lo`), en KML seulement : lecteur `core/kml.ts` ; 4 289 lignes |
 | — | `haute-savoie` | livré | 0 | #699 | #87, #700, #701 | 23/11, shapefile 2023 du Département (data.gouv.fr), LO 2.0, 14 617 lignes ; 7 897 déjà dans OSM à ≥ 80 % |
 
 ## Journal
@@ -51,3 +51,4 @@ Une ligne par passage : `AAAA-MM-JJ — zone — tentative n — résultat — P
 - 2026-11-23 — haute-savoie — tentative 1 — verte : shapefile 2023 intégré, projection recoupée par le KML du Département ; porte, relecture adverse, `parcours` (Jeanine, Bernard) ; issues #700 (réseau de fond suspendu à Overpass), #701 (légende) et complément de #674 — #699 fusionnée. Cédric remet la Savoie et la Haute-Savoie dans la file (« reprends les routines »).
 - 2026-11-23 — savoie — tentative 1 — verte : KML du Département, lu par un nouveau lecteur (`core/kml.ts`) ; porte, relecture adverse (lecteur durci : préfixes, attributs, commentaires, CDATA, hexadécimal, zéro ligne refusé), `parcours` (Jeanine, Bernard) ; question #702 (15 objets « Entretenu = non ») ; `parcours` trouve #704 (feuille pleine : la zone choisie n'est pas cadrée, toutes zones) et complète #675 ; recouvrement OSM non mesuré (Overpass en 503) — #703.
 - 2026-11-24 — file sans zone à faire — Savoie livrée la veille (#703) ; attend Cédric : #702 (Savoie, 15 objets « Entretenu = non »), #674 (Haute-Savoie, 79 tronçons « Projet » / « Hors PDIPR »), fichier de la Meurthe-et-Moselle (#694), Allier (#683) ; rien sur Drive ni sur les issues — arrêt.
+- 2026-11-25 — file sans zone à faire — #704 corrigée par #706 (le cadrage de zone tient la feuille pleine) ; attend toujours Cédric : #702, #674, #694, #683 ; rien sur Drive ni sur les issues — arrêt.
