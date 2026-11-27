@@ -105,8 +105,11 @@ export function MapLegend() {
       {contenu.reseauDeFond && (
         /*
           Le PDIPR (#87) : un fond, que rien ne permet de suivre ni de
-          compter — le libellé le dit, pour qu'on ne cherche pas pourquoi
-          ces chemins-là ne se cliquent pas.
+          compter. Le libellé dit d'où il vient, **pas** qu'il n'est pas
+          compté : dans l'application, seul « À propos › Données et
+          licences » le dit (`ReseauxDepartementaux.tsx`). Ce commentaire
+          affirmait le contraire (#701) ; faut-il que la légende le dise
+          aussi ? C'est une question de libellé, à Cédric.
         */
         <div className={styles.item} data-testid="legende-reseau-de-fond">
           <span className={styles.swatch} style={{ background: GRIS_VERT }} />
