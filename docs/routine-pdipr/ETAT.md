@@ -53,3 +53,4 @@ Une ligne par passage : `AAAA-MM-JJ — zone — tentative n — résultat — P
 - 2026-11-24 — file sans zone à faire — Savoie livrée la veille (#703) ; attend Cédric : #702 (Savoie, 15 objets « Entretenu = non »), #674 (Haute-Savoie, 79 tronçons « Projet » / « Hors PDIPR »), fichier de la Meurthe-et-Moselle (#694), Allier (#683) ; rien sur Drive ni sur les issues — arrêt.
 - 2026-11-25 — file sans zone à faire — #704 corrigée par #706 (le cadrage de zone tient la feuille pleine) ; attend toujours Cédric : #702, #674, #694, #683 ; rien sur Drive ni sur les issues — arrêt.
 - 2026-11-26 — file sans zone à faire — attend toujours Cédric : #702, #674, #694, #683 ; rien sur Drive ni sur les issues — arrêt.
+- 2026-11-27 — file sans zone à faire — #709 corrige le commentaire de la légende (#701 reste ouverte, libellé à trancher) ; attend toujours Cédric : #702, #674, #694, #683 ; rien sur Drive ni sur les issues — arrêt.
